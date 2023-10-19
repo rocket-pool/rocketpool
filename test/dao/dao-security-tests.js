@@ -17,7 +17,7 @@ import {
     RocketDAOProtocolSettingsRewards,
 } from '../_utils/artifacts';
 import {
-    constructLeaves, daoProtocolCancel,
+    constructPhase1Leaves, daoProtocolCancel,
     daoProtocolClaimBondChallenger,
     daoProtocolClaimBondProposer,
     daoProtocolCreateChallenge,

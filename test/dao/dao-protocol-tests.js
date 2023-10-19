@@ -17,15 +17,15 @@ import {
     RocketDAOProtocolSettingsRewards, RocketDAOProtocolSettingsRewardsNew,
 } from '../_utils/artifacts';
 import {
-    constructLeaves, daoProtocolCancel,
+    constructPhase1Leaves, constructPhase2Leaves, daoProtocolCancel,
     daoProtocolClaimBondChallenger,
     daoProtocolClaimBondProposer,
     daoProtocolCreateChallenge,
-    daoProtocolDefeatProposal, daoProtocolExecute,
+    daoProtocolDefeatProposal, daoProtocolExecute, daoProtocolGeneratePhase2Pollard,
     daoProtocolGeneratePollard,
     daoProtocolPropose,
     daoProtocolSubmitRoot, daoProtocolVote,
-    getDelegatedVotingPower,
+    getDelegatedVotingPower, getPhase2VotingPower,
 } from './scenario-dao-protocol';
 import { nodeStakeRPL, nodeWithdrawRPL, registerNode } from '../_helpers/node';
 import { createMinipool, getMinipoolMinimumRPLStake } from '../_helpers/minipool';
@@ -250,7 +250,7 @@ export default function() {
             // Setup
             const block = await hre.web3.eth.getBlockNumber();
             const power = await getDelegatedVotingPower(block);
-            const leaves = constructLeaves(power);
+            const leaves = constructPhase1Leaves(power);
 
             // Create the proposal
             let { nodes } = await daoProtocolGeneratePollard(leaves, depthPerRound);
@@ -334,7 +334,7 @@ export default function() {
             await createValidProposal();
         });
 
-        it(printTitle('proposer', 'can successfully refute an invalid challenge'), async () => {
+        it.only(printTitle('proposer', 'can successfully refute an invalid challenge'), async () => {
             // Setup
             await mockNodeSet();
             await createNode(1, proposer);
@@ -344,16 +344,50 @@ export default function() {
             await createNode(1, challenger);
 
             // Create a valid proposal
-            const { propId, leaves } = await createValidProposal();
+            const { propId, leaves, power, block } = await createValidProposal();
 
             // Challenge/response
-            const maxDepth = getMaxDepth(leaves.length);
-            const indices = getChallengeIndices(2 ** maxDepth, leaves.length);
-            for (const index of indices) {
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const phase2Indices = getChallengeIndices(2 ** maxDepth, Math.pow(leaves.length, 2));
+            const phase1Indices = phase2Indices.splice(0, Math.floor(phase2Indices.length/2));
+
+            // console.log('LEAVES BEFORE');
+            // console.log(leaves);
+
+            // Phase 1
+            for (const index of phase1Indices) {
                 // Challenge
                 await daoProtocolCreateChallenge(propId, index, { from: challenger });
                 // Response
                 let response = await daoProtocolGeneratePollard(leaves, depthPerRound, index);
+                await daoProtocolSubmitRoot(propId, index, response.proof, response.nodes, { from: proposer });
+            }
+
+            const phase2RootIndex = phase2Indices[0];
+            const challengedNodeId = phase2RootIndex - (2 ** phase1Depth);
+            // console.log('Phase 2 root index is ' + phase2RootIndex);
+            // console.log('Challenged node id is ' + challengedNodeId);
+
+            const phase2Power = await getPhase2VotingPower(block, challengedNodeId);
+            // console.log(phase2Power);
+            const phase2Leaves = await constructPhase1Leaves(phase2Power);
+            // console.log(phase2Leaves);
+
+            // console.log('LEAVES AFTER');
+            // console.log(leaves);
+
+            // Phase 2
+            for (const index of phase2Indices) {
+                // Challenge
+                await daoProtocolCreateChallenge(propId, index, { from: challenger });
+                // Response
+                // const { proof } = await daoProtocolGeneratePollard(leaves, depthPerRound, phase2RootIndex);
+                let response = await daoProtocolGeneratePhase2Pollard(phase2Leaves, leaves, depthPerRound, index);
+                // response.proof = [...proof, ...response.proof];
+
+                // console.log(response);
+
                 await daoProtocolSubmitRoot(propId, index, response.proof, response.nodes, { from: proposer });
             }
         });
@@ -491,7 +525,7 @@ export default function() {
             // Try to create invalid proposal
             const block = await hre.web3.eth.getBlockNumber();
             const power = await getDelegatedVotingPower(block);
-            const leaves = constructLeaves(power);
+            const leaves = constructPhase1Leaves(power);
 
             // Too few
             let invalidLeaves = leaves.slice(0, 1);
@@ -705,7 +739,7 @@ export default function() {
             const block = await hre.web3.eth.getBlockNumber();
             let power = await getDelegatedVotingPower(block);
             power[0][0] = '1000'.ether;
-            const leaves = constructLeaves(power);
+            const leaves = constructPhase1Leaves(power);
 
             // Create the proposal
             let { nodes } = await daoProtocolGeneratePollard(leaves, depthPerRound);
@@ -747,7 +781,7 @@ export default function() {
             // Create an invalid proposal
             const block = await hre.web3.eth.getBlockNumber();
             const power = await getDelegatedVotingPower(block);
-            const leaves = constructLeaves(power);
+            const leaves = constructPhase1Leaves(power);
             leaves[0].sum = leaves[0].sum.add('1'.BN);
 
             // Create the proposal
@@ -790,7 +824,7 @@ export default function() {
             // Create an invalid proposal
             const block = await hre.web3.eth.getBlockNumber();
             const power = await getDelegatedVotingPower(block);
-            const leaves = constructLeaves(power);
+            const leaves = constructPhase1Leaves(power);
             leaves[0].hash = '0x'.padEnd(66, '0');
 
             // Create the proposal

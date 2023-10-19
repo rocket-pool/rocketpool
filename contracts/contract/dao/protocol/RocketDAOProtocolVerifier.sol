@@ -13,6 +13,8 @@ import "../../../interface/dao/RocketDAOProposalInterface.sol";
 import "../../../interface/node/RocketNodeStakingInterface.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsProposalsInterface.sol";
 
+import "hardhat/console.sol";
+
 /// @notice Implements the protocol DAO optimistic fraud proof proposal system
 contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInterface {
 
@@ -131,25 +133,26 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @param _proposalID The ID of the proposal being challenged
     /// @param _index The global index of the node being challenged
     function createChallenge(uint256 _proposalID, uint256 _index) external {
+        // Precompute the proposal key
+        uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
+
+        // Retrieve the node count of this proposal
+        uint256 nodeCount = getUint(bytes32(proposalKey + nodeCountOffset));
+        uint256 maxDepth = getMaxDepth(nodeCount);
+        uint256 depth = getDepthFromIndex(_index);
+
         // Check for existing challenge against this index
         bytes32 challengeKey = keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, _index));
         uint256 challengeData = getUint(challengeKey);
         require(challengeData == 0, "Index already challenged");
 
         // Check depth is exactly one round deeper than a previous challenge (or the proposal root)
-        uint256 previousIndex = getPollardRootIndex(_index);
+        uint256 previousIndex = getPollardRootIndex(_index, nodeCount);
+        console.log("Pollard root index for %d is %d", _index, previousIndex);
         require(_getChallengeState(getUint(keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, previousIndex)))) == Types.ChallengeState.Responded, "Invalid challenge depth");
 
-        // Precompute the proposal key
-        uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
-
-        // Retrieve the node count of this proposal
-        uint256 nodeCount = getUint(bytes32(proposalKey + nodeCountOffset));
-
-        // Check challenge index doesn't equal or exceed max depth
-        uint256 maxDepth = getMaxDepth(nodeCount);
-        uint256 depth = getDepthFromIndex(_index);
-        require(depth < maxDepth, "Invalid index depth");
+        // Check depth doesn't exceed the extended tree
+        require(depth < maxDepth * 2, "Invalid index depth");
 
         // Write challenge
         challengeData = uint256(Types.ChallengeState.Challenged) << stateOffset;
@@ -326,6 +329,99 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         // Make sure this index was actually challenged
         require(state != 0, "Challenge does not exist");
 
+        // Load the proposal
+        uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
+
+        // Check the proposal hasn't already been defeated
+        require(getUint(bytes32(proposalKey + defeatIndexOffset)) == 0, "Proposal already defeated");
+
+        uint256 nodeCount = getUint(bytes32(proposalKey + nodeCountOffset));
+        uint256 treeDepth = Math.log2(nodeCount, Math.Rounding.Up);
+        uint256 indexDepth = Math.log2(_index, Math.Rounding.Down);
+
+        if (indexDepth < treeDepth) {
+            console.log("Phase 1 pollard");
+            Types.Node memory expected;
+            expected.hash = getBytes32(bytes32(proposalKey + rootHashOffset));
+            expected.sum = getUint(bytes32(proposalKey + rootSumOffset));
+            submitPhase1Pollard(_proposalID, _index, _witness, _nodes, expected);
+        } else if (indexDepth == treeDepth) {
+            console.log("Phase 2 root");
+            Types.Node memory expected;
+            expected.hash = getBytes32(bytes32(proposalKey + rootHashOffset));
+            expected.sum = getUint(bytes32(proposalKey + rootSumOffset));
+            submitPhase2Root(_proposalID, _index, _witness, _nodes, expected);
+        } else {
+            console.log("Phase 2 pollard");
+            uint256 subIndex = getSubIndex(_index, nodeCount);
+            {
+                // Store subtree root
+                uint256 phase2RootIndex = getPhase2RootIndex(_index, nodeCount);
+                console.log("Phase 2 root index is ", phase2RootIndex);
+                uint256 challengeKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, phase2RootIndex)));
+                Types.Node memory expected;
+                expected.sum = getUint(bytes32(challengeKey + 1));
+                expected.hash = getBytes32(bytes32(challengeKey + 1));
+                console.log("Sub index is %d", subIndex);
+                submitPhase1Pollard(_proposalID, subIndex, _witness, _nodes, expected);
+            }
+
+            uint256 nextDepth = getNextDepth(subIndex, nodeCount);
+            if (nextDepth == treeDepth) {
+                console.log("Final depth");
+                // Calculate the offset into the leaf nodes in the final tree that match the supplied nodes
+                uint256 n = (treeDepth*2) - indexDepth;
+                uint256 offset = (subIndex * (2 ** n)) - (2 ** treeDepth);
+                console.log("Offset into tree is %d", offset);
+                // Verify the leaves match the values we know on chain
+                uint256 blockNumber = getUint(bytes32(proposalKey + blockNumberOffset));
+                require(verifyLeaves(blockNumber, nodeCount, offset, _nodes), "Invalid leaves");
+            }
+        }
+
+        // Mark the index as responded
+        state = setChallengeState(state, Types.ChallengeState.Responded);
+        setUint(challengeKey, state);
+    }
+
+    function submitPhase2Root(uint256 _proposalID, uint256 _index, Types.Node[] calldata _witness, Types.Node[] memory _nodes, Types.Node memory _expected) internal {
+        // Compute the proposal root from the supplied nodes
+        Types.Node memory subtreeRoot = computeRootFromNodes(_nodes);
+
+        // Reconstruct the leaf node in the root tree
+        Types.Node memory leaf;
+        leaf.sum = subtreeRoot.sum;
+        leaf.hash = keccak256(abi.encodePacked(subtreeRoot.sum));
+
+        console.log("Leaf is");
+        console.logBytes32(leaf.hash);
+
+        // Verify witness
+        Types.Node memory root = computeRootFromWitness(_index, leaf, _witness);
+        console.log("Expecting");
+        console.logBytes32(_expected.hash);
+        console.log("Got");
+        console.logBytes32(root.hash);
+        require(root.hash == _expected.hash, "Invalid root hash");
+        require(root.sum == _expected.sum, "Invalid root sum");
+
+        // Store subtree root
+        uint256 challengeKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, _index)));
+        setUint(bytes32(challengeKey + 1), subtreeRoot.sum);
+        setBytes32(bytes32(challengeKey + 1), subtreeRoot.hash);
+
+        console.log("Storing subtree root for index %d with sum %d", _index, subtreeRoot.sum);
+        console.logBytes32(subtreeRoot.hash);
+
+        // Emit event
+        {
+            uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
+            address proposer = getAddress(bytes32(proposalKey + proposerOffset));
+            emit RootSubmitted(_proposalID, proposer, uint32(block.number), _index, subtreeRoot.hash, subtreeRoot.sum, _nodes, block.timestamp);
+        }
+    }
+
+    function submitPhase1Pollard(uint256 _proposalID, uint256 _index, Types.Node[] calldata _witness, Types.Node[] memory _nodes, Types.Node memory _expected) internal {
         // Verify witness length
         uint256 depth = getDepthFromIndex(_index);
         require(_witness.length == depth, "Invalid witness length");
@@ -335,23 +431,6 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         uint256 nodeCount = getUint(bytes32(proposalKey + nodeCountOffset));
         uint256 blockNumber = getUint(bytes32(proposalKey + blockNumberOffset));
 
-        // Check the proposal hasn't already been defeated
-        require(getUint(bytes32(proposalKey + defeatIndexOffset)) == 0, "Proposal already defeated");
-
-        {
-            uint256 maxDepth = getMaxDepth(nodeCount);
-            uint256 nextDepth = getNextDepth(_index, nodeCount);
-
-            // Check if this is the final round
-            if (nextDepth == maxDepth) {
-                // Calculate the offset into the leaf nodes in the final tree that match the supplied nodes
-                uint256 n = nextDepth - depth;
-                uint256 offset = (_index * (2 ** n)) - (2 ** maxDepth);
-                // Verify the leaves match the values we know on chain
-                require(verifyLeaves(blockNumber, nodeCount, offset, _nodes), "Invalid leaves");
-            }
-        }
-
         // Verify correct number of nodes in the pollard
         require(_nodes.length == 2 ** (getNextDepth(_index, nodeCount) - depth), "Invalid node count");
 
@@ -360,26 +439,40 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
 
         {
             // Verify the supplied witness (proves the supplied data actually matches the original tree)
-            bytes32 hash = getBytes32(bytes32(proposalKey + rootHashOffset));
-            uint256 sum = getUint(bytes32(proposalKey + rootSumOffset));
             if (depth > 0) {
                 Types.Node memory rootFromWitness = computeRootFromWitness(_index, root, _witness);
-                require(rootFromWitness.hash == hash && rootFromWitness.sum == sum, "Invalid proof");
+                console.log("Expecting %d", _expected.sum);
+                console.logBytes32(_expected.hash);
+                console.log("Got %d", rootFromWitness.sum);
+                console.logBytes32(rootFromWitness.hash);
+                require(rootFromWitness.hash == _expected.hash && rootFromWitness.sum == _expected.sum, "Invalid proof");
             } else {
-                require(root.hash == hash, "Invalid root hash");
-                require(root.sum == sum, "Invalid root sum");
+                require(root.hash == _expected.hash, "Invalid root hash");
+                require(root.sum == _expected.sum, "Invalid root sum");
             }
         }
-
-        // Mark the index as responded
-        state = setChallengeState(state, Types.ChallengeState.Responded);
-        setUint(challengeKey, state);
 
         // Emit event
         {
             address proposer = getAddress(bytes32(proposalKey + proposerOffset));
             emit RootSubmitted(_proposalID, proposer, uint32(block.number), _index, root.hash, root.sum, _nodes, block.timestamp);
         }
+    }
+
+    function getPhase2RootIndex(uint256 _index, uint256 _nodeCount) internal view returns (uint256) {
+        uint256 subtreeDepth = getMaxDepth(_nodeCount);
+        uint256 depth = getDepthFromIndex(_index);
+        uint256 phase2IndexDepth = depth - subtreeDepth;
+        return _index / (2 ** phase2IndexDepth);
+    }
+
+    function getSubIndex(uint256 _index, uint256 _nodeCount) internal view returns (uint256) {
+        uint256 subtreeDepth = getMaxDepth(_nodeCount);
+        uint256 depth = getDepthFromIndex(_index);
+        uint256 phase2IndexDepth = depth - subtreeDepth;
+        uint256 phase2RootIndex = _index / (2 ** phase2IndexDepth);
+        uint256 n = 2 ** phase2IndexDepth;
+        return _index - (phase2RootIndex * n) + n;
     }
 
     /// @dev Checks a slice of the final nodes in a tree with the correct known on-chain values
@@ -483,11 +576,20 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         return Math.log2(_index, Math.Rounding.Down);
     }
 
+    /// @dev Calculates the phase of the given index
+    /// @param _index The global index to calculate the phase from
+    /// @return True if the given index is in phase 1 of the challenge process
+    function getPhaseFromIndex(uint256 _index, uint256 _nodeCount) internal pure returns (bool) {
+        uint256 treeDepth = Math.log2(_nodeCount, Math.Rounding.Up);
+        uint256 indexDepth = Math.log2(_index, Math.Rounding.Down);
+        return (indexDepth < treeDepth);
+    }
+
     /// @dev Calculates the max depth of a tree containing specified number of nodes
     /// @param _nodeCount The number of nodes
     /// @return The max depth of a tree with `_nodeCount` many nodes
     function getMaxDepth(uint256 _nodeCount) internal pure returns (uint256) {
-        return 2 * Math.log2(_nodeCount, Math.Rounding.Up);
+        return Math.log2(_nodeCount, Math.Rounding.Up);
     }
 
     /// @dev Calculates the depth of the next round taking into account the max depth
@@ -507,11 +609,26 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @dev Calculates the root index of a pollard given the index of of one of its nodes
     /// @param _index The index to calculate a pollard root index from
     /// @return The pollard root index for node with global index of `_index`
-    function getPollardRootIndex(uint256 _index) internal pure returns (uint256) {
+    function getPollardRootIndex(uint256 _index, uint256 _nodeCount) internal returns (uint256) {
         // Index is within the first pollard depth
         if (_index < 2 ** depthPerRound) {
             return 1;
         }
+        uint256 indexDepth = Math.log2(_index, Math.Rounding.Down);
+        uint256 maxDepth = Math.log2(_nodeCount, Math.Rounding.Up);
+
+        console.log("Index depth = %d", indexDepth);
+        console.log("Max depth = %d", maxDepth);
+
+        // Index is leaf of phase 1 tree
+        if (indexDepth == maxDepth) {
+            uint256 remainder = indexDepth % depthPerRound;
+            console.log("Remainder = %d", remainder);
+            if (remainder != 0) {
+                return _index / (2 ** remainder);
+            }
+        }
+
         return _index / (2 ** depthPerRound);
     }
 
