@@ -8,7 +8,7 @@ struct Checkpoint224 {
 
 /// @notice Accounting for snapshotting of values based on block numbers
 interface RocketNetworkSnapshotsInterface {
-    function push(bytes32 _key, uint32 _block, uint224 _value) external returns (uint224, uint224);
+    function push(bytes32 _key, uint32 _block, uint224 _value) external;
     function length(bytes32 _key) external view returns (uint256);
     function latest(bytes32 _key) external view returns (bool, uint32, uint224);
     function latestBlock(bytes32 _key) external view returns (uint32);
