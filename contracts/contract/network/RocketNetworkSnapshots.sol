@@ -14,8 +14,8 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
         version = 1;
     }
 
-    function push(bytes32 _key, uint32 _block, uint224 _value) onlyLatestContract("rocketNetworkSnapshots", address(this)) onlyLatestNetworkContract external returns (uint224, uint224)  {
-        return _insert(_key, _block, _value);
+    function push(bytes32 _key, uint32 _block, uint224 _value) onlyLatestContract("rocketNetworkSnapshots", address(this)) onlyLatestNetworkContract external {
+        _insert(_key, _block, _value);
     }
 
     function length(bytes32 _key) public view returns (uint256) {
@@ -67,7 +67,7 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
         return pos == 0 ? 0 : _valueAt(_key, pos - 1);
     }
 
-    function _insert(bytes32 _key, uint32 _block, uint224 _value) private returns (uint224, uint224) {
+    function _insert(bytes32 _key, uint32 _block, uint224 _value) private {
         uint256 pos = length(_key);
 
         if (pos > 0) {
@@ -83,10 +83,8 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
             } else {
                 _push(_key, Checkpoint224({_block: _block, _value: _value}));
             }
-            return (last._value, _value);
         } else {
             _push(_key, Checkpoint224({_block: _block, _value: _value}));
-            return (0, _value);
         }
     }
 
