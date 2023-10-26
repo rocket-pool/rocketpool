@@ -33,7 +33,7 @@ interface RocketDAOProtocolVerifierInterface {
     function getDepthPerRound() external pure returns (uint256);
     function submitProposalRoot(uint256 _proposalId, address _proposer, uint32 _blockNumber, Types.Node[] memory _treeNodes) external;
     function burnProposalBond(uint256 _proposalID) external;
-    function createChallenge(uint256 propId, uint256 index) external;
-    function submitRoot(uint256 propId, uint256 index, Types.Node[] calldata witness, Types.Node[] memory nodes) external;
+    function createChallenge(uint256 _proposalID, uint256 _index, Types.Node calldata _node, Types.Node[] calldata _witness) external;
+    function submitRoot(uint256 propId, uint256 index, Types.Node[] memory nodes) external;
     function getChallengeState(uint256 _proposalID, uint256 _index) external view returns (Types.ChallengeState);
 }
