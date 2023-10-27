@@ -1,7 +1,5 @@
-pragma solidity 0.7.6;
-pragma abicoder v2;
-
 // SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.8.18;
 
 import "../RocketBase.sol";
 import "../../interface/token/RocketTokenRPLInterface.sol";
@@ -10,19 +8,13 @@ import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/rewards/RocketRewardsRelayInterface.sol";
 import "../../interface/rewards/RocketSmoothingPoolInterface.sol";
 import "../../interface/RocketVaultWithdrawerInterface.sol";
+import "../../interface/node/RocketNodeManagerInterface.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
+import "@openzeppelin4/contracts/utils/cryptography/MerkleProof.sol";
 
-/*
-* On mainnet, the relay and the distributor are the same contract as there is no need for an intermediate contract to
-* handle cross-chain messaging.
-*/
-
+/// @dev On mainnet, the relay and the distributor are the same contract as there is no need for an intermediate contract to
+///      handle cross-chain messaging.
 contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterface, RocketVaultWithdrawerInterface {
-
-    // Libs
-    using SafeMath for uint;
 
     // Events
     event RewardsClaimed(address indexed claimer, uint256[] rewardIndex, uint256[] amountRPL, uint256[] amountETH);
@@ -78,22 +70,23 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
         // Verify claims
         _claim(_rewardIndex, _nodeAddress, _amountRPL, _amountETH, _merkleProof);
         {
-            // Get withdrawal address
+            // Get withdrawal addresses
             address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
-            require(msg.sender == _nodeAddress || msg.sender == withdrawalAddress, "Can only claim from node or withdrawal address");
+            address rplWithdrawalAddress= RocketNodeManagerInterface(getContractAddress("rocketNodeManager")).getNodeRPLWithdrawalAddress(_nodeAddress);
+            require(msg.sender == _nodeAddress || msg.sender == withdrawalAddress || msg.sender == rplWithdrawalAddress, "Can only claim from node or withdrawal addresses");
             // Calculate totals
             uint256 totalAmountRPL = 0;
             uint256 totalAmountETH = 0;
             for (uint256 i = 0; i < _rewardIndex.length; i++) {
-                totalAmountRPL = totalAmountRPL.add(_amountRPL[i]);
-                totalAmountETH = totalAmountETH.add(_amountETH[i]);
+                totalAmountRPL = totalAmountRPL + _amountRPL[i];
+                totalAmountETH = totalAmountETH + _amountETH[i];
             }
             // Validate input
             require(_stakeAmount <= totalAmountRPL, "Invalid stake amount");
             // Distribute any remaining tokens to the node's withdrawal address
-            uint256 remaining = totalAmountRPL.sub(_stakeAmount);
+            uint256 remaining = totalAmountRPL - _stakeAmount;
             if (remaining > 0) {
-                rocketVault.withdrawToken(withdrawalAddress, IERC20(rocketTokenRPLAddress), remaining);
+                rocketVault.withdrawToken(rplWithdrawalAddress, IERC20(rocketTokenRPLAddress), remaining);
             }
             // Distribute ETH
             if (totalAmountETH > 0) {

@@ -41,8 +41,7 @@ import {
 } from '../_helpers/dao';
 import { increaseTime } from '../_utils/evm';
 import { assertBN } from '../_helpers/bn';
-import { daoNodeTrustedPropose } from './scenario-dao-node-trusted';
-import { daoSecurityMemberJoin, daoSecurityMemberLeave, getDAOSecurityMemberIsValid } from './scenario-dao-security';
+import { daoSecurityMemberJoin, getDAOSecurityMemberIsValid } from './scenario-dao-security';
 import { upgradeOneDotThree } from '../_utils/upgrade';
 import { voteStates } from './scenario-dao-proposal';
 

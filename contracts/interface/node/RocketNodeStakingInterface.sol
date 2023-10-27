@@ -1,6 +1,5 @@
-pragma solidity >0.5.0 <0.9.0;
-
 // SPDX-License-Identifier: GPL-3.0-only
+pragma solidity >0.5.0 <0.9.0;
 
 interface RocketNodeStakingInterface {
     function getTotalRPLStake() external view returns (uint256);
@@ -21,5 +20,6 @@ interface RocketNodeStakingInterface {
     function unlockRPL(address _node, uint256 _amount) external;
     function transferRPL(address _from, address _to, uint256 _amount) external;
     function withdrawRPL(uint256 _amount) external;
+    function withdrawRPL(address _nodeAddress, uint256 _amount) external;
     function slashRPL(address _nodeAddress, uint256 _ethSlashAmount) external;
 }

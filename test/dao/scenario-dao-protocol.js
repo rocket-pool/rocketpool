@@ -1,10 +1,9 @@
 import {
-    RocketDAOProposal,
     RocketNetworkVoting,
     RocketDAOProtocolVerifier,
     RocketDAOProtocolSettingsProposals,
     RocketDAOProtocolProposalsNew,
-    RocketNodeStakingNew, RocketNodeManagerNew, RocketDAOProtocolProposals,
+    RocketNodeStakingNew, RocketNodeManagerNew,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 

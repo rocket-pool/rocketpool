@@ -14,6 +14,7 @@ import "../../interface/RocketVaultInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
 import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
 import "../network/RocketNetworkSnapshots.sol";
+import "../../interface/node/RocketNodeManagerInterface.sol";
 
 /// @notice Handles node deposits and minipool creation
 contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
@@ -241,10 +242,11 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @param _nodeAddress The address of the node operator to stake on behalf of
     /// @param _amount The amount of RPL to stake
     function stakeRPLFor(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(_nodeAddress) {
-       // Must be node's withdrawal address, allow listed address or rocketMerkleDistributorMainnet
+       // Must be node's RPL withdrawal address, allow listed address or rocketMerkleDistributorMainnet
        if (msg.sender != getAddress(keccak256(abi.encodePacked("contract.address", "rocketMerkleDistributorMainnet")))) {
-           address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
-           if (msg.sender != withdrawalAddress) {
+           RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+           address rplWithdrawalAddress = rocketNodeManager.getNodeRPLWithdrawalAddress(_nodeAddress);
+           if (msg.sender != rplWithdrawalAddress) {
                require(getBool(keccak256(abi.encodePacked("node.stake.for.allowed", _nodeAddress, msg.sender))), "Not allowed to stake for");
            }
        }
@@ -328,10 +330,31 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     }
 
     /// @notice Withdraw staked RPL back to the node account
-    ///         Only accepts calls from registered nodes
-    ///         Withdraws to withdrawal address if set, otherwise defaults to node address
+    ///         Can only be called by a node if they have not set their RPL withdrawal address
     /// @param _amount The amount of RPL to withdraw
-    function withdrawRPL(uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(msg.sender) {
+    function withdrawRPL(uint256 _amount) override external {
+        withdrawRPL(msg.sender, _amount);
+    }
+
+    /// @notice Withdraw staked RPL back to the node account
+    ///         If RPL withdrawal address has been set, must be called from it. Otherwise, must be called from
+    ///         node's primary withdrawal address or their node address.
+    /// @param _nodeAddress The address of the node withdrawing
+    /// @param _amount The amount of RPL to withdraw
+    function withdrawRPL(address _nodeAddress, uint256 _amount) override public onlyLatestContract("rocketNodeStaking", address(this)) {
+        // Check valid node
+        require(getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress))), "Invalid node");
+        // Check address is permitted to withdraw
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+        address rplWithdrawalAddress = rocketNodeManager.getNodeRPLWithdrawalAddress(_nodeAddress);
+        if (rocketNodeManager.getNodeRPLWithdrawalAddressIsSet(_nodeAddress)) {
+            // If RPL withdrawal address is set, must be called from it
+            require(msg.sender == rplWithdrawalAddress, "Invalid caller");
+        } else {
+            // Otherwise, must be called from node address or withdrawal address
+            address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
+            require(msg.sender == _nodeAddress || msg.sender == withdrawalAddress, "Invalid caller");
+        }
         // Load contracts
         RocketDAOProtocolSettingsRewardsInterface rocketDAOProtocolSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
@@ -346,8 +369,8 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Update RPL stake amounts
         decreaseTotalRPLStake(_amount);
         decreaseNodeRPLStake(msg.sender, _amount);
-        // Transfer RPL tokens to node address
-        rocketVault.withdrawToken(rocketStorage.getNodeWithdrawalAddress(msg.sender), IERC20(getContractAddress("rocketTokenRPL")), _amount);
+        // Transfer RPL tokens to node's RPL withdrawal address (if unset, defaults to primary withdrawal address)
+        rocketVault.withdrawToken(rplWithdrawalAddress, IERC20(getContractAddress("rocketTokenRPL")), _amount);
         // Emit RPL withdrawn event
         emit RPLWithdrawn(msg.sender, _amount, block.timestamp);
     }

@@ -167,7 +167,7 @@ export async function setStakeRPLForAllowed(caller, state, txOptions) {
 // Withdraw a node RPL stake
 export async function nodeWithdrawRPL(amount, txOptions) {
     const rocketNodeStaking = (await upgradeExecuted()) ? await RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed();
-    await rocketNodeStaking.withdrawRPL(amount, txOptions);
+    await rocketNodeStaking.methods['withdrawRPL(uint256)'](amount, txOptions);
 }
 
 
