@@ -126,7 +126,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     }
 
     /// @notice Returns whether a trusted node has submitted a specific RewardSubmission
-    function getTrustedNodeSubmitted(address _trustedNodeAddress, RewardSubmission calldata _submission) override external view returns (bool) {
+    function getSubmissionFromNodeExists(address _trustedNodeAddress, RewardSubmission calldata _submission) override external view returns (bool) {
         return getBool(keccak256(abi.encode("rewards.snapshot.submitted.node.key", _trustedNodeAddress, _submission)));
     }
 

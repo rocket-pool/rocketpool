@@ -17,7 +17,7 @@ interface RocketRewardsPoolInterface {
     function getClaimingContractPerc(string memory _claimingContract) external view returns(uint256);
     function getClaimingContractsPerc(string[] memory _claimingContracts) external view returns (uint256[] memory);
     function getTrustedNodeSubmitted(address _trustedNodeAddress, uint256 _rewardIndex) external view returns (bool);
-    function getTrustedNodeSubmitted(address _trustedNodeAddress, RewardSubmission calldata _submission) external view returns (bool);
+    function getSubmissionFromNodeExists(address _trustedNodeAddress, RewardSubmission calldata _submission) external view returns (bool);
     function getSubmissionCount(RewardSubmission calldata _submission) external view returns (uint256);
     function submitRewardSnapshot(RewardSubmission calldata _submission) external;
     function executeRewardSnapshot(RewardSubmission calldata _submission) external;
