@@ -151,7 +151,26 @@ export default function() {
         });
 
 
-        it(printTitle('trusted nodes', 'cannot submit network prices for the current recorded block or lower'), async () => {
+        it(printTitle('trusted nodes', 'cannot submit network prices for a lower block than recorded'), async () => {
+            // Set parameters
+            let block = await web3.eth.getBlockNumber();
+            let rplPrice = '0.02'.ether;
+
+            // Submit prices for block to trigger update
+            await submitPrices(block, rplPrice, {
+                from: trustedNode1,
+            });
+            await submitPrices(block, rplPrice, {
+                from: trustedNode2,
+            });
+
+            // Attempt to submit prices for lower block
+            await shouldRevert(submitPrices(block - 1, rplPrice, {
+                from: trustedNode3,
+            }), 'Submitted prices for a lower block');
+        });
+
+        it(printTitle('trusted nodes', 'can submit network prices for the current recorded block (vote past consensus)'), async () => {
             // Set parameters
             let block = await web3.eth.getBlockNumber();
             let rplPrice = '0.02'.ether;
@@ -165,14 +184,10 @@ export default function() {
             });
 
             // Attempt to submit prices for current block
-            await shouldRevert(submitPrices(block, rplPrice, {
+            await submitPrices(block, rplPrice, {
                 from: trustedNode3,
-            }), 'Submitted prices for the current block');
+            });
 
-            // Attempt to submit prices for lower block
-            await shouldRevert(submitPrices(block - 1, rplPrice, {
-                from: trustedNode3,
-            }), 'Submitted prices for a lower block');
         });
 
 

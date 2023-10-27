@@ -159,7 +159,30 @@ export default function() {
         });
 
 
-        it(printTitle('trusted nodes', 'cannot submit network balances for the current recorded block or lower'), async () => {
+        it(printTitle('trusted nodes', 'cannot submit network balances for a lower block than recorded'), async () => {
+
+            // Set parameters
+            let block = 2;
+            let totalBalance = '10'.ether;
+            let stakingBalance = '9'.ether;
+            let rethSupply = '8'.ether;
+
+            // Submit balances for block to trigger update
+            await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+                from: trustedNode1,
+            });
+            await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+                from: trustedNode2,
+            });
+
+            // Attempt to submit balances for lower block
+            await shouldRevert(submitBalances(block - 1, totalBalance, stakingBalance, rethSupply, {
+                from: trustedNode3,
+            }), 'Submitted balances for a lower block');
+
+        });
+
+        it(printTitle('trusted nodes', 'can submit network balances for the same block as recorded (vote past consensus)'), async () => {
 
             // Set parameters
             let block = 2;
@@ -176,17 +199,11 @@ export default function() {
             });
 
             // Attempt to submit balances for current block
-            await shouldRevert(submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode3,
-            }), 'Submitted balances for the current block');
-
-            // Attempt to submit balances for lower block
-            await shouldRevert(submitBalances(block - 1, totalBalance, stakingBalance, rethSupply, {
-                from: trustedNode3,
-            }), 'Submitted balances for a lower block');
+            });
 
         });
-
 
         it(printTitle('trusted nodes', 'cannot submit the same network balances twice'), async () => {
 
