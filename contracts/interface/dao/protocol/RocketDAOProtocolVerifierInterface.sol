@@ -36,4 +36,5 @@ interface RocketDAOProtocolVerifierInterface {
     function createChallenge(uint256 _proposalID, uint256 _index, Types.Node calldata _node, Types.Node[] calldata _witness) external;
     function submitRoot(uint256 propId, uint256 index, Types.Node[] memory nodes) external;
     function getChallengeState(uint256 _proposalID, uint256 _index) external view returns (Types.ChallengeState);
+    function verifyVote(address _voter, uint256 _nodeIndex, uint256 _proposalID, uint256 _votingPower, Types.Node[] calldata _witness) external view returns (bool);
 }

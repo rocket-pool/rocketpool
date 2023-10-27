@@ -119,7 +119,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     function getReceiptSupported(uint256 _proposalID, address _nodeAddress) override external view returns (bool) {
         return getBool(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.supported", _proposalID, _nodeAddress))); 
     }
-    
+
 
     // Return the state of the specified proposal
     // A successful proposal can be executed immediately
@@ -213,7 +213,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         // Log it
         emit ProposalVoted(_proposalID, _member, _support, block.timestamp);
     }
-    
+
 
     // Execute a proposal if it has passed
     function execute(uint256 _proposalID) override external {

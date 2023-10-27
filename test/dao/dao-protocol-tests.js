@@ -23,12 +23,12 @@ import {
     daoProtocolClaimBondProposer,
     daoProtocolCreateChallenge,
     daoProtocolDefeatProposal, daoProtocolExecute, daoProtocolGenerateChallengeProof,
-    daoProtocolGeneratePollard,
+    daoProtocolGeneratePollard, daoProtocolGenerateVoteProof,
     daoProtocolPropose,
     daoProtocolSubmitRoot, daoProtocolVote,
     getDelegatedVotingPower, getPhase2VotingPower, getSubIndex,
 } from './scenario-dao-protocol';
-import { nodeStakeRPL, nodeWithdrawRPL, registerNode } from '../_helpers/node';
+import { getNodeCount, nodeStakeRPL, nodeWithdrawRPL, registerNode } from '../_helpers/node';
 import { createMinipool, getMinipoolMinimumRPLStake } from '../_helpers/minipool';
 import { mintRPL } from '../_helpers/tokens';
 import { userDeposit } from '../_helpers/deposit';
@@ -44,6 +44,7 @@ import { assertBN } from '../_helpers/bn';
 import { daoNodeTrustedPropose } from './scenario-dao-node-trusted';
 import { daoSecurityMemberJoin, daoSecurityMemberLeave, getDAOSecurityMemberIsValid } from './scenario-dao-security';
 import { upgradeOneDotThree } from '../_utils/upgrade';
+import { voteStates } from './scenario-dao-proposal';
 
 export default function() {
     contract('RocketDAOProtocol', async (accounts) => {
@@ -64,6 +65,8 @@ export default function() {
         let challengePeriod;
         let voteDelayTime;
         let voteTime;
+
+        let nodeMap = {};
 
         const rewardClaimPeriodTime = 60 * 60 * 24;
 
@@ -241,7 +244,9 @@ export default function() {
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
             let rplStake = minipoolRplStake.mul(minipoolCount.BN);
+            const nodeCount = (await getNodeCount()).toNumber();
             await registerNode({ from: node });
+            nodeMap[node] = nodeCount;
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, { from: node });
             await createMinipool({ from: node, value: '16'.ether });
@@ -273,11 +278,14 @@ export default function() {
             }
         }
 
-        async function voteAll(proposalId, direction) {
+        async function voteAll(proposalId, leaves, direction) {
             // Vote from each account until the proposal passes
             for (let i = 10; i < 20; i++) {
+                const nodeIndex = nodeMap[accounts[i]];
+                const voteProof = daoProtocolGenerateVoteProof(leaves, nodeIndex);
+
                 try {
-                    await daoProtocolVote(proposalId, direction, {from: accounts[i]});
+                    await daoProtocolVote(proposalId, direction, voteProof.sum, nodeIndex, voteProof.witness, {from: accounts[i]});
                 } catch(e) {
                     if (e.message.indexOf("Proposal has passed") !== -1) {
                         return;
@@ -863,13 +871,16 @@ export default function() {
             );
 
             // Create a valid proposal
-            const { propId } = await createValidProposal('Invite security member to the council', proposalCalldata);
+            const { propId, leaves } = await createValidProposal('Invite security member to the council', proposalCalldata);
 
             // Wait for proposal wait period to end
             await increaseTime(hre.web3, voteDelayTime + 1);
 
             // Vote all in favour
-            await voteAll(propId, true);
+            await voteAll(propId, leaves, voteStates.For);
+
+            // Skip the full vote period
+            await increaseTime(hre.web3, voteTime + 1);
 
             // Execute the proposal
             await daoProtocolExecute(propId, {from: proposer});
@@ -897,13 +908,16 @@ export default function() {
             );
 
             // Create a valid proposal
-            const { propId } = await createValidProposal('Kick security member from the council', proposalCalldata);
+            const { propId, leaves } = await createValidProposal('Kick security member from the council', proposalCalldata);
 
             // Wait for proposal wait period to end
             await increaseTime(hre.web3, voteDelayTime + 1);
 
             // Vote all in favour
-            await voteAll(propId, true);
+            await voteAll(propId, leaves, voteStates.For);
+
+            // Skip the full vote period
+            await increaseTime(hre.web3, voteTime + 1);
 
             // Execute the proposal
             await daoProtocolExecute(propId, {from: proposer});

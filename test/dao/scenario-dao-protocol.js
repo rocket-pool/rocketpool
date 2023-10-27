@@ -1,19 +1,39 @@
 import {
     RocketDAOProposal,
     RocketNetworkVoting,
-    RocketNodeManager,
-    RocketDAOProtocolProposals,
     RocketDAOProtocolVerifier,
-    RocketTokenRPL,
-    RocketNodeStaking,
     RocketDAOProtocolSettingsProposals,
     RocketDAOProtocolProposalsNew,
-    RocketNodeStakingNew, RocketNodeManagerNew,
+    RocketNodeStakingNew, RocketNodeManagerNew, RocketDAOProtocolProposals,
 } from '../_utils/artifacts';
-import { proposalStates, getDAOProposalState, getDAOProposalVotesRequired } from './scenario-dao-proposal';
 import { assertBN } from '../_helpers/bn';
-import { getRplBalance } from '../_helpers/tokens';
-import { keccak } from 'ethereumjs-util';
+
+// Possible states that a proposal may be in
+export const proposalStates = {
+    Pending      : 0,
+    ActivePhase1 : 1,
+    ActivePhase2 : 2,
+    Cancelled    : 3,
+    Vetoed       : 4,
+    Defeated     : 5,
+    Succeeded    : 6,
+    Expired      : 7,
+    Executed     : 8
+};
+
+// Get the status of a proposal
+export async function getDAOProposalState(proposalID, txOptions) {
+    // Load contracts
+    const rocketDAOProposal = await RocketDAOProtocolProposalsNew.deployed();
+    return await rocketDAOProposal.getState.call(proposalID);
+}
+
+// Get the quorum for a proposal
+export async function getDAOProposalVotesRequired(proposalID, txOptions) {
+    // Load contracts
+    const rocketDAOProposal = await RocketDAOProtocolProposalsNew.deployed();
+    return await rocketDAOProposal.getVotesRequired.call(proposalID);
+}
 
 /**
  * Returns an array of voting power for each node in the protocol at the given block
@@ -148,6 +168,53 @@ export function cloneLeaves(leaves) {
         });
     }
     return ret;
+}
+
+export function daoProtocolGenerateVoteProof(leaves, index) {
+    // Create copy as we mutate it
+    leaves = cloneLeaves(leaves);
+
+    const sum = leaves[index].sum;
+
+    const depth = Math.log2(leaves.length);
+    index += 2 ** depth;
+    const offset = getDepthFromIndex(index);
+
+    // Build a proof from the challenged node up to the root node
+    const proof = [];
+    for (let level = offset; level > 0; level--) {
+        let n = 2 ** level;
+
+        for (let i = 0; i < n / 2; i++) {
+            const a = i * 2;
+            const b = a + 1;
+
+            const indexOffset = 2 ** level;
+
+            if (indexOffset + a === index) {
+                proof.push(leaves[b]);
+            } else if (indexOffset + b === index) {
+                proof.push(leaves[a]);
+            }
+
+            leaves[i] = {
+                hash: web3.utils.soliditySha3(
+                    { t: 'bytes32', v: leaves[a].hash },
+                    { t: 'uint256', v: leaves[a].sum },
+                    { t: 'bytes32', v: leaves[b].hash },
+                    { t: 'uint256', v: leaves[b].sum },
+                ),
+                sum: leaves[a].sum.add(leaves[b].sum)
+            }
+        }
+
+        index = Math.floor(index / 2);
+    }
+
+    return {
+        sum: sum,
+        witness: proof,
+    };
 }
 
 export function daoProtocolGenerateChallengeProof(leaves, order, index = 1) {
@@ -292,7 +359,7 @@ export async function daoProtocolPropose(_proposalMessage, _payload, _block, _tr
     const treeNodes = [];
 
     // Load contracts
-    const rocketDAOProposal = await RocketDAOProposal.deployed();
+    // const rocketDAOProposal = await RocketDAOProposal.deployed();
     const rocketDAOProtocolProposals = await RocketDAOProtocolProposalsNew.deployed();
     const rocketDAOProtocolSettingsProposal = await RocketDAOProtocolSettingsProposals.deployed();
 
@@ -301,7 +368,7 @@ export async function daoProtocolPropose(_proposalMessage, _payload, _block, _tr
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAOProposal.getTotal.call(),
+            rocketDAOProtocolProposals.getTotal.call(),
         ]).then(
             ([proposalTotal]) =>
             ({proposalTotal})
@@ -377,26 +444,30 @@ export async function daoProtocolSubmitRoot(_proposalID, _index, _treeNodes, txO
 }
 
 // Vote on a proposal for this DAO
-export async function daoProtocolVote(_proposalID, _vote, txOptions) {
+export async function daoProtocolVote(_proposalID, _vote, _votingPower, _nodeIndex, _witness, txOptions) {
     // Load contracts
-    const rocketDAOProposal = await RocketDAOProposal.deployed();
     const rocketDAOProtocolProposals = await RocketDAOProtocolProposalsNew.deployed();
 
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAOProposal.getTotal.call(),
-            rocketDAOProposal.getState.call(_proposalID),
-            rocketDAOProposal.getVotesFor.call(_proposalID),
-            rocketDAOProposal.getVotesRequired.call(_proposalID),
+            rocketDAOProtocolProposals.getTotal.call(),
+            rocketDAOProtocolProposals.getState.call(_proposalID),
+            rocketDAOProtocolProposals.getVotesFor.call(_proposalID),
+            rocketDAOProtocolProposals.getVotesRequired.call(_proposalID),
         ]).then(
             ([proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired]) =>
             ({proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired})
         );
     }
 
+    _witness = _witness.slice();
+    for (let i = 0; i < _witness.length; i++) {
+        _witness[i].sum = _witness[i].sum.toString();
+    }
+
     // Add a new proposal
-    await rocketDAOProtocolProposals.vote(_proposalID, _vote, txOptions);
+    await rocketDAOProtocolProposals.vote(_proposalID, _vote, _votingPower, _nodeIndex, _witness, txOptions);
 
     // Capture data
     let ds2 = await getTxData();
@@ -430,13 +501,12 @@ export async function daoProtocolCancel(_proposalID, txOptions) {
 // Execute a successful proposal
 export async function daoProtocolExecute(_proposalID, txOptions) {
     // Load contracts
-    const rocketDAOProposal = await RocketDAOProposal.deployed();
     const rocketDAOProtocolProposals = await RocketDAOProtocolProposalsNew.deployed();
 
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAOProposal.getState.call(_proposalID),
+            rocketDAOProtocolProposals.getState.call(_proposalID),
         ]).then(
             ([proposalState]) =>
             ({proposalState})

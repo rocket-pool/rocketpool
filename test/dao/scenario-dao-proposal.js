@@ -12,6 +12,15 @@ export const proposalStates = {
     Executed    : 6
 };
 
+// Possible vote direction
+export const voteStates = {
+    NoVote       : 0,
+    Abstain      : 1,
+    For          : 2,
+    Against      : 3,
+    ForWithVeto  : 4,
+};
+
 // Get the status of a proposal
 export async function getDAOProposalState(proposalID, txOptions) {
     // Load contracts

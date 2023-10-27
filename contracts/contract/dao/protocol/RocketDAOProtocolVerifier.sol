@@ -42,7 +42,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     address constant burnAddress = address(0x0000000000000000000000000000000000000000);
 
     // Events
-    event RootSubmitted(uint256 indexed proposalId, address indexed proposer, uint32 blockNumber, uint256 index, bytes32 rootHash, uint256 sum, Types.Node[] treeNodes, uint256 timestamp);
+    event RootSubmitted(uint256 indexed proposalId, address indexed proposer, uint32 blockNumber, uint256 index, Types.Node root, Types.Node[] treeNodes, uint256 timestamp);
     event ChallengeSubmitted(uint256 indexed proposalID, address indexed challenger, uint256 index, uint256 timestamp);
     event ProposalBondBurned(uint256 indexed proposalID, address indexed proposer, uint256 amount, uint256 timestamp);
 
@@ -112,7 +112,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         setUint(keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, uint256(1))), state);
 
         // Emit event
-        emit RootSubmitted(_proposalID, _proposer, _blockNumber, 1, root.hash, root.sum, _treeNodes, block.timestamp);
+        emit RootSubmitted(_proposalID, _proposer, _blockNumber, 1, root, _treeNodes, block.timestamp);
     }
 
     /// @dev Called by proposal contract to burn the bond of the proposer after a successful veto
@@ -288,9 +288,9 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
 
         // Check the proposal has passed the waiting period and the voting period and wasn't cancelled
         {
-            RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
-            RocketDAOProposalInterface.ProposalState proposalState = daoProposal.getState(_proposalID);
-            require(proposalState >= RocketDAOProposalInterface.ProposalState.Defeated, "Invalid proposal state");
+            RocketDAOProtocolProposalsInterface daoProposal = RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals"));
+            RocketDAOProtocolProposalsInterface.ProposalState proposalState = daoProposal.getState(_proposalID);
+            require(proposalState >= RocketDAOProtocolProposalsInterface.ProposalState.Defeated, "Invalid proposal state");
         }
 
         address proposer;
@@ -389,6 +389,9 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         // Mark the index as responded
         state = setChallengeState(state, Types.ChallengeState.Responded);
         setUint(challengeKey, state);
+
+        // Emit event
+        emit RootSubmitted(_proposalID, getAddress(bytes32(proposalKey + proposerOffset)), uint32(getUint(bytes32(proposalKey + blockNumberOffset))), _index, actual, _nodes, block.timestamp);
     }
 
     /// @dev Checks a slice of the final nodes in a tree with the correct known on-chain values
@@ -429,6 +432,31 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
             }
         }
         return true;
+    }
+
+    function verifyVote(address _voter, uint256 _nodeIndex, uint256 _proposalID, uint256 _votingPower, Types.Node[] calldata _witness) external view returns (bool) {
+        // Get contracts
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+        // Verify voter
+        if(rocketNodeManager.getNodeAt(_nodeIndex) != _voter) {
+            return false;
+        }
+        // Load the proposal
+        uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
+        // Calculate the network tree index for this voter
+        uint256 nodeCount = getUint(bytes32(proposalKey + nodeCountOffset));
+        uint256 depth = getMaxDepth(nodeCount);
+        uint256 treeIndex = (2 ** depth) + _nodeIndex;
+        // Reconstruct leaf node
+        Types.Node memory leaf;
+        leaf.sum = _votingPower;
+        leaf.hash = keccak256(abi.encodePacked(_votingPower));
+        // Retrieve the expected root node
+        Types.Node memory expected = getNode(_proposalID, 1);
+        // Compute a root from the supplied proof
+        Types.Node memory actual = computeRootFromWitness(treeIndex, leaf, _witness);
+        // Equality check
+        return (actual.sum == expected.sum && actual.hash == expected.hash);
     }
 
     /// @dev Computes the root node given a witness
@@ -529,7 +557,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @dev Calculates the root index of a pollard given the index of of one of its nodes
     /// @param _index The index to calculate a pollard root index from
     /// @return The pollard root index for node with global index of `_index`
-    function getPollardRootIndex(uint256 _index, uint256 _nodeCount) internal returns (uint256) {
+    function getPollardRootIndex(uint256 _index, uint256 _nodeCount) internal pure returns (uint256) {
         // Index is within the first pollard depth
         if (_index < 2 ** depthPerRound) {
             return 1;

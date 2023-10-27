@@ -54,6 +54,11 @@ export async function registerNode(txOptions) {
     await rocketNodeManager.registerNode('Australia/Brisbane', txOptions);
 }
 
+// Get number of nodes
+export async function getNodeCount(txOptions) {
+    const rocketNodeManager = (await upgradeExecuted()) ? await RocketNodeManagerNew.deployed() : await RocketNodeManager.deployed();
+    return rocketNodeManager.getNodeCount(txOptions);
+}
 
 // Make a node a trusted dao member, only works in bootstrap mode (< 3 trusted dao members)
 export async function setNodeTrusted(_account, _id, _url, owner) {

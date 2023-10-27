@@ -33,7 +33,7 @@ interface RocketDAOProposalInterface {
     function getReceiptSupported(uint256 _proposalID, address _nodeAddress) external view returns (bool);
     function getState(uint256 _proposalID) external view returns (ProposalState);
     function add(address _member, string memory _dao, string memory _message, uint256 _startBlock, uint256 _durationBlocks, uint256 _expiresBlocks, uint256 _votesRequired, bytes memory _payload) external returns (uint256);
-    function vote(address _member, uint256 _votes, uint256 _proposalID, bool _support) external; 
+    function vote(address _member, uint256 _votes, uint256 _proposalID, bool _support) external;
     function cancel(address _member, uint256 _proposalID) external;
     function execute(uint256 _proposalID) external;
     
