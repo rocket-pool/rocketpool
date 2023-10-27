@@ -96,6 +96,7 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, txOpti
 
     // Submit prices
     await rocketRewardsPool.submitRewardSnapshot(submission, txOptions);
+    assert.isTrue( await rocketRewardsPool.getSubmissionFromNodeExists(txOptions.from, submission));
 
     // Get updated submission details & prices
     let [submission2, rewardIndex2, treasuryRpl2, rethBalance2] = await Promise.all([
