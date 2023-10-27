@@ -142,7 +142,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // Check submission is currently enabled
         require(rocketDAOProtocolSettingsNetwork.getSubmitRewardsEnabled(), "Submitting rewards is currently disabled");
         // Validate inputs
-        require(_submission.rewardIndex == getRewardIndex(), "Can only submit snapshot for next period");
+        require(_submission.rewardIndex <= getRewardIndex(), "Can only submit snapshot for periods up to next");
         require(_submission.intervalsPassed > 0, "Invalid number of intervals passed");
         require(_submission.nodeRPL.length == _submission.trustedNodeRPL.length && _submission.trustedNodeRPL.length == _submission.nodeETH.length, "Invalid array length");
         // Calculate RPL reward total and validate
@@ -181,9 +181,13 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         }
         // Emit snapshot submitted event
         emit RewardSnapshotSubmitted(msg.sender, _submission.rewardIndex, _submission, block.timestamp);
+        // Return if already executed
+        if (_submission.rewardIndex != getRewardIndex()) {
+            return;
+        }
         // If consensus is reached, execute the snapshot
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        if (calcBase * submissionCount / rocketDAONodeTrusted.getMemberCount() >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()) {
+        if (calcBase * submissionCount / rocketDAONodeTrusted.getMemberCount() == rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()) {
             _executeRewardSnapshot(_submission);
         }
     }
