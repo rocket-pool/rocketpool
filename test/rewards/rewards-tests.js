@@ -631,6 +631,76 @@ export default function() {
             await executeRewards(0, rewards, '0'.ether, '0'.ether, {from: random});
         });
 
+        it(printTitle('random', 'cant execute reward period twice'), async () => {
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartTime = await rplInflationSetup();
+            await rewardsContractSetup('rocketClaimNode', '0.5'.ether);
+
+            // Move to inflation start plus one claim interval
+            let currentTime = await getCurrentTime(web3);
+            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
+            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
+
+            // Add another 2 trusted nodes so consensus becomes 3 votes
+            await setNodeTrusted(unregisteredNodeTrusted1, 'saas_3', 'node@home.com', owner);
+            await setNodeTrusted(unregisteredNodeTrusted2, 'saas_4', 'node@home.com', owner);
+
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    trustedNodeRPL: '0'.ether,
+                    nodeRPL: '1'.ether,
+                    nodeETH: '0'.ether
+                },
+            ]
+
+            await submitRewards(0, rewards, '0'.ether, '0'.ether, {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0'.ether, '0'.ether, {from: registeredNodeTrusted2});
+
+            // Kick a trusted node so consensus becomes 2 votes again
+            await kickTrustedNode(unregisteredNodeTrusted1, [registeredNodeTrusted1, registeredNodeTrusted2, unregisteredNodeTrusted1]);
+
+            // Now we should be able to execute the reward period
+            await executeRewards(0, rewards, '0'.ether, '0'.ether, {from: random});
+            await shouldRevert(executeRewards(0, rewards, '0'.ether, '0'.ether, {from: random}), 'Already executed');
+        });
+
+        it(printTitle('random', 'can submit past consensus'), async () => {
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartTime = await rplInflationSetup();
+            await rewardsContractSetup('rocketClaimNode', '0.5'.ether);
+
+            // Move to inflation start plus one claim interval
+            let currentTime = await getCurrentTime(web3);
+            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
+            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
+
+            // Add another trusted node 
+            await setNodeTrusted(unregisteredNodeTrusted1, 'saas_3', 'node@home.com', owner);
+
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    trustedNodeRPL: '0'.ether,
+                    nodeRPL: '1'.ether,
+                    nodeETH: '0'.ether
+                },
+            ]
+
+            await submitRewards(0, rewards, '0'.ether, '0'.ether, {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0'.ether, '0'.ether, {from: registeredNodeTrusted2});
+            // already have consensus, should have executed
+            await shouldRevert(executeRewards(0, rewards, '0'.ether, '0'.ether, {from: random}), 'Already executed');
+            
+            // should allow another vote past consensus
+            await submitRewards(0, rewards, '0'.ether, '0'.ether, {from: unregisteredNodeTrusted1});
+
+        });
+
 
         /*** Misc *************************/
 

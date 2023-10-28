@@ -93,7 +93,7 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, txOpti
         web3.eth.getBalance(rocketTokenRETH.address)
     ]);
 
-
+    let alreadyExecuted = submission.rewardIndex != rewardIndex1;
     // Submit prices
     await rocketRewardsPool.submitRewardSnapshot(submission, txOptions);
     assert.isTrue( await rocketRewardsPool.getSubmissionFromNodeExists(txOptions.from, submission));
@@ -106,9 +106,8 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, txOpti
         web3.eth.getBalance(rocketTokenRETH.address)
     ]);
 
-    // Check if prices should be updated
-    let expectedExecute = submission2.count.mul('2'.BN).gt(trustedNodeCount);
-
+    // Check if prices should be updated and were not updated yet
+    let expectedExecute = submission2.count.mul('2'.BN).gt(trustedNodeCount) && !alreadyExecuted;
     // Check submission details
     assert.isFalse(submission1.nodeSubmitted, 'Incorrect initial node submitted status');
     assert.isTrue(submission2.nodeSubmitted, 'Incorrect updated node submitted status');
