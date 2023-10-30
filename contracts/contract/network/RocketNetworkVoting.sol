@@ -114,9 +114,9 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         uint256 maximumStakePercent = rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake();
         uint256 maximumStake = providedETH * maximumStakePercent / rplPrice;
         if (rplStake > maximumStake) {
-            return maximumStake;
+            rplStake = maximumStake;
         }
-        // Otherwise, return the calculated voting power as the square root of clamped RPL stake
+        // Return the calculated voting power as the square root of clamped RPL stake
         return Math.sqrt(rplStake);
     }
 
