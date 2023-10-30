@@ -4,7 +4,6 @@ pragma solidity >0.5.0 <0.9.0;
 
 interface RocketNetworkBalancesInterface {
     function getBalancesBlock() external view returns (uint256);
-    function getLatestReportableBlock() external view returns (uint256);
     function getTotalETHBalance() external view returns (uint256);
     function getStakingETHBalance() external view returns (uint256);
     function getTotalRETHSupply() external view returns (uint256);

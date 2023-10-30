@@ -127,14 +127,4 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         // Emit balances updated event
         emit BalancesUpdated(_block, _totalEth, _stakingEth, _rethSupply, block.timestamp);
     }
-
-    /// @notice Returns the latest block number that oracles should be reporting balances for
-    function getLatestReportableBlock() override external view returns (uint256) {
-        // Load contracts
-        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
-        // Get the block balances were lasted updated and the update frequency
-        uint256 updateFrequency = rocketDAOProtocolSettingsNetwork.getSubmitBalancesFrequency();
-        // Calculate the last reportable block based on update frequency
-        return block.number / updateFrequency * updateFrequency;
-    }
 }

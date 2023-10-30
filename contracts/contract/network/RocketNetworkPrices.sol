@@ -120,14 +120,4 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         // Emit prices updated event
         emit PricesUpdated(_block, _rplPrice, block.timestamp);
     }
-
-    /// @notice Returns the latest block number that oracles should be reporting prices for
-    function getLatestReportableBlock() override external view returns (uint256) {
-        // Load contracts
-        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
-        // Get the block prices were lasted updated and the update frequency
-        uint256 updateFrequency = rocketDAOProtocolSettingsNetwork.getSubmitPricesFrequency();
-        // Calculate the last reportable block based on update frequency
-        return block.number / updateFrequency * updateFrequency;
-    }
 }
