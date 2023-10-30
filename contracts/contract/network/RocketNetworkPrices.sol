@@ -20,7 +20,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Set contract version
-        version = 3;
+        version = 4;
 
         // Precompute keys
         priceKey = keccak256("network.prices.rpl");
@@ -63,7 +63,8 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         require(rocketDAOProtocolSettingsNetwork.getSubmitPricesEnabled(), "Submitting prices is currently disabled");
         // Check block
         require(_block < block.number, "Prices can not be submitted for a future block");
-        require(_block > getPricesBlock(), "Network prices for an equal or higher block are set");
+        uint256 lastPricesBlock = getPricesBlock();
+        require(_block >= lastPricesBlock, "Network prices for a higher block are set");
         // Get submission keys
         bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("network.prices.submitted.node.key", msg.sender, _block, _rplPrice));
         bytes32 submissionCountKey = keccak256(abi.encodePacked("network.prices.submitted.count", _block, _rplPrice));
@@ -76,6 +77,10 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         setUint(submissionCountKey, submissionCount);
         // Emit prices submitted event
         emit PricesSubmitted(msg.sender, _block, _rplPrice, block.timestamp);
+        // If voting past consensus, return
+        if (_block == lastPricesBlock) {
+            return;
+        }
         // Check submission count & update network prices
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         if ((calcBase * submissionCount) / rocketDAONodeTrusted.getMemberCount() >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()) {
