@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
+import "@openzeppelin4/contracts/utils/math/Math.sol";
+
 import "../RocketBase.sol";
 import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
@@ -114,14 +116,8 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         if (rplStake > maximumStake) {
             return maximumStake;
         }
-        // If RPL stake is lower than minimum, node has no effective stake
-        uint256 minimumStakePercent = rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake();
-        uint256 minimumStake = matchedETH * minimumStakePercent / rplPrice;
-        if (rplStake < minimumStake) {
-            return 0;
-        }
-        // Otherwise, return the actual stake
-        return rplStake;
+        // Otherwise, return the calculated voting power as the square root of clamped RPL stake
+        return Math.sqrt(rplStake);
     }
 
     function setDelegate(address _newDelegate) external override onlyRegisteredNode(msg.sender) {
