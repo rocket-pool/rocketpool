@@ -13,6 +13,7 @@ interface RocketDAOProtocolProposalsInterface {
         ActivePhase2,
         Destroyed,
         Vetoed,
+        QuorumNotMet,
         Defeated,
         Succeeded,
         Expired,

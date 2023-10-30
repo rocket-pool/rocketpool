@@ -303,6 +303,8 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
                             // Vote was defeated
                             return ProposalState.Defeated;
                         }
+                    } else {
+                        return ProposalState.QuorumNotMet;
                     }
                 }
             }
