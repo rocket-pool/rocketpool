@@ -56,7 +56,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     }
 
     /// @notice Get the current RP network ETH utilization rate as a fraction of 1 ETH
-    /// @notice Represents what % of the network's balance is actively earning rewards
+    /// Represents what % of the network's balance is actively earning rewards
     function getETHUtilizationRate() override external view returns (uint256) {
         uint256 totalEthBalance = getTotalETHBalance();
         uint256 stakingEthBalance = getStakingETHBalance();
@@ -65,7 +65,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     }
 
     /// @notice Submit network balances for a block
-    /// @notice Only accepts calls from trusted (oracle) nodes
+    /// Only accepts calls from trusted (oracle) nodes
     function submitBalances(uint256 _block, uint256 _totalEth, uint256 _stakingEth, uint256 _rethSupply) override external onlyLatestContract("rocketNetworkBalances", address(this)) onlyTrustedNode(msg.sender) {
         // Check settings
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
@@ -97,7 +97,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         }
     }
 
-    // Executes updateBalances if consensus threshold is reached
+    /// @notice Executes updateBalances if consensus threshold is reached
     function executeUpdateBalances(uint256 _block, uint256 _totalEth, uint256 _stakingEth, uint256 _rethSupply) override external onlyLatestContract("rocketNetworkBalances", address(this)) {
         // Check settings
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
@@ -117,7 +117,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         updateBalances(_block, _totalEth, _stakingEth, _rethSupply);
     }
 
-    // Update network balances
+    /// @notice Update network balances
     function updateBalances(uint256 _block, uint256 _totalEth, uint256 _stakingEth, uint256 _rethSupply) private {
         // Update balances
         setBalancesBlock(_block);
@@ -128,7 +128,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         emit BalancesUpdated(_block, _totalEth, _stakingEth, _rethSupply, block.timestamp);
     }
 
-    // Returns the latest block number that oracles should be reporting balances for
+    /// @notice Returns the latest block number that oracles should be reporting balances for
     function getLatestReportableBlock() override external view returns (uint256) {
         // Load contracts
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
