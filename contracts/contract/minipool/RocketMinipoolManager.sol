@@ -338,6 +338,13 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         subUint(numeratorKey, minipool.getNodeFee());
     }
 
+    /// @notice Calls distribute on the given node's distributor if it has a balance and has been initialised
+    /// @dev Reverts if node has not initialised their distributor
+    /// @param _nodeAddress The node operator to try distribute rewards for
+    function tryDistribute(address _nodeAddress) override external {
+        _tryDistribute(_nodeAddress);
+    }
+
     /// @dev Calls distribute on the given node's distributor if it has a balance and has been initialised
     /// @param _nodeAddress The node operator to try distribute rewards for
     function _tryDistribute(address _nodeAddress) internal {

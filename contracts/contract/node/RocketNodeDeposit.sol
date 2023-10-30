@@ -179,6 +179,10 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     /// @param _amount The amount to increase the ETH matched
     /// @dev Will revert if the new ETH matched amount exceeds the node operators limit
     function increaseEthMatched(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeDeposit", address(this)) onlyLatestNetworkContract() {
+        // Try to distribute any existing rewards at the previous collateral rate
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        rocketMinipoolManager.tryDistribute(_nodeAddress);
+        // Increase ETH matched
         _increaseEthMatched(_nodeAddress, _amount);
     }
 
