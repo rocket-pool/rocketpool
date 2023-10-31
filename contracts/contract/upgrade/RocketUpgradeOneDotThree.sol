@@ -24,6 +24,8 @@ contract RocketUpgradeOneDotThree is RocketBase {
     address public newRocketClaimDAO;
     address public newRocketDAOProtocolSettingsRewards;
     address public newRocketMinipoolManager;
+    address public newRocketRewardsPool;
+    address public newRocketNetworkBalances;
     address public rocketDAOProtocolVerifier;
     address public rocketDAOProtocolSettingsProposals;
     address public rocketDAOProtocolSettingsSecurity;
@@ -43,6 +45,8 @@ contract RocketUpgradeOneDotThree is RocketBase {
     string public newRocketClaimDAOAbi;
     string public newRocketDAOProtocolSettingsRewardsAbi;
     string public newRocketMinipoolManagerAbi;
+    string public newRocketRewardsPoolAbi;
+    string public newRocketNetworkBalancesAbi;
     string public rocketDAOProtocolVerifierAbi;
     string public rocketDAOProtocolSettingsProposalsAbi;
     string public rocketDAOProtocolSettingsSecurityAbi;
@@ -83,14 +87,16 @@ contract RocketUpgradeOneDotThree is RocketBase {
         newRocketClaimDAO = _addresses[6];
         newRocketDAOProtocolSettingsRewards = _addresses[7];
         newRocketMinipoolManager = _addresses[8];
-        rocketDAOProtocolVerifier = _addresses[9];
-        rocketDAOProtocolSettingsProposals = _addresses[10];
-        rocketDAOProtocolSettingsSecurity = _addresses[11];
-        rocketDAOSecurity = _addresses[12];
-        rocketDAOSecurityActions = _addresses[13];
-        rocketDAOSecurityProposals = _addresses[14];
-        rocketNetworkSnapshots = _addresses[15];
-        rocketNetworkVoting = _addresses[16];
+        newRocketRewardsPool = _addresses[9];
+        newRocketNetworkBalances = _addresses[10];
+        rocketDAOProtocolVerifier = _addresses[11];
+        rocketDAOProtocolSettingsProposals = _addresses[12];
+        rocketDAOProtocolSettingsSecurity = _addresses[13];
+        rocketDAOSecurity = _addresses[14];
+        rocketDAOSecurityActions = _addresses[15];
+        rocketDAOSecurityProposals = _addresses[16];
+        rocketNetworkSnapshots = _addresses[17];
+        rocketNetworkVoting = _addresses[18];
 
         // Set ABIs
         newRocketDAOProtocolAbi = _abis[0];
@@ -102,14 +108,16 @@ contract RocketUpgradeOneDotThree is RocketBase {
         newRocketClaimDAOAbi = _abis[6];
         newRocketDAOProtocolSettingsRewardsAbi = _abis[7];
         newRocketMinipoolManagerAbi = _abis[8];
-        rocketDAOProtocolVerifierAbi = _abis[9];
-        rocketDAOProtocolSettingsProposalsAbi = _abis[10];
-        rocketDAOProtocolSettingsSecurityAbi = _abis[11];
-        rocketDAOSecurityAbi = _abis[12];
-        rocketDAOSecurityActionsAbi = _abis[13];
-        rocketDAOSecurityProposalsAbi = _abis[14];
-        rocketNetworkSnapshotsAbi = _abis[15];
-        rocketNetworkVotingAbi = _abis[16];
+        newRocketRewardsPoolAbi = _abis[9];
+        newRocketNetworkBalancesAbi = _abis[10];
+        rocketDAOProtocolVerifierAbi = _abis[11];
+        rocketDAOProtocolSettingsProposalsAbi = _abis[12];
+        rocketDAOProtocolSettingsSecurityAbi = _abis[13];
+        rocketDAOSecurityAbi = _abis[14];
+        rocketDAOSecurityActionsAbi = _abis[15];
+        rocketDAOSecurityProposalsAbi = _abis[16];
+        rocketNetworkSnapshotsAbi = _abis[17];
+        rocketNetworkVotingAbi = _abis[18];
     }
 
     /// @notice Prevents further changes from being applied
@@ -133,6 +141,8 @@ contract RocketUpgradeOneDotThree is RocketBase {
         _upgradeContract("rocketClaimDAO", newRocketClaimDAO, newRocketClaimDAOAbi);
         _upgradeContract("rocketDAOProtocolSettingsRewards", newRocketDAOProtocolSettingsRewards, newRocketDAOProtocolSettingsRewardsAbi);
         _upgradeContract("rocketMinipoolManager", newRocketMinipoolManager, newRocketMinipoolManagerAbi);
+        _upgradeContract("rocketRewardsPool", newRocketRewardsPool, newRocketRewardsPoolAbi);
+        _upgradeContract("rocketNetworkBalances", newRocketNetworkBalances, newRocketNetworkBalancesAbi);
 
         // Add new contracts
         _addContract("rocketDAOProtocolVerifier", rocketDAOProtocolVerifier, rocketDAOProtocolVerifierAbi);

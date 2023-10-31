@@ -48,12 +48,12 @@ const contracts = {
     rocketMinipoolQueue:                      artifacts.require('RocketMinipoolQueue.sol'),
     rocketMinipoolPenalty:                    artifacts.require('RocketMinipoolPenalty.sol'),
     // Network
-    rocketNetworkBalances:                    artifacts.require('RocketNetworkBalances.sol'),
+    rocketNetworkBalances:                    artifacts.require('RocketNetworkBalancesOld.sol'),
     rocketNetworkFees:                        artifacts.require('RocketNetworkFees.sol'),
     rocketNetworkPrices:                      artifacts.require('RocketNetworkPricesOld.sol'),
     rocketNetworkPenalties:                   artifacts.require('RocketNetworkPenalties.sol'),
     // Rewards
-    rocketRewardsPool:                        artifacts.require('RocketRewardsPool.sol'),
+    rocketRewardsPool:                        artifacts.require('RocketRewardsPoolOld.sol'),
     rocketClaimDAO:                           artifacts.require('RocketClaimDAOOld.sol'),
     // Node
     rocketNodeDeposit:                        artifacts.require('RocketNodeDepositOld.sol'),
@@ -106,6 +106,8 @@ const contracts = {
     rocketClaimDAONew:                        artifacts.require('RocketClaimDAO.sol'),
     rocketDAOProtocolSettingsRewardsNew:      artifacts.require('RocketDAOProtocolSettingsRewards.sol'),
     rocketMinipoolManagerNew:                 artifacts.require('RocketMinipoolManager.sol'),
+    rocketRewardsPoolNew:                     artifacts.require('RocketRewardsPool.sol'),
+    rocketNetworkBalancesNew:                 artifacts.require('RocketNetworkBalances.sol'),
     rocketUpgradeOneDotThree:                 artifacts.require('RocketUpgradeOneDotThree.sol'),
     // Utils
     addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
@@ -254,6 +256,8 @@ export async function deployRocketPool() {
                                 (await contracts.rocketClaimDAONew.deployed()).address,
                                 (await contracts.rocketDAOProtocolSettingsRewardsNew.deployed()).address,
                                 (await contracts.rocketMinipoolManagerNew.deployed()).address,
+                                (await contracts.rocketRewardsPoolNew.deployed()).address,
+                                (await contracts.rocketNetworkBalancesNew.deployed()).address,
                                 (await contracts.rocketDAOProtocolVerifier.deployed()).address,
                                 (await contracts.rocketDAOProtocolSettingsProposals.deployed()).address,
                                 (await contracts.rocketDAOProtocolSettingsSecurity.deployed()).address,
@@ -273,6 +277,8 @@ export async function deployRocketPool() {
                                 compressABI(contracts.rocketClaimDAONew.abi),
                                 compressABI(contracts.rocketDAOProtocolSettingsRewardsNew.abi),
                                 compressABI(contracts.rocketMinipoolManagerNew.abi),
+                                compressABI(contracts.rocketRewardsPoolNew.abi),
+                                compressABI(contracts.rocketNetworkBalancesNew.abi),
                                 compressABI(contracts.rocketDAOProtocolVerifier.abi),
                                 compressABI(contracts.rocketDAOProtocolSettingsProposals.abi),
                                 compressABI(contracts.rocketDAOProtocolSettingsSecurity.abi),
@@ -327,6 +333,8 @@ export async function deployRocketPool() {
                     case 'rocketClaimDAONew':
                     case 'rocketDAOProtocolSettingsRewardsNew':
                     case 'rocketMinipoolManagerNew':
+                    case 'rocketRewardsPoolNew':
+                    case 'rocketNetworkBalancesNew':
                     case 'rocketDAOProtocolVerifier':
                     case 'rocketDAOProtocolSettingsProposals':
                     case 'rocketDAOProtocolSettingsSecurity':
