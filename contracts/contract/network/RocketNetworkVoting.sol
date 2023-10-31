@@ -107,6 +107,7 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         return calculateVotingPower(rplStake, ethMatched, ethProvided, rplPrice);
     }
 
+    /// @dev Calculates and returns a node's voting power based on the given inputs
     function calculateVotingPower(uint256 rplStake, uint256 matchedETH, uint256 providedETH, uint256 rplPrice) internal view returns (uint256) {
         // Get contracts
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
