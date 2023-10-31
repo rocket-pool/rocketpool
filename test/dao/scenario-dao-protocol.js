@@ -14,10 +14,11 @@ export const proposalStates = {
     ActivePhase2 : 2,
     Cancelled    : 3,
     Vetoed       : 4,
-    Defeated     : 5,
-    Succeeded    : 6,
-    Expired      : 7,
-    Executed     : 8
+    QuorumNotMet : 5,
+    Defeated     : 6,
+    Succeeded    : 7,
+    Expired      : 8,
+    Executed     : 9
 };
 
 // Get the status of a proposal
