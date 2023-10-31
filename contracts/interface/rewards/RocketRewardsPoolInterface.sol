@@ -14,6 +14,7 @@ interface RocketRewardsPoolInterface {
     function getClaimIntervalTime() external view returns(uint256);
     function getClaimIntervalsPassed() external view returns(uint256);
     function getClaimIntervalExecutionBlock(uint256 _interval) external view returns(uint256);
+    function getClaimIntervalExecutionAddress(uint256 _interval) external view returns(address);
     function getClaimingContractPerc(string memory _claimingContract) external view returns(uint256);
     function getClaimingContractsPerc(string[] memory _claimingContracts) external view returns (uint256[] memory);
     function getTrustedNodeSubmitted(address _trustedNodeAddress, uint256 _rewardIndex) external view returns (bool);

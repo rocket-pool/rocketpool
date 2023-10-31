@@ -93,9 +93,10 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, txOpti
         web3.eth.getBalance(rocketTokenRETH.address)
     ]);
 
-    let alreadyExecuted = submission.rewardIndex != rewardIndex1;
+    let alreadyExecuted = submission.rewardIndex !== rewardIndex1;
     // Submit prices
     await rocketRewardsPool.submitRewardSnapshot(submission, txOptions);
+    const actualExecutionBlock = await web3.eth.getBlockNumber();
     assert.isTrue( await rocketRewardsPool.getSubmissionFromNodeExists(txOptions.from, submission));
 
     // Get updated submission details & prices
@@ -126,6 +127,12 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, txOpti
         assertBN.equal(rewardIndex2, rewardIndex1.add('1'.BN), 'Incorrect updated network prices block');
         assertBN.equal(userETHChange, userETH, 'User ETH balance not correct');
         assertBN.equal(treasuryRPLChange, treasuryRPL, 'Treasury RPL balance not correct');
+
+        // Check block and address
+        const executionBlock = await rocketRewardsPool.getClaimIntervalExecutionBlock(index);
+        const executionAddress = await rocketRewardsPool.getClaimIntervalExecutionAddress(index);
+        assert.equal(executionBlock, actualExecutionBlock);
+        assert.equal(executionAddress, rocketRewardsPool.address);
     } else {
         assertBN.equal(rewardIndex2, rewardIndex1, 'Incorrect updated network prices block');
         assertBN.equal(rethBalance1, rethBalance2, 'User ETH balance changed');

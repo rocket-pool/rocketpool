@@ -94,6 +94,12 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         return getUint(keccak256(abi.encodePacked("rewards.pool.interval.execution.block", _interval)));
     }
 
+    /// @notice Returns the address of the contract which was used to execute this reward interval
+    /// @param _interval The interval for which to grab the address of
+    function getClaimIntervalExecutionAddress(uint256 _interval) override external view returns(address) {
+        return getAddress(keccak256(abi.encodePacked("rewards.pool.interval.execution.address", _interval)));
+    }
+
     /**
     * @notice Get the percentage this contract can claim in this interval
     * @return uint256 Rewards percentage this contract can claim in this interval
@@ -221,6 +227,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // Emit reward snapshot event
         emit RewardSnapshot(_submission.rewardIndex, _submission, claimIntervalTimeStart, claimIntervalTimeEnd, block.timestamp);
         setUint(keccak256(abi.encodePacked("rewards.pool.interval.execution.block", _submission.rewardIndex)), block.number);
+        setAddress(keccak256(abi.encodePacked("rewards.pool.interval.execution.address", _submission.rewardIndex)), address(this));
         setUint(keccak256("rewards.pool.claim.interval.time.start"), claimIntervalTimeEnd);
         // Send out the treasury rewards
         if (_submission.treasuryRPL > 0) {
