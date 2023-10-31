@@ -1,15 +1,17 @@
 import {
     RocketClaimDAO,
     RocketDAONodeTrusted,
-    RocketRewardsPool,
+    RocketRewardsPool, RocketRewardsPoolNew,
     RocketTokenRETH, RocketTokenRPL,
 } from '../_utils/artifacts';
 import { parseRewardsMap } from '../_utils/merkle-tree';
 import { assertBN } from '../_helpers/bn';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Submit rewards
 export async function submitRewards(index, rewards, treasuryRPL, userETH, txOptions) {
+    const upgraded = await upgradeExecuted();
 
     // Load contracts
     const [
@@ -20,7 +22,7 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, txOpti
         rocketClaimDAO
     ] = await Promise.all([
         RocketDAONodeTrusted.deployed(),
-        RocketRewardsPool.deployed(),
+        upgraded ? RocketRewardsPoolNew.deployed() : RocketRewardsPool.deployed(),
         RocketTokenRETH.deployed(),
         RocketTokenRPL.deployed(),
         RocketClaimDAO.deployed()
@@ -93,7 +95,7 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, txOpti
         web3.eth.getBalance(rocketTokenRETH.address)
     ]);
 
-    let alreadyExecuted = submission.rewardIndex !== rewardIndex1;
+    let alreadyExecuted = submission.rewardIndex !== rewardIndex1.toNumber();
     // Submit prices
     await rocketRewardsPool.submitRewardSnapshot(submission, txOptions);
     const actualExecutionBlock = await web3.eth.getBlockNumber();
@@ -143,12 +145,13 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, txOpti
 
 // Execute a reward period that already has consensus
 export async function executeRewards(index, rewards, treasuryRPL, userETH, txOptions) {
+    const upgraded = await upgradeExecuted();
 
     // Load contracts
     const [
         rocketRewardsPool,
     ] = await Promise.all([
-        RocketRewardsPool.deployed(),
+        upgraded ? RocketRewardsPoolNew.deployed() : RocketRewardsPool.deployed(),
     ]);
 
     // Construct the merkle tree

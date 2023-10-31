@@ -44,3 +44,4 @@ export function injectBNHelpers() {
 }
 
 export const assertBN = _assertBN;
+
