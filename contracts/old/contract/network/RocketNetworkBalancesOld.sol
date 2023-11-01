@@ -134,7 +134,7 @@ contract RocketNetworkBalancesOld is RocketBase, RocketNetworkBalancesInterfaceO
         // Load contracts
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         // Get the block balances were lasted updated and the update frequency
-        uint256 updateFrequency = rocketDAOProtocolSettingsNetwork.getSubmitBalancesFrequency();
+        uint256 updateFrequency = rocketDAOProtocolSettingsNetwork.getSubmitBalancesEpochs();
         // Calculate the last reportable block based on update frequency
         return block.number / updateFrequency * updateFrequency;
     }

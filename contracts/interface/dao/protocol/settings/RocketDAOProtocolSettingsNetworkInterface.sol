@@ -7,9 +7,9 @@ interface RocketDAOProtocolSettingsNetworkInterface {
     function getNodePenaltyThreshold() external view returns (uint256);
     function getPerPenaltyRate() external view returns (uint256);
     function getSubmitBalancesEnabled() external view returns (bool);
-    function getSubmitBalancesFrequency() external view returns (uint256);
+    function getSubmitBalancesEpochs() external view returns (uint256);
     function getSubmitPricesEnabled() external view returns (bool);
-    function getSubmitPricesFrequency() external view returns (uint256);
+    function getSubmitPricesEpochs() external view returns (uint256);
     function getMinimumNodeFee() external view returns (uint256);
     function getTargetNodeFee() external view returns (uint256);
     function getMaximumNodeFee() external view returns (uint256);

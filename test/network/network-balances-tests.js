@@ -95,18 +95,19 @@ export default function() {
 
             // Set parameters
             let block = 1;
+            let slotTimestamp = '1600000000'; 
             let totalBalance = '10'.ether;
             let stakingBalance = '9'.ether;
             let rethSupply = '8'.ether;
 
             // Submit different balances
-            await submitBalances(block, totalBalance, stakingBalance, '7'.ether, {
+            await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, '7'.ether, {
                 from: trustedNode1,
             });
-            await submitBalances(block, totalBalance, stakingBalance, '6'.ether, {
+            await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, '6'.ether, {
                 from: trustedNode2,
             });
-            await submitBalances(block, totalBalance, stakingBalance, '5'.ether, {
+            await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, '5'.ether, {
                 from: trustedNode3,
             });
 
@@ -114,10 +115,10 @@ export default function() {
             block = 2;
 
             // Submit identical balances to trigger update
-            await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await submitBalances(block, slotTimestamp,  totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode1,
             });
-            await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode2,
             });
 
@@ -128,6 +129,7 @@ export default function() {
 
             // Set parameters
             let block = 1;
+            let slotTimestamp = '1600000000'; 
             let totalBalance = '10'.ether;
             let stakingBalance = '9'.ether;
             let rethSupply = '8'.ether;
@@ -136,7 +138,7 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.balances.enabled', false, {from: owner});
 
             // Attempt to submit balances
-            await shouldRevert(submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await shouldRevert(submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode1,
             }), 'Submitted balances while balance submissions were disabled');
 
@@ -150,12 +152,13 @@ export default function() {
 
             // Set parameters
             let block = blockCurrent + 1;
+            let slotTimestamp = '1600000000'; 
             let totalBalance = '10'.ether;
             let stakingBalance = '9'.ether;
             let rethSupply = '8'.ether;
 
             // Attempt to submit balances for future block
-            await shouldRevert(submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await shouldRevert(submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode1,
             }), 'Submitted balances for a future block');
 
@@ -166,20 +169,21 @@ export default function() {
 
             // Set parameters
             let block = 2;
+            let slotTimestamp = '1600000000'; 
             let totalBalance = '10'.ether;
             let stakingBalance = '9'.ether;
             let rethSupply = '8'.ether;
 
             // Submit balances for block to trigger update
-            await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode1,
             });
-            await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode2,
             });
 
             // Attempt to submit balances for lower block
-            await shouldRevert(submitBalances(block - 1, totalBalance, stakingBalance, rethSupply, {
+            await shouldRevert(submitBalances(block - 1, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode3,
             }), 'Submitted balances for a lower block');
 
@@ -189,20 +193,21 @@ export default function() {
 
             // Set parameters
             let block = 2;
+            let slotTimestamp = '1600000000'; 
             let totalBalance = '10'.ether;
             let stakingBalance = '9'.ether;
             let rethSupply = '8'.ether;
 
             // Submit balances for block to trigger update
-            await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode1,
             });
-            await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode2,
             });
 
             // Attempt to submit balances for current block
-            await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode3,
             });
 
@@ -212,17 +217,18 @@ export default function() {
 
             // Set parameters
             let block = 1;
+            let slotTimestamp = '1600000000'; 
             let totalBalance = '10'.ether;
             let stakingBalance = '9'.ether;
             let rethSupply = '8'.ether;
 
             // Submit balances for block
-            await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode1,
             });
 
             // Attempt to submit balances for block again
-            await shouldRevert(submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await shouldRevert(submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode1,
             }), 'Submitted the same network balances twice');
 
@@ -233,12 +239,13 @@ export default function() {
 
             // Set parameters
             let block = 1;
+            let slotTimestamp = '1600000000'; 
             let totalBalance = '10'.ether;
             let stakingBalance = '9'.ether;
             let rethSupply = '8'.ether;
 
             // Attempt to submit balances
-            await shouldRevert(submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await shouldRevert(submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: node,
             }), 'Regular node submitted network balances');
 
@@ -250,20 +257,21 @@ export default function() {
             await trustedNode4JoinDao();
             // Set parameters
             let block = 1;
+            let slotTimestamp = '1600000000'; 
             let totalBalance = '10'.ether;
             let stakingBalance = '9'.ether;
             let rethSupply = '8'.ether;
             // Submit same parameters from 2 nodes (not enough for 4 member consensus but enough for 3)
-            await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode1,
             });
-            await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode2,
             });
             // trustedNode4 leaves the DAO
             await trustedNode4LeaveDao();
             // There is now consensus with the remaining 3 trusted nodes about the balances, try to execute the update
-            await executeUpdateBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await executeUpdateBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: random
             })
         });
@@ -274,18 +282,19 @@ export default function() {
             await trustedNode4JoinDao();
             // Set parameters
             let block = 1;
+            let slotTimestamp = '1600000000'; 
             let totalBalance = '10'.ether;
             let stakingBalance = '9'.ether;
             let rethSupply = '8'.ether;
             // Submit same price from 2 nodes (not enough for 4 member consensus)
-            await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode1,
             });
-            await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode2,
             });
             // There is no consensus so execute should fail
-            await shouldRevert(executeUpdateBalances(block, totalBalance, stakingBalance, rethSupply, {
+            await shouldRevert(executeUpdateBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: random
             }), 'Random account could execute update balances without consensus')
         });

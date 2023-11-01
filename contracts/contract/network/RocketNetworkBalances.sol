@@ -1,5 +1,5 @@
 pragma solidity 0.8.18;
-
+pragma abicoder v2;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
@@ -11,8 +11,8 @@ import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkIn
 contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
 
     // Events
-    event BalancesSubmitted(address indexed from, uint256 block, uint256 totalEth, uint256 stakingEth, uint256 rethSupply, uint256 time);
-    event BalancesUpdated(uint256 block, uint256 totalEth, uint256 stakingEth, uint256 rethSupply, uint256 time);
+    event BalancesSubmitted(address indexed from, uint256 block, uint256 slotTimestamp, uint256 totalEth, uint256 stakingEth, uint256 rethSupply, uint256 blockTimestamp);
+    event BalancesUpdated(uint256 block, uint256 slotTimestamp, uint256 totalEth, uint256 stakingEth, uint256 rethSupply, uint256 blockTimestamp);
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -66,7 +66,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
 
     /// @notice Submit network balances for a block
     /// Only accepts calls from trusted (oracle) nodes
-    function submitBalances(uint256 _block, uint256 _totalEth, uint256 _stakingEth, uint256 _rethSupply) override external onlyLatestContract("rocketNetworkBalances", address(this)) onlyTrustedNode(msg.sender) {
+    function submitBalances(uint256 _block, uint256 _slotTimestamp, uint256 _totalEth, uint256 _stakingEth, uint256 _rethSupply) override external onlyLatestContract("rocketNetworkBalances", address(this)) onlyTrustedNode(msg.sender) {
         // Check settings
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         require(rocketDAOProtocolSettingsNetwork.getSubmitBalancesEnabled(), "Submitting balances is currently disabled");
@@ -75,8 +75,8 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         uint256 lastBalancesBlock = getBalancesBlock();
         require(_block >= lastBalancesBlock, "Network balances for a higher block are set");
         // Get submission keys
-        bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("network.balances.submitted.node", msg.sender, _block, _totalEth, _stakingEth, _rethSupply));
-        bytes32 submissionCountKey = keccak256(abi.encodePacked("network.balances.submitted.count", _block, _totalEth, _stakingEth, _rethSupply));
+        bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("network.balances.submitted.node", msg.sender, _block, _slotTimestamp, _totalEth, _stakingEth, _rethSupply));
+        bytes32 submissionCountKey = keccak256(abi.encodePacked("network.balances.submitted.count", _block, _slotTimestamp, _totalEth, _stakingEth, _rethSupply));
         // Check & update node submission status
         require(!getBool(nodeSubmissionKey), "Duplicate submission from node");
         setBool(nodeSubmissionKey, true);
@@ -85,7 +85,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         uint256 submissionCount = getUint(submissionCountKey) + 1;
         setUint(submissionCountKey, submissionCount);
         // Emit balances submitted event
-        emit BalancesSubmitted(msg.sender, _block, _totalEth, _stakingEth, _rethSupply, block.timestamp);
+        emit BalancesSubmitted(msg.sender, _block, _slotTimestamp, _totalEth, _stakingEth, _rethSupply, block.timestamp);
         // If voting past consensus, return
         if (_block == lastBalancesBlock) {
             return;
@@ -93,12 +93,12 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         // Check submission count & update network balances
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         if (calcBase * submissionCount / rocketDAONodeTrusted.getMemberCount() >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()) {
-            updateBalances(_block, _totalEth, _stakingEth, _rethSupply);
+            updateBalances(_block, _slotTimestamp, _totalEth, _stakingEth, _rethSupply);
         }
     }
 
     /// @notice Executes updateBalances if consensus threshold is reached
-    function executeUpdateBalances(uint256 _block, uint256 _totalEth, uint256 _stakingEth, uint256 _rethSupply) override external onlyLatestContract("rocketNetworkBalances", address(this)) {
+    function executeUpdateBalances(uint256 _block, uint256 _slotTimestamp, uint256 _totalEth, uint256 _stakingEth, uint256 _rethSupply) override external onlyLatestContract("rocketNetworkBalances", address(this)) {
         // Check settings
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         require(rocketDAOProtocolSettingsNetwork.getSubmitBalancesEnabled(), "Submitting balances is currently disabled");
@@ -108,33 +108,23 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         // Check balances
         require(_stakingEth <= _totalEth, "Invalid network balances");
         // Get submission keys
-        bytes32 submissionCountKey = keccak256(abi.encodePacked("network.balances.submitted.count", _block, _totalEth, _stakingEth, _rethSupply));
+        bytes32 submissionCountKey = keccak256(abi.encodePacked("network.balances.submitted.count", _block, _slotTimestamp, _totalEth, _stakingEth, _rethSupply));
         // Get submission count
         uint256 submissionCount = getUint(submissionCountKey);
         // Check submission count & update network balances
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         require(calcBase * submissionCount / rocketDAONodeTrusted.getMemberCount() >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold(), "Consensus has not been reached");
-        updateBalances(_block, _totalEth, _stakingEth, _rethSupply);
+        updateBalances(_block, _slotTimestamp, _totalEth, _stakingEth, _rethSupply);
     }
 
     /// @notice Update network balances
-    function updateBalances(uint256 _block, uint256 _totalEth, uint256 _stakingEth, uint256 _rethSupply) private {
+    function updateBalances(uint256 _block, uint256 _slotTimestamp, uint256 _totalEth, uint256 _stakingEth, uint256 _rethSupply) private {
         // Update balances
         setBalancesBlock(_block);
         setTotalETHBalance(_totalEth);
         setStakingETHBalance(_stakingEth);
         setTotalRETHSupply(_rethSupply);
         // Emit balances updated event
-        emit BalancesUpdated(_block, _totalEth, _stakingEth, _rethSupply, block.timestamp);
-    }
-
-    /// @notice Returns the latest block number that oracles should be reporting balances for
-    function getLatestReportableBlock() override external view returns (uint256) {
-        // Load contracts
-        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
-        // Get the block balances were lasted updated and the update frequency
-        uint256 updateFrequency = rocketDAOProtocolSettingsNetwork.getSubmitBalancesFrequency();
-        // Calculate the last reportable block based on update frequency
-        return block.number / updateFrequency * updateFrequency;
+        emit BalancesUpdated(_block, _slotTimestamp, _totalEth, _stakingEth, _rethSupply, block.timestamp);
     }
 }

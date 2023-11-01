@@ -4,7 +4,7 @@ import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Submit network prices
-export async function submitPrices(block, rplPrice, txOptions) {
+export async function submitPrices(block, slotTimestamp, rplPrice, txOptions) {
     const upgraded = await upgradeExecuted();
     // Load contracts
     const [
@@ -21,8 +21,8 @@ export async function submitPrices(block, rplPrice, txOptions) {
     let trustedNodeCount = await rocketDAONodeTrusted.getMemberCount.call();
 
     // Get submission keys
-    let nodeSubmissionKey = web3.utils.soliditySha3('network.prices.submitted.node.key', txOptions.from, block, rplPrice);
-    let submissionCountKey = web3.utils.soliditySha3('network.prices.submitted.count', block, rplPrice);
+    let nodeSubmissionKey = web3.utils.soliditySha3('network.prices.submitted.node.key', txOptions.from, block, slotTimestamp, rplPrice);
+    let submissionCountKey = web3.utils.soliditySha3('network.prices.submitted.count', block, slotTimestamp, rplPrice);
 
     // Get submission details
     function getSubmissionDetails() {
@@ -50,7 +50,7 @@ export async function submitPrices(block, rplPrice, txOptions) {
     let submission1 = await getSubmissionDetails();
 
     // Submit prices
-    await rocketNetworkPrices.submitPrices(block, rplPrice, txOptions);
+    await rocketNetworkPrices.submitPrices(block, slotTimestamp, rplPrice, txOptions);
 
     // Get updated submission details & prices
     let [submission2, prices] = await Promise.all([
@@ -78,7 +78,7 @@ export async function submitPrices(block, rplPrice, txOptions) {
 
 
 // Execute price update
-export async function executeUpdatePrices(block, rplPrice, txOptions) {
+export async function executeUpdatePrices(block, slotTimestamp, rplPrice, txOptions) {
     // Load contracts
     const rocketNetworkPrices = (await upgradeExecuted()) ? await RocketNetworkPricesNew.deployed() : await RocketNetworkPrices.deployed();
 
@@ -94,7 +94,7 @@ export async function executeUpdatePrices(block, rplPrice, txOptions) {
     }
 
     // Submit prices
-    await rocketNetworkPrices.executeUpdatePrices(block, rplPrice, txOptions);
+    await rocketNetworkPrices.executeUpdatePrices(block, slotTimestamp, rplPrice, txOptions);
 
     // Get updated submission details & prices
     let prices = await getPrices();

@@ -116,7 +116,7 @@ contract RocketNetworkPricesOld is RocketBase, RocketNetworkPricesInterfaceOld {
         // Load contracts
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         // Get the block prices were lasted updated and the update frequency
-        uint256 updateFrequency = rocketDAOProtocolSettingsNetwork.getSubmitPricesFrequency();
+        uint256 updateFrequency = rocketDAOProtocolSettingsNetwork.getSubmitPricesEpochs();
         // Calculate the last reportable block based on update frequency
         return block.number.div(updateFrequency).mul(updateFrequency);
     }

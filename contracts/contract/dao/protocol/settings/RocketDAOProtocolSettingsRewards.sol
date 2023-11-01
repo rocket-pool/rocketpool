@@ -3,9 +3,11 @@ pragma solidity 0.8.18;
 
 import "./RocketDAOProtocolSettings.sol";
 import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
+import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 
 /// @notice Settings relating to RPL reward intervals
 contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDAOProtocolSettingsRewardsInterface {
+    uint256 public constant SECONDS_PER_EPOCH = 384;
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "rewards") {
         version = 2;
@@ -16,7 +18,7 @@ contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDA
             setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", "rocketClaimDAO")), 0.1 ether);
             setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", "rocketClaimNode")), 0.7 ether);
             setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount.updated.time")), block.timestamp);
-            setSettingUint("rpl.rewards.claim.period.time", 28 days);                  // The time in which a claim period will span in seconds - 28 days by default
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "periods")), 28);                  // The number of submission periods in which a claim period will span - 28 periods = 28 days by default
             // Deployment check
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);  // Flag that this contract has been deployed, so default settings don't get reapplied on a contract upgrade
         }
@@ -37,6 +39,12 @@ contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDA
         setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", "rocketClaimNode")), _nodePercent);
         // Set time last updated
         setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount.updated.time")), block.timestamp);
+    }
+
+    /// @notice Updates the number of submission periods between new claiming periods
+    /// @param _periods The number of prices/balances submissions
+    function setSettingRewardClaimPeriods(uint256 _periods) override external onlyDAOProtocolProposal() {
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "periods")), _periods);
     }
 
     /// @notice Get the percentage of rewards paid to a contract by its internal name. Deprecated in favour of individual
@@ -72,8 +80,13 @@ contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDA
         return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount.updated.time")));
     } 
 
-    // The period over which claims can be made
+    /// @notice The number of submission periods after which claims can be made
+    function getRewardsClaimIntervalPeriods() override external view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "periods")));
+    }
+
     function getRewardsClaimIntervalTime() override external view returns (uint256) {
-        return getSettingUint("rpl.rewards.claim.period.time");
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
+        return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "periods"))) * rocketDAOProtocolSettingsNetwork.getSubmitBalancesEpochs() * SECONDS_PER_EPOCH;
     }
 }

@@ -9,7 +9,7 @@ import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Submit network balances
-export async function submitBalances(block, totalEth, stakingEth, rethSupply, txOptions) {
+export async function submitBalances(block, slotTimestamp, totalEth, stakingEth, rethSupply, txOptions) {
     const upgraded = await upgradeExecuted();
 
     // Load contracts
@@ -27,8 +27,8 @@ export async function submitBalances(block, totalEth, stakingEth, rethSupply, tx
     let trustedNodeCount = await rocketDAONodeTrusted.getMemberCount.call();
 
     // Get submission keys
-    let nodeSubmissionKey = web3.utils.soliditySha3('network.balances.submitted.node', txOptions.from, block, totalEth, stakingEth, rethSupply);
-    let submissionCountKey = web3.utils.soliditySha3('network.balances.submitted.count', block, totalEth, stakingEth, rethSupply);
+    let nodeSubmissionKey = web3.utils.soliditySha3('network.balances.submitted.node', txOptions.from, block, slotTimestamp, totalEth, stakingEth, rethSupply);
+    let submissionCountKey = web3.utils.soliditySha3('network.balances.submitted.count', block, slotTimestamp, totalEth, stakingEth, rethSupply);
 
     // Get submission details
     function getSubmissionDetails() {
@@ -58,7 +58,7 @@ export async function submitBalances(block, totalEth, stakingEth, rethSupply, tx
     let submission1 = await getSubmissionDetails();
 
     // Submit balances
-    await rocketNetworkBalances.submitBalances(block, totalEth, stakingEth, rethSupply, txOptions);
+    await rocketNetworkBalances.submitBalances(block, slotTimestamp, totalEth, stakingEth, rethSupply, txOptions);
 
     // Get updated submission details & balances
     let [submission2, balances] = await Promise.all([
@@ -89,7 +89,7 @@ export async function submitBalances(block, totalEth, stakingEth, rethSupply, tx
 }
 
 // Execute update network balances
-export async function executeUpdateBalances(block, totalEth, stakingEth, rethSupply, txOptions) {
+export async function executeUpdateBalances(block, slotTimestamp, totalEth, stakingEth, rethSupply, txOptions) {
     // Load contracts
     const rocketNetworkBalances = (await upgradeExecuted()) ? await RocketNetworkBalancesNew.deployed() : await RocketNetworkBalances.deployed();
 
@@ -107,7 +107,7 @@ export async function executeUpdateBalances(block, totalEth, stakingEth, rethSup
     }
 
     // Submit balances
-    await rocketNetworkBalances.executeUpdateBalances(block, totalEth, stakingEth, rethSupply, txOptions);
+    await rocketNetworkBalances.executeUpdateBalances(block, slotTimestamp, totalEth, stakingEth, rethSupply, txOptions);
 
     // Get updated balances
     let balances = await getBalances()
