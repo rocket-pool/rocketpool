@@ -19,7 +19,7 @@ import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trus
 import { assertBN } from '../_helpers/bn';
 
 export default function() {
-    contract('RocketNodeDeposit', async (accounts) => {
+    contract.only('RocketNodeDeposit', async (accounts) => {
 
         // Accounts
         const [

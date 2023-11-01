@@ -25,9 +25,11 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
 
     // Events
     event DepositReceived(address indexed from, uint256 amount, uint256 time);
+    event DepositFor(address indexed nodeAddress, address indexed from, uint256 amount, uint256 time);
+    event Withdrawal(address indexed nodeAddress, address indexed to, uint256 amount, uint256 time);
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 3;
+        version = 4;
     }
 
     /// @dev Accept incoming ETH from the deposit pool
@@ -38,6 +40,32 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         return getUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeOperator)));
     }
 
+    /// @notice Returns the current ETH balance for the given node operator
+    function getNodeEthBalance(address _nodeAddress) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("node.eth.balance", _nodeAddress)));
+    }
+
+    /// @notice Returns the sum of the credit balance of a given node operator and their balance
+    function getNodeCreditAndBalance(address _nodeAddress) override external view returns (uint256) {
+        return getNodeDepositCredit(_nodeAddress) + getNodeEthBalance(_nodeAddress);
+    }
+
+    /// @notice Returns the sum of the amount of ETH credit currently usable by a given node operator and their balance
+    function getNodeUsableCreditAndBalance(address _nodeAddress) override external view returns (uint256) {
+        return getNodeUsableCredit(_nodeAddress) + getNodeEthBalance(_nodeAddress);
+    }
+
+    /// @notice Returns the amount of ETH credit currently usable by a given node operator
+    function getNodeUsableCredit(address _nodeAddress) override public view returns (uint256) {
+        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+        uint256 depositPoolBalance = rocketDepositPool.getBalance();
+        uint256 usableCredit = getNodeDepositCredit(_nodeAddress);
+        if (usableCredit > depositPoolBalance) {
+            usableCredit = depositPoolBalance;
+        }
+        return usableCredit;
+    }
+
     /// @dev Increases a node operators deposit credit balance
     function increaseDepositCreditBalance(address _nodeOperator, uint256 _amount) override external onlyLatestContract("rocketNodeDeposit", address(this)) {
         // Accept calls from network contracts or registered minipools
@@ -46,6 +74,40 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
             "Invalid or outdated network contract");
         // Increase credit balance
         addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeOperator)), _amount);
+    }
+
+    /// @notice Deposits ETH for the given node operator
+    /// @param _nodeAddress The address of the node operator to deposit ETH for
+    function depositEthFor(address _nodeAddress) override external payable onlyRegisteredMinipool(_nodeAddress) {
+        // Send the ETH to vault
+        uint256 amount = msg.value;
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        rocketVault.depositEther{value: amount}();
+        // Increment balance
+        addUint(keccak256(abi.encodePacked("node.eth.balance", _nodeAddress)), amount);
+        // Log it
+        emit DepositFor(_nodeAddress, msg.sender, amount, block.timestamp);
+    }
+
+    /// @notice Withdraws ETH from a node operator's balance. Must be called from withdrawal address.
+    /// @param _nodeAddress Address of the node operator to withdraw from
+    /// @param _amount Amount of ETH to withdraw
+    function withdrawEth(address _nodeAddress, uint256 _amount) external onlyRegisteredMinipool(_nodeAddress) {
+        // Check valid caller
+        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
+        require(msg.sender == withdrawalAddress, "Only withdrawal address can withdraw ETH");
+        // Check balance and update
+        uint256 balance = getNodeEthBalance(_nodeAddress);
+        require(balance >= _amount, "Insufficient balance");
+        setUint(keccak256(abi.encodePacked("node.eth.balance", _nodeAddress)), balance - _amount);
+        // Withdraw the funds
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        rocketVault.withdrawEther(_amount);
+        // Send funds to withdrawalAddress
+        (bool success, ) = withdrawalAddress.call{value: _amount}("");
+        require(success, "Failed to withdraw ETH");
+        // Log it
+        emit DepositFor(_nodeAddress, withdrawalAddress, _amount, block.timestamp);
     }
 
     /// @notice Accept a node deposit and create a new minipool under the node. Only accepts calls from registered nodes
@@ -72,16 +134,30 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     /// @param _salt Salt used to deterministically construct the minipool's address
     /// @param _expectedMinipoolAddress The expected deterministic minipool address. Will revert if it doesn't match
     function depositWithCredit(uint256 _bondAmount, uint256 _minimumNodeFee, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot, uint256 _salt, address _expectedMinipoolAddress) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(msg.sender) {
-        // Query node's deposit credit
-        uint256 credit = getNodeDepositCredit(msg.sender);
-        // Credit balance accounting
-        if (credit < _bondAmount) {
-            uint256 shortFall = _bondAmount - credit;
-            require(msg.value == shortFall, "Invalid value");
-            setUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), 0);
-        } else {
-            require(msg.value == 0, "Invalid value");
-            subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), _bondAmount);
+        {
+            uint256 balanceToUse = 0;
+            uint256 creditToUse = 0;
+            uint256 shortFall = _bondAmount - msg.value;
+            uint256 credit = getNodeUsableCredit(msg.sender);
+            uint256 balance = getNodeEthBalance(msg.sender);
+            // Check credit
+            require (credit + balance >= shortFall, "Insufficient credit");
+            // Calculate amounts to use
+            creditToUse = shortFall;
+            if (credit < shortFall) {
+                balanceToUse = shortFall - credit;
+                creditToUse = credit;
+            }
+            // Update balances
+            if (balanceToUse > 0) {
+                subUint(keccak256(abi.encodePacked("node.eth.balance", msg.sender)), balanceToUse);
+                // Withdraw the funds
+                RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+                rocketVault.withdrawEther(balanceToUse);
+            }
+            if (creditToUse > 0) {
+                subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), creditToUse);
+            }
         }
         // Process the deposit
         _deposit(_bondAmount, _minimumNodeFee, _validatorPubkey, _validatorSignature, _depositDataRoot, _salt, _expectedMinipoolAddress);
@@ -114,11 +190,6 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
             RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
             launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
             preLaunchValue = rocketDAOProtocolSettingsMinipool.getPreLaunchValue();
-        }
-        // Check that pre deposit won't fail
-        if (msg.value < preLaunchValue) {
-            RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-            require(preLaunchValue- msg.value <= rocketDepositPool.getBalance(), "Deposit pool balance is insufficient for pre deposit");
         }
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, block.timestamp);
