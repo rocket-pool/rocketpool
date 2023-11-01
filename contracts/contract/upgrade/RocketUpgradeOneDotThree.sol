@@ -26,6 +26,7 @@ contract RocketUpgradeOneDotThree is RocketBase {
     address public newRocketMinipoolManager;
     address public newRocketRewardsPool;
     address public newRocketNetworkBalances;
+    address public newRocketDAOProtocolSettingsNetwork;
     address public rocketDAOProtocolVerifier;
     address public rocketDAOProtocolSettingsProposals;
     address public rocketDAOProtocolSettingsSecurity;
@@ -47,6 +48,7 @@ contract RocketUpgradeOneDotThree is RocketBase {
     string public newRocketMinipoolManagerAbi;
     string public newRocketRewardsPoolAbi;
     string public newRocketNetworkBalancesAbi;
+    string public newRocketDAOProtocolSettingsNetworkAbi;
     string public rocketDAOProtocolVerifierAbi;
     string public rocketDAOProtocolSettingsProposalsAbi;
     string public rocketDAOProtocolSettingsSecurityAbi;
@@ -89,14 +91,15 @@ contract RocketUpgradeOneDotThree is RocketBase {
         newRocketMinipoolManager = _addresses[8];
         newRocketRewardsPool = _addresses[9];
         newRocketNetworkBalances = _addresses[10];
-        rocketDAOProtocolVerifier = _addresses[11];
-        rocketDAOProtocolSettingsProposals = _addresses[12];
-        rocketDAOProtocolSettingsSecurity = _addresses[13];
-        rocketDAOSecurity = _addresses[14];
-        rocketDAOSecurityActions = _addresses[15];
-        rocketDAOSecurityProposals = _addresses[16];
-        rocketNetworkSnapshots = _addresses[17];
-        rocketNetworkVoting = _addresses[18];
+        newRocketDAOProtocolSettingsNetwork = _addresses[11];
+        rocketDAOProtocolVerifier = _addresses[12];
+        rocketDAOProtocolSettingsProposals = _addresses[13];
+        rocketDAOProtocolSettingsSecurity = _addresses[14];
+        rocketDAOSecurity = _addresses[15];
+        rocketDAOSecurityActions = _addresses[16];
+        rocketDAOSecurityProposals = _addresses[17];
+        rocketNetworkSnapshots = _addresses[18];
+        rocketNetworkVoting = _addresses[19];
 
         // Set ABIs
         newRocketDAOProtocolAbi = _abis[0];
@@ -110,14 +113,15 @@ contract RocketUpgradeOneDotThree is RocketBase {
         newRocketMinipoolManagerAbi = _abis[8];
         newRocketRewardsPoolAbi = _abis[9];
         newRocketNetworkBalancesAbi = _abis[10];
-        rocketDAOProtocolVerifierAbi = _abis[11];
-        rocketDAOProtocolSettingsProposalsAbi = _abis[12];
-        rocketDAOProtocolSettingsSecurityAbi = _abis[13];
-        rocketDAOSecurityAbi = _abis[14];
-        rocketDAOSecurityActionsAbi = _abis[15];
-        rocketDAOSecurityProposalsAbi = _abis[16];
-        rocketNetworkSnapshotsAbi = _abis[17];
-        rocketNetworkVotingAbi = _abis[18];
+        newRocketDAOProtocolSettingsNetworkAbi = _abis[11];
+        rocketDAOProtocolVerifierAbi = _abis[12];
+        rocketDAOProtocolSettingsProposalsAbi = _abis[13];
+        rocketDAOProtocolSettingsSecurityAbi = _abis[14];
+        rocketDAOSecurityAbi = _abis[15];
+        rocketDAOSecurityActionsAbi = _abis[16];
+        rocketDAOSecurityProposalsAbi = _abis[17];
+        rocketNetworkSnapshotsAbi = _abis[18];
+        rocketNetworkVotingAbi = _abis[19];
     }
 
     /// @notice Prevents further changes from being applied
@@ -143,6 +147,7 @@ contract RocketUpgradeOneDotThree is RocketBase {
         _upgradeContract("rocketMinipoolManager", newRocketMinipoolManager, newRocketMinipoolManagerAbi);
         _upgradeContract("rocketRewardsPool", newRocketRewardsPool, newRocketRewardsPoolAbi);
         _upgradeContract("rocketNetworkBalances", newRocketNetworkBalances, newRocketNetworkBalancesAbi);
+        _upgradeContract("rocketDAOProtocolSettingsNetwork", newRocketDAOProtocolSettingsNetwork, newRocketDAOProtocolSettingsNetworkAbi);
 
         // Add new contracts
         _addContract("rocketDAOProtocolVerifier", rocketDAOProtocolVerifier, rocketDAOProtocolVerifierAbi);
@@ -166,13 +171,22 @@ contract RocketUpgradeOneDotThree is RocketBase {
         setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.veto.quorum")), 0.51 ether);       // The quorum required to veto a proposal
         setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.max.block.age")), 1024);           // The maximum age of a block a proposal can be raised at
 
+        // pDAO network settings
+        settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "network"));
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.submit.balances.epochs")), 225);          // 24 hours
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.submit.prices.epochs")), 225);            // 24 hours
+
+        // pDAO rewards settings
+        settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "rewards"));
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "periods")), 28);
+
         // pDAO security council settings
         settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "security"));
-        setUint(keccak256(abi.encodePacked("members.quorum")), 0.51 ether);       // Member quorum threshold that must be met for proposals to pass (51%)
-        setUint(keccak256(abi.encodePacked("members.leave.time")), 4 weeks);      // How long a member must give notice for before manually leaving the security council
-        setUint(keccak256(abi.encodePacked("proposal.vote.time")), 2 weeks);      // How long a proposal can be voted on
-        setUint(keccak256(abi.encodePacked("proposal.execute.time")), 4 weeks);   // How long a proposal can be executed after its voting period is finished
-        setUint(keccak256(abi.encodePacked("proposal.action.time")), 4 weeks);    // Certain proposals require a secondary action to be run after the proposal is successful (joining, leaving etc). This is how long until that action expires
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "members.quorum")), 0.51 ether);       // Member quorum threshold that must be met for proposals to pass (51%)
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "members.leave.time")), 4 weeks);      // How long a member must give notice for before manually leaving the security council
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.vote.time")), 2 weeks);      // How long a proposal can be voted on
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.execute.time")), 4 weeks);   // How long a proposal can be executed after its voting period is finished
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.action.time")), 4 weeks);    // Certain proposals require a secondary action to be run after the proposal is successful (joining, leaving etc). This is how long until that action expires
 
         // Default permissions for security council
         setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "deposit", "deposit.enabled")), true);

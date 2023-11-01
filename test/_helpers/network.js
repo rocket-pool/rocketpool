@@ -1,5 +1,5 @@
 import {
-    RocketNetworkBalances,
+    RocketNetworkBalances, RocketNetworkBalancesNew,
     RocketNetworkFees,
     RocketNetworkPrices, RocketNetworkPricesNew,
     RocketNetworkVoting,
@@ -33,16 +33,26 @@ export async function getETHUtilizationRate() {
 
 
 // Submit network balances
-export async function submitBalances(block, totalEth, stakingEth, rethSupply, txOptions) {
-    const rocketNetworkBalances = await RocketNetworkBalances.deployed();
-    await rocketNetworkBalances.submitBalances(block, totalEth, stakingEth, rethSupply, txOptions);
+export async function submitBalances(block, slotTimestamp, totalEth, stakingEth, rethSupply, txOptions) {
+    if (await upgradeExecuted()) {
+        const rocketNetworkBalances = await RocketNetworkBalancesNew.deployed();
+        await rocketNetworkBalances.submitBalances(block, slotTimestamp, totalEth, stakingEth, rethSupply, txOptions);
+    } else {
+        const rocketNetworkBalances = await RocketNetworkBalances.deployed();
+        await rocketNetworkBalances.submitBalances(block, totalEth, stakingEth, rethSupply, txOptions);
+    }
 }
 
 
 // Submit network token prices
-export async function submitPrices(block, rplPrice, txOptions) {
-    const rocketNetworkPrices = (await upgradeExecuted()) ? await RocketNetworkPricesNew.deployed() : await RocketNetworkPrices.deployed();
-    await rocketNetworkPrices.submitPrices(block, rplPrice, txOptions);
+export async function submitPrices(block, slotTimestamp, rplPrice, txOptions) {
+    if (await upgradeExecuted()) {
+        const rocketNetworkPrices = await RocketNetworkPricesNew.deployed();
+        await rocketNetworkPrices.submitPrices(block, slotTimestamp, rplPrice, txOptions);
+    } else {
+        const rocketNetworkPrices = await RocketNetworkPrices.deployed();
+        await rocketNetworkPrices.submitPrices(block, rplPrice, txOptions);
+    }
 }
 
 

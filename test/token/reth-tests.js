@@ -43,6 +43,8 @@ export default function() {
         const userDistributeStartTime = 60 * 60 * 24 * 90; // 90 days
 
         before(async () => {
+            let slotTimestamp = '1600000000';
+
             // Get current rETH exchange rate
             let exchangeRate1 = await getRethExchangeRate();
 
@@ -83,7 +85,7 @@ export default function() {
             let halfRewards = rewards.divn(2);
             let nodeCommissionFee = halfRewards.mul(nodeFee).div('1'.ether);
             let ethBalance = userAmount.add(halfRewards.sub(nodeCommissionFee));
-            await submitBalances(1, ethBalance, 0, rethSupply, {from: trustedNode});
+            await submitBalances(1, slotTimestamp, ethBalance, 0, rethSupply, {from: trustedNode});
 
             // Get & check staker rETH balance
             rethBalance = await getRethBalance(staker1);

@@ -66,7 +66,8 @@ export default function() {
 
             // Set RPL price
             let block = await web3.eth.getBlockNumber();
-            await submitPrices(block, '1'.ether, {from: trustedNode});
+            let slotTimestamp = '1600000000';
+            await submitPrices(block, slotTimestamp, '1'.ether, {from: trustedNode});
 
             // Add penalty helper contract
             const rocketStorage = await RocketStorage.deployed();

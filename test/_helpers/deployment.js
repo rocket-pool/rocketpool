@@ -75,7 +75,7 @@ const contracts = {
     rocketDAOProtocolSettingsRewards:         artifacts.require('RocketDAOProtocolSettingsRewardsOld.sol'),
     rocketDAOProtocolSettingsAuction:         artifacts.require('RocketDAOProtocolSettingsAuction.sol'),
     rocketDAOProtocolSettingsNode:            artifacts.require('RocketDAOProtocolSettingsNode.sol'),
-    rocketDAOProtocolSettingsNetwork:         artifacts.require('RocketDAOProtocolSettingsNetwork.sol'),
+    rocketDAOProtocolSettingsNetwork:         artifacts.require('RocketDAOProtocolSettingsNetworkOld.sol'),
     rocketDAOProtocolSettingsDeposit:         artifacts.require('RocketDAOProtocolSettingsDeposit.sol'),
     rocketDAOProtocolSettingsMinipool:        artifacts.require('RocketDAOProtocolSettingsMinipool.sol'),
     // v1.1
@@ -108,6 +108,7 @@ const contracts = {
     rocketMinipoolManagerNew:                 artifacts.require('RocketMinipoolManager.sol'),
     rocketRewardsPoolNew:                     artifacts.require('RocketRewardsPool.sol'),
     rocketNetworkBalancesNew:                 artifacts.require('RocketNetworkBalances.sol'),
+    rocketDAOProtocolSettingsNetworkNew:      artifacts.require('RocketDAOProtocolSettingsNetwork.sol'),
     rocketUpgradeOneDotThree:                 artifacts.require('RocketUpgradeOneDotThree.sol'),
     // Utils
     addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
@@ -258,6 +259,7 @@ export async function deployRocketPool() {
                                 (await contracts.rocketMinipoolManagerNew.deployed()).address,
                                 (await contracts.rocketRewardsPoolNew.deployed()).address,
                                 (await contracts.rocketNetworkBalancesNew.deployed()).address,
+                                (await contracts.rocketDAOProtocolSettingsNetworkNew.deployed()).address,
                                 (await contracts.rocketDAOProtocolVerifier.deployed()).address,
                                 (await contracts.rocketDAOProtocolSettingsProposals.deployed()).address,
                                 (await contracts.rocketDAOProtocolSettingsSecurity.deployed()).address,
@@ -279,6 +281,7 @@ export async function deployRocketPool() {
                                 compressABI(contracts.rocketMinipoolManagerNew.abi),
                                 compressABI(contracts.rocketRewardsPoolNew.abi),
                                 compressABI(contracts.rocketNetworkBalancesNew.abi),
+                                compressABI(contracts.rocketDAOProtocolSettingsNetworkNew.abi),
                                 compressABI(contracts.rocketDAOProtocolVerifier.abi),
                                 compressABI(contracts.rocketDAOProtocolSettingsProposals.abi),
                                 compressABI(contracts.rocketDAOProtocolSettingsSecurity.abi),
@@ -335,6 +338,7 @@ export async function deployRocketPool() {
                     case 'rocketMinipoolManagerNew':
                     case 'rocketRewardsPoolNew':
                     case 'rocketNetworkBalancesNew':
+                    case 'rocketDAOProtocolSettingsNetworkNew':
                     case 'rocketDAOProtocolVerifier':
                     case 'rocketDAOProtocolSettingsProposals':
                     case 'rocketDAOProtocolSettingsSecurity':

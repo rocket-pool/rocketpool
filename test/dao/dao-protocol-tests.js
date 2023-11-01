@@ -67,7 +67,10 @@ export default function() {
 
         let nodeMap = {};
 
-        const rewardClaimPeriodTime = 60 * 60 * 24;
+        const secondsPerEpoch = 384;
+        let rewardClaimBalanceIntervals = 28;
+        let balanceSubmissionEpochs = 225;
+        let rewardClaimPeriodTime = (rewardClaimBalanceIntervals * balanceSubmissionEpochs * secondsPerEpoch); // 28 days
 
         // Setup
         before(async () => {
@@ -87,7 +90,8 @@ export default function() {
             voteTime = await getDaoProtocolVoteTime();
 
             // Set the reward claim period
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewardsNew, 'rpl.rewards.claim.period.time', rewardClaimPeriodTime, { from: owner });
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.balances.epochs', balanceSubmissionEpochs, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', rewardClaimBalanceIntervals, {from: owner});
         });
 
         //
@@ -510,6 +514,9 @@ export default function() {
 
             // Claim bond
             await daoProtocolClaimBondProposer(propId, [1], { from: proposer });
+
+            // Wait the withdrawal cooldown time
+            await increaseTime(hre.web3, rewardClaimPeriodTime + 1);
 
             // Withdraw excess
             await nodeWithdrawRPL('150'.ether, { from: proposer });

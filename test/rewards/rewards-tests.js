@@ -122,6 +122,8 @@ export default function() {
         before(async () => {
             await upgradeOneDotThree();
 
+            let slotTimestamp = '1600000000';
+
             // Set settings
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
@@ -143,8 +145,8 @@ export default function() {
             // Set max per-minipool stake to 100% and RPL price to 1 ether
             const block = await web3.eth.getBlockNumber();
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.per.minipool.stake.maximum', '1'.ether, {from: owner});
-            await submitPrices(block, '1'.ether, {from: registeredNodeTrusted1});
-            await submitPrices(block, '1'.ether, {from: registeredNodeTrusted2});
+            await submitPrices(block, slotTimestamp, '1'.ether, {from: registeredNodeTrusted1});
+            await submitPrices(block, slotTimestamp, '1'.ether, {from: registeredNodeTrusted2});
 
             // Mint and stake RPL
             await mintRPL(owner, registeredNode1, '32'.ether);
