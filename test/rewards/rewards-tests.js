@@ -23,8 +23,7 @@ import {
     setRPLInflationStartTime,
 } from '../dao/scenario-dao-protocol-bootstrap';
 import { mintRPL } from '../_helpers/tokens';
-import { rewardsClaimersPercTotalGet } from './scenario-rewards-claim';
-import { setDAONetworkBootstrapRewardsClaimer, setRPLInflationIntervalRate } from '../dao/scenario-dao-protocol-bootstrap';
+import { setRPLInflationIntervalRate } from '../dao/scenario-dao-protocol-bootstrap';
 
 // Contracts
 import { RocketRewardsPool } from '../_utils/artifacts';
@@ -634,7 +633,7 @@ export default function() {
         it(printTitle('random', 'cant execute reward period twice'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
-            await rewardsContractSetup('rocketClaimNode', '0.5'.ether);
+            await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
 
             // Move to inflation start plus one claim interval
             let currentTime = await getCurrentTime(web3);
@@ -670,7 +669,7 @@ export default function() {
         it(printTitle('random', 'can submit past consensus'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
-            await rewardsContractSetup('rocketClaimNode', '0.5'.ether);
+            await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
 
             // Move to inflation start plus one claim interval
             let currentTime = await getCurrentTime(web3);

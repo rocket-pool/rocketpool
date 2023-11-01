@@ -30,5 +30,8 @@
     "pako": "^1.0.6",
     "query-string": "^7.0.1",
     "web3": "^1.2.8"
+  },
+  "dependencies": {
+    "bn-sqrt": "^1.0.0"
   }
 }

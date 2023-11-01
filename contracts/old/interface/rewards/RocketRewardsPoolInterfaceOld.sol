@@ -1,11 +1,11 @@
 pragma solidity >0.5.0 <0.9.0;
 pragma abicoder v2;
 
-import "../../types/RewardSubmission.sol";
+import "../../../types/RewardSubmission.sol";
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-interface RocketRewardsPoolInterface {
+interface RocketRewardsPoolInterfaceOld {
     function getRewardIndex() external view returns(uint256);
     function getRPLBalance() external view returns(uint256);
     function getPendingRPLRewards() external view returns (uint256);

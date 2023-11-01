@@ -11,8 +11,8 @@ import { nodeStakeRPL, registerNode } from '../_helpers/node';
 import { createMinipool, getMinipoolMaximumRPLStake, getMinipoolMinimumRPLStake } from '../_helpers/minipool';
 import { mintRPL } from '../_helpers/tokens';
 import { userDeposit } from '../_helpers/deposit';
-import { increaseTime, mineBlocks } from '../_utils/evm';
 import { upgradeOneDotThree } from '../_utils/upgrade';
+import { sqrt } from 'bn-sqrt';
 
 export default function() {
     contract('RocketNetworkVoting', async (accounts) => {
@@ -60,8 +60,8 @@ export default function() {
             const votingPowerBefore = await networkVoting.getVotingPower(node, blockBefore);
             const votingPowerAfter = await networkVoting.getVotingPower(node, blockAfter);
 
-            assertBN.equal(votingPowerBefore, '2400'.ether);
-            assertBN.equal(votingPowerAfter, '4800'.ether);
+            assertBN.equal(votingPowerBefore, sqrt('2400'.ether));
+            assertBN.equal(votingPowerAfter, sqrt('4800'.ether));
         });
     });
 }

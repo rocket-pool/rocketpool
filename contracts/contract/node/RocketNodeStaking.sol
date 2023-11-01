@@ -292,11 +292,11 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @param _node The address of the node operator
     /// @param _amount The amount of RPL to lock
     function lockRPL(address _node, uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyLatestNetworkContract() {
-        // The node must have unlocked effective stake equaling or greater than the amount
-        uint256 effectiveStake = getNodeEffectiveRPLStake(_node);
+        // The node must have unlocked stake equaling or greater than the amount
+        uint256 rplStake = getNodeRPLStake(_node);
         bytes32 lockedStakeKey = keccak256(abi.encodePacked("rpl.locked.node.amount", _node));
         uint256 lockedStake = getUint(lockedStakeKey);
-        require(effectiveStake - lockedStake >= _amount, "Not enough staked RPL");
+        require(rplStake - lockedStake >= _amount, "Not enough staked RPL");
         // Increase locked RPL
         setUint(lockedStakeKey, lockedStake + _amount);
         // Emit event

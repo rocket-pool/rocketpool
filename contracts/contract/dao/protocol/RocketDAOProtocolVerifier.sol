@@ -290,7 +290,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         {
             RocketDAOProtocolProposalsInterface daoProposal = RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals"));
             RocketDAOProtocolProposalsInterface.ProposalState proposalState = daoProposal.getState(_proposalID);
-            require(proposalState >= RocketDAOProtocolProposalsInterface.ProposalState.Defeated, "Invalid proposal state");
+            require(proposalState >= RocketDAOProtocolProposalsInterface.ProposalState.QuorumNotMet, "Invalid proposal state");
         }
 
         address proposer;

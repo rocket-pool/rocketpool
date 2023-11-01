@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
+import "@openzeppelin4/contracts/utils/math/Math.sol";
+
 import "../RocketBase.sol";
 import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
@@ -105,6 +107,7 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         return calculateVotingPower(rplStake, ethMatched, ethProvided, rplPrice);
     }
 
+    /// @dev Calculates and returns a node's voting power based on the given inputs
     function calculateVotingPower(uint256 rplStake, uint256 matchedETH, uint256 providedETH, uint256 rplPrice) internal view returns (uint256) {
         // Get contracts
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
@@ -112,16 +115,10 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         uint256 maximumStakePercent = rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake();
         uint256 maximumStake = providedETH * maximumStakePercent / rplPrice;
         if (rplStake > maximumStake) {
-            return maximumStake;
+            rplStake = maximumStake;
         }
-        // If RPL stake is lower than minimum, node has no effective stake
-        uint256 minimumStakePercent = rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake();
-        uint256 minimumStake = matchedETH * minimumStakePercent / rplPrice;
-        if (rplStake < minimumStake) {
-            return 0;
-        }
-        // Otherwise, return the actual stake
-        return rplStake;
+        // Return the calculated voting power as the square root of clamped RPL stake
+        return Math.sqrt(rplStake);
     }
 
     function setDelegate(address _newDelegate) external override onlyRegisteredNode(msg.sender) {

@@ -1,15 +1,17 @@
 import {
     RocketClaimDAO,
     RocketDAONodeTrusted,
-    RocketRewardsPool,
+    RocketRewardsPool, RocketRewardsPoolNew,
     RocketTokenRETH, RocketTokenRPL,
 } from '../_utils/artifacts';
 import { parseRewardsMap } from '../_utils/merkle-tree';
 import { assertBN } from '../_helpers/bn';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Submit rewards
 export async function submitRewards(index, rewards, treasuryRPL, userETH, txOptions) {
+    const upgraded = await upgradeExecuted();
 
     // Load contracts
     const [
@@ -20,7 +22,7 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, txOpti
         rocketClaimDAO
     ] = await Promise.all([
         RocketDAONodeTrusted.deployed(),
-        RocketRewardsPool.deployed(),
+        upgraded ? RocketRewardsPoolNew.deployed() : RocketRewardsPool.deployed(),
         RocketTokenRETH.deployed(),
         RocketTokenRPL.deployed(),
         RocketClaimDAO.deployed()
@@ -93,9 +95,10 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, txOpti
         web3.eth.getBalance(rocketTokenRETH.address)
     ]);
 
-    let alreadyExecuted = submission.rewardIndex != rewardIndex1;
+    let alreadyExecuted = submission.rewardIndex !== rewardIndex1.toNumber();
     // Submit prices
     await rocketRewardsPool.submitRewardSnapshot(submission, txOptions);
+    const actualExecutionBlock = await web3.eth.getBlockNumber();
     assert.isTrue( await rocketRewardsPool.getSubmissionFromNodeExists(txOptions.from, submission));
 
     // Get updated submission details & prices
@@ -126,6 +129,12 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, txOpti
         assertBN.equal(rewardIndex2, rewardIndex1.add('1'.BN), 'Incorrect updated network prices block');
         assertBN.equal(userETHChange, userETH, 'User ETH balance not correct');
         assertBN.equal(treasuryRPLChange, treasuryRPL, 'Treasury RPL balance not correct');
+
+        // Check block and address
+        const executionBlock = await rocketRewardsPool.getClaimIntervalExecutionBlock(index);
+        const executionAddress = await rocketRewardsPool.getClaimIntervalExecutionAddress(index);
+        assert.equal(executionBlock, actualExecutionBlock);
+        assert.equal(executionAddress, rocketRewardsPool.address);
     } else {
         assertBN.equal(rewardIndex2, rewardIndex1, 'Incorrect updated network prices block');
         assertBN.equal(rethBalance1, rethBalance2, 'User ETH balance changed');
@@ -136,12 +145,13 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, txOpti
 
 // Execute a reward period that already has consensus
 export async function executeRewards(index, rewards, treasuryRPL, userETH, txOptions) {
+    const upgraded = await upgradeExecuted();
 
     // Load contracts
     const [
         rocketRewardsPool,
     ] = await Promise.all([
-        RocketRewardsPool.deployed(),
+        upgraded ? RocketRewardsPoolNew.deployed() : RocketRewardsPool.deployed(),
     ]);
 
     // Construct the merkle tree
