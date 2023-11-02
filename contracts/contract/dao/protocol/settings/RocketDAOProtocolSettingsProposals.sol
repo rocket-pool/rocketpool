@@ -26,6 +26,42 @@ contract RocketDAOProtocolSettingsProposals is RocketDAOProtocolSettings, Rocket
         }
     }
 
+    /// @notice Update a setting, overrides inherited setting method with extra checks for this contract
+    function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
+        // Some safety guards for certain settings
+        bytes32 settingKey = keccak256(bytes(_settingPath));
+        if(settingKey == keccak256(bytes("proposal.vote.time"))) {
+            // Must be at least 1 day (RPIP-33)
+            require(_value >= 1 days, "Value must be at least 1 day");
+        } else if(settingKey == keccak256(bytes("proposal.vote.delay.time"))) {
+            // Must be at least 1 week (RPIP-33)
+            require(_value >= 1 weeks, "Value must be at least 1 week");
+        } else if(settingKey == keccak256(bytes("proposal.execute.time"))) {
+            // Must be at least 1 week (RPIP-33)
+            require(_value >= 1 weeks, "Value must be at least 1 week");
+        } else if(settingKey == keccak256(bytes("proposal.bond"))) {
+            // Must be higher than 20 RPL(RPIP-33)
+            require(_value > 20 ether, "Value must be higher than 20 RPL");
+        } else if(settingKey == keccak256(bytes("proposal.challenge.bond"))) {
+            // Must be higher than 2 RPL(RPIP-33)
+            require(_value > 2 ether, "Value must be higher than 2 RPL");
+        } else if(settingKey == keccak256(bytes("proposal.challenge.period"))) {
+            // Must be at least 30 minutes (RPIP-33)
+            require(_value >= 30 minutes, "Value must be at least 30 minutes");
+        } else if(settingKey == keccak256(bytes("proposal.quorum"))) {
+            // Must be >= 51% & < 75% (RPIP-33)
+            require(_value >= 0.51 ether && _value < 0.75 ether, "Value must be >= 51% & < 75%");
+        } else if(settingKey == keccak256(bytes("proposal.veto.quorum"))) {
+            // Must be >= 51% & < 75% (RPIP-33)
+            require(_value >= 0.51 ether && _value < 0.75 ether, "Value must be >= 51% & < 75%");
+        } else if(settingKey == keccak256(bytes("proposal.max.block.age"))) {
+            // Must be > 128 blocks & < 7200 blocks (RPIP-33)
+            require(_value > 128 && _value < 7200, "Value must be > 128 blocks & < 7200 blocks");
+        } 
+        // Update setting now
+        setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
+    }
+
     /// @notice How long a proposal can be voted on
     function getVoteTime() override external view returns (uint256) {
         return getSettingUint("proposal.vote.time");

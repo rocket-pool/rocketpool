@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity 0.7.6;
+pragma solidity 0.8.18;
 
 import "./RocketDAOProtocolSettings.sol";
 import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
@@ -9,7 +9,7 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "deposit") {
         // Set version
-        version = 3;
+        version = 4;
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings

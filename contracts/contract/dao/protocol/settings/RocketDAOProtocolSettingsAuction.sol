@@ -1,18 +1,17 @@
-pragma solidity 0.7.6;
+pragma solidity 0.8.18;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "./RocketDAOProtocolSettings.sol";
 import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsAuctionInterface.sol";
 
-// Network auction settings
-
+/// @notice Network auction settings
 contract RocketDAOProtocolSettingsAuction is RocketDAOProtocolSettings, RocketDAOProtocolSettingsAuctionInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "auction") {
         // Set version
-        version = 1;
+        version = 2;
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
@@ -28,38 +27,62 @@ contract RocketDAOProtocolSettingsAuction is RocketDAOProtocolSettings, RocketDA
         }
     }
 
+    /// @dev Overrides inherited setting method with extra sanity checks for this contract
+    function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
+        // Some safety guards for certain settings
+        bytes32 settingKey = keccak256(abi.encodePacked(_settingPath));
+        if(settingKey == keccak256(abi.encodePacked("auction.lot.value.minimum"))) {
+            // >= 1 RPL (RPIP-33)
+            require(_value >= 1 ether, "Value must be >= 1 RPL");
+        } else if(settingKey == keccak256(abi.encodePacked("auction.lot.value.maximum"))) {
+            // >= 1 RPL (RPIP-33)
+            require(_value >= 1 ether, "Value must be >= 1 RPL");
+        } else if(settingKey == keccak256(abi.encodePacked("auction.lot.duration"))) {
+            // >= 1 day (RPIP-33)
+            require(_value >= 1 days, "Value must be >= 1 day");
+        } else if(settingKey == keccak256(abi.encodePacked("auction.price.start"))) {
+            // >= 10% (RPIP-33)
+            require(_value >= 0.1 ether, "Value must be >= 10%");
+        } else if(settingKey == keccak256(abi.encodePacked("auction.price.reserve"))) {
+            // >= 10% (RPIP-33)
+            require(_value >= 0.1 ether, "Value must be >= 10%");
+        }
+        // Update setting now
+        setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
+    }
 
-    // Lot creation currently enabled
+
+    /// @notice Lot creation currently enabled
     function getCreateLotEnabled() override external view returns (bool) {
         return getSettingBool("auction.lot.create.enabled");
     }
 
-    // Bidding on lots currently enabled
+    /// @notice Bidding on lots currently enabled
     function getBidOnLotEnabled() override external view returns (bool) {
         return getSettingBool("auction.lot.bidding.enabled");
     }
 
-    // The minimum lot size relative to ETH value
+    /// @notice The minimum lot size relative to ETH value
     function getLotMinimumEthValue() override external view returns (uint256) {
         return getSettingUint("auction.lot.value.minimum");
     }
 
-    // The maximum lot size relative to ETH value
+    /// @notice The maximum lot size relative to ETH value
     function getLotMaximumEthValue() override external view returns (uint256) {
         return getSettingUint("auction.lot.value.maximum");
     }
 
-    // The maximum auction duration in blocks
+    /// @notice The maximum auction duration in blocks
     function getLotDuration() override external view returns (uint256) {
         return getSettingUint("auction.lot.duration");
     }
 
-    // The starting price relative to current RPL price, as a fraction of 1 ether
+    /// @notice The starting price relative to current RPL price, as a fraction of 1 ether
     function getStartingPriceRatio() override external view returns (uint256) {
         return getSettingUint("auction.price.start");
     }
 
-    // The reserve price relative to current RPL price, as a fraction of 1 ether
+    /// @notice The reserve price relative to current RPL price, as a fraction of 1 ether
     function getReservePriceRatio() override external view returns (uint256) {
         return getSettingUint("auction.price.reserve");
     }

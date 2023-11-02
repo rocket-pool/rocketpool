@@ -36,10 +36,15 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
     /// @notice Update a setting, overrides inherited setting method with extra checks for this contract
     function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
         // Some safety guards for certain settings
-        // Prevent DAO from setting the withdraw delay greater than ~24 hours
-        if(keccak256(bytes(_settingPath)) == keccak256(bytes("network.reth.deposit.delay"))) {
-            // Must be a future timestamp
-            require(_value <= 5760, "rETH deposit delay cannot exceed 5760 blocks");
+        bytes32 settingKey = keccak256(bytes(_settingPath));
+        if(settingKey == keccak256(bytes("network.consensus.threshold"))) {
+            require(_value >= 0.51 ether, "Consensus threshold must be 51% or higher");
+        } else if(settingKey == keccak256(bytes("network.node.fee.minimum"))) {
+            require(_value >= 0.05 ether && _value <= 0.2 ether, "The node fee minimum must be a value between 5% and 20%");
+        } else if(settingKey == keccak256(bytes("network.node.fee.target"))) {
+            require(_value >= 0.05 ether && _value <= 0.2 ether, "The node fee target must be a value between 5% and 20%");
+        } else if(settingKey == keccak256(bytes("network.node.fee.maximum"))) {
+            require(_value >= 0.05 ether && _value <= 0.2 ether, "The node fee maximum must be a value between 5% and 20%");
         }
         // Update setting now
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);

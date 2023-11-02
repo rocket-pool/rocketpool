@@ -1,4 +1,4 @@
-pragma solidity 0.7.6;
+pragma solidity 0.8.18;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -6,15 +6,13 @@ import "./RocketDAOProtocolSettings.sol";
 import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsInflationInterface.sol";
 import "../../../../interface/token/RocketTokenRPLInterface.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-
-// RPL Inflation settings in RP which the DAO will have full control over
+/// @notice RPL Inflation settings in RP which the DAO will have full control over
 contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, RocketDAOProtocolSettingsInflationInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "inflation") {
         // Set version 
-        version = 1;
+        version = 2;
          // Set some initial settings on first deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // RPL Inflation settings
@@ -29,7 +27,7 @@ contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, Rocket
 
     /*** Set Uint *****************************************/
 
-    // Update a setting, overrides inherited setting method with extra checks for this contract
+    /// @notice Update a setting, overrides inherited setting method with extra checks for this contract
     function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
         // Some safety guards for certain settings
         // The start time for inflation must be in the future and cannot be set again once started
@@ -60,12 +58,12 @@ contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, Rocket
 
     /*** RPL Contract Settings *****************************************/
 
-    // RPL yearly inflation rate per interval (daily by default)
+    /// @notice RPL yearly inflation rate per interval (daily by default)
     function getInflationIntervalRate() override external view returns (uint256) {
         return getSettingUint("rpl.inflation.interval.rate");
     }
     
-    // The block to start inflation at
+    /// @notice The block to start inflation at
     function getInflationIntervalStartTime() override public view returns (uint256) {
         return getSettingUint("rpl.inflation.interval.start"); 
     }
