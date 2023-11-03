@@ -9,6 +9,8 @@ import "../../../../types/MinipoolDeposit.sol";
 /// @notice Network minipool settings
 contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketDAOProtocolSettingsMinipoolInterface {
 
+    uint256 constant MINIPOOL_USER_DISTRIBUTE_WINDOW_START = 90 days;
+
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "minipool") {
         // Set version
         version = 3;
@@ -19,7 +21,6 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
             setSettingBool("minipool.bond.reduction.enabled", false);
             setSettingUint("minipool.launch.timeout", 72 hours);
             setSettingUint("minipool.maximum.count", 14);
-            setSettingUint("minipool.user.distribute.window.start", 14 days);
             setSettingUint("minipool.user.distribute.window.length", 2 days);
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
@@ -36,10 +37,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
             if(settingKey == keccak256(abi.encodePacked("minipool.launch.timeout"))) {
                 // >= 12 hours (RPIP-33)
                 require(_value >= 12 hours, "Launch timeout must be greater than 12 hours");
-            } else if(settingKey == keccak256(abi.encodePacked("minipool.user.distribute.window.start"))) {
-                // Fix to 90 days (RPIP-33)
-                require(_value == 90 days, "Didstribute window must be 90 days");
-            }
+            } 
         }
         // Update setting now
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
@@ -112,8 +110,8 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     }
 
     /// @notice Returns the start of the user distribute window
-    function getUserDistributeWindowStart() override public view returns (uint256) {
-        return getSettingUint("minipool.user.distribute.window.start");
+    function getUserDistributeWindowStart() override public pure returns (uint256) {
+        return MINIPOOL_USER_DISTRIBUTE_WINDOW_START;
     }
 
     /// @notice Returns the length of the user distribute window

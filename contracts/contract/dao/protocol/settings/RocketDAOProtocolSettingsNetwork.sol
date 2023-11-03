@@ -17,9 +17,9 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             // Apply settings
             setSettingUint("network.consensus.threshold", 0.51 ether);      // 51%
             setSettingBool("network.submit.balances.enabled", true);
-            setSettingUint("network.submit.balances.epochs", 225);          // 24 hours
+            setSettingUint("network.submit.balances.frequency", 1 days);    
             setSettingBool("network.submit.prices.enabled", true);
-            setSettingUint("network.submit.prices.epochs", 225);            // 24 hours
+            setSettingUint("network.submit.prices.frequency", 1 days);      
             setSettingUint("network.node.fee.minimum", 0.15 ether);         // 15%
             setSettingUint("network.node.fee.target", 0.15 ether);          // 15%
             setSettingUint("network.node.fee.maximum", 0.15 ether);         // 15%
@@ -45,6 +45,8 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             require(_value >= 0.05 ether && _value <= 0.2 ether, "The node fee target must be a value between 5% and 20%");
         } else if(settingKey == keccak256(bytes("network.node.fee.maximum"))) {
             require(_value >= 0.05 ether && _value <= 0.2 ether, "The node fee maximum must be a value between 5% and 20%");
+        } else if(settingKey == keccak256(bytes("network.submit.balances.frequency"))) {
+            require(_value >= 1 hours, "The submit frequency must be >= 1 hour");
         }
         // Update setting now
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
@@ -70,9 +72,9 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
         return getSettingBool("network.submit.balances.enabled");
     }
 
-    /// @notice The frequency in epochs at which network balances should be submitted by trusted nodes
-    function getSubmitBalancesEpochs() override external view returns (uint256) {
-        return getSettingUint("network.submit.balances.epochs");
+    /// @notice The frequency in seconds at which network balances should be submitted by trusted nodes
+    function getSubmitBalancesFrequency() override external view returns (uint256) {
+        return getSettingUint("network.submit.balances.frequency");
     }
 
     /// @notice Submit prices currently enabled (trusted nodes only)
@@ -80,9 +82,9 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
         return getSettingBool("network.submit.prices.enabled");
     }
 
-    /// @notice The frequency in epochs at which network prices should be submitted by trusted nodes
-    function getSubmitPricesEpochs() override external view returns (uint256) {
-        return getSettingUint("network.submit.prices.epochs");
+    /// @notice The frequency in seconds at which network prices should be submitted by trusted nodes
+    function getSubmitPricesFrequency() override external view returns (uint256) {
+        return getSettingUint("network.submit.prices.frequency");
     }
 
     /// @notice The minimum node commission rate as a fraction of 1 ether

@@ -25,22 +25,24 @@ contract RocketDAOProtocolSettingsSecurity is RocketDAOProtocolSettings, RocketD
     /// @dev Overrides inherited setting method with extra sanity checks for this contract
     function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
         // Some safety guards for certain settings
-        bytes32 settingKey = keccak256(abi.encodePacked(_settingPath));
-        if(settingKey == keccak256(abi.encodePacked("members.quorum"))) {
-            // >= 51% & < 75% (RPIP-33)
-            require(_value >= 0.51 ether && _value <= 0.75 ether, "Quorum setting must be >= 51% & < 75%");
-        } else if(settingKey == keccak256(abi.encodePacked("members.leave.time"))) {
-            // < 14 days (RPIP-33)
-            require(_value < 14 days, "Value must be < 14 days");
-        } else if(settingKey == keccak256(abi.encodePacked("proposal.vote.time"))) {
-            // >= 1 day (RPIP-33)
-            require(_value >= 1 days, "Value must be >= 1 day");
-        } else if(settingKey == keccak256(abi.encodePacked("proposal.execute.time"))) {
-            // >= 1 day (RPIP-33)
-            require(_value >= 1 days, "Value must be >= 1 day");
-        } else if(settingKey == keccak256(abi.encodePacked("proposal.action.time"))) {
-            // >= 1 day (RPIP-33)
-            require(_value >= 1 days, "Value must be >= 1 day");
+        if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
+            bytes32 settingKey = keccak256(abi.encodePacked(_settingPath));
+            if(settingKey == keccak256(abi.encodePacked("members.quorum"))) {
+                // >= 51% & < 75% (RPIP-33)
+                require(_value >= 0.51 ether && _value <= 0.75 ether, "Quorum setting must be >= 51% & < 75%");
+            } else if(settingKey == keccak256(abi.encodePacked("members.leave.time"))) {
+                // < 14 days (RPIP-33)
+                require(_value < 14 days, "Value must be < 14 days");
+            } else if(settingKey == keccak256(abi.encodePacked("proposal.vote.time"))) {
+                // >= 1 day (RPIP-33)
+                require(_value >= 1 days, "Value must be >= 1 day");
+            } else if(settingKey == keccak256(abi.encodePacked("proposal.execute.time"))) {
+                // >= 1 day (RPIP-33)
+                require(_value >= 1 days, "Value must be >= 1 day");
+            } else if(settingKey == keccak256(abi.encodePacked("proposal.action.time"))) {
+                // >= 1 day (RPIP-33)
+                require(_value >= 1 days, "Value must be >= 1 day");
+            }
         }
         // Update setting now
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);

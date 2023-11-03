@@ -30,22 +30,24 @@ contract RocketDAOProtocolSettingsAuction is RocketDAOProtocolSettings, RocketDA
     /// @dev Overrides inherited setting method with extra sanity checks for this contract
     function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
         // Some safety guards for certain settings
-        bytes32 settingKey = keccak256(abi.encodePacked(_settingPath));
-        if(settingKey == keccak256(abi.encodePacked("auction.lot.value.minimum"))) {
-            // >= 1 RPL (RPIP-33)
-            require(_value >= 1 ether, "Value must be >= 1 RPL");
-        } else if(settingKey == keccak256(abi.encodePacked("auction.lot.value.maximum"))) {
-            // >= 1 RPL (RPIP-33)
-            require(_value >= 1 ether, "Value must be >= 1 RPL");
-        } else if(settingKey == keccak256(abi.encodePacked("auction.lot.duration"))) {
-            // >= 1 day (RPIP-33)
-            require(_value >= 1 days, "Value must be >= 1 day");
-        } else if(settingKey == keccak256(abi.encodePacked("auction.price.start"))) {
-            // >= 10% (RPIP-33)
-            require(_value >= 0.1 ether, "Value must be >= 10%");
-        } else if(settingKey == keccak256(abi.encodePacked("auction.price.reserve"))) {
-            // >= 10% (RPIP-33)
-            require(_value >= 0.1 ether, "Value must be >= 10%");
+        if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
+            bytes32 settingKey = keccak256(abi.encodePacked(_settingPath));
+            if(settingKey == keccak256(abi.encodePacked("auction.lot.value.minimum"))) {
+                // >= 1 RPL (RPIP-33)
+                require(_value >= 1 ether, "Value must be >= 1 RPL");
+            } else if(settingKey == keccak256(abi.encodePacked("auction.lot.value.maximum"))) {
+                // >= 1 RPL (RPIP-33)
+                require(_value >= 1 ether, "Value must be >= 1 RPL");
+            } else if(settingKey == keccak256(abi.encodePacked("auction.lot.duration"))) {
+                // >= 1 day (RPIP-33)
+                require(_value >= 1 days, "Value must be >= 1 day");
+            } else if(settingKey == keccak256(abi.encodePacked("auction.price.start"))) {
+                // >= 10% (RPIP-33)
+                require(_value >= 0.1 ether, "Value must be >= 10%");
+            } else if(settingKey == keccak256(abi.encodePacked("auction.price.reserve"))) {
+                // >= 10% (RPIP-33)
+                require(_value >= 0.1 ether, "Value must be >= 10%");
+            }
         }
         // Update setting now
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
