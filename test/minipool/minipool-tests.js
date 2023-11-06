@@ -46,7 +46,7 @@ import { artifacts } from 'hardhat';
 import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
-    contract.only('RocketMinipool', async (accounts) => {
+    contract('RocketMinipool', async (accounts) => {
 
         // Accounts
         const [

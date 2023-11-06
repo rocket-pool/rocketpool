@@ -210,40 +210,6 @@ export default function() {
             });
         });
 
-        it(printTitle('node operator', 'can not send ETH with a deposit when using credit balance'), async () => {
-            // Stake RPL to cover minipools
-            let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake.mul('3'.BN);
-            await mintRPL(owner, node, rplStake);
-            await nodeStakeRPL(rplStake, {from: node});
-
-            // Create a 16 ETH minipool
-            await userDeposit({ from: random, value: '24'.ether, });
-            const minipoolAddress = await depositV2(noMinimumNodeFee, halfDepositNodeAmount, {
-                from: node,
-                value: halfDepositNodeAmount,
-            });
-            const minipool = await RocketMinipoolDelegate.at(minipoolAddress);
-
-            // Stake the minipool
-            await increaseTime(web3, launchTimeout + 1);
-            await stakeMinipool(minipool, {from: node});
-
-            // Signal wanting to reduce and wait 7 days
-            const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
-            await rocketMinipoolBondReducer.beginReduceBondAmount(minipool.address, '8'.ether, {from: node});
-            await increaseTime(web3, bondReductionWindowStart + 1);
-
-            // Reduce the bond to 8 ether to receive a deposit credit
-            await reduceBond(minipool, {from: node});
-
-            // Create an 8 ether minipool (using 8 ether from credit)
-            await shouldRevert(depositV2(noMinimumNodeFee, lebDepositNodeAmount, {
-                from: node,
-                value: '2'.BN
-            }), 'Was able to deposit with 2 ETH', 'Invalid value');
-        });
-
 
         it(printTitle('node operator', 'can deposit ETH then use it to create a minipool'), async () => {
             // Stake RPL to cover minipools

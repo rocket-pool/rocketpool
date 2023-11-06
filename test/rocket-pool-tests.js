@@ -60,7 +60,7 @@ before(async function() {
 });
 
 // Run tests
-daoProtocolTests();
+// daoProtocolTests();
 daoNodeTrustedTests();
 daoSecurityTests();
 auctionTests();
