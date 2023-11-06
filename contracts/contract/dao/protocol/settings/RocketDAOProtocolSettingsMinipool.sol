@@ -9,7 +9,7 @@ import "../../../../types/MinipoolDeposit.sol";
 /// @notice Network minipool settings
 contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketDAOProtocolSettingsMinipoolInterface {
 
-    uint256 constant MINIPOOL_USER_DISTRIBUTE_WINDOW_START = 90 days;
+    uint256 constant minipoolUserDistributeWindowStart = 90 days;
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "minipool") {
         // Set version
@@ -111,7 +111,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
 
     /// @notice Returns the start of the user distribute window
     function getUserDistributeWindowStart() override public pure returns (uint256) {
-        return MINIPOOL_USER_DISTRIBUTE_WINDOW_START;
+        return minipoolUserDistributeWindowStart;
     }
 
     /// @notice Returns the length of the user distribute window
