@@ -1,46 +1,15 @@
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import {
-    setDaoProtocolBootstrapModeDisabled, setDAOProtocolBootstrapSecurityInvite,
-    setDAOProtocolBootstrapSetting,
-    setDAOProtocolBootstrapSettingMulti,
+    setDAOProtocolBootstrapSecurityInvite,
 } from './scenario-dao-protocol-bootstrap';
 
 // Contracts
-import {
-    RocketDAOProtocolSettingsAuction,
-    RocketDAOProtocolSettingsDeposit,
-    RocketDAOProtocolSettingsInflation,
-    RocketDAOProtocolSettingsMinipool,
-    RocketDAOProtocolSettingsNetwork,
-    RocketDAOProtocolSettingsProposals,
-    RocketDAOProtocolSettingsRewards,
-} from '../_utils/artifacts';
-import {
-    constructTreeLeaves, daoProtocolCancel,
-    daoProtocolClaimBondChallenger,
-    daoProtocolClaimBondProposer,
-    daoProtocolCreateChallenge,
-    daoProtocolDefeatProposal, daoProtocolExecute,
-    daoProtocolGeneratePollard,
-    daoProtocolPropose,
-    daoProtocolSubmitRoot, daoProtocolVote,
-    getDelegatedVotingPower,
-} from './scenario-dao-protocol';
-import { nodeStakeRPL, nodeWithdrawRPL, registerNode } from '../_helpers/node';
-import { createMinipool, getMinipoolMinimumRPLStake } from '../_helpers/minipool';
-import { mintRPL } from '../_helpers/tokens';
 import { userDeposit } from '../_helpers/deposit';
 import {
-    getDaoProtocolChallengeBond,
-    getDaoProtocolChallengePeriod,
-    getDaoProtocolDepthPerRound,
-    getDaoProtocolProposalBond, getDaoProtocolSecurityLeaveTime,
-    getDaoProtocolVoteDelayTime, getDaoProtocolVoteTime,
+    getDaoProtocolSecurityLeaveTime, getDaoProtocolVoteDelayTime, getDaoProtocolVotePhase1Time, getDaoProtocolVotePhase2Time,
 } from '../_helpers/dao';
 import { increaseTime } from '../_utils/evm';
-import { assertBN } from '../_helpers/bn';
-import { daoNodeTrustedPropose } from './scenario-dao-node-trusted';
 import {
     daoSecurityExecute,
     daoSecurityMemberJoin,
@@ -64,7 +33,8 @@ export default function() {
         ] = accounts;
 
         let voteDelayTime;
-        let voteTime;
+        let votePhase1Time;
+        let votePhase2Time;
         let leaveTime;
 
         // Setup
@@ -74,7 +44,8 @@ export default function() {
             await userDeposit({ from: random, value: '320'.ether });
 
             voteDelayTime = await getDaoProtocolVoteDelayTime();
-            voteTime = await getDaoProtocolVoteTime();
+            votePhase1Time = await getDaoProtocolVotePhase1Time();
+            votePhase2Time = await getDaoProtocolVotePhase2Time();
             leaveTime = await getDaoProtocolSecurityLeaveTime();
         });
 

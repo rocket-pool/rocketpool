@@ -37,7 +37,7 @@ import {
     getDaoProtocolChallengePeriod,
     getDaoProtocolDepthPerRound,
     getDaoProtocolProposalBond,
-    getDaoProtocolVoteDelayTime, getDaoProtocolVoteTime,
+    getDaoProtocolVoteDelayTime, getDaoProtocolVotePhase1Time, getDaoProtocolVotePhase2Time, getDaoProtocolVoteTime,
 } from '../_helpers/dao';
 import { increaseTime } from '../_utils/evm';
 import { assertBN } from '../_helpers/bn';
@@ -63,7 +63,8 @@ export default function() {
         let proposalBond;
         let challengePeriod;
         let voteDelayTime;
-        let voteTime;
+        let votePhase1Time;
+        let votePhase2Time;
 
         let nodeMap = {};
 
@@ -87,7 +88,8 @@ export default function() {
             proposalBond = await getDaoProtocolProposalBond();
             challengePeriod = await getDaoProtocolChallengePeriod();
             voteDelayTime = await getDaoProtocolVoteDelayTime();
-            voteTime = await getDaoProtocolVoteTime();
+            votePhase1Time = await getDaoProtocolVotePhase1Time();
+            votePhase2Time = await getDaoProtocolVotePhase2Time();
 
             // Set the reward claim period
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.balances.frequency', balanceSubmissionFrequency, {from: owner});
@@ -431,7 +433,7 @@ export default function() {
             await increaseTime(hre.web3, voteDelayTime + 1);
 
             // Let the proposal expire to unlock the bond
-            await increaseTime(hre.web3, voteTime + 1);
+            await increaseTime(hre.web3, votePhase1Time + votePhase2Time + 1);
 
             // Claim bond
             const deltas = await daoProtocolClaimBondProposer(propId, [1], { from: proposer });
@@ -474,7 +476,7 @@ export default function() {
             await increaseTime(hre.web3, voteDelayTime + 1);
 
             // Let the proposal expire to unlock the bond
-            await increaseTime(hre.web3, voteTime + 1);
+            await increaseTime(hre.web3, votePhase1Time + votePhase2Time + 1);
 
             // Claim bond and rewards
             const deltas = await daoProtocolClaimBondProposer(propId, [1, ...indices], { from: proposer });
@@ -502,7 +504,7 @@ export default function() {
             await increaseTime(hre.web3, Math.max(voteDelayTime, rewardClaimPeriodTime) + 1);
 
             // Let the proposal expire to unlock the bond
-            await increaseTime(hre.web3, voteTime + 1);
+            await increaseTime(hre.web3, votePhase1Time + votePhase2Time + 1);
 
             // Try to withdraw the 100 RPL bond (below 150% after lock)
             await shouldRevert(nodeWithdrawRPL(proposalBond, { from: proposer }), 'Was able to withdraw', 'Node\'s staked RPL balance after withdrawal is less than required balance');
@@ -527,7 +529,7 @@ export default function() {
             await increaseTime(hre.web3, voteDelayTime + 1);
 
             // Let the proposal expire to unlock the bond
-            await increaseTime(hre.web3, voteTime + 1);
+            await increaseTime(hre.web3, votePhase1Time + votePhase2Time + 1);
 
             // Claim bond
             await daoProtocolClaimBondProposer(propId, [1], { from: proposer });
@@ -617,7 +619,7 @@ export default function() {
             await increaseTime(hre.web3, voteDelayTime + 1);
 
             // Let the proposal expire to unlock the bond
-            await increaseTime(hre.web3, voteTime + 1);
+            await increaseTime(hre.web3, votePhase1Time + votePhase2Time + 1);
 
             // Claim bond
             await daoProtocolClaimBondProposer(propId, [1], { from: proposer });
@@ -655,7 +657,7 @@ export default function() {
             await increaseTime(hre.web3, voteDelayTime + 1);
 
             // Let the proposal expire to unlock the bond
-            await increaseTime(hre.web3, voteTime + 1);
+            await increaseTime(hre.web3, votePhase1Time + votePhase2Time + 1);
 
             // Claim bond and rewards
             await daoProtocolClaimBondProposer(propId, [1, ...indices], { from: proposer });
@@ -689,7 +691,7 @@ export default function() {
             await increaseTime(hre.web3, voteDelayTime + 1);
 
             // Let the proposal expire to unlock the bond
-            await increaseTime(hre.web3, voteTime + 1);
+            await increaseTime(hre.web3, votePhase1Time + votePhase2Time + 1);
 
             // Try to claim reward for unresponded index
             await shouldRevert(daoProtocolClaimBondProposer(propId, [indices[0]], { from: proposer }), 'Was able to claim reward', 'Invalid challenge state');
@@ -711,7 +713,7 @@ export default function() {
             await increaseTime(hre.web3, voteDelayTime + 1);
 
             // Let the proposal expire to unlock the bond
-            await increaseTime(hre.web3, voteTime + 1);
+            await increaseTime(hre.web3, votePhase1Time + votePhase2Time + 1);
 
             // Try to claim reward for unchallenged index
             await shouldRevert(daoProtocolClaimBondProposer(propId, [2], { from: proposer }), 'Was able to claim reward', 'Invalid challenge state');
@@ -903,7 +905,7 @@ export default function() {
             await voteAll(propId, leaves, voteStates.For);
 
             // Skip the full vote period
-            await increaseTime(hre.web3, voteTime + 1);
+            await increaseTime(hre.web3, votePhase1Time + votePhase2Time + 1);
 
             // Execute the proposal
             await daoProtocolExecute(propId, {from: proposer});
@@ -940,7 +942,7 @@ export default function() {
             await voteAll(propId, leaves, voteStates.For);
 
             // Skip the full vote period
-            await increaseTime(hre.web3, voteTime + 1);
+            await increaseTime(hre.web3, votePhase1Time + votePhase2Time + 1);
 
             // Execute the proposal
             await daoProtocolExecute(propId, {from: proposer});
@@ -1286,7 +1288,7 @@ export default function() {
             await increaseTime(hre.web3, voteDelayTime + 1);
 
             // Let the proposal expire to unlock the bond
-            await increaseTime(hre.web3, voteTime + 1);
+            await increaseTime(hre.web3, votePhase1Time + votePhase2Time + 1);
 
             // Claim bond on invalid index
             const deltas = await daoProtocolClaimBondChallenger(propId, [index], { from: challenger });
@@ -1346,7 +1348,7 @@ export default function() {
             await increaseTime(hre.web3, voteDelayTime + 1);
 
             // Let the proposal expire to unlock the bond
-            await increaseTime(hre.web3, voteTime + 1);
+            await increaseTime(hre.web3, votePhase1Time + votePhase2Time + 1);
 
             // Claim bond on invalid index
             await shouldRevert(daoProtocolClaimBondProposer(propId, [1], { from: node2 }), 'Was able to claim proposal bond', 'Not proposer');

@@ -12,7 +12,8 @@ contract RocketDAOProtocolSettingsProposals is RocketDAOProtocolSettings, Rocket
 //        // Initialize settings on deployment
 //        if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
 //            // Init settings
-//            setSettingUint("proposal.vote.time", 2 weeks);                  // How long a proposal can be voted on
+//            setSettingUint("proposal.vote.phase1.time", 2 weeks);           // How long a proposal can be voted on in phase 1
+//            setSettingUint("proposal.vote.phase2.time", 2 weeks);           // How long a proposal can be voted on in phase 2
 //            setSettingUint("proposal.vote.delay.time", 1 weeks);            // How long before a proposal can be voted on after it is created
 //            setSettingUint("proposal.execute.time", 4 weeks);               // How long a proposal can be executed after its voting period is finished
 //            setSettingUint("proposal.bond", 100 ether);                     // The amount of RPL a proposer has to put up as a bond for creating a new proposal
@@ -30,7 +31,10 @@ contract RocketDAOProtocolSettingsProposals is RocketDAOProtocolSettings, Rocket
     function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
         // Some safety guards for certain settings
         bytes32 settingKey = keccak256(bytes(_settingPath));
-        if(settingKey == keccak256(bytes("proposal.vote.time"))) {
+        if(settingKey == keccak256(bytes("proposal.vote.phase1.time"))) {
+            // Must be at least 1 day (RPIP-33)
+            require(_value >= 1 days, "Value must be at least 1 day");
+        } else if(settingKey == keccak256(bytes("proposal.vote.phase2.time"))) {
             // Must be at least 1 day (RPIP-33)
             require(_value >= 1 days, "Value must be at least 1 day");
         } else if(settingKey == keccak256(bytes("proposal.vote.delay.time"))) {
@@ -62,9 +66,14 @@ contract RocketDAOProtocolSettingsProposals is RocketDAOProtocolSettings, Rocket
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }
 
-    /// @notice How long a proposal can be voted on
-    function getVoteTime() override external view returns (uint256) {
-        return getSettingUint("proposal.vote.time");
+    /// @notice How long a proposal can be voted on in phase 1
+    function getVotePhase1Time() override external view returns (uint256) {
+        return getSettingUint("proposal.vote.phase1.time");
+    }
+
+    /// @notice How long a proposal can be voted on in phase 2
+    function getVotePhase2Time() override external view returns (uint256) {
+        return getSettingUint("proposal.vote.phase2.time");
     }
 
     /// @notice How long before a proposal can be voted on after it is created

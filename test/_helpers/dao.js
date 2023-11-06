@@ -48,10 +48,16 @@ export async function getDaoProtocolChallenge(proposalID, challengeID) {
     return rocketDAOProtocolVerifier.getChallenge(proposalID, challengeID);
 }
 
-export async function getDaoProtocolVoteTime() {
+export async function getDaoProtocolVotePhase1Time() {
     // Load contracts
     const rocketDAOProtocolSettingsProposals = await RocketDAOProtocolSettingsProposals.deployed();
-    return Number(await rocketDAOProtocolSettingsProposals.getVoteTime());
+    return Number(await rocketDAOProtocolSettingsProposals.getVotePhase1Time());
+}
+
+export async function getDaoProtocolVotePhase2Time() {
+    // Load contracts
+    const rocketDAOProtocolSettingsProposals = await RocketDAOProtocolSettingsProposals.deployed();
+    return Number(await rocketDAOProtocolSettingsProposals.getVotePhase2Time());
 }
 
 export async function getDaoProtocolVoteDelayTime() {

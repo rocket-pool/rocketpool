@@ -172,9 +172,14 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "start", _proposalID)));
     }
 
-    // Get the end block of this proposal
-    function getEnd(uint256 _proposalID) override public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "end", _proposalID)));
+    // Get the end of phase1 block of this proposal
+    function getPhase1End(uint256 _proposalID) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "phase1End", _proposalID)));
+    }
+
+    // Get the end of phase2 block of this proposal
+    function getPhase2End(uint256 _proposalID) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "phase2End", _proposalID)));
     }
 
     // The block where the proposal expires and can no longer be executed if it is successful
@@ -273,14 +278,12 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
                 return ProposalState.Pending;
             } else {
                 // The proposal is active and can be voted on
-                uint256 end = getEnd(_proposalID);
-                if (block.timestamp < end) {
-                    uint256 phase1 = start + (end - start) / 2;
-                    if (block.timestamp < phase1) {
-                        return ProposalState.ActivePhase1;
-                    } else {
+                uint256 phase1End = getPhase1End(_proposalID);
+                uint256 phase2End = getPhase2End(_proposalID);
+                if (block.timestamp < phase1End) {
+                    return ProposalState.ActivePhase1;
+                } else if (block.timestamp < phase2End) {
                         return ProposalState.ActivePhase2;
-                    }
                 } else {
                     // Is the proposal vetoed?
                     if (getVetoed(_proposalID)) {
@@ -333,7 +336,8 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
             _proposalMessage,
             _blockNumber,
             block.timestamp + rocketDAOProtocolSettingsProposals.getVoteDelayTime(),
-            rocketDAOProtocolSettingsProposals.getVoteTime(),
+            rocketDAOProtocolSettingsProposals.getVotePhase1Time(),
+            rocketDAOProtocolSettingsProposals.getVotePhase2Time(),
             rocketDAOProtocolSettingsProposals.getExecuteTime(),
             quorum,
             vetoQuorum,
@@ -343,23 +347,23 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
 
     // Add a proposal to the an RP DAO, immeditately becomes active
     // Calldata is passed as the payload to execute upon passing the proposal
-    function _addProposal(address _member, string memory _message, uint256 _blockNumber, uint256 _startTime, uint256 _duration, uint256 _expires, uint256 _votesRequired, uint256 _vetoQuorum, bytes calldata _payload) internal returns (uint256) {
+    function _addProposal(address _member, string memory _message, uint256 _blockNumber, uint256 _startTime, uint256 _phase1Duration, uint256 _phase2Duration, uint256 _expires, uint256 _votesRequired, uint256 _vetoQuorum, bytes calldata _payload) internal returns (uint256) {
         // Basic checks
         require(_startTime > block.timestamp, "Proposal start time must be in the future");
-        require(_duration > 0, "Proposal cannot have a duration of 0");
+        require(_phase1Duration > 0, "Proposal cannot have a duration of 0");
+        require(_phase2Duration > 0, "Proposal cannot have a duration of 0");
         require(_expires > 0, "Proposal cannot have a execution expiration of 0");
         require(_votesRequired > 0, "Proposal cannot have a 0 votes required to be successful");
-        // Set the end block
-        uint256 endTime = _startTime + _duration;
         // Set the expires block
-        uint256 expires = endTime + _expires;
+        uint256 expires = _startTime + _phase1Duration + _phase2Duration + _expires;
         // Get the proposal ID
         uint256 proposalID = getTotal() + 1;
         // The data structure for a proposal
         setAddress(keccak256(abi.encodePacked(daoProposalNameSpace, "proposer", proposalID)), _member);                     // Which member is making the proposal
         setString(keccak256(abi.encodePacked(daoProposalNameSpace, "message", proposalID)), _message);                      // A general message that can be included with the proposal
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "start", proposalID)), _startTime);                        // The time the proposal becomes active for voting on
-        setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "end", proposalID)), endTime);                             // The time the proposal where voting ends
+        setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "phase1End", proposalID)), _startTime + _phase1Duration);  // The time the proposal where voting ends on phase 1
+        setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "phase2End", proposalID)), _startTime + _phase1Duration + _phase2Duration); // The time the proposal where voting ends on phase 2
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "expires", proposalID)), expires);                         // The time when the proposal expires and can no longer be executed if it is successful
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "created", proposalID)), block.timestamp);                 // The time the proposal was created at
         // setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.for", proposalID)), 0);                          // Votes for this proposal

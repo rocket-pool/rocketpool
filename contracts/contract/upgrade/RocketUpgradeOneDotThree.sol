@@ -181,7 +181,8 @@ contract RocketUpgradeOneDotThree is RocketBase {
 
         // pDAO proposal settings
         bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "proposals"));
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.vote.time")), 2 weeks);            // How long a proposal can be voted on
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.vote.phase1.time")), 1 weeks);     // How long a proposal can be voted on in phase 1
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.vote.phase2.time")), 1 weeks);     // How long a proposal can be voted on in phase 2
         setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.vote.delay.time")), 1 weeks);      // How long before a proposal can be voted on after it is created
         setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.execute.time")), 4 weeks);         // How long a proposal can be executed after its voting period is finished
         setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.bond")), 100 ether);               // The amount of RPL a proposer has to put up as a bond for creating a new proposal
