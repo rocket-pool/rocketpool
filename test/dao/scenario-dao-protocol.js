@@ -223,7 +223,7 @@ export function daoProtocolGenerateChallengeProof(leaves, order, index = 1) {
 
     let node;
 
-    const offset = getDepthFromIndex(index);
+    let offset = getDepthFromIndex(index);
 
     // Total depth of the tree
     const depth = Math.log2(leaves.length);
@@ -282,9 +282,24 @@ export function daoProtocolGenerateChallengeProof(leaves, order, index = 1) {
         index = Math.floor(index / 2);
     }
 
+    let proofLength = order;
+
+    // On last round, proof may be shorter
+    if (offset === depth) {
+        proofLength = depth % order;
+    }
+    if (proofLength === 0) {
+        proofLength = order;
+    }
+
+    console.log('offset = ' + offset);
+    console.log('depth = ' + depth);
+    console.log('order = ' + order);
+    console.log('proofLength = ' + proofLength);
+
     return {
         node: node,
-        proof: proof.slice(0, order),
+        proof: proof.slice(0, proofLength),
     }
 }
 

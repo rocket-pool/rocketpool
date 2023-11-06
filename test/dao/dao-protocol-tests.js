@@ -46,7 +46,7 @@ import { upgradeOneDotThree } from '../_utils/upgrade';
 import { voteStates } from './scenario-dao-proposal';
 
 export default function() {
-    contract('RocketDAOProtocol', async (accounts) => {
+    contract.only('RocketDAOProtocol', async (accounts) => {
 
         // Accounts
         const [
@@ -315,21 +315,35 @@ export default function() {
             return Math.ceil(Math.log2(leafCount));
         }
 
-        // Calculate the indices for each challenge round
         function getChallengeIndices(finalIndex, leafCount) {
-            const maxDepth = getMaxDepth(leafCount);
-            const maxRounds = getRoundCount(leafCount);
-            const indices = [];
-            for (let i = 1; i <= maxRounds; i++) {
+            const phase1Indices = [];
+            const phase2Indices = [];
+
+            const phase1Depth = getMaxDepth(leafCount);
+            const phase2Depth = phase1Depth * 2;
+
+            const subRootIndex = finalIndex / Math.pow(2, phase1Depth);
+
+            const roundsPerPhase = getRoundCount(leafCount);
+
+            for (let i = 1; i <= roundsPerPhase; i++) {
                 let j = i * depthPerRound;
-                if (j <= maxDepth) {
-                    indices.push(finalIndex / (2 ** (maxDepth - j)));
+                if (j <= phase1Depth) {
+                    const index = subRootIndex / (2 ** (phase1Depth - j));
+                    if (index !== subRootIndex) {
+                        phase1Indices.push(index);
+                    }
                 }
             }
-            if (Math.floor(Math.log2(finalIndex)) % depthPerRound !== 0) {
-                indices.push(finalIndex);
+
+            for (let i = roundsPerPhase + 2; i <= roundsPerPhase * 2; i++) {
+                let j = i * depthPerRound;
+                if (j <= phase2Depth) {
+                    phase2Indices.push(finalIndex / (2 ** (phase2Depth - j)));
+                }
             }
-            return indices;
+
+            return { phase1Indices, subRootIndex, phase2Indices };
         }
 
         /*
@@ -361,9 +375,11 @@ export default function() {
             // Challenge/response
             const phase1Depth = getMaxDepth(leaves.length);
             const maxDepth = phase1Depth * 2;
-            const phase2Indices = getChallengeIndices(2 ** maxDepth, Math.pow(leaves.length, 2));
-            const phase1Indices = phase2Indices.splice(0, Math.floor(phase2Indices.length/2));
-            const subRootIndex = (phase2Indices.splice(0, 1))[0];
+            const { phase1Indices, subRootIndex, phase2Indices } = getChallengeIndices(2 ** maxDepth, leaves.length);
+
+            console.log(phase1Indices);
+            console.log(subRootIndex);
+            console.log(phase2Indices);
 
             // Phase 1
             for (const index of phase1Indices) {
@@ -436,8 +452,9 @@ export default function() {
             const { propId, leaves } = await createValidProposal();
 
             // Create some challenges
-            const maxDepth = getMaxDepth(leaves.length);
-            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).slice(0, 2);
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).phase1Indices.slice(0, 1);
             for (const index of indices) {
                 // Challenge
                 const challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
@@ -566,8 +583,9 @@ export default function() {
             const { propId, leaves } = await createValidProposal();
 
             // Challenge/response
-            const maxDepth = getMaxDepth(leaves.length);
-            const indices = getChallengeIndices(2 ** maxDepth, leaves.length);
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).phase1Indices;
             const index = indices[0];
             // Challenge
             const challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
@@ -621,8 +639,9 @@ export default function() {
             const { propId, leaves } = await createValidProposal();
 
             // Create some invalid challenges
-            const maxDepth = getMaxDepth(leaves.length);
-            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).slice(0, 2);
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).phase1Indices.slice(0, 1);
             for (const index of indices) {
                 // Challenge
                 const challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
@@ -658,8 +677,9 @@ export default function() {
             const { propId, leaves } = await createValidProposal();
 
             // Create some invalid challenges
-            const maxDepth = getMaxDepth(leaves.length);
-            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).slice(0, 2);
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).phase1Indices.slice(0, 1);
             const index = indices[0];
             // Challenge
             const challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
@@ -710,8 +730,9 @@ export default function() {
             const { propId, leaves } = await createValidProposal();
 
             // Challenge/response
-            const maxDepth = getMaxDepth(leaves.length);
-            const indices = getChallengeIndices(2 ** maxDepth, leaves.length);
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).phase1Indices;
             const index = indices[0];
             // Challenge
             const challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
@@ -756,9 +777,7 @@ export default function() {
             // Challenge/response
             const phase1Depth = getMaxDepth(leaves.length);
             const maxDepth = phase1Depth * 2;
-            const phase2Indices = getChallengeIndices(2 ** maxDepth, Math.pow(leaves.length, 2));
-            const phase1Indices = phase2Indices.splice(0, Math.floor(phase2Indices.length/2));
-            const subRootIndex = (phase2Indices.splice(0, 1))[0];
+            const { phase1Indices, subRootIndex, phase2Indices } = getChallengeIndices(2 ** maxDepth, leaves.length);
 
             // Phase 1
             for (const index of phase1Indices) {
@@ -829,9 +848,7 @@ export default function() {
             // Challenge/response
             const phase1Depth = getMaxDepth(leaves.length);
             const maxDepth = phase1Depth * 2;
-            const phase2Indices = getChallengeIndices(2 ** maxDepth, Math.pow(leaves.length, 2));
-            const phase1Indices = phase2Indices.splice(0, Math.floor(phase2Indices.length/2));
-            const subRootIndex = (phase2Indices.splice(0, 1))[0];
+            const { phase1Indices, subRootIndex, phase2Indices } = getChallengeIndices(2 ** maxDepth, leaves.length);
 
             // Phase 1
             for (const index of phase1Indices) {
@@ -952,8 +969,9 @@ export default function() {
             const { propId, leaves } = await createValidProposal();
 
             // Challenge/response
-            const maxDepth = getMaxDepth(leaves.length);
-            const indices = getChallengeIndices(2 ** maxDepth, leaves.length);
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).phase1Indices;
             const index = indices[0];
 
             // Challenge
@@ -974,8 +992,9 @@ export default function() {
             const { propId, leaves } = await createValidProposal();
 
             // Challenge/response
-            const maxDepth = getMaxDepth(leaves.length);
-            const indices = getChallengeIndices(2 ** maxDepth, leaves.length);
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).phase1Indices;
             const index = indices[0];
 
             // Challenge
@@ -997,9 +1016,9 @@ export default function() {
             const { propId, leaves } = await createValidProposal();
 
             // Challenge/response
-            const maxDepth = getMaxDepth(leaves.length);
-            const indices = getChallengeIndices(2 ** maxDepth, leaves.length);
-            const index = indices[indices.length - 1];
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const index = getChallengeIndices(2 ** maxDepth, leaves.length).subRootIndex;
 
             // Challenge
             let challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
@@ -1019,13 +1038,13 @@ export default function() {
             const { propId, leaves } = await createValidProposal();
 
             // Challenge/response
-            const maxDepth = getMaxDepth(leaves.length);
-            const index = 2 ** (maxDepth);
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
             const badIndex = 2 ** (maxDepth + 1);
 
             // Challenge
-            let challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
-            await shouldRevert(daoProtocolCreateChallenge(propId, badIndex, challenge.node, challenge.proof, { from: challenger }), 'Was able to challenge invalid index', 'Invalid challenge depth');
+            // let challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
+            await shouldRevert(daoProtocolCreateChallenge(propId, badIndex, leaves[0], [], { from: challenger }), 'Was able to challenge invalid index', 'Invalid index depth');
         });
 
         it(printTitle('challenger', 'can not defeat a proposal before challenge period passes'), async () => {
@@ -1041,8 +1060,9 @@ export default function() {
             const { propId, leaves } = await createValidProposal();
 
             // Challenge/response
-            const maxDepth = getMaxDepth(leaves.length);
-            const indices = getChallengeIndices(2 ** maxDepth, leaves.length);
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).phase1Indices;
             const index = indices[0];
 
             // Challenge
@@ -1095,9 +1115,10 @@ export default function() {
             const { propId, leaves } = await createValidProposal();
 
             // Challenge/response
-            const maxDepth = getMaxDepth(leaves.length);
-            const indices = getChallengeIndices(2 ** maxDepth, leaves.length);
-            const index = indices[0];
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const challengeIndices = getChallengeIndices(2 ** maxDepth, leaves.length);
+            const index = challengeIndices.phase1Indices[0];
             // Challenge
             let challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
             await daoProtocolCreateChallenge(propId, index, challenge.node, challenge.proof, { from: challenger });
@@ -1109,7 +1130,7 @@ export default function() {
             await daoProtocolDefeatProposal(propId, index, { from: challenger });
 
             // Claim bond on invalid index
-            await shouldRevert(daoProtocolClaimBondChallenger(propId, [indices[1]], { from: proposer }), 'Claimed invalid index', 'Invalid challenge state');
+            await shouldRevert(daoProtocolClaimBondChallenger(propId, [challengeIndices.phase2Indices[0]], { from: proposer }), 'Claimed invalid index', 'Invalid challenge state');
 
             // Try to claim proposal bond
             await shouldRevert(daoProtocolClaimBondChallenger(propId, [1], { from: proposer }), 'Claimed proposal bond', 'Invalid challenger');
@@ -1128,8 +1149,9 @@ export default function() {
             const { propId, leaves } = await createValidProposal();
 
             // Challenge/response
-            const maxDepth = getMaxDepth(leaves.length);
-            const indices = getChallengeIndices(2 ** maxDepth, leaves.length);
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).phase1Indices;
             const index = indices[0];
             // Challenge
             let challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
@@ -1163,8 +1185,9 @@ export default function() {
             const { propId, leaves } = await createValidProposal();
 
             // Challenge/response
-            const maxDepth = getMaxDepth(leaves.length);
-            const indices = getChallengeIndices(2 ** maxDepth, leaves.length);
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).phase1Indices;
 
             // Challenge first round
             let challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, indices[0]);
@@ -1210,8 +1233,9 @@ export default function() {
             const { propId, leaves } = await createValidProposal();
 
             // Challenge/response
-            const maxDepth = getMaxDepth(leaves.length);
-            const indices = getChallengeIndices(2 ** maxDepth, leaves.length);
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).phase1Indices;
             const index = indices[0];
 
             // Challenge
@@ -1249,8 +1273,9 @@ export default function() {
             const { propId, leaves } = await createValidProposal();
 
             // Challenge/response
-            const maxDepth = getMaxDepth(leaves.length);
-            const indices = getChallengeIndices(2 ** maxDepth, leaves.length);
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).phase1Indices;
             const index = indices[0];
 
             // Challenge
@@ -1287,8 +1312,9 @@ export default function() {
             const { propId, leaves } = await createValidProposal();
 
             // Challenge/response
-            const maxDepth = getMaxDepth(leaves.length);
-            const indices = getChallengeIndices(2 ** maxDepth, leaves.length);
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).phase1Indices;
             const index = indices[0];
             // Challenge
             let challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
@@ -1327,3 +1353,4 @@ export default function() {
         });
     });
 }
+

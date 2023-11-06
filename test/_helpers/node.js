@@ -12,7 +12,7 @@ import {
     RocketDAOProtocolNew,
     RocketDAOProtocol,
     RocketNodeManagerNew,
-    RocketNodeStakingNew,
+    RocketNodeStakingNew, RocketNodeDepositNew,
 } from '../_utils/artifacts';
 import { setDaoNodeTrustedBootstrapMember } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { daoNodeTrustedMemberJoin } from '../dao/scenario-dao-node-trusted';
@@ -154,6 +154,17 @@ export async function nodeStakeRPLFor(nodeAddress, amount, txOptions) {
     assertBN.equal(after.sub(before), amount, 'Staking balance did not increase by amount staked');
 }
 
+// Deposits ETH into a node operator's balance
+export async function nodeDepositEthFor(nodeAddress, txOptions) {
+    assert.isTrue(await upgradeExecuted());
+    const [rocketNodeDeposit] = await Promise.all([
+        RocketNodeDepositNew.deployed(),
+    ]);
+    const before = await rocketNodeDeposit.getNodeEthBalance(nodeAddress);
+    await rocketNodeDeposit.depositEthFor(nodeAddress, txOptions);
+    const after = await rocketNodeDeposit.getNodeEthBalance(nodeAddress);
+    assertBN.equal(after.sub(before), txOptions.value, 'ETH balance did not increase by msg.value');
+}
 
 // Sets allow state for staking on behalf
 export async function setStakeRPLForAllowed(caller, state, txOptions) {

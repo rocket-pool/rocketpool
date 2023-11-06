@@ -17,7 +17,7 @@ import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsPropos
 contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInterface {
 
     // TODO: Set this to final value (5-6)
-    uint256 constant depthPerRound = 1;
+    uint256 constant depthPerRound = 3;
 
     // Packing constants for packing challenge data into a single uint256
     uint256 constant stateOffset = (256 - 8);
@@ -570,6 +570,12 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
             uint256 remainder = indexDepth % depthPerRound;
             if (remainder != 0) {
                 return _index / (2 ** remainder);
+            }
+        // Index is phase 2 pollard
+        } else if (indexDepth > maxDepth) {
+            if (indexDepth < maxDepth + depthPerRound) {
+                // Previous index is a phase 1 leaf node
+                return _index / (2 ** (indexDepth - maxDepth));
             }
         }
 

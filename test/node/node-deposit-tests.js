@@ -9,7 +9,7 @@ import {
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { getMinipoolMinimumRPLStake, stakeMinipool } from '../_helpers/minipool';
 import { getNodeFee } from '../_helpers/network';
-import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
+import { registerNode, setNodeTrusted, nodeStakeRPL, nodeDepositEthFor } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
 import { depositV2 } from './scenario-deposit-v2';
 import { reduceBond } from '../minipool/scenario-reduce-bond';
@@ -17,9 +17,10 @@ import { userDeposit } from '../_helpers/deposit';
 import { increaseTime } from '../_utils/evm';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { assertBN } from '../_helpers/bn';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
-    contract.only('RocketNodeDeposit', async (accounts) => {
+    contract('RocketNodeDeposit', async (accounts) => {
 
         // Accounts
         const [
@@ -38,6 +39,8 @@ export default function() {
         let halfDepositNodeAmount;
 
         before(async () => {
+            await upgradeOneDotThree();
+
             // Set settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.bond.reduction.window.start', bondReductionWindowStart, {from: owner});
@@ -241,5 +244,64 @@ export default function() {
             }), 'Was able to deposit with 2 ETH', 'Invalid value');
         });
 
+
+        it(printTitle('node operator', 'can deposit ETH then use it to create a minipool'), async () => {
+            // Stake RPL to cover minipools
+            let minipoolRplStake = await getMinipoolMinimumRPLStake();
+            let rplStake = minipoolRplStake.mul('3'.BN);
+            await mintRPL(owner, node, rplStake);
+            await nodeStakeRPL(rplStake, {from: node});
+
+            // Perform a user deposit into DP
+            await userDeposit({ from: random, value: '24'.ether, });
+
+            // Deposit ETH to the node operator
+            await nodeDepositEthFor(node, {from: owner, value: '8'.ether});
+
+            // Create a minipool with the ETH balance
+            await depositV2(noMinimumNodeFee, lebDepositNodeAmount, {
+                from: node,
+                value: '0'.BN
+            });
+        });
+
+
+        it(printTitle('node operator', 'can deposit ETH then use it to create a minipool while supplying the shortfall'), async () => {
+            // Stake RPL to cover minipools
+            let minipoolRplStake = await getMinipoolMinimumRPLStake();
+            let rplStake = minipoolRplStake.mul('3'.BN);
+            await mintRPL(owner, node, rplStake);
+            await nodeStakeRPL(rplStake, {from: node});
+
+            // Perform a user deposit into DP
+            await userDeposit({ from: random, value: '24'.ether, });
+
+            // Deposit ETH to the node operator
+            await nodeDepositEthFor(node, {from: owner, value: '4'.ether});
+
+            // Create a minipool with the ETH balance
+            await depositV2(noMinimumNodeFee, lebDepositNodeAmount, {
+                from: node,
+                value: '4'.ether
+            });
+        });
+
+
+        it(printTitle('node operator', 'can not create a minipool with insufficient credit'), async () => {
+            // Stake RPL to cover minipools
+            let minipoolRplStake = await getMinipoolMinimumRPLStake();
+            let rplStake = minipoolRplStake.mul('3'.BN);
+            await mintRPL(owner, node, rplStake);
+            await nodeStakeRPL(rplStake, {from: node});
+
+            // Perform a user deposit into DP
+            await userDeposit({ from: random, value: '24'.ether, });
+
+            // Create a minipool with the ETH balance
+            await shouldRevert(depositV2(noMinimumNodeFee, lebDepositNodeAmount, {
+                from: node,
+                value: '0'.BN
+            }), 'Was able to create a minipool with insufficient credit', 'Insufficient credit');
+        });
     });
 }

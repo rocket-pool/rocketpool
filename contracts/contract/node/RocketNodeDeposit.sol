@@ -19,14 +19,17 @@ import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../network/RocketNetworkSnapshots.sol";
+import "../../interface/RocketVaultWithdrawerInterface.sol";
 
 /// @notice Handles node deposits and minipool creation
-contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
+contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaultWithdrawerInterface {
 
     // Events
     event DepositReceived(address indexed from, uint256 amount, uint256 time);
     event DepositFor(address indexed nodeAddress, address indexed from, uint256 amount, uint256 time);
     event Withdrawal(address indexed nodeAddress, address indexed to, uint256 amount, uint256 time);
+
+    function receiveVaultWithdrawalETH() external payable {}
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 4;
@@ -78,7 +81,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
 
     /// @notice Deposits ETH for the given node operator
     /// @param _nodeAddress The address of the node operator to deposit ETH for
-    function depositEthFor(address _nodeAddress) override external payable onlyRegisteredMinipool(_nodeAddress) {
+    function depositEthFor(address _nodeAddress) override external payable onlyRegisteredNode(_nodeAddress) {
         // Send the ETH to vault
         uint256 amount = msg.value;
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
@@ -92,7 +95,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     /// @notice Withdraws ETH from a node operator's balance. Must be called from withdrawal address.
     /// @param _nodeAddress Address of the node operator to withdraw from
     /// @param _amount Amount of ETH to withdraw
-    function withdrawEth(address _nodeAddress, uint256 _amount) external onlyRegisteredMinipool(_nodeAddress) {
+    function withdrawEth(address _nodeAddress, uint256 _amount) external onlyRegisteredNode(_nodeAddress) {
         // Check valid caller
         address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
         require(msg.sender == withdrawalAddress, "Only withdrawal address can withdraw ETH");
