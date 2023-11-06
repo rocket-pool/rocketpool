@@ -69,8 +69,8 @@ export default function() {
 
         const secondsPerEpoch = 384;
         let rewardClaimBalanceIntervals = 28;
-        let balanceSubmissionEpochs = 225;
-        let rewardClaimPeriodTime = (rewardClaimBalanceIntervals * balanceSubmissionEpochs * secondsPerEpoch); // 28 days
+        let balanceSubmissionFrequency = (24 * 60 * 60);
+        let rewardClaimPeriodTime = (rewardClaimBalanceIntervals * balanceSubmissionFrequency * secondsPerEpoch); // 28 days
 
         // Setup
         before(async () => {
@@ -90,7 +90,7 @@ export default function() {
             voteTime = await getDaoProtocolVoteTime();
 
             // Set the reward claim period
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.balances.epochs', balanceSubmissionEpochs, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.balances.frequency', balanceSubmissionFrequency, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', rewardClaimBalanceIntervals, {from: owner});
         });
 

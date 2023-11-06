@@ -46,7 +46,7 @@ import { artifacts } from 'hardhat';
 import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
-    contract('RocketMinipool', async (accounts) => {
+    contract.only('RocketMinipool', async (accounts) => {
 
         // Accounts
         const [
@@ -68,8 +68,8 @@ export default function() {
         let bondReductionWindowStart = (2 * 24 * 60 * 60);
         let bondReductionWindowLength = (2 * 24 * 60 * 60);
         let rewardClaimBalanceIntervals = 28;
-        let balanceSubmissionEpochs = 225;
-        let rewardClaimPeriodTime = (rewardClaimBalanceIntervals * balanceSubmissionEpochs * secondsPerEpoch); // 28 days
+        let balanceSubmissionFrequency = (60 * 60 * 24);
+        let rewardClaimPeriodTime = (rewardClaimBalanceIntervals * balanceSubmissionFrequency * secondsPerEpoch); // 28 days
         let userDistributeTime = (90 * 24 * 60 * 60); // 90 days
         let initialisedMinipool;
         let prelaunchMinipool;
@@ -105,14 +105,11 @@ export default function() {
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.bond.reduction.window.start', bondReductionWindowStart, {from: owner});
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.bond.reduction.window.length', bondReductionWindowLength, {from: owner});
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.balances.epochs', balanceSubmissionEpochs, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.balances.frequency', balanceSubmissionFrequency, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', rewardClaimBalanceIntervals, {from: owner});
 
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', '50'.ether, {from: owner});
-
-            // Set user distribute time
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.user.distribute.window.start', userDistributeTime, {from: owner});
 
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();

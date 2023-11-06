@@ -173,8 +173,8 @@ contract RocketUpgradeOneDotThree is RocketBase {
 
         // pDAO network settings
         settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "network"));
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.submit.balances.epochs")), 225);          // 24 hours
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.submit.prices.epochs")), 225);            // 24 hours
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.submit.balances.frequency")), 1 days);          // 24 hours
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.submit.prices.frequency")), 1 days);            // 24 hours
 
         // pDAO rewards settings
         settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "rewards"));

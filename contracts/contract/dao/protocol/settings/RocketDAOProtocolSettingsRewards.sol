@@ -7,7 +7,6 @@ import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNet
 
 /// @notice Settings relating to RPL reward intervals
 contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDAOProtocolSettingsRewardsInterface {
-    uint256 public constant SECONDS_PER_EPOCH = 384;
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "rewards") {
         version = 2;
@@ -87,6 +86,6 @@ contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDA
 
     function getRewardsClaimIntervalTime() override external view returns (uint256) {
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
-        return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "periods"))) * rocketDAOProtocolSettingsNetwork.getSubmitBalancesEpochs() * SECONDS_PER_EPOCH;
+        return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "periods"))) * rocketDAOProtocolSettingsNetwork.getSubmitBalancesFrequency();
     }
 }
