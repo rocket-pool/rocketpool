@@ -1306,6 +1306,9 @@ export default function() {
             let challenger = node1;
             await createNode(1, challenger);
 
+            // Create node for invalid claim
+            await createNode(1, node2);
+
             // Create a valid proposal
             const { propId, leaves } = await createValidProposal();
 
@@ -1336,6 +1339,9 @@ export default function() {
             // Create a minipool with a node to use as a challenger
             let challenger = node1;
             await createNode(1, challenger);
+
+            // Create node for invalid claim
+            await createNode(1, node2);
 
             // Create a valid proposal
             const { propId } = await createValidProposal();
