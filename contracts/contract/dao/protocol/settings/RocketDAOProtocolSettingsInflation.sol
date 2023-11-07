@@ -1,6 +1,5 @@
-pragma solidity 0.8.18;
-
 // SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.8.18;
 
 import "./RocketDAOProtocolSettings.sol";
 import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsInflationInterface.sol";
@@ -9,9 +8,7 @@ import "../../../../interface/token/RocketTokenRPLInterface.sol";
 /// @notice RPL Inflation settings in RP which the DAO will have full control over
 contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, RocketDAOProtocolSettingsInflationInterface {
 
-    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "inflation") {
-        // Set version 
         version = 2;
          // Set some initial settings on first deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
@@ -23,8 +20,6 @@ contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, Rocket
         }
     }
     
-    
-
     /*** Set Uint *****************************************/
 
     /// @notice Update a setting, overrides inherited setting method with extra checks for this contract

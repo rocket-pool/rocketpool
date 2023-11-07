@@ -9,10 +9,9 @@ import "../../../../types/MinipoolDeposit.sol";
 /// @notice Network minipool settings
 contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketDAOProtocolSettingsMinipoolInterface {
 
-    uint256 constant minipoolUserDistributeWindowStart = 90 days;
+    uint256 constant internal minipoolUserDistributeWindowStart = 90 days;
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "minipool") {
-        // Set version
         version = 3;
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {

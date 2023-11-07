@@ -70,18 +70,18 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
     }
 
     /// @dev Increases a node operators deposit credit balance
-    function increaseDepositCreditBalance(address _nodeOperator, uint256 _amount) override external onlyLatestContract("rocketNodeDeposit", address(this)) {
+    function increaseDepositCreditBalance(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(_nodeAddress) {
         // Accept calls from network contracts or registered minipools
         require(getBool(keccak256(abi.encodePacked("minipool.exists", msg.sender))) ||
             getBool(keccak256(abi.encodePacked("contract.exists", msg.sender))),
             "Invalid or outdated network contract");
         // Increase credit balance
-        addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeOperator)), _amount);
+        addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress)), _amount);
     }
 
     /// @notice Deposits ETH for the given node operator
     /// @param _nodeAddress The address of the node operator to deposit ETH for
-    function depositEthFor(address _nodeAddress) override external payable onlyRegisteredNode(_nodeAddress) {
+    function depositEthFor(address _nodeAddress) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(_nodeAddress) {
         // Send the ETH to vault
         uint256 amount = msg.value;
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
@@ -95,7 +95,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
     /// @notice Withdraws ETH from a node operator's balance. Must be called from withdrawal address.
     /// @param _nodeAddress Address of the node operator to withdraw from
     /// @param _amount Amount of ETH to withdraw
-    function withdrawEth(address _nodeAddress, uint256 _amount) external onlyRegisteredNode(_nodeAddress) {
+    function withdrawEth(address _nodeAddress, uint256 _amount) external onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(_nodeAddress) {
         // Check valid caller
         address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
         require(msg.sender == withdrawalAddress, "Only withdrawal address can withdraw ETH");

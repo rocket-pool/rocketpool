@@ -16,10 +16,10 @@ import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsSecuri
 contract RocketDAOSecurityProposals is RocketBase, RocketDAOSecurityProposalsInterface {
 
     // The namespace for any data stored in the trusted node DAO (do not change)
-    string constant daoNameSpace = "dao.security.";
+    string constant internal daoNameSpace = "dao.security.";
 
     // The namespace of the DAO that setting changes get applied to (protocol DAO)
-    string constant protocolDaoSettingNamespace = "dao.protocol.setting.";
+    string constant internal protocolDaoSettingNamespace = "dao.protocol.setting.";
 
     // Only allow certain contracts to execute methods
     modifier onlyExecutingContracts() {

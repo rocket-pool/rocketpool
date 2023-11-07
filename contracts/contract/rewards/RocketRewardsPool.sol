@@ -22,9 +22,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     event RewardSnapshotSubmitted(address indexed from, uint256 indexed rewardIndex, RewardSubmission submission, uint256 time);
     event RewardSnapshot(uint256 indexed rewardIndex, RewardSubmission submission, uint256 intervalStartTime, uint256 intervalEndTime, uint256 time);
 
-    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        // Version
         version = 4;
     }
 
@@ -32,15 +30,14 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     function getRewardIndex() override public view returns(uint256) {
         return getUint(keccak256("rewards.snapshot.index"));
     }
+
     /// @notice Increment the reward index
     function incrementRewardIndex() private {
         addUint(keccak256("rewards.snapshot.index"), 1);
     }
 
-    /**
-    * @notice Get how much RPL the Rewards Pool contract currently has assigned to it as a whole
-    * @return uint256 Returns rpl balance of rocket rewards contract
-    */
+    /// @notice Get how much RPL the Rewards Pool contract currently has assigned to it as a whole
+    /// @return uint256 Returns rpl balance of rocket rewards contract
     function getRPLBalance() override public view returns(uint256) {
         // Get the vault contract instance
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
@@ -62,28 +59,22 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         return rocketSmoothingPoolAddress.balance;
     }
 
-    /**
-    * @notice Get the last set interval start time
-    * @return uint256 Last set start timestamp for a claim interval
-    */
+    /// @notice Get the last set interval start time
+    /// @return uint256 Last set start timestamp for a claim interval
     function getClaimIntervalTimeStart() override public view returns(uint256) {
         return getUint(keccak256("rewards.pool.claim.interval.time.start"));
     }
 
-    /**
-    * @notice Get how many seconds in a claim interval
-    * @return uint256 Number of seconds in a claim interval
-    */
+    /// @notice Get how many seconds in a claim interval
+    /// @return uint256 Number of seconds in a claim interval
     function getClaimIntervalTime() override public view returns(uint256) {
         // Get from the DAO settings
         RocketDAOProtocolSettingsRewardsInterface daoSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
         return daoSettingsRewards.getRewardsClaimIntervalTime();
     }
 
-    /**
-    * @notice Compute intervals since last claim period
-    * @return uint256 Time intervals since last update
-    */
+    /// @notice Compute intervals since last claim period
+    /// @return uint256 Time intervals since last update
     function getClaimIntervalsPassed() override public view returns(uint256) {
         return block.timestamp - (getClaimIntervalTimeStart() / getClaimIntervalTime());
     }
@@ -100,10 +91,8 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         return getAddress(keccak256(abi.encodePacked("rewards.pool.interval.execution.address", _interval)));
     }
 
-    /**
-    * @notice Get the percentage this contract can claim in this interval
-    * @return uint256 Rewards percentage this contract can claim in this interval
-    */
+    /// @notice Get the percentage this contract can claim in this interval
+    /// @return uint256 Rewards percentage this contract can claim in this interval
     function getClaimingContractPerc(string memory _claimingContract) override public view returns (uint256) {
         // Load contract
         RocketDAOProtocolSettingsRewardsInterface daoSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
@@ -111,10 +100,8 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         return daoSettingsRewards.getRewardsClaimerPerc(_claimingContract);
     }
 
-    /**
-    * @notice Get an array of percentages that the given contracts can claim in this interval
-    * @return uint256[] Array of percentages in the order of the supplied contract names
-    */
+    /// @notice Get an array of percentages that the given contracts can claim in this interval
+    /// @return uint256[] Array of percentages in the order of the supplied contract names
     function getClaimingContractsPerc(string[] memory _claimingContracts) override external view returns (uint256[] memory) {
         // Load contract
         RocketDAOProtocolSettingsRewardsInterface daoSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));

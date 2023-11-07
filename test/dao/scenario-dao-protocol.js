@@ -292,11 +292,6 @@ export function daoProtocolGenerateChallengeProof(leaves, order, index = 1) {
         proofLength = order;
     }
 
-    console.log('offset = ' + offset);
-    console.log('depth = ' + depth);
-    console.log('order = ' + order);
-    console.log('proofLength = ' + proofLength);
-
     return {
         node: node,
         proof: proof.slice(0, proofLength),

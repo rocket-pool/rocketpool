@@ -46,7 +46,7 @@ import { upgradeOneDotThree } from '../_utils/upgrade';
 import { voteStates } from './scenario-dao-proposal';
 
 export default function() {
-    contract.only('RocketDAOProtocol', async (accounts) => {
+    contract('RocketDAOProtocol', async (accounts) => {
 
         // Accounts
         const [
@@ -329,19 +329,19 @@ export default function() {
             const roundsPerPhase = getRoundCount(leafCount);
 
             for (let i = 1; i <= roundsPerPhase; i++) {
-                let j = i * depthPerRound;
-                if (j <= phase1Depth) {
-                    const index = subRootIndex / (2 ** (phase1Depth - j));
+                let challengeDepth = i * depthPerRound;
+                if (challengeDepth <= phase1Depth) {
+                    const index = subRootIndex / (2 ** (phase1Depth - challengeDepth));
                     if (index !== subRootIndex) {
                         phase1Indices.push(index);
                     }
                 }
             }
 
-            for (let i = roundsPerPhase + 2; i <= roundsPerPhase * 2; i++) {
-                let j = i * depthPerRound;
-                if (j <= phase2Depth) {
-                    phase2Indices.push(finalIndex / (2 ** (phase2Depth - j)));
+            for (let i = 1; i <= roundsPerPhase; i++) {
+                let challengeDepth = phase1Depth + (i * depthPerRound);
+                if (challengeDepth <= phase2Depth) {
+                    phase2Indices.push(finalIndex / (2 ** (phase2Depth - challengeDepth)));
                 }
             }
 
@@ -378,10 +378,6 @@ export default function() {
             const phase1Depth = getMaxDepth(leaves.length);
             const maxDepth = phase1Depth * 2;
             const { phase1Indices, subRootIndex, phase2Indices } = getChallengeIndices(2 ** maxDepth, leaves.length);
-
-            console.log(phase1Indices);
-            console.log(subRootIndex);
-            console.log(phase2Indices);
 
             // Phase 1
             for (const index of phase1Indices) {

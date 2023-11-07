@@ -20,7 +20,7 @@ import "../../interface/node/RocketNodeManagerInterface.sol";
 contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
 
     // Constants
-    bytes32 totalKey;
+    bytes32 immutable internal totalKey;
 
     // Events
     event RPLStaked(address indexed from, uint256 amount, uint256 time);

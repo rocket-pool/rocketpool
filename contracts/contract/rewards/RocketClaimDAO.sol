@@ -56,7 +56,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
     /// @param _invoiceID A string used to identify this payment (not used internally)
     /// @param _recipientAddress The address to send the RPL spend to
     /// @param _amount The amount of RPL to send
-    function spend(string memory _invoiceID, address _recipientAddress, uint256 _amount) override external onlyLatestContract("rocketDAOProtocolProposals", msg.sender) {
+    function spend(string memory _invoiceID, address _recipientAddress, uint256 _amount) override external onlyLatestContract("rocketDAOProtocolProposals", msg.sender) onlyLatestContract("rocketClaimDAO", address(this)) {
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Addresses
@@ -76,7 +76,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
     /// @param _periodLength The length (in seconds) of periods of this contract
     /// @param _startTime A unix timestamp of when payments begin
     /// @param _numPeriods The number of periods this contract pays out for
-    function newContract(string memory _contractName, address _recipientAddress, uint256 _amountPerPeriod, uint256 _periodLength, uint256 _startTime, uint256 _numPeriods) override external {
+    function newContract(string memory _contractName, address _recipientAddress, uint256 _amountPerPeriod, uint256 _periodLength, uint256 _startTime, uint256 _numPeriods) override external onlyLatestContract("rocketDAOProtocolProposals", msg.sender) onlyLatestContract("rocketClaimDAO", address(this)) {
         uint256 contractKey = uint256(keccak256(abi.encodePacked("dao.protocol.treasury.contract", _contractName)));
         // Ensure contract name uniqueness
         require(getBool(bytes32(contractKey + existsOffset)) == false, "Contract already exists");
@@ -98,7 +98,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
     /// @param _amountPerPeriod The amount of RPL that can be claimed each period
     /// @param _periodLength The length (in seconds) of periods of this contract
     /// @param _numPeriods The number of periods this contract pays out for
-    function updateContract(string memory _contractName, address _recipientAddress, uint256 _amountPerPeriod, uint256 _periodLength, uint256 _numPeriods) override external {
+    function updateContract(string memory _contractName, address _recipientAddress, uint256 _amountPerPeriod, uint256 _periodLength, uint256 _numPeriods) override external onlyLatestContract("rocketDAOProtocolProposals", msg.sender) onlyLatestContract("rocketClaimDAO", address(this)) {
         uint256 contractKey = uint256(keccak256(abi.encodePacked("dao.protocol.treasury.contract", _contractName)));
         // Check it exists
         require(getBool(bytes32(contractKey + existsOffset)) == true, "Contract does not exist");
@@ -119,7 +119,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
 
     /// @notice Can be called by a recipient to withdraw any paid amounts of RPL
     /// @param _recipientAddress The recipient address to claim for
-    function withdrawBalance(address _recipientAddress) override external {
+    function withdrawBalance(address _recipientAddress) override external onlyLatestContract("rocketClaimDAO", address(this)) {
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Addresses
@@ -140,7 +140,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
 
     /// @notice Executes payout on the given contracts
     /// @param _contractNames An array of contract names to execute a payout on
-    function payOutContracts(string[] calldata _contractNames) external {
+    function payOutContracts(string[] calldata _contractNames) external onlyLatestContract("rocketClaimDAO", address(this)) {
         for (uint256 i = 0; i < _contractNames.length; i++) {
             payOutContract(_contractNames[i]);
         }

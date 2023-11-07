@@ -84,6 +84,7 @@ contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDA
         return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "periods")));
     }
 
+    /// @notice The interval time for reward periods
     function getRewardsClaimIntervalTime() override external view returns (uint256) {
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "periods"))) * rocketDAOProtocolSettingsNetwork.getSubmitBalancesFrequency();
