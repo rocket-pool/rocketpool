@@ -73,4 +73,5 @@ interface RocketDAOProtocolProposalsInterface {
 
     function proposalSecurityInvite(string memory _id, address _memberAddress) external;
     function proposalSecurityKick(address _memberAddress) external;
+    function proposalSecurityReplace(address _existingMemberAddress, string calldata _id, address _newMemberAddress) external;
 }

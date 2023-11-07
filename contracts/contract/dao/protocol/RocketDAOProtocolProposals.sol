@@ -528,7 +528,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     /// @notice Invites an address to join the security council
     /// @param _id A string to identify this member with
     /// @param _memberAddress The address of the new member
-    function proposalSecurityInvite(string memory _id, address _memberAddress) override external onlyExecutingContracts() {
+    function proposalSecurityInvite(string calldata _id, address _memberAddress) override external onlyExecutingContracts() {
         RocketDAOSecurityProposalsInterface rocketDAOSecurityProposals = RocketDAOSecurityProposalsInterface(getContractAddress("rocketDAOSecurityProposals"));
         rocketDAOSecurityProposals.proposalInvite(_id, _memberAddress);
     }
@@ -540,4 +540,12 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         rocketDAOSecurityProposals.proposalKick(_memberAddress);
     }
 
+    /// @notice Propose to replace a current member from the security council
+    /// @param _existingMemberAddress The address of the member to kick
+    /// @param _newMemberId A string to identify this member with
+    /// @param _newMemberAddress The address of the new member
+    function proposalSecurityReplace(address _existingMemberAddress, string calldata _newMemberId, address _newMemberAddress) override external onlyExecutingContracts {
+        RocketDAOSecurityProposalsInterface rocketDAOSecurityProposals = RocketDAOSecurityProposalsInterface(getContractAddress("rocketDAOSecurityProposals"));
+        rocketDAOSecurityProposals.proposalReplace(_existingMemberAddress, _newMemberId, _newMemberAddress);
+    }
 }
