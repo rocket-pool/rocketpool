@@ -1,5 +1,6 @@
 export const RocketAuctionManager = artifacts.require('RocketAuctionManager.sol');
 export const RocketClaimDAO = artifacts.require('RocketClaimDAOOld.sol');
+export const RocketClaimDAONew = artifacts.require('RocketClaimDAO.sol');
 export const RocketDAONodeTrusted = artifacts.require('RocketDAONodeTrusted.sol');
 export const RocketDAONodeTrustedActions = artifacts.require('RocketDAONodeTrustedActions.sol');
 export const RocketDAONodeTrustedProposals = artifacts.require('RocketDAONodeTrustedProposals.sol');

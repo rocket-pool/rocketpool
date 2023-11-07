@@ -5,7 +5,11 @@ import {
     RocketDAOProtocolSettingsInflation,
     RocketTokenRPL,
     RocketVault,
-    RocketDAOProtocolNew, RocketNetworkPricesNew, RocketNetworkPrices, RocketDAOProtocolSettingsRewardsNew,
+    RocketDAOProtocolNew,
+    RocketNetworkPricesNew,
+    RocketNetworkPrices,
+    RocketDAOProtocolSettingsRewardsNew,
+    RocketClaimDAO, RocketClaimDAONew,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 import { upgradeExecuted } from '../_utils/upgrade';
@@ -137,6 +141,46 @@ export async function spendRewardsClaimTreasury(_invoiceID, _recipientAddress, _
     assertBN.equal(ds2.recipientBalance, ds1.recipientBalance.add(_amount), "Amount spent by treasury does not match recipients received amount");
 }
 
+
+// Create a new recurring payment via bootstrap
+export async function bootstrapTreasuryNewContract(_contractName, _recipientAddress, _amount, _periodLength, _startTime, _numPeriods, txOptions) {
+    assert(await upgradeExecuted());
+
+    // Load contracts
+    const rocketDAOProtocol = await RocketDAOProtocolNew.deployed();
+    const rocketClaimDAO = await RocketClaimDAONew.deployed();
+
+    // Perform tx
+    await rocketDAOProtocol.bootstrapTreasuryNewContract(_contractName, _recipientAddress, _amount, _periodLength, _startTime, _numPeriods, txOptions);
+
+    // Sanity check
+    const contract = await rocketClaimDAO.getContract(_contractName);
+    assert(contract.recipient === _recipientAddress);
+    assertBN.equal(contract.amountPerPeriod, _amount, "Invalid amount");
+    assert(Number(contract.periodLength) === _periodLength);
+    assert(Number(contract.numPeriods) === _numPeriods);
+    assert(Number(contract.lastPaymentTime) === _startTime);
+}
+
+
+// Update an existing recurring payment via bootstrap
+export async function bootstrapTreasuryUpdateContract(_contractName, _recipientAddress, _amount, _periodLength, _numPeriods, txOptions) {
+    assert(await upgradeExecuted());
+
+    // Load contracts
+    const rocketDAOProtocol = await RocketDAOProtocolNew.deployed();
+    const rocketClaimDAO = await RocketClaimDAONew.deployed();
+
+    // Perform tx
+    await rocketDAOProtocol.bootstrapTreasuryUpdateContract(_contractName, _recipientAddress, _amount, _periodLength, _numPeriods, txOptions);
+
+    // Sanity check
+    const contract = await rocketClaimDAO.getContract(_contractName);
+    assert(contract.recipient === _recipientAddress);
+    assertBN.equal(contract.amountPerPeriod, _amount, "Invalid amount");
+    assert(Number(contract.periodLength) === _periodLength);
+    assert(Number(contract.numPeriods) === _numPeriods);
+}
 
 /*** Inflation *******/
 
