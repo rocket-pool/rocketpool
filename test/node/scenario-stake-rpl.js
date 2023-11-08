@@ -1,9 +1,20 @@
-import { RocketMinipoolManager, RocketDAOProtocolSettingsMinipool, RocketNetworkPrices, RocketDAOProtocolSettingsNode, RocketNodeStaking, RocketTokenRPL, RocketVault } from '../_utils/artifacts';
+import {
+    RocketMinipoolManager,
+    RocketDAOProtocolSettingsMinipool,
+    RocketNetworkPrices,
+    RocketDAOProtocolSettingsNode,
+    RocketNodeStaking,
+    RocketTokenRPL,
+    RocketVault,
+    RocketNetworkPricesNew, RocketNodeStakingNew,
+} from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Stake RPL against the node
 export async function stakeRpl(amount, txOptions) {
+    const upgraded = await upgradeExecuted();
 
     // Load contracts
     const [
@@ -17,9 +28,9 @@ export async function stakeRpl(amount, txOptions) {
     ] = await Promise.all([
         RocketMinipoolManager.deployed(),
         RocketDAOProtocolSettingsMinipool.deployed(),
-        RocketNetworkPrices.deployed(),
+        upgraded ? RocketNetworkPricesNew.deployed() : RocketNetworkPrices.deployed(),
         RocketDAOProtocolSettingsNode.deployed(),
-        RocketNodeStaking.deployed(),
+        upgraded ? RocketNodeStakingNew.deployed() : RocketNodeStaking.deployed(),
         RocketTokenRPL.deployed(),
         RocketVault.deployed(),
     ]);

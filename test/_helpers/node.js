@@ -171,7 +171,7 @@ export async function setStakeRPLForAllowed(caller, state, txOptions) {
     const [rocketNodeStaking] = await Promise.all([
         (await upgradeExecuted()) ? RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed(),
     ]);
-    await rocketNodeStaking.setStakeRPLForAllowed(caller, state, txOptions);
+    await rocketNodeStaking.methods['setStakeRPLForAllowed(address,bool)'](caller, state, txOptions);
 }
 
 
@@ -181,10 +181,17 @@ export async function nodeWithdrawRPL(amount, txOptions) {
     await rocketNodeStaking.methods['withdrawRPL(uint256)'](amount, txOptions);
 }
 
+// Set allow state for RPL locking
+export async function setRPLLockingAllowed(node, state, txOptions) {
+    assert.isTrue(await upgradeExecuted());
+    const rocketNodeStaking = await RocketNodeStakingNew.deployed();
+    await rocketNodeStaking.setRPLLockingAllowed(node, state, txOptions);
+}
 
 // Make a node deposit
 let minipoolSalt = 0;
 export async function nodeDeposit(txOptions) {
+    const upgraded = await upgradeExecuted();
 
     // Load contracts
     const [
@@ -193,7 +200,7 @@ export async function nodeDeposit(txOptions) {
         rocketStorage,
     ] = await Promise.all([
         RocketMinipoolFactory.deployed(),
-        RocketNodeDeposit.deployed(),
+        upgraded ? RocketNodeDepositNew.deployed() : RocketNodeDeposit.deployed(),
         RocketStorage.deployed()
     ]);
 

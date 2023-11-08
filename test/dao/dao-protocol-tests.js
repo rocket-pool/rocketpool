@@ -28,7 +28,7 @@ import {
     daoProtocolSubmitRoot, daoProtocolVote,
     getDelegatedVotingPower, getPhase2VotingPower, getSubIndex,
 } from './scenario-dao-protocol';
-import { getNodeCount, nodeStakeRPL, nodeWithdrawRPL, registerNode } from '../_helpers/node';
+import { getNodeCount, nodeStakeRPL, nodeWithdrawRPL, registerNode, setRPLLockingAllowed } from '../_helpers/node';
 import { createMinipool, getMinipoolMinimumRPLStake } from '../_helpers/minipool';
 import { mintRPL } from '../_helpers/tokens';
 import { userDeposit } from '../_helpers/deposit';
@@ -255,6 +255,8 @@ export default function() {
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, { from: node });
             await createMinipool({ from: node, value: '16'.ether });
+            // Allow RPL locking by default
+            await setRPLLockingAllowed(node, true, {from: node});
         }
 
         async function createValidProposal(name = 'Test proposal', payload = '0x0') {
@@ -360,6 +362,16 @@ export default function() {
 
             // Create a valid proposal
             await createValidProposal();
+        });
+
+        it(printTitle('proposer', 'can not submit a proposal if locking is not allowed'), async () => {
+            // Setup
+            await mockNodeSet();
+            await createNode(1, proposer);
+            await setRPLLockingAllowed(proposer, false, {from: proposer});
+
+            // Create a valid proposal
+            await shouldRevert(createValidProposal(), 'Was able to create proposal', 'Node is not allowed to lock RPL');
         });
 
         it(printTitle('proposer', 'can successfully refute an invalid challenge'), async () => {
@@ -975,6 +987,30 @@ export default function() {
             // Challenge
             let challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
             await shouldRevert(daoProtocolCreateChallenge(propId, index, challenge.node, challenge.proof, { from: challenger }), 'Was able to challenge', 'Not enough staked RPL');
+        });
+
+        it(printTitle('challenger', 'can not challenge if locking RPL is not allowed'), async () => {
+            // Setup
+            await mockNodeSet();
+            await createNode(1, proposer);
+
+            // Create a minipool with a node to use as a challenger
+            let challenger = node1;
+            await createNode(1, challenger);
+            await setRPLLockingAllowed(challenger, false, {from: challenger});
+
+            // Create a valid proposal
+            const { propId, leaves } = await createValidProposal();
+
+            // Challenge/response
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).phase1Indices;
+            const index = indices[0];
+
+            // Challenge
+            let challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
+            await shouldRevert(daoProtocolCreateChallenge(propId, index, challenge.node, challenge.proof, { from: challenger }), 'Was able to challenge', 'Node is not allowed to lock RPL');
         });
 
         it(printTitle('challenger', 'can not challenge the same index twice'), async () => {

@@ -1,6 +1,6 @@
 import {
-    RocketDAONodeTrustedSettingsMinipool, RocketDAOProtocolSettingsMinipool,
-    RocketNodeStaking,
+    RocketDAONodeTrustedSettingsMinipool, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsRewards,
+    RocketNodeStaking, RocketNodeStakingNew,
 } from '../_utils/artifacts';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
@@ -21,6 +21,7 @@ import { userDeposit } from '../_helpers/deposit'
 import { increaseTime } from '../_utils/evm'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime } from '../dao/scenario-dao-protocol-bootstrap';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketNodeStaking', async (accounts) => {
@@ -40,8 +41,10 @@ export default function() {
         // Setup
         let rocketNodeStaking;
         before(async () => {
+            await upgradeOneDotThree(owner);
+
             // Load contracts
-            rocketNodeStaking = await RocketNodeStaking.deployed();
+            rocketNodeStaking = await RocketNodeStakingNew.deployed();
 
             // Set settings
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
@@ -99,7 +102,7 @@ export default function() {
             const rplAmount = '10000'.ether;
 
             // Remove withdrawal cooldown period
-            await setRewardsClaimIntervalTime(0, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', 0, {from: owner});
 
             // Stake RPL
             await nodeStakeRPL(rplAmount, {from: node});
@@ -131,7 +134,7 @@ export default function() {
             const withdrawAmount = '20000'.ether;
 
             // Remove withdrawal cooldown period
-            await setRewardsClaimIntervalTime(0, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', 0, {from: owner});
 
             // Stake RPL
             await nodeStakeRPL(stakeAmount, {from: node});
@@ -148,7 +151,7 @@ export default function() {
             const rplAmount = '10000'.ether;
 
             // Remove withdrawal cooldown period
-            await setRewardsClaimIntervalTime(0, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', 0, {from: owner});
 
             // Stake RPL
             await nodeStakeRPL(rplAmount, {from: node});
@@ -168,7 +171,7 @@ export default function() {
             const rplAmount = '10000'.ether;
 
             // Remove withdrawal cooldown period
-            await setRewardsClaimIntervalTime(0, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', 0, {from: owner});
 
             // Stake RPL
             await nodeStakeRPL(rplAmount, {from: node});
@@ -204,7 +207,7 @@ export default function() {
             const rplAmount = '10000'.ether;
 
             // Remove withdrawal cooldown period
-            await setRewardsClaimIntervalTime(0, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', 0, {from: owner});
 
             // Stake RPL
             await nodeStakeRPL(rplAmount, {from: node});
@@ -249,7 +252,7 @@ export default function() {
             const rplAmount = '10000'.ether;
 
             // Remove withdrawal cooldown period
-            await setRewardsClaimIntervalTime(0, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', 0, {from: owner});
 
             // Stake RPL
             await nodeStakeRPL(rplAmount, {from: node});
