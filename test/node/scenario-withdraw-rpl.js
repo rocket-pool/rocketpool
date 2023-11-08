@@ -1,9 +1,20 @@
-import { RocketMinipoolManager, RocketDAOProtocolSettingsMinipool, RocketNetworkPrices, RocketDAOProtocolSettingsNode, RocketNodeStaking, RocketTokenRPL, RocketVault } from '../_utils/artifacts';
+import {
+    RocketMinipoolManager,
+    RocketDAOProtocolSettingsMinipool,
+    RocketNetworkPrices,
+    RocketDAOProtocolSettingsNode,
+    RocketNodeStaking,
+    RocketTokenRPL,
+    RocketVault,
+    RocketNetworkPricesNew, RocketNodeStakingNew, RocketNodeManager, RocketNodeManagerNew,
+} from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Withdraw RPL staked against the node
 export async function withdrawRpl(amount, txOptions) {
+    const upgraded = await upgradeExecuted();
 
     // Load contracts
     const [
@@ -11,15 +22,17 @@ export async function withdrawRpl(amount, txOptions) {
         rocketDAOProtocolSettingsMinipool,
         rocketNetworkPrices,
         rocketDAOProtocolSettingsNode,
+        rocketNodeManager,
         rocketNodeStaking,
         rocketTokenRPL,
         rocketVault,
     ] = await Promise.all([
         RocketMinipoolManager.deployed(),
         RocketDAOProtocolSettingsMinipool.deployed(),
-        RocketNetworkPrices.deployed(),
+        upgraded ? RocketNetworkPricesNew.deployed() : RocketNetworkPrices.deployed(),
         RocketDAOProtocolSettingsNode.deployed(),
-        RocketNodeStaking.deployed(),
+        upgraded ? RocketNodeManagerNew.deployed() : RocketNodeManager.deployed(),
+        upgraded ? RocketNodeStakingNew.deployed() : RocketNodeStaking.deployed(),
         RocketTokenRPL.deployed(),
         RocketVault.deployed(),
     ]);
@@ -30,11 +43,13 @@ export async function withdrawRpl(amount, txOptions) {
         minPerMinipoolStake,
         maxPerMinipoolStake,
         rplPrice,
+        rplWithdrawalAddress
     ] = await Promise.all([
         rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount.call(),
         rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake.call(),
         rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake.call(),
         rocketNetworkPrices.getRPLPrice.call(),
+        upgraded ? rocketNodeManager.getNodeRPLWithdrawalAddress(txOptions.from) : txOptions.from,
     ]);
 
     // Get token balances
@@ -76,16 +91,16 @@ export async function withdrawRpl(amount, txOptions) {
 
     // Get initial token balances & staking details
     let [balances1, details1] = await Promise.all([
-        getTokenBalances(txOptions.from),
+        getTokenBalances(rplWithdrawalAddress),
         getStakingDetails(txOptions.from),
     ]);
 
     // Withdraw RPL
-    await rocketNodeStaking.withdrawRPL(amount, txOptions);
+    await (upgraded ? rocketNodeStaking.methods['withdrawRPL(uint256)'](amount, txOptions) : rocketNodeStaking.withdrawRPL(amount, txOptions));
 
     // Get updated token balances, staking details & minipool counts
     let [balances2, details2, minipoolCounts] = await Promise.all([
-        getTokenBalances(txOptions.from),
+        getTokenBalances(rplWithdrawalAddress),
         getStakingDetails(txOptions.from),
         getMinipoolCounts(txOptions.from),
     ]);

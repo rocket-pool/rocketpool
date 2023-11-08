@@ -20,7 +20,7 @@ interface RocketDAOProtocolProposalsInterface {
         Executed
     }
 
-    enum Vote {
+    enum VoteDirection {
         NoVote,
         Abstain,
         For,
@@ -36,11 +36,11 @@ interface RocketDAOProtocolProposalsInterface {
     function getPhase2End(uint256 _proposalID) external view returns (uint256);
     function getExpires(uint256 _proposalID) external view returns (uint256);
     function getCreated(uint256 _proposalID) external view returns (uint256);
-    function getVotesFor(uint256 _proposalID) external view returns (uint256);
-    function getVotesAgainst(uint256 _proposalID) external view returns (uint256);
-    function getVotesVeto(uint256 _proposalID) external view returns (uint256);
-    function getVotesAbstained(uint256 _proposalID) external view returns (uint256);
-    function getVotesRequired(uint256 _proposalID) external view returns (uint256);
+    function getVotingPowerFor(uint256 _proposalID) external view returns (uint256);
+    function getVotingPowerAgainst(uint256 _proposalID) external view returns (uint256);
+    function getVotingPowerVeto(uint256 _proposalID) external view returns (uint256);
+    function getVotingPowerAbstained(uint256 _proposalID) external view returns (uint256);
+    function getVotingPowerRequired(uint256 _proposalID) external view returns (uint256);
     function getDestroyed(uint256 _proposalID) external view returns (bool);
     function getFinalised(uint256 _proposalID) external view returns (bool);
     function getExecuted(uint256 _proposalID) external view returns (bool);
@@ -48,15 +48,15 @@ interface RocketDAOProtocolProposalsInterface {
     function getVetoed(uint256 _proposalID) external view returns (bool);
     function getPayload(uint256 _proposalID) external view returns (bytes memory);
     function getReceiptHasVoted(uint256 _proposalID, address _nodeAddress) external view returns (bool);
-    function getReceiptDirection(uint256 _proposalID, address _nodeAddress) external view returns (Vote);
+    function getReceiptDirection(uint256 _proposalID, address _nodeAddress) external view returns (VoteDirection);
     function getState(uint256 _proposalID) external view returns (ProposalState);
 
     function getProposalBlock(uint256 _proposalID) external view returns (uint256);
     function getProposalVetoQuorum(uint256 _proposalID) external view returns (uint256);
 
     function propose(string memory _proposalMessage, bytes memory _payload, uint32 _blockNumber, Types.Node[] calldata _treeNodes) external returns (uint256);
-    function vote(uint256 _proposalID, Vote _vote, uint256 _votingPower, uint256 _nodeIndex, Types.Node[] calldata _witness) external;
-    function overrideVote(uint256 _proposalID, Vote _voteDirection) external;
+    function vote(uint256 _proposalID, VoteDirection _vote, uint256 _votingPower, uint256 _nodeIndex, Types.Node[] calldata _witness) external;
+    function overrideVote(uint256 _proposalID, VoteDirection _voteDirection) external;
     function finalise(uint256 _proposalID) external;
     function execute(uint256 _proposalID) external;
     function destroy(uint256 _proposalID) external;
@@ -73,4 +73,5 @@ interface RocketDAOProtocolProposalsInterface {
 
     function proposalSecurityInvite(string memory _id, address _memberAddress) external;
     function proposalSecurityKick(address _memberAddress) external;
+    function proposalSecurityReplace(address _existingMemberAddress, string calldata _id, address _newMemberAddress) external;
 }

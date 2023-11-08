@@ -1,4 +1,6 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2016-2023 zOS Global Limited and contributors
+// Adapted from OpenZeppelin `Checkpoints` contract
 pragma solidity 0.8.18;
 
 import "@openzeppelin4/contracts/utils/math/Math.sol";

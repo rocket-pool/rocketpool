@@ -21,14 +21,14 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
 
     // Events
     event ProposalAdded(address indexed proposer, uint256 indexed proposalID, bytes payload, uint256 time);
-    event ProposalVoted(uint256 indexed proposalID, address indexed voter, Vote direction, uint256 votingPower, uint256 time);
+    event ProposalVoted(uint256 indexed proposalID, address indexed voter, VoteDirection direction, uint256 votingPower, uint256 time);
     event ProposalVoteOverridden(uint256 indexed proposalID, address indexed delegate, address indexed voter, uint256 votingPower, uint256 time);
     event ProposalExecuted(uint256 indexed proposalID, address indexed executer, uint256 time);
     event ProposalFinalised(uint256 indexed proposalID, address indexed executer, uint256 time);
     event ProposalDestroyed(uint256 indexed proposalID, uint256 time);
 
     // The namespace for any data stored in the trusted node DAO (do not change)
-    string constant private daoProposalNameSpace = "dao.protocol.proposal.";
+    string constant internal daoProposalNameSpace = "dao.protocol.proposal.";
 
     // Only allow certain contracts to execute methods
     modifier onlyExecutingContracts() {
@@ -64,9 +64,15 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         return proposalID;
     }
 
-    function vote(uint256 _proposalID, Vote _voteDirection, uint256 _votingPower, uint256 _nodeIndex, Types.Node[] calldata _witness) external onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAOProtocolProposals", address(this)) {
+    /// @notice Applies a vote during phase 1
+    /// @param _proposalID ID of the proposal to vote on
+    /// @param _voteDirection Direction of the vote
+    /// @param _votingPower Total delegated voting power for the voter at the proposal block
+    /// @param _nodeIndex The index of the node voting
+    /// @param _witness A merkle proof into the network voting power tree proving the supplied voting power is correct
+    function vote(uint256 _proposalID, VoteDirection _voteDirection, uint256 _votingPower, uint256 _nodeIndex, Types.Node[] calldata _witness) external onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAOProtocolProposals", address(this)) {
         // Check valid vote
-        require(_voteDirection != Vote.NoVote, "Invalid vote");
+        require(_voteDirection != VoteDirection.NoVote, "Invalid vote");
         // Check the proposal is in a state that can be voted on
         require(getState(_proposalID) == ProposalState.ActivePhase1, "Phase 1 voting is not active");
         // Verify the voting power is correct
@@ -76,10 +82,12 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         _vote(msg.sender, _votingPower, _proposalID, _voteDirection);
     }
 
-    /// @notice Can be called by a node operator who wishes to go against the vote of their delegate
-    function overrideVote(uint256 _proposalID, Vote _voteDirection) override external onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAOProtocolProposals", address(this)) {
+    /// @notice Applies a vote during phase 2 (can be used to override vote direction of delegate)
+    /// @param _proposalID ID of the proposal to vote on
+    /// @param _voteDirection Direction of the vote
+    function overrideVote(uint256 _proposalID, VoteDirection _voteDirection) override external onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAOProtocolProposals", address(this)) {
         // Check valid vote
-        require(_voteDirection != Vote.NoVote, "Invalid vote");
+        require(_voteDirection != VoteDirection.NoVote, "Invalid vote");
         // Check the proposal is in a state that can be voted on
         require(getState(_proposalID) == ProposalState.ActivePhase2, "Phase 2 voting is not active");
         // Load contracts
@@ -89,10 +97,10 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         uint256 votingPower = rocketNetworkVoting.getVotingPower(msg.sender, blockNumber);
         address delegate = rocketNetworkVoting.getDelegate(msg.sender, blockNumber);
         // Get the vote direction of their delegate
-        Vote delegateVote = getReceiptDirection(_proposalID, delegate);
+        VoteDirection delegateVote = getReceiptDirection(_proposalID, delegate);
         require (delegateVote != _voteDirection, "Vote direction is the same as delegate");
         // Reverse the delegate's vote
-        if (delegateVote != Vote.NoVote) {
+        if (delegateVote != VoteDirection.NoVote) {
             _overrideVote(delegate, msg.sender, _proposalID, votingPower, delegateVote);
         }
         // Apply this voter's vote
@@ -100,6 +108,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     }
 
     /// @notice Finalises a vetoed proposal by burning the proposer's bond
+    /// @param _proposalID ID of the proposal to finalise
     function finalise(uint256 _proposalID) override external onlyLatestContract("rocketDAOProtocolProposals", address(this)) {
         // Check state
         require(getState(_proposalID) == ProposalState.Vetoed, "Proposal has not been vetoed");
@@ -152,115 +161,137 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "proposal.veto.quorum", _proposalID)));
     }
 
-    // Get the current total proposals
+    /// @notice Get the current total proposals
     function getTotal() override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "total")));
     }
 
-    // Get the member who proposed
+    /// @notice Get the node operator address who proposed
+    /// @param _proposalID The ID of the proposal to query
     function getProposer(uint256 _proposalID) override public view returns (address) {
         return getAddress(keccak256(abi.encodePacked(daoProposalNameSpace, "proposer", _proposalID)));
     }
 
-    // Get the proposal message
+    /// @notice Get the proposal message
+    /// @param _proposalID The ID of the proposal to query
     function getMessage(uint256 _proposalID) override external view returns (string memory) {
         return getString(keccak256(abi.encodePacked(daoProposalNameSpace, "message", _proposalID)));
     }
 
-    // Get the start block of this proposal
+    /// @notice Get the start block of this proposal
+    /// @param _proposalID The ID of the proposal to query
     function getStart(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "start", _proposalID)));
     }
 
-    // Get the end of phase1 block of this proposal
+    /// @notice Get the end of phase1 block of this proposal
+    /// @param _proposalID The ID of the proposal to query
     function getPhase1End(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "phase1End", _proposalID)));
     }
 
-    // Get the end of phase2 block of this proposal
+    /// @notice Get the end of phase2 block of this proposal
+    /// @param _proposalID The ID of the proposal to query
     function getPhase2End(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "phase2End", _proposalID)));
     }
 
-    // The block where the proposal expires and can no longer be executed if it is successful
+    /// @notice The block where the proposal expires and can no longer be executed if it is successful
+    /// @param _proposalID The ID of the proposal to query
     function getExpires(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "expires", _proposalID)));
     }
 
-    // Get the created status of this proposal
+    /// @notice Get the creation timestamp of this proposal
+    /// @param _proposalID The ID of the proposal to query
     function getCreated(uint256 _proposalID) override external view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "created", _proposalID)));
     }
 
-    // Get the votes for count of this proposal
-    function getVotesFor(uint256 _proposalID) override public view returns (uint256) {
+    /// @notice Get the total  voting power from 'for' votes on this proposal
+    /// @param _proposalID The ID of the proposal to query
+    function getVotingPowerFor(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.for", _proposalID)));
     }
 
-    // Get the votes against count of this proposal
-    function getVotesAgainst(uint256 _proposalID) override public view returns (uint256) {
+    /// @notice Get the total voting power from 'against' votes on this proposal
+    /// @param _proposalID The ID of the proposal to query
+    function getVotingPowerAgainst(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.against", _proposalID)));
     }
 
-    // Get the votes veto count of this proposal
-    function getVotesVeto(uint256 _proposalID) override public view returns (uint256) {
+    /// @notice Get the total voting power from 'veto' votes on this proposal
+    /// @param _proposalID The ID of the proposal to query
+    function getVotingPowerVeto(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.veto", _proposalID)));
     }
 
-    // Get the votes against count of this proposal
-    function getVotesAbstained(uint256 _proposalID) override public view returns (uint256) {
+    /// @notice Get the total voting power who voted 'abstain' on this proposal
+    /// @param _proposalID The ID of the proposal to query
+    function getVotingPowerAbstained(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.abstained", _proposalID)));
     }
 
-    // How many votes required for the proposal to succeed
-    function getVotesRequired(uint256 _proposalID) override public view returns (uint256) {
+    /// @notice How the voting power required for the proposal to succeed
+    /// @param _proposalID The ID of the proposal to query
+    function getVotingPowerRequired(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.required", _proposalID)));
     }
 
-    // Get the destroyed status of this proposal
+    /// @notice Get the destroyed status of this proposal
+    /// @param _proposalID The ID of the proposal to query
     function getDestroyed(uint256 _proposalID) override public view returns (bool) {
         return getBool(keccak256(abi.encodePacked(daoProposalNameSpace, "destroyed", _proposalID)));
     }
 
-    // Get the finalised status of this proposal
+    /// @notice Get the finalised status of this proposal
+    /// @param _proposalID The ID of the proposal to query
     function getFinalised(uint256 _proposalID) override external view returns (bool) {
         return getBool(keccak256(abi.encodePacked(daoProposalNameSpace, "finalised", _proposalID)));
     }
 
-    // Get the executed status of this proposal
+    /// @notice Get the executed status of this proposal
+    /// @param _proposalID The ID of the proposal to query
     function getExecuted(uint256 _proposalID) override public view returns (bool) {
         return getBool(keccak256(abi.encodePacked(daoProposalNameSpace, "executed", _proposalID)));
     }
 
-    // Get the amount of veto votes required to veto this proposal
+    /// @notice Get the amount of VP from 'veto' votes required to veto this proposal
+    /// @param _proposalID The ID of the proposal to query
     function getVetoQuorum(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "proposal.veto.quorum", _proposalID)));
     }
 
-    // Get the veto status of this proposal
+    /// @notice Get the veto status of this 
+    /// @param _proposalID The ID of the proposal to query
     function getVetoed(uint256 _proposalID) override public view returns (bool) {
-        uint256 votesVeto = getVotesVeto(_proposalID);
+        uint256 votesVeto = getVotingPowerVeto(_proposalID);
         uint256 quorum = getVetoQuorum(_proposalID);
         return votesVeto >= quorum;
     }
 
-    // Get the votes against count of this proposal
+    /// @notice Get the payload of this proposal
+    /// @param _proposalID The ID of the proposal to query
     function getPayload(uint256 _proposalID) override public view returns (bytes memory) {
         return getBytes(keccak256(abi.encodePacked(daoProposalNameSpace, "payload", _proposalID)));
     }
 
-    // Returns true if this proposal has already been voted on by a member
+    /// @notice Returns true if this proposal has already been voted on by a node address
+    /// @param _proposalID The ID of the proposal to query
+    /// @param _nodeAddress The node operator address to query
     function getReceiptHasVoted(uint256 _proposalID, address _nodeAddress) override public view returns (bool) {
-        return getReceiptDirection(_proposalID, _nodeAddress) != Vote.NoVote;
+        return getReceiptDirection(_proposalID, _nodeAddress) != VoteDirection.NoVote;
     }
 
-    // Returns true if this proposal was supported by this member
-    function getReceiptDirection(uint256 _proposalID, address _nodeAddress) override public view returns (Vote) {
-        return Vote(getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.direction", _proposalID, _nodeAddress))));
+    /// @notice Returns true if this proposal was supported by this member
+    /// @param _proposalID The ID of the proposal to query
+    /// @param _nodeAddress The node operator address to query
+    function getReceiptDirection(uint256 _proposalID, address _nodeAddress) override public view returns (VoteDirection) {
+        return VoteDirection(getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.direction", _proposalID, _nodeAddress))));
     }
 
-    // Return the state of the specified proposal
-    // A successful proposal can be executed immediately
+    /// @notice Return the state of the specified proposal
+    /// @param _proposalID The ID of the proposal to query
     function getState(uint256 _proposalID) override public view returns (ProposalState) {
         // Check the proposal ID is legit
         require(getTotal() >= _proposalID && _proposalID > 0, "Invalid proposal ID");
@@ -290,13 +321,13 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
                         return ProposalState.Vetoed;
                     }
 
-                    uint256 votesFor = getVotesFor(_proposalID);
-                    uint256 votesAgainst = getVotesAgainst(_proposalID);
-                    uint256 votesAbstained = getVotesAbstained(_proposalID);
+                    uint256 votesFor = getVotingPowerFor(_proposalID);
+                    uint256 votesAgainst = getVotingPowerAgainst(_proposalID);
+                    uint256 votesAbstained = getVotingPowerAbstained(_proposalID);
                     uint256 totalVotes = votesFor + votesAgainst + votesAbstained;
 
                     // Has the proposal reached quorum?
-                    if (totalVotes >= getVotesRequired(_proposalID)) {
+                    if (totalVotes >= getVotingPowerRequired(_proposalID)) {
                         if (votesFor > votesAgainst) {
                             if (block.timestamp < getExpires(_proposalID)) {
                                 // Vote was successful, is now awaiting execution
@@ -316,7 +347,11 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     }
 
     /// @dev Internal function to generate a proposal
-    /// @return The new proposal's ID
+    /// @param _proposalMessage the message associated with the proposal
+    /// @param _blockNumber the block number considered for the proposal snapshot
+    /// @param _totalVotingPower the total voting power for the proposal - used to calculate quorum
+    /// @param _payload A calldata payload to execute after the proposal is successful
+    /// @return _ The new proposal's ID
     function _propose(string memory _proposalMessage, uint256 _blockNumber, uint256 _totalVotingPower, bytes calldata _payload) internal returns (uint256) {
         // Load contracts
         RocketDAOProtocolSettingsProposalsInterface rocketDAOProtocolSettingsProposals = RocketDAOProtocolSettingsProposalsInterface(getContractAddress("rocketDAOProtocolSettingsProposals"));
@@ -345,9 +380,8 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         );
     }
 
-    // Add a proposal to the an RP DAO, immeditately becomes active
-    // Calldata is passed as the payload to execute upon passing the proposal
-    function _addProposal(address _member, string memory _message, uint256 _blockNumber, uint256 _startTime, uint256 _phase1Duration, uint256 _phase2Duration, uint256 _expires, uint256 _votesRequired, uint256 _vetoQuorum, bytes calldata _payload) internal returns (uint256) {
+    /// @dev Add a proposal to the Protocol DAO
+    function _addProposal(address _nodeOperator, string memory _message, uint256 _blockNumber, uint256 _startTime, uint256 _phase1Duration, uint256 _phase2Duration, uint256 _expires, uint256 _votesRequired, uint256 _vetoQuorum, bytes calldata _payload) internal returns (uint256) {
         // Basic checks
         require(_startTime > block.timestamp, "Proposal start time must be in the future");
         require(_phase1Duration > 0, "Proposal cannot have a duration of 0");
@@ -359,7 +393,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         // Get the proposal ID
         uint256 proposalID = getTotal() + 1;
         // The data structure for a proposal
-        setAddress(keccak256(abi.encodePacked(daoProposalNameSpace, "proposer", proposalID)), _member);                     // Which member is making the proposal
+        setAddress(keccak256(abi.encodePacked(daoProposalNameSpace, "proposer", proposalID)), _nodeOperator);                     // Which member is making the proposal
         setString(keccak256(abi.encodePacked(daoProposalNameSpace, "message", proposalID)), _message);                      // A general message that can be included with the proposal
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "start", proposalID)), _startTime);                        // The time the proposal becomes active for voting on
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "phase1End", proposalID)), _startTime + _phase1Duration);  // The time the proposal where voting ends on phase 1
@@ -377,19 +411,20 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         // Update the total proposals
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "total")), proposalID);
         // Log it
-        emit ProposalAdded(_member, proposalID, _payload, block.timestamp);
+        emit ProposalAdded(_nodeOperator, proposalID, _payload, block.timestamp);
         // Done
         return proposalID;
     }
 
-    function _overrideVote(address _delegate, address _voter, uint256 _proposalID, uint256 _votes, Vote _voteDirection) internal {
+    /// @dev Internal method to override the vote of a delegate
+    function _overrideVote(address _delegate, address _voter, uint256 _proposalID, uint256 _votes, VoteDirection _voteDirection) internal {
         // Remove votes from proposal
-        if (_voteDirection == Vote.For) {
+        if (_voteDirection == VoteDirection.For) {
             subUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.for", _proposalID)), _votes);
-        } else if(_voteDirection == Vote.Abstain) {
+        } else if(_voteDirection == VoteDirection.Abstain) {
             subUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.abstained", _proposalID)), _votes);
         } else {
-            if(_voteDirection == Vote.AgainstWithVeto) {
+            if(_voteDirection == VoteDirection.AgainstWithVeto) {
                 subUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.veto", _proposalID)), _votes);
             }
             subUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.against", _proposalID)), _votes);
@@ -400,26 +435,26 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         emit ProposalVoteOverridden(_proposalID, _delegate, _voter, _votes, block.timestamp);
     }
 
-    // Voting for or against a proposal
-    function _vote(address _member, uint256 _votes, uint256 _proposalID, Vote _voteDirection) internal {
-        // Has this member already voted on this proposal?
-        require(!getReceiptHasVoted(_proposalID, _member), "Member has already voted on proposal");
+    /// @dev Internal method to apply voting power on a proposal
+    function _vote(address _nodeOperator, uint256 _votes, uint256 _proposalID, VoteDirection _voteDirection) internal {
+        // Has this node operator already voted on this proposal?
+        require(!getReceiptHasVoted(_proposalID, _nodeOperator), "Node operator has already voted on proposal");
         // Add votes to proposal
-        if (_voteDirection == Vote.For) {
+        if (_voteDirection == VoteDirection.For) {
             addUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.for", _proposalID)), _votes);
-        } else if(_voteDirection == Vote.Abstain) {
+        } else if(_voteDirection == VoteDirection.Abstain) {
             addUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.abstained", _proposalID)), _votes);
         } else {
-            if(_voteDirection == Vote.AgainstWithVeto) {
+            if(_voteDirection == VoteDirection.AgainstWithVeto) {
                 addUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.veto", _proposalID)), _votes);
             }
             addUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.against", _proposalID)), _votes);
         }
         // Record the vote receipt now
-        setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.votes", _proposalID, _member)), _votes);
-        setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.direction", _proposalID, _member)), uint256(_voteDirection));
+        setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.votes", _proposalID, _nodeOperator)), _votes);
+        setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.direction", _proposalID, _nodeOperator)), uint256(_voteDirection));
         // Log it
-        emit ProposalVoted(_proposalID, _member, _voteDirection, _votes, block.timestamp);
+        emit ProposalVoted(_proposalID, _nodeOperator, _voteDirection, _votes, block.timestamp);
     }
 
     /*** Proposal - Settings ***************/
@@ -528,7 +563,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     /// @notice Invites an address to join the security council
     /// @param _id A string to identify this member with
     /// @param _memberAddress The address of the new member
-    function proposalSecurityInvite(string memory _id, address _memberAddress) override external onlyExecutingContracts() {
+    function proposalSecurityInvite(string calldata _id, address _memberAddress) override external onlyExecutingContracts() {
         RocketDAOSecurityProposalsInterface rocketDAOSecurityProposals = RocketDAOSecurityProposalsInterface(getContractAddress("rocketDAOSecurityProposals"));
         rocketDAOSecurityProposals.proposalInvite(_id, _memberAddress);
     }
@@ -540,4 +575,12 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         rocketDAOSecurityProposals.proposalKick(_memberAddress);
     }
 
+    /// @notice Propose to replace a current member from the security council
+    /// @param _existingMemberAddress The address of the member to kick
+    /// @param _newMemberId A string to identify this member with
+    /// @param _newMemberAddress The address of the new member
+    function proposalSecurityReplace(address _existingMemberAddress, string calldata _newMemberId, address _newMemberAddress) override external onlyExecutingContracts {
+        RocketDAOSecurityProposalsInterface rocketDAOSecurityProposals = RocketDAOSecurityProposalsInterface(getContractAddress("rocketDAOSecurityProposals"));
+        rocketDAOSecurityProposals.proposalReplace(_existingMemberAddress, _newMemberId, _newMemberAddress);
+    }
 }

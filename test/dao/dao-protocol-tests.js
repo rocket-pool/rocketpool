@@ -28,7 +28,7 @@ import {
     daoProtocolSubmitRoot, daoProtocolVote,
     getDelegatedVotingPower, getPhase2VotingPower, getSubIndex,
 } from './scenario-dao-protocol';
-import { getNodeCount, nodeStakeRPL, nodeWithdrawRPL, registerNode } from '../_helpers/node';
+import { getNodeCount, nodeStakeRPL, nodeWithdrawRPL, registerNode, setRPLLockingAllowed } from '../_helpers/node';
 import { createMinipool, getMinipoolMinimumRPLStake } from '../_helpers/minipool';
 import { mintRPL } from '../_helpers/tokens';
 import { userDeposit } from '../_helpers/deposit';
@@ -255,6 +255,8 @@ export default function() {
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, { from: node });
             await createMinipool({ from: node, value: '16'.ether });
+            // Allow RPL locking by default
+            await setRPLLockingAllowed(node, true, {from: node});
         }
 
         async function createValidProposal(name = 'Test proposal', payload = '0x0') {
@@ -329,19 +331,19 @@ export default function() {
             const roundsPerPhase = getRoundCount(leafCount);
 
             for (let i = 1; i <= roundsPerPhase; i++) {
-                let j = i * depthPerRound;
-                if (j <= phase1Depth) {
-                    const index = subRootIndex / (2 ** (phase1Depth - j));
+                let challengeDepth = i * depthPerRound;
+                if (challengeDepth <= phase1Depth) {
+                    const index = subRootIndex / (2 ** (phase1Depth - challengeDepth));
                     if (index !== subRootIndex) {
                         phase1Indices.push(index);
                     }
                 }
             }
 
-            for (let i = roundsPerPhase + 2; i <= roundsPerPhase * 2; i++) {
-                let j = i * depthPerRound;
-                if (j <= phase2Depth) {
-                    phase2Indices.push(finalIndex / (2 ** (phase2Depth - j)));
+            for (let i = 1; i <= roundsPerPhase; i++) {
+                let challengeDepth = phase1Depth + (i * depthPerRound);
+                if (challengeDepth <= phase2Depth) {
+                    phase2Indices.push(finalIndex / (2 ** (phase2Depth - challengeDepth)));
                 }
             }
 
@@ -362,6 +364,16 @@ export default function() {
             await createValidProposal();
         });
 
+        it(printTitle('proposer', 'can not submit a proposal if locking is not allowed'), async () => {
+            // Setup
+            await mockNodeSet();
+            await createNode(1, proposer);
+            await setRPLLockingAllowed(proposer, false, {from: proposer});
+
+            // Create a valid proposal
+            await shouldRevert(createValidProposal(), 'Was able to create proposal', 'Node is not allowed to lock RPL');
+        });
+
         it(printTitle('proposer', 'can successfully refute an invalid challenge'), async () => {
             // Setup
             await mockNodeSet();
@@ -378,10 +390,6 @@ export default function() {
             const phase1Depth = getMaxDepth(leaves.length);
             const maxDepth = phase1Depth * 2;
             const { phase1Indices, subRootIndex, phase2Indices } = getChallengeIndices(2 ** maxDepth, leaves.length);
-
-            console.log(phase1Indices);
-            console.log(subRootIndex);
-            console.log(phase2Indices);
 
             // Phase 1
             for (const index of phase1Indices) {
@@ -981,6 +989,30 @@ export default function() {
             await shouldRevert(daoProtocolCreateChallenge(propId, index, challenge.node, challenge.proof, { from: challenger }), 'Was able to challenge', 'Not enough staked RPL');
         });
 
+        it(printTitle('challenger', 'can not challenge if locking RPL is not allowed'), async () => {
+            // Setup
+            await mockNodeSet();
+            await createNode(1, proposer);
+
+            // Create a minipool with a node to use as a challenger
+            let challenger = node1;
+            await createNode(1, challenger);
+            await setRPLLockingAllowed(challenger, false, {from: challenger});
+
+            // Create a valid proposal
+            const { propId, leaves } = await createValidProposal();
+
+            // Challenge/response
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).phase1Indices;
+            const index = indices[0];
+
+            // Challenge
+            let challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
+            await shouldRevert(daoProtocolCreateChallenge(propId, index, challenge.node, challenge.proof, { from: challenger }), 'Was able to challenge', 'Node is not allowed to lock RPL');
+        });
+
         it(printTitle('challenger', 'can not challenge the same index twice'), async () => {
             // Setup
             await mockNodeSet();
@@ -1310,6 +1342,9 @@ export default function() {
             let challenger = node1;
             await createNode(1, challenger);
 
+            // Create node for invalid claim
+            await createNode(1, node2);
+
             // Create a valid proposal
             const { propId, leaves } = await createValidProposal();
 
@@ -1340,6 +1375,9 @@ export default function() {
             // Create a minipool with a node to use as a challenger
             let challenger = node1;
             await createNode(1, challenger);
+
+            // Create node for invalid claim
+            await createNode(1, node2);
 
             // Create a valid proposal
             const { propId } = await createValidProposal();

@@ -1,20 +1,19 @@
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 pragma abicoder v2;
-// SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/network/RocketNetworkBalancesInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 
-/// @notice Network balances
+/// @notice Oracle contract for network balance data
 contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
 
     // Events
     event BalancesSubmitted(address indexed from, uint256 block, uint256 slotTimestamp, uint256 totalEth, uint256 stakingEth, uint256 rethSupply, uint256 blockTimestamp);
     event BalancesUpdated(uint256 block, uint256 slotTimestamp, uint256 totalEth, uint256 stakingEth, uint256 rethSupply, uint256 blockTimestamp);
 
-    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 3;
     }
@@ -23,6 +22,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     function getBalancesBlock() override public view returns (uint256) {
         return getUint(keccak256("network.balances.updated.block"));
     }
+
     /// @notice Sets the block number which balances are current for
     function setBalancesBlock(uint256 _value) private {
         setUint(keccak256("network.balances.updated.block"), _value);
@@ -32,6 +32,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     function getTotalETHBalance() override public view returns (uint256) {
         return getUint(keccak256("network.balance.total"));
     }
+
     /// @notice Sets the current RP network total ETH balance
     function setTotalETHBalance(uint256 _value) private {
         setUint(keccak256("network.balance.total"), _value);
@@ -41,6 +42,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     function getStakingETHBalance() override public view returns (uint256) {
         return getUint(keccak256("network.balance.staking"));
     }
+
     /// @notice Sets the current RP network staking ETH balance
     function setStakingETHBalance(uint256 _value) private {
         setUint(keccak256("network.balance.staking"), _value);
@@ -50,13 +52,14 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     function getTotalRETHSupply() override external view returns (uint256) {
         return getUint(keccak256("network.balance.reth.supply"));
     }
+
     /// @notice Sets the current RP network total rETH supply
     function setTotalRETHSupply(uint256 _value) private {
         setUint(keccak256("network.balance.reth.supply"), _value);
     }
 
     /// @notice Get the current RP network ETH utilization rate as a fraction of 1 ETH
-    /// Represents what % of the network's balance is actively earning rewards
+    ///         Represents what % of the network's balance is actively earning rewards
     function getETHUtilizationRate() override external view returns (uint256) {
         uint256 totalEthBalance = getTotalETHBalance();
         uint256 stakingEthBalance = getStakingETHBalance();
@@ -64,8 +67,8 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         return calcBase * stakingEthBalance / totalEthBalance;
     }
 
-    /// @notice Submit network balances for a block
-    /// Only accepts calls from trusted (oracle) nodes
+    /// @notice Submit network balances for a block.
+    ///         Only accepts calls from trusted (oracle) nodes.
     function submitBalances(uint256 _block, uint256 _slotTimestamp, uint256 _totalEth, uint256 _stakingEth, uint256 _rethSupply) override external onlyLatestContract("rocketNetworkBalances", address(this)) onlyTrustedNode(msg.sender) {
         // Check settings
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
@@ -117,7 +120,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         updateBalances(_block, _slotTimestamp, _totalEth, _stakingEth, _rethSupply);
     }
 
-    /// @notice Update network balances
+    /// @dev Internal method to update network balances
     function updateBalances(uint256 _block, uint256 _slotTimestamp, uint256 _totalEth, uint256 _stakingEth, uint256 _rethSupply) private {
         // Update balances
         setBalancesBlock(_block);

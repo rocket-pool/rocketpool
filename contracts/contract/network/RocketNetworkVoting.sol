@@ -17,12 +17,10 @@ import "../../interface/network/RocketNetworkVotingInterface.sol";
 contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
 
     // Constants
-    bytes32 priceKey;
+    bytes32 immutable internal priceKey;
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        // Set contract version
         version = 1;
-
         // Precompute keys
         priceKey = keccak256("network.prices.rpl");
     }

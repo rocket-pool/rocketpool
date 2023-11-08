@@ -11,7 +11,7 @@ import "../../../interface/util/AddressSetStorageInterface.sol";
 contract RocketDAOSecurity is RocketBase, RocketDAOSecurityInterface {
 
     // The namespace for any data stored in the network DAO (do not change)
-    string constant daoNameSpace = "dao.security.";
+    string constant internal daoNameSpace = "dao.security.";
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;

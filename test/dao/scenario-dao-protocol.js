@@ -32,7 +32,7 @@ export async function getDAOProposalState(proposalID, txOptions) {
 export async function getDAOProposalVotesRequired(proposalID, txOptions) {
     // Load contracts
     const rocketDAOProposal = await RocketDAOProtocolProposalsNew.deployed();
-    return await rocketDAOProposal.getVotesRequired.call(proposalID);
+    return await rocketDAOProposal.getVotingPowerRequired.call(proposalID);
 }
 
 /**
@@ -292,11 +292,6 @@ export function daoProtocolGenerateChallengeProof(leaves, order, index = 1) {
         proofLength = order;
     }
 
-    console.log('offset = ' + offset);
-    console.log('depth = ' + depth);
-    console.log('order = ' + order);
-    console.log('proofLength = ' + proofLength);
-
     return {
         node: node,
         proof: proof.slice(0, proofLength),
@@ -468,8 +463,8 @@ export async function daoProtocolVote(_proposalID, _vote, _votingPower, _nodeInd
         return Promise.all([
             rocketDAOProtocolProposals.getTotal.call(),
             rocketDAOProtocolProposals.getState.call(_proposalID),
-            rocketDAOProtocolProposals.getVotesFor.call(_proposalID),
-            rocketDAOProtocolProposals.getVotesRequired.call(_proposalID),
+            rocketDAOProtocolProposals.getVotingPowerFor.call(_proposalID),
+            rocketDAOProtocolProposals.getVotingPowerRequired.call(_proposalID),
         ]).then(
             ([proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired]) =>
             ({proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired})

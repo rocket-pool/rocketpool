@@ -1,6 +1,5 @@
-pragma solidity 0.8.18;
-
 // SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.8.18;
 
 import "./RocketDAOProtocolSettings.sol";
 import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsAuctionInterface.sol";
@@ -8,9 +7,7 @@ import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsAuc
 /// @notice Network auction settings
 contract RocketDAOProtocolSettingsAuction is RocketDAOProtocolSettings, RocketDAOProtocolSettingsAuctionInterface {
 
-    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "auction") {
-        // Set version
         version = 2;
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
@@ -52,7 +49,6 @@ contract RocketDAOProtocolSettingsAuction is RocketDAOProtocolSettings, RocketDA
         // Update setting now
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }
-
 
     /// @notice Lot creation currently enabled
     function getCreateLotEnabled() override external view returns (bool) {

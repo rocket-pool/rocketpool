@@ -16,10 +16,10 @@ import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsSecuri
 contract RocketDAOSecurityProposals is RocketBase, RocketDAOSecurityProposalsInterface {
 
     // The namespace for any data stored in the trusted node DAO (do not change)
-    string constant daoNameSpace = "dao.security.";
+    string constant internal daoNameSpace = "dao.security.";
 
     // The namespace of the DAO that setting changes get applied to (protocol DAO)
-    string constant protocolDaoSettingNamespace = "dao.protocol.setting.";
+    string constant internal protocolDaoSettingNamespace = "dao.protocol.setting.";
 
     // Only allow certain contracts to execute methods
     modifier onlyExecutingContracts() {
@@ -123,7 +123,7 @@ contract RocketDAOSecurityProposals is RocketBase, RocketDAOSecurityProposalsInt
     /// @dev Called by rocketDAOProtocolProposals to execute an invite in this namespace
     /// @param _id A unique identifier for the new member
     /// @param _memberAddress The address of the new member
-    function proposalInvite(string memory _id, address _memberAddress) override external onlyLatestContract("rocketDAOProtocolProposals", msg.sender) {
+    function proposalInvite(string calldata _id, address _memberAddress) override public onlyLatestContract("rocketDAOProtocolProposals", msg.sender) {
         // Their proposal executed, record the block
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.time", "invited", _memberAddress)), block.timestamp);
         // Ok all good, lets get their invitation and member data setup
@@ -133,11 +133,20 @@ contract RocketDAOSecurityProposals is RocketBase, RocketDAOSecurityProposalsInt
 
     /// @dev Called by rocketDAOProtocolProposals to execute an kick in this namespace
     /// @param _memberAddress The address of the member to kick
-    function proposalKick(address _memberAddress) override external onlyLatestContract("rocketDAOProtocolProposals", msg.sender) {
+    function proposalKick(address _memberAddress) override public onlyLatestContract("rocketDAOProtocolProposals", msg.sender) {
         // Load contracts
         RocketDAOSecurityActionsInterface daoActionsContract = RocketDAOSecurityActionsInterface(getContractAddress("rocketDAOSecurityActions"));
         // Kick them now
         daoActionsContract.actionKick(_memberAddress);
+    }
+
+    /// @dev Called by rocketDAOProtocolProposals to execute an member replacement in this namespace
+    /// @param _existingMemberAddress The address of the member to kick
+    /// @param _newMemberId A unique identifier for the new member
+    /// @param _newMemberAddress The address of the member to invite
+    function proposalReplace(address _existingMemberAddress, string calldata _newMemberId, address _newMemberAddress) override external onlyLatestContract("rocketDAOProtocolProposals", msg.sender) {
+        proposalKick(_existingMemberAddress);
+        proposalInvite(_newMemberId, _newMemberAddress);
     }
 
     /*** Methods - Internal ***************/
