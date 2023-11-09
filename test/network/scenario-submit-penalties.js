@@ -8,7 +8,7 @@ import { shouldRevert } from '../_utils/testing';
 import { assertBN } from '../_helpers/bn';
 
 
-// Submit network balances
+// Submit network penalties
 export async function submitPenalty(minipoolAddress, block, txOptions) {
 
     // Load contracts
