@@ -116,6 +116,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     }
 
     /// @dev Called by proposal contract to burn the bond of the proposer after a successful veto
+    /// @param _proposalID the proposal ID that will have the bond burnt
     function burnProposalBond(uint256 _proposalID) override external onlyLatestContract("rocketDAOProtocolProposals", address(msg.sender)) onlyLatestContract("rocketDAOProtocolVerifier", address(this)) {
         // Retrieved required inputs from storage
         uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
@@ -436,6 +437,12 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         return true;
     }
 
+    /// @notice Check if a vote is valid using a provided proof
+    /// @param _voter address of the node operator casting the vote
+    /// @param _nodeIndex index of the voting node
+    /// @param _proposalID ID of the proposal being voted
+    /// @param _votingPower VP being used with this vote
+    /// @param _witness A merkle proof that will be verified
     function verifyVote(address _voter, uint256 _nodeIndex, uint256 _proposalID, uint256 _votingPower, Types.Node[] calldata _witness) external view returns (bool) {
         // Get contracts
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
