@@ -46,7 +46,7 @@ contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, Rocket
                 }
                 // No greater than 1e16 more than the previous value. (RPIP-33)
                 require(_value <= getSettingUint("rpl.inflation.interval.rate") + 0.01 ether, "No greater than 1e16 more than the previous value");
-                require(_value >= 1, "Value can't be 0");
+                require(_value >= 1, "Inflation can't be negative");
             }
         }
         // Update setting now
