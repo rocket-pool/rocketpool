@@ -16,5 +16,6 @@ interface RocketDAOSecurityProposalsInterface {
 
     function proposalInvite(string memory _id, address _memberAddress) external;
     function proposalKick(address _memberAddress) external;
+    function proposalKickMulti(address[] calldata _memberAddresses) external;
     function proposalReplace(address _existingMemberAddress, string calldata _newMemberId, address _newMemberAddress) external;
 }

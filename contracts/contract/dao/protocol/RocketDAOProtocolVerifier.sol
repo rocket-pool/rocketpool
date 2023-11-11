@@ -12,6 +12,7 @@ import "../../../interface/dao/protocol/RocketDAOProtocolProposalsInterface.sol"
 import "../../../interface/dao/RocketDAOProposalInterface.sol";
 import "../../../interface/node/RocketNodeStakingInterface.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsProposalsInterface.sol";
+import "../../../interface/dao/protocol/RocketDAOProtocolProposalInterface.sol";
 
 /// @notice Implements the protocol DAO optimistic fraud proof proposal system
 contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInterface {
@@ -62,7 +63,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @param _proposer The node raising the proposal
     /// @param _blockNumber The block number used to generate the voting power tree
     /// @param _treeNodes A pollard of the voting power tree
-    function submitProposalRoot(uint256 _proposalID, address _proposer, uint32 _blockNumber, Types.Node[] memory _treeNodes) external onlyLatestContract("rocketDAOProtocolProposals", msg.sender) onlyLatestContract("rocketDAOProtocolVerifier", address(this)) {
+    function submitProposalRoot(uint256 _proposalID, address _proposer, uint32 _blockNumber, Types.Node[] memory _treeNodes) external onlyLatestContract("rocketDAOProtocolProposal", msg.sender) onlyLatestContract("rocketDAOProtocolVerifier", address(this)) {
         // Retrieve the node count at _blockNumber
         uint256 nodeCount;
         {
@@ -116,7 +117,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     }
 
     /// @dev Called by proposal contract to burn the bond of the proposer after a successful veto
-    function burnProposalBond(uint256 _proposalID) override external onlyLatestContract("rocketDAOProtocolProposals", address(msg.sender)) onlyLatestContract("rocketDAOProtocolVerifier", address(this)) {
+    function burnProposalBond(uint256 _proposalID) override external onlyLatestContract("rocketDAOProtocolProposal", address(msg.sender)) onlyLatestContract("rocketDAOProtocolVerifier", address(this)) {
         // Retrieved required inputs from storage
         uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
         address proposer = getAddress(bytes32(proposalKey + proposerOffset));
@@ -211,8 +212,8 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         require(block.timestamp > timestamp + challengePeriod, "Not enough time has passed");
 
         // Destroy the proposal
-        RocketDAOProtocolProposalsInterface rocketDAOProtocolProposals = RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals"));
-        rocketDAOProtocolProposals.destroy(_proposalID);
+        RocketDAOProtocolProposalInterface rocketDAOProtocolProposal = RocketDAOProtocolProposalInterface(getContractAddress("rocketDAOProtocolProposal"));
+        rocketDAOProtocolProposal.destroy(_proposalID);
 
         // Record the winning index for reward payments
         setUint(defeatIndexKey, _index);
@@ -289,9 +290,9 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
 
         // Check the proposal has passed the waiting period and the voting period and wasn't cancelled
         {
-            RocketDAOProtocolProposalsInterface daoProposal = RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals"));
-            RocketDAOProtocolProposalsInterface.ProposalState proposalState = daoProposal.getState(_proposalID);
-            require(proposalState >= RocketDAOProtocolProposalsInterface.ProposalState.QuorumNotMet, "Invalid proposal state");
+            RocketDAOProtocolProposalInterface daoProposal = RocketDAOProtocolProposalInterface(getContractAddress("rocketDAOProtocolProposal"));
+            RocketDAOProtocolProposalInterface.ProposalState proposalState = daoProposal.getState(_proposalID);
+            require(proposalState >= RocketDAOProtocolProposalInterface.ProposalState.QuorumNotMet, "Invalid proposal state");
         }
 
         address proposer;

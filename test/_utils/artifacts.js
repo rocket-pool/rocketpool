@@ -12,6 +12,7 @@ export const RocketDAOProtocol = artifacts.require('RocketDAOProtocolOld.sol');
 export const RocketDAOProtocolNew = artifacts.require('RocketDAOProtocol.sol');
 export const RocketDAOProtocolProposals = artifacts.require('RocketDAOProtocolProposalsOld.sol');
 export const RocketDAOProtocolProposalsNew = artifacts.require('RocketDAOProtocolProposals.sol');
+export const RocketDAOProtocolProposal = artifacts.require('RocketDAOProtocolProposal.sol');
 export const RocketDAOProtocolSettingsAuction = artifacts.require('RocketDAOProtocolSettingsAuction.sol');
 export const RocketDAOProtocolSettingsDeposit = artifacts.require('RocketDAOProtocolSettingsDeposit.sol');
 export const RocketDAOProtocolSettingsInflation = artifacts.require('RocketDAOProtocolSettingsInflation.sol');

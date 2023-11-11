@@ -3,6 +3,7 @@ pragma solidity >0.5.0 <0.9.0;
 
 interface RocketDAOSecurityActionsInterface {
     function actionKick(address _nodeAddress) external;
+    function actionKickMulti(address[] calldata _nodeAddresses) external;
     function actionJoin() external;
     function actionRequestLeave() external;
     function actionLeave() external;
