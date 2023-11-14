@@ -28,7 +28,7 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
     event ProposalFinalised(uint256 indexed proposalID, address indexed executer, uint256 time);
     event ProposalDestroyed(uint256 indexed proposalID, uint256 time);
 
-    // The namespace for any data stored in the trusted node DAO (do not change)
+    // The namespace for any data stored in the protocol DAO (do not change)
     string constant internal daoProposalNameSpace = "dao.protocol.proposal.";
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {

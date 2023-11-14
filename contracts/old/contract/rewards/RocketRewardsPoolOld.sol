@@ -152,7 +152,7 @@ contract RocketRewardsPoolOld is RocketBase, RocketRewardsPoolInterfaceOld {
         require(_submission.intervalsPassed > 0, "Invalid number of intervals passed");
         require(_submission.nodeRPL.length == _submission.trustedNodeRPL.length && _submission.trustedNodeRPL.length == _submission.nodeETH.length, "Invalid array length");
         // Calculate RPL reward total and validate
-        { // Scope to prevent stake too deep
+        { // Scope to prevent stack too deep
             uint256 totalRewardsRPL = _submission.treasuryRPL;
             for (uint256 i = 0; i < _submission.nodeRPL.length; i++){
                 totalRewardsRPL = totalRewardsRPL + _submission.nodeRPL[i];

@@ -378,14 +378,14 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         emit RPLTransferred(_from, _to, _amount, block.timestamp);
     }
 
-    /// @notice Withdraw staked RPL back to the node account
+    /// @notice Withdraw staked RPL back to the node account or withdraw RPL address
     ///         Can only be called by a node if they have not set their RPL withdrawal address
     /// @param _amount The amount of RPL to withdraw
     function withdrawRPL(uint256 _amount) override external {
         withdrawRPL(msg.sender, _amount);
     }
 
-    /// @notice Withdraw staked RPL back to the node account
+    /// @notice Withdraw staked RPL back to the node account or withdraw RPL address
     ///         If RPL withdrawal address has been set, must be called from it. Otherwise, must be called from
     ///         node's primary withdrawal address or their node address.
     /// @param _nodeAddress The address of the node withdrawing
