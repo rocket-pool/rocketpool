@@ -30,11 +30,20 @@ contract RocketDAOSecurityActions is RocketBase, RocketDAOSecurityActionsInterfa
 
     /// @notice Removes a member from the security council
     /// @param _memberAddress The address of the member to kick
-    function actionKick(address _memberAddress) override external onlyLatestContract("rocketDAOSecurityProposals", msg.sender) {
+    function actionKick(address _memberAddress) override public onlyLatestContract("rocketDAOSecurityProposals", msg.sender) {
         // Remove the member now
         _memberRemove(_memberAddress);
         // Log it
         emit ActionKick(_memberAddress, block.timestamp);
+    }
+
+    /// @notice Removes multiple members from the security council
+    /// @param _memberAddresses An array of addresses of the member to kick
+    function actionKickMulti(address[] calldata _memberAddresses) override external onlyLatestContract("rocketDAOSecurityProposals", msg.sender) {
+        // Remove the members
+        for (uint256 i = 0; i < _memberAddresses.length; ++i) {
+            actionKick(_memberAddresses[i]);
+        }
     }
 
     /// @notice An invited member can execute this function to join the security council

@@ -39,6 +39,7 @@ contract RocketUpgradeOneDotThree is RocketBase {
     address public rocketDAOSecurityProposals;
     address public rocketNetworkSnapshots;
     address public rocketNetworkVoting;
+    address public rocketDAOProtocolProposal;
 
     // Upgrade ABIs
     string public newRocketDAOProtocolAbi;
@@ -65,6 +66,7 @@ contract RocketUpgradeOneDotThree is RocketBase {
     string public rocketDAOSecurityProposalsAbi;
     string public rocketNetworkSnapshotsAbi;
     string public rocketNetworkVotingAbi;
+    string public rocketDAOProtocolProposalAbi;
 
     // Save deployer to limit access to set functions
     address immutable deployer;
@@ -112,6 +114,7 @@ contract RocketUpgradeOneDotThree is RocketBase {
         rocketDAOSecurityProposals = _addresses[21];
         rocketNetworkSnapshots = _addresses[22];
         rocketNetworkVoting = _addresses[23];
+        rocketDAOProtocolProposal = _addresses[24];
 
         // Set ABIs
         newRocketDAOProtocolAbi = _abis[0];
@@ -138,6 +141,7 @@ contract RocketUpgradeOneDotThree is RocketBase {
         rocketDAOSecurityProposalsAbi = _abis[21];
         rocketNetworkSnapshotsAbi = _abis[22];
         rocketNetworkVotingAbi = _abis[23];
+        rocketDAOProtocolProposalAbi = _abis[24];
     }
 
     /// @notice Prevents further changes from being applied
@@ -178,6 +182,7 @@ contract RocketUpgradeOneDotThree is RocketBase {
         _addContract("rocketDAOSecurityProposals", rocketDAOSecurityProposals, rocketDAOSecurityProposalsAbi);
         _addContract("rocketNetworkSnapshots", rocketNetworkSnapshots, rocketNetworkSnapshotsAbi);
         _addContract("rocketNetworkVoting", rocketNetworkVoting, rocketNetworkVotingAbi);
+        _addContract("rocketDAOProtocolProposal", rocketDAOProtocolProposal, rocketDAOProtocolProposalAbi);
 
         // pDAO proposal settings
         bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "proposals"));

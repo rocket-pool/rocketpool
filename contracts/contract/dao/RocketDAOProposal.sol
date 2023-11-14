@@ -80,18 +80,18 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "created", _proposalID))); 
     }
 
-    // Get the votes for count of this proposal
-    function getVotesFor(uint256 _proposalID) override public view returns (uint256) {
+    // Get the voting power for this proposal
+    function getVotingPowerFor(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.for", _proposalID))); 
     }
 
-    // Get the votes against count of this proposal
-    function getVotesAgainst(uint256 _proposalID) override public view returns (uint256) {
+    // Get the voting power against this proposal
+    function getVotingPowerAgainst(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.against", _proposalID))); 
     }
 
-    // How many votes required for the proposal to succeed 
-    function getVotesRequired(uint256 _proposalID) override public view returns (uint256) {
+    // How much voting power is required for the proposal to succeed 
+    function getVotingPowerRequired(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.required", _proposalID))); 
     }
 
@@ -127,8 +127,8 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         // Check the proposal ID is legit
         require(getTotal() >= _proposalID && _proposalID > 0, "Invalid proposal ID");
         // Get the amount of votes for and against
-        uint256 votesFor = getVotesFor(_proposalID);
-        uint256 votesAgainst = getVotesAgainst(_proposalID);
+        uint256 votesFor = getVotingPowerFor(_proposalID);
+        uint256 votesAgainst = getVotingPowerAgainst(_proposalID);
         // Now return the state of the current proposal
         if (getCancelled(_proposalID)) {
             // Cancelled by the proposer?
@@ -140,13 +140,13 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         } else if (block.timestamp < getStart(_proposalID)) {
             return ProposalState.Pending;
             // Vote was successful, is now awaiting execution
-        } else if (votesFor >= getVotesRequired(_proposalID) && block.timestamp < getExpires(_proposalID)) {
+        } else if (votesFor >= getVotingPowerRequired(_proposalID) && block.timestamp < getExpires(_proposalID)) {
             return ProposalState.Succeeded;
             // The proposal is active and can be voted on
         } else if (block.timestamp < getEnd(_proposalID)) {
             return ProposalState.Active;
             // Check the votes, was it defeated?
-        } else if (votesFor <= votesAgainst || votesFor < getVotesRequired(_proposalID)) {
+        } else if (votesFor <= votesAgainst || votesFor < getVotingPowerRequired(_proposalID)) {
             return ProposalState.Defeated;
         } else {
             // Was it successful, but has now expired? and cannot be executed anymore?

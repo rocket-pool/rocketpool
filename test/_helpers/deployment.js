@@ -97,6 +97,7 @@ const contracts = {
     rocketDAOSecurityActions:                 artifacts.require('RocketDAOSecurityActions.sol'),
     rocketDAOSecurityProposals:               artifacts.require('RocketDAOSecurityProposals.sol'),
     rocketDAOProtocolSettingsSecurity:        artifacts.require('RocketDAOProtocolSettingsSecurity.sol'),
+    rocketDAOProtocolProposal:                artifacts.require('RocketDAOProtocolProposal.sol'),
     rocketDAOProtocolNew:                     artifacts.require('RocketDAOProtocol.sol'),
     rocketDAOProtocolProposalsNew:            artifacts.require('RocketDAOProtocolProposals.sol'),
     rocketNetworkPricesNew:                   artifacts.require('RocketNetworkPrices.sol'),
@@ -276,6 +277,7 @@ export async function deployRocketPool() {
                                 (await contracts.rocketDAOSecurityProposals.deployed()).address,
                                 (await contracts.rocketNetworkSnapshots.deployed()).address,
                                 (await contracts.rocketNetworkVoting.deployed()).address,
+                                (await contracts.rocketDAOProtocolProposal.deployed()).address,
                             ],
                             [
                                 compressABI(contracts.rocketDAOProtocolNew.abi),
@@ -302,6 +304,7 @@ export async function deployRocketPool() {
                                 compressABI(contracts.rocketDAOSecurityProposals.abi),
                                 compressABI(contracts.rocketNetworkSnapshots.abi),
                                 compressABI(contracts.rocketNetworkVoting.abi),
+                                compressABI(contracts.rocketDAOProtocolProposal.abi),
                             ],
                         ]
                         await upgrader.set(...args)
@@ -363,6 +366,7 @@ export async function deployRocketPool() {
                     case 'rocketDAOSecurityProposals':
                     case 'rocketNetworkSnapshots':
                     case 'rocketNetworkVoting':
+                    case 'rocketDAOProtocolProposal':
                         break;
                         
                     default:

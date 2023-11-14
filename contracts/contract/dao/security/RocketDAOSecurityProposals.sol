@@ -131,13 +131,22 @@ contract RocketDAOSecurityProposals is RocketBase, RocketDAOSecurityProposalsInt
         _memberInit(_id, _memberAddress);
     }
 
-    /// @dev Called by rocketDAOProtocolProposals to execute an kick in this namespace
+    /// @dev Called by rocketDAOProtocolProposals to execute a kick in this namespace
     /// @param _memberAddress The address of the member to kick
     function proposalKick(address _memberAddress) override public onlyLatestContract("rocketDAOProtocolProposals", msg.sender) {
         // Load contracts
         RocketDAOSecurityActionsInterface daoActionsContract = RocketDAOSecurityActionsInterface(getContractAddress("rocketDAOSecurityActions"));
         // Kick them now
         daoActionsContract.actionKick(_memberAddress);
+    }
+
+    /// @dev Called by rocketDAOProtocolProposals to execute a kick of multiple members in this namespace
+    /// @param _memberAddresses An array of addresses of the members to kick
+    function proposalKickMulti(address[] calldata _memberAddresses) override public onlyLatestContract("rocketDAOProtocolProposals", msg.sender) {
+        // Load contracts
+        RocketDAOSecurityActionsInterface daoActionsContract = RocketDAOSecurityActionsInterface(getContractAddress("rocketDAOSecurityActions"));
+        // Kick them now
+        daoActionsContract.actionKickMulti(_memberAddresses);
     }
 
     /// @dev Called by rocketDAOProtocolProposals to execute an member replacement in this namespace
