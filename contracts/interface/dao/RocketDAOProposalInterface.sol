@@ -23,9 +23,9 @@ interface RocketDAOProposalInterface {
     function getEnd(uint256 _proposalID) external view returns (uint256);
     function getExpires(uint256 _proposalID) external view returns (uint256);
     function getCreated(uint256 _proposalID) external view returns (uint256);
-    function getVotingPowerFor(uint256 _proposalID) external view returns (uint256);
-    function getVotingPowerAgainst(uint256 _proposalID) external view returns (uint256);
-    function getVotingPowerRequired(uint256 _proposalID) external view returns (uint256);
+    function getVotesFor(uint256 _proposalID) external view returns (uint256);
+    function getVotesAgainst(uint256 _proposalID) external view returns (uint256);
+    function getVotesRequired(uint256 _proposalID) external view returns (uint256);
     function getCancelled(uint256 _proposalID) external view returns (bool);
     function getExecuted(uint256 _proposalID) external view returns (bool);
     function getPayload(uint256 _proposalID) external view returns (bytes memory);
