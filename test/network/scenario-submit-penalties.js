@@ -8,7 +8,7 @@ import { shouldRevert } from '../_utils/testing';
 import { assertBN } from '../_helpers/bn';
 
 
-// Submit network balances
+// Submit network penalties
 export async function submitPenalty(minipoolAddress, block, txOptions) {
 
     // Load contracts
@@ -66,20 +66,20 @@ export async function submitPenalty(minipoolAddress, block, txOptions) {
       getPenalty()
     ]);
 
-    // Submit balances
+    // Submit penalties
     if (submission1.executed) {
         await shouldRevert(rocketNetworkPenalties.submitPenalty(minipoolAddress, block, txOptions), "Did not revert on already executed penalty", "Penalty already applied for this block");
     } else {
         await rocketNetworkPenalties.submitPenalty(minipoolAddress, block, txOptions);
     }
 
-    // Get updated submission details & balances
+    // Get updated submission details & penalties
     let [ submission2, penalty2 ] = await Promise.all([
         getSubmissionDetails(),
         getPenalty()
     ]);
 
-    // Check if balances should be updated
+    // Check if penalties should be updated
     let expectedUpdatedPenalty = '1'.ether.mul(submission2.count).div(trustedNodeCount).gte(penaltyThreshold);
 
     // Check submission details

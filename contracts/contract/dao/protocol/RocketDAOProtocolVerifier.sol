@@ -117,6 +117,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     }
 
     /// @dev Called by proposal contract to burn the bond of the proposer after a successful veto
+    /// @param _proposalID the proposal ID that will have the bond burnt
     function burnProposalBond(uint256 _proposalID) override external onlyLatestContract("rocketDAOProtocolProposal", address(msg.sender)) onlyLatestContract("rocketDAOProtocolVerifier", address(this)) {
         // Retrieved required inputs from storage
         uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
@@ -134,6 +135,12 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @param _proposalID The ID of the proposal being challenged
     /// @param _index The global index of the node being challenged
     function createChallenge(uint256 _proposalID, uint256 _index, Types.Node calldata _node, Types.Node[] calldata _witness) external onlyLatestContract("rocketDAOProtocolVerifier", address(this)) onlyRegisteredNode(msg.sender) {
+        {  // Scope to prevent stack too deep
+            // Check whether the proposal is on the Pending state
+            RocketDAOProtocolProposalInterface daoProposal = RocketDAOProtocolProposalInterface(getContractAddress("rocketDAOProtocolProposal"));
+            RocketDAOProtocolProposalInterface.ProposalState proposalState = daoProposal.getState(_proposalID);
+            require(proposalState == RocketDAOProtocolProposalInterface.ProposalState.Pending, "Can only challenge while proposal is Pending");
+        }
         // Precompute the proposal key
         uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
 
@@ -223,6 +230,12 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @param _proposalID The ID of the proposal
     /// @param _indices An array of indices which the challenger has a claim against
     function claimBondChallenger(uint256 _proposalID, uint256[] calldata _indices) external onlyLatestContract("rocketDAOProtocolVerifier", address(this)) onlyRegisteredNode(msg.sender) {
+        {  // Scope to prevent stack too deep
+            // Check whether the proposal is NOT on the Pending state
+            RocketDAOProtocolProposalInterface daoProposal = RocketDAOProtocolProposalInterface(getContractAddress("rocketDAOProtocolProposal"));
+            RocketDAOProtocolProposalInterface.ProposalState proposalState = daoProposal.getState(_proposalID);
+            require(proposalState != RocketDAOProtocolProposalInterface.ProposalState.Pending, "Can not claim bond while proposal is Pending");
+        }
         // Check whether the proposal was defeated
         uint256 defeatIndex = getUint(bytes32(uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)))+defeatIndexOffset));
         bool defeated = defeatIndex != 0;
@@ -437,6 +450,12 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         return true;
     }
 
+    /// @notice Check if a vote is valid using a provided proof
+    /// @param _voter address of the node operator casting the vote
+    /// @param _nodeIndex index of the voting node
+    /// @param _proposalID ID of the proposal being voted
+    /// @param _votingPower VP being used with this vote
+    /// @param _witness A merkle proof that will be verified
     function verifyVote(address _voter, uint256 _nodeIndex, uint256 _proposalID, uint256 _votingPower, Types.Node[] calldata _witness) external view returns (bool) {
         // Get contracts
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));

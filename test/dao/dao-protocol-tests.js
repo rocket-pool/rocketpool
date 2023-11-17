@@ -1133,7 +1133,52 @@ export default function() {
 
             // Try challenge the next node
             challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index + 1);
-            await shouldRevert(daoProtocolCreateChallenge(propId, index + 1, challenge.node, challenge.proof, { from: challenger }), 'Was able to challenge', 'Proposal already defeated');
+            await shouldRevert(daoProtocolCreateChallenge(propId, index + 1, challenge.node, challenge.proof, { from: challenger }), 'Was able to challenge', 'Can only challenge while proposal is Pending');
+        });
+
+        it(printTitle('challenger', 'can not challenge after pending state'), async () => {
+            // Setup
+            await mockNodeSet();
+            await createNode(1, proposer);
+
+            // Create a minipool with a node to use as a challenger
+            let challenger = node1;
+            await createNode(1, challenger);
+
+            // Create a valid proposal
+            const { propId, leaves } = await createValidProposal();
+
+            const index = 2;
+
+            // Let the challenge expire
+            await increaseTime(hre.web3, voteDelayTime + 1);
+
+            // Challenge
+            let challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
+            await shouldRevert(daoProtocolCreateChallenge(propId, index, challenge.node, challenge.proof, { from: challenger }), 'Was able to challenge', 'Can only challenge while proposal is Pending');
+        });
+
+        it(printTitle('challenger', 'can not claim bond while proposal is pending'), async () => {
+            // Setup
+            await mockNodeSet();
+            await createNode(1, proposer);
+
+            // Create a minipool with a node to use as a challenger
+            let challenger = node1;
+            await createNode(1, challenger);
+
+            // Create a valid proposal
+            const { propId, leaves } = await createValidProposal();
+
+            const index = 2;
+
+            // Challenge
+            let challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
+            await daoProtocolCreateChallenge(propId, index, challenge.node, challenge.proof, { from: challenger });
+
+            // Try to claim challenge bond
+            await shouldRevert(daoProtocolClaimBondChallenger(propId, [index], { from: challenger }), 'Claimed while pending', 'Can not claim bond while proposal is Pending');
+
         });
 
         it(printTitle('challenger', 'can not claim bond on invalid index'), async () => {

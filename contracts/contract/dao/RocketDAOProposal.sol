@@ -80,17 +80,17 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "created", _proposalID))); 
     }
 
-    // Get the votes for count of this proposal
+    // Get the votes count for this proposal
     function getVotesFor(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.for", _proposalID))); 
     }
 
-    // Get the votes against count of this proposal
+    // Get the votes count against this proposal
     function getVotesAgainst(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.against", _proposalID))); 
     }
 
-    // How many votes required for the proposal to succeed 
+    // How many votes are required for the proposal to succeed 
     function getVotesRequired(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.required", _proposalID))); 
     }

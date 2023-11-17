@@ -31,7 +31,7 @@ export async function getDAOProposalState(proposalID, txOptions) {
 export async function getDAOProposalVotesRequired(proposalID, txOptions) {
     // Load contracts
     const rocketDAOProposal = await RocketDAOProtocolProposal.deployed();
-    return await rocketDAOProposal.getVotesRequired.call(proposalID);
+    return await rocketDAOProposal.getVotingPowerRequired.call(proposalID);
 }
 
 /**
@@ -460,10 +460,11 @@ export async function daoProtocolVote(_proposalID, _vote, _votingPower, _nodeInd
     // Get data about the tx
     function getTxData() {
         return Promise.all([
+
             rocketDAOProtocolProposal.getTotal.call(),
             rocketDAOProtocolProposal.getState.call(_proposalID),
-            rocketDAOProtocolProposal.getVotesFor.call(_proposalID),
-            rocketDAOProtocolProposal.getVotesRequired.call(_proposalID),
+            rocketDAOProtocolProposal.getVotingPowerFor.call(_proposalID),
+            rocketDAOProtocolProposal.getVotingPowerRequired.call(_proposalID),
         ]).then(
             ([proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired]) =>
             ({proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired})
