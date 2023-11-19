@@ -17,8 +17,7 @@ import "../../../interface/dao/protocol/RocketDAOProtocolProposalInterface.sol";
 /// @notice Implements the protocol DAO optimistic fraud proof proposal system
 contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInterface {
 
-    // TODO: Set this to final value (5-6)
-    uint256 constant internal depthPerRound = 1;
+    uint256 constant internal depthPerRound = 5;
 
     // Packing constants for packing challenge data into a single uint256
     uint256 constant internal stateOffset = (256 - 8);
