@@ -648,8 +648,8 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         return _data;
     }
 
-    /// @dev Retrieves the sum and hash of the node at the given global index
-    function getNode(uint256 _proposalID, uint256 _index) internal view returns (Types.Node memory) {
+    /// @notice Retrieves the sum and hash of the node at the given global index
+    function getNode(uint256 _proposalID, uint256 _index) public view returns (Types.Node memory) {
         uint256 challengeKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, _index)));
         Types.Node memory node;
         node.sum = getUint(bytes32(challengeKey + sumOffset));
