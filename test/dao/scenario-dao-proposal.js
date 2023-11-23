@@ -18,7 +18,7 @@ export const voteStates = {
     Abstain      : 1,
     For          : 2,
     Against      : 3,
-    ForWithVeto  : 4,
+    AgainstWithVeto  : 4,
 };
 
 // Get the status of a proposal

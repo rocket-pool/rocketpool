@@ -22,13 +22,20 @@ import {
     daoProtocolClaimBondChallenger,
     daoProtocolClaimBondProposer,
     daoProtocolCreateChallenge,
-    daoProtocolDefeatProposal, daoProtocolExecute, daoProtocolGenerateChallengeProof,
-    daoProtocolGeneratePollard, daoProtocolGenerateVoteProof,
+    daoProtocolDefeatProposal, daoProtocolExecute, daoProtocolFinalise, daoProtocolGenerateChallengeProof,
+    daoProtocolGeneratePollard, daoProtocolGenerateVoteProof, daoProtocolOverrideVote,
     daoProtocolPropose,
     daoProtocolSubmitRoot, daoProtocolVote,
     getDelegatedVotingPower, getPhase2VotingPower, getSubIndex,
 } from './scenario-dao-protocol';
-import { getNodeCount, nodeStakeRPL, nodeWithdrawRPL, registerNode, setRPLLockingAllowed } from '../_helpers/node';
+import {
+    getNodeCount,
+    nodeSetDelegate,
+    nodeStakeRPL,
+    nodeWithdrawRPL,
+    registerNode,
+    setRPLLockingAllowed,
+} from '../_helpers/node';
 import { createMinipool, getMinipoolMinimumRPLStake } from '../_helpers/minipool';
 import { mintRPL } from '../_helpers/tokens';
 import { userDeposit } from '../_helpers/deposit';
@@ -280,11 +287,14 @@ export default function() {
         }
 
         async function mockNodeSet() {
+            let newAccounts = [];
             for (let i = 10; i < 50; i++) {
                 // Create pseudo-random number of minpools
                 const count = ((i * 7) % 5) + 1;
                 await createNode(count, accounts[i]);
+                newAccounts.push(accounts[i]);
             }
+            return newAccounts;
         }
 
         async function voteAll(proposalId, leaves, direction) {
@@ -294,7 +304,9 @@ export default function() {
                 const voteProof = daoProtocolGenerateVoteProof(leaves, nodeIndex);
 
                 try {
-                    await daoProtocolVote(proposalId, direction, voteProof.sum, nodeIndex, voteProof.witness, {from: accounts[i]});
+                    if (voteProof.sum.gt('0'.BN)) {
+                        await daoProtocolVote(proposalId, direction, voteProof.sum, nodeIndex, voteProof.witness, {from: accounts[i]});
+                    }
                 } catch(e) {
                     if (e.message.indexOf("Proposal has passed") !== -1) {
                         return;
@@ -884,6 +896,128 @@ export default function() {
             let subIndex = getSubIndex(subRootIndex, subTreeLeaves);
             let pollard = await daoProtocolGeneratePollard(subTreeLeaves, depthPerRound, subIndex);
             await shouldRevert(daoProtocolSubmitRoot(propId, subRootIndex, pollard, { from: proposer }), 'Accepted invalid hash', 'Invalid hash');
+        });
+
+        /**
+         * Override Votes
+         */
+
+        it(printTitle('voter', 'can vote against their delegate'), async () => {
+            // Setup
+            const nodes = await mockNodeSet();
+            await nodeSetDelegate(nodes[1], {from: nodes[0]});
+            await createNode(1, proposer);
+
+            // Create a valid proposal
+            const { propId, leaves } = await createValidProposal();
+
+            // Wait for proposal wait period to end
+            await increaseTime(hre.web3, voteDelayTime + 1);
+
+            // Vote all in favour
+            await voteAll(propId, leaves, voteStates.For);
+
+            // Skip phase 1 of the voting period
+            await increaseTime(hre.web3, votePhase1Time + 1);
+
+            // Have node[0] vote against vote[1]s for vote with an against vote
+            await daoProtocolOverrideVote(propId, voteStates.Against, {from: nodes[0]});
+        });
+
+
+        it(printTitle('voter', 'can not override vote in the same direction as their delegate'), async () => {
+            // Setup
+            const nodes = await mockNodeSet();
+            await nodeSetDelegate(nodes[1], {from: nodes[0]});
+            await createNode(1, proposer);
+
+            // Create a valid proposal
+            const { propId, leaves } = await createValidProposal();
+
+            // Wait for proposal wait period to end
+            await increaseTime(hre.web3, voteDelayTime + 1);
+
+            // Vote all in favour
+            await voteAll(propId, leaves, voteStates.For);
+
+            // Skip phase 1 of the voting period
+            await increaseTime(hre.web3, votePhase1Time + 1);
+
+            // Try to override vote with a for (checks for failure internally)
+            await daoProtocolOverrideVote(propId, voteStates.For, {from: nodes[0]});
+        });
+
+        /**
+         * Failed Proposals
+         */
+
+        it(printTitle('proposer', 'cannot execute a failed proposal'), async () => {
+            // Setup
+            await mockNodeSet();
+            await createNode(1, proposer);
+
+            // Create a minipool with a node to use as a challenger
+            let challenger = node1;
+            await createNode(1, challenger);
+
+            // Invite security council member
+            let proposalCalldata = hre.web3.eth.abi.encodeFunctionCall(
+                {name: 'proposalSecurityInvite', type: 'function', inputs: [{type: 'string', name: '_id'}, {type: 'address', name: '_nodeAddress'}]},
+                ['Security Member 1', securityMember1]
+            );
+
+            // Create a valid proposal
+            const { propId, leaves } = await createValidProposal('Invite security member to the council', proposalCalldata);
+
+            // Wait for proposal wait period to end
+            await increaseTime(hre.web3, voteDelayTime + 1);
+
+            // Vote all in favour
+            await voteAll(propId, leaves, voteStates.Against);
+
+            // Skip the full vote period
+            await increaseTime(hre.web3, votePhase1Time + votePhase2Time + 1);
+
+            // Fail to execute the proposal
+            await shouldRevert(daoProtocolExecute(propId, {from: proposer}), 'Was able to execute failed proposal', 'Proposal has not succeeded, has expired or has already been executed');
+
+            // Fail to accept the invitation
+            await shouldRevert(daoSecurityMemberJoin({from: securityMember1}), 'Was able to join on failed invite', 'This address has not been invited to join');
+        });
+
+
+        it(printTitle('proposer', 'can not execute a vetoed proposal but can destroy it'), async () => {
+            // Setup
+            await mockNodeSet();
+            await createNode(1, proposer);
+
+            // Create a minipool with a node to use as a challenger
+            let challenger = node1;
+            await createNode(1, challenger);
+
+            // Invite security council member
+            let proposalCalldata = hre.web3.eth.abi.encodeFunctionCall(
+                {name: 'proposalSecurityInvite', type: 'function', inputs: [{type: 'string', name: '_id'}, {type: 'address', name: '_nodeAddress'}]},
+                ['Security Member 1', securityMember1]
+            );
+
+            // Create a valid proposal
+            const { propId, leaves } = await createValidProposal('Invite security member to the council', proposalCalldata);
+
+            // Wait for proposal wait period to end
+            await increaseTime(hre.web3, voteDelayTime + 1);
+
+            // Vote all in favour
+            await voteAll(propId, leaves, voteStates.AgainstWithVeto);
+
+            // Skip the full vote period
+            await increaseTime(hre.web3, votePhase1Time + votePhase2Time + 1);
+
+            // Fail to execute the proposal
+            await shouldRevert(daoProtocolExecute(propId, {from: proposer}), 'Was able to execute failed proposal', 'Proposal has not succeeded, has expired or has already been executed');
+
+            // Finalise the vetoed proposal
+            await daoProtocolFinalise(propId, {from: proposer});
         });
 
         /**

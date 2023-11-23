@@ -106,7 +106,7 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
     function finalise(uint256 _proposalID) override external onlyLatestContract("rocketDAOProtocolProposal", address(this)) {
         // Check state
         require(getState(_proposalID) == ProposalState.Vetoed, "Proposal has not been vetoed");
-        bytes32 finalisedKey = keccak256(abi.encodePacked(daoProposalNameSpace, "cancelled", _proposalID));
+        bytes32 finalisedKey = keccak256(abi.encodePacked(daoProposalNameSpace, "finalised", _proposalID));
         require(getBool(finalisedKey) == false, "Proposal already finalised");
         setBool(finalisedKey, true);
         // Burn the proposer's bond
