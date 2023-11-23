@@ -46,7 +46,11 @@ module.exports = {
         ]
     },
     networks: {
-        hardhat: {},
+        hardhat: {
+            accounts: {
+                count: 50,
+            }
+        },
         localhost: {
             host: '127.0.0.1',
             port: 8545,

@@ -282,7 +282,8 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         if (rewardedIndices > 0) {
             uint256 proposalBond = getUint(bytes32(proposalKey + proposalBondOffset));
             // Calculate the number of challenges involved in defeating the proposal
-            uint256 totalDefeatingIndices = getDepthFromIndex(defeatIndex) / depthPerRound;
+            uint256 nodeCount = getUint(bytes32(proposalKey + nodeCountOffset));
+            uint256 totalDefeatingIndices = getRoundsFromIndex(defeatIndex, nodeCount);
             uint256 totalReward = proposalBond * rewardedIndices / totalDefeatingIndices;
             // Unlock the reward amount from the proposer and transfer it to the challenger
             address proposer = getAddress(bytes32(proposalKey + proposerOffset));
@@ -541,13 +542,21 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         return Math.log2(_index, Math.Rounding.Down);
     }
 
-    /// @dev Calculates the phase of the given index
-    /// @param _index The global index to calculate the phase from
-    /// @return True if the given index is in phase 1 of the challenge process
-    function getPhaseFromIndex(uint256 _index, uint256 _nodeCount) internal pure returns (bool) {
-        uint256 treeDepth = Math.log2(_nodeCount, Math.Rounding.Up);
+    /// @dev Calculates the number of rounds required to get to given index
+    /// @param _index The global index to calculate number of rounds for
+    /// @return The number of rounds it takes to get to the global index `_index`
+    function getRoundsFromIndex(uint256 _index, uint256 _nodeCount) internal pure returns (uint256) {
+        uint256 subTreeDepth = Math.log2(_nodeCount, Math.Rounding.Up);
         uint256 indexDepth = Math.log2(_index, Math.Rounding.Down);
-        return (indexDepth < treeDepth);
+
+        if (indexDepth <= subTreeDepth) {
+            return (indexDepth - 1) / depthPerRound + 1;
+        } else {
+            uint256 phase2Depth = indexDepth - subTreeDepth;
+            uint256 phase1Rounds = (subTreeDepth - 1) / depthPerRound + 1;
+            uint256 phase2Rounds = (phase2Depth - 1) / depthPerRound + 1;
+            return phase1Rounds + phase2Rounds;
+        }
     }
 
     /// @dev Calculates the max depth of a tree containing specified number of nodes

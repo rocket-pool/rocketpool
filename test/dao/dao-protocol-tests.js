@@ -94,6 +94,8 @@ export default function() {
             // Set the reward claim period
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.balances.frequency', balanceSubmissionFrequency, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', rewardClaimBalanceIntervals, {from: owner});
+            // Set maximum minipool count higher for test
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.maximum.count', 100, {from: owner});
         });
 
         //
@@ -278,7 +280,7 @@ export default function() {
         }
 
         async function mockNodeSet() {
-            for (let i = 10; i < 20; i++) {
+            for (let i = 10; i < 50; i++) {
                 // Create pseudo-random number of minpools
                 const count = ((i * 7) % 5) + 1;
                 await createNode(count, accounts[i]);
@@ -287,7 +289,7 @@ export default function() {
 
         async function voteAll(proposalId, leaves, direction) {
             // Vote from each account until the proposal passes
-            for (let i = 10; i < 20; i++) {
+            for (let i = 10; i < 50; i++) {
                 const nodeIndex = nodeMap[accounts[i]];
                 const voteProof = daoProtocolGenerateVoteProof(leaves, nodeIndex);
 
@@ -1266,7 +1268,8 @@ export default function() {
             // Challenge/response
             const phase1Depth = getMaxDepth(leaves.length);
             const maxDepth = phase1Depth * 2;
-            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).phase1Indices;
+            const {phase1Indices, subRootIndex} = getChallengeIndices(2 ** maxDepth, leaves.length);
+            const indices = [...phase1Indices, subRootIndex];
 
             // Challenge first round
             let challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, indices[0]);

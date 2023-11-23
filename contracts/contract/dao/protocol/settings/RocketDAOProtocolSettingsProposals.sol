@@ -9,22 +9,22 @@ contract RocketDAOProtocolSettingsProposals is RocketDAOProtocolSettings, Rocket
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "proposals") {
         version = 1;
-//        // Initialize settings on deployment
-//        if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
-//            // Init settings
-//            setSettingUint("proposal.vote.phase1.time", 2 weeks);           // How long a proposal can be voted on in phase 1
-//            setSettingUint("proposal.vote.phase2.time", 2 weeks);           // How long a proposal can be voted on in phase 2
-//            setSettingUint("proposal.vote.delay.time", 1 weeks);            // How long before a proposal can be voted on after it is created
-//            setSettingUint("proposal.execute.time", 4 weeks);               // How long a proposal can be executed after its voting period is finished
-//            setSettingUint("proposal.bond", 100 ether);                     // The amount of RPL a proposer has to put up as a bond for creating a new proposal
-//            setSettingUint("proposal.challenge.bond", 10 ether);            // The amount of RPL a challenger has to put up as a bond for challenging a proposal
-//            setSettingUint("proposal.challenge.period", 30 minutes);        // The amount of time a proposer has to respond to a challenge before a proposal is defeated
-//            setSettingUint("proposal.quorum", 0.51 ether);                  // The quorum required to pass a proposal
-//            setSettingUint("proposal.veto.quorum", 0.51 ether);             // The quorum required to veto a proposal
-//            setSettingUint("proposal.max.block.age", 1024);                 // The maximum age of a block a proposal can be raised at
-//            // Settings initialised
-//            setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
-//        }
+        // Initialize settings on deployment
+        if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
+            // Init settings
+            setSettingUint("proposal.vote.phase1.time", 2 weeks);           // How long a proposal can be voted on in phase 1
+            setSettingUint("proposal.vote.phase2.time", 2 weeks);           // How long a proposal can be voted on in phase 2
+            setSettingUint("proposal.vote.delay.time", 1 weeks);            // How long before a proposal can be voted on after it is created
+            setSettingUint("proposal.execute.time", 4 weeks);               // How long a proposal can be executed after its voting period is finished
+            setSettingUint("proposal.bond", 100 ether);                     // The amount of RPL a proposer has to put up as a bond for creating a new proposal
+            setSettingUint("proposal.challenge.bond", 10 ether);            // The amount of RPL a challenger has to put up as a bond for challenging a proposal
+            setSettingUint("proposal.challenge.period", 30 minutes);        // The amount of time a proposer has to respond to a challenge before a proposal is defeated
+            setSettingUint("proposal.quorum", 0.51 ether);                  // The quorum required to pass a proposal
+            setSettingUint("proposal.veto.quorum", 0.51 ether);             // The quorum required to veto a proposal
+            setSettingUint("proposal.max.block.age", 1024);                 // The maximum age of a block a proposal can be raised at
+            // Settings initialised
+            setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
+        }
     }
 
     /// @notice Update a setting, overrides inherited setting method with extra checks for this contract
