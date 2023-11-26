@@ -57,9 +57,9 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         return depthPerRound;
     }
 
-    /// @notice Returns the proposal bond details
+    /// @notice Returns the proposal bond and the challenge bond for this proposal
     /// @param _proposalID The proposal to fetch details
-    function getProposalBonds(uint256 _proposalID) override external view returns ( uint256, uint256) {
+    function getProposalBonds(uint256 _proposalID) override external view returns (uint256, uint256) {
         // Fetch the proposal key
         uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
         return (getUint(bytes32(proposalKey + proposalBondOffset)), getUint(bytes32(proposalKey + challengeBondOffset)));
