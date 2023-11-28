@@ -33,7 +33,7 @@ export default function() {
             node,
             trustedNode,
             random,
-            rplWithdrwalAddress,
+            rplWithdrawalAddress,
         ] = accounts;
 
         let scrubPeriod = (60 * 60 * 24); // 24 hours
@@ -291,13 +291,13 @@ export default function() {
             const rplAmount = '10000'.ether;
 
             // Set RPL withdrawal address
-            await setNodeRPLWithdrawalAddress(node, rplWithdrwalAddress, {from: node});
+            await setNodeRPLWithdrawalAddress(node, rplWithdrawalAddress, {from: node});
 
             // Not allowed to set from node address any more
             await shouldRevert(setStakeRPLForAllowed(random, true, {from: node}), 'Was able to allow', 'Must be called from RPL withdrawal address');
 
             // Allow from RPL withdrawal address
-            await setStakeRPLForAllowedWithNodeAddress(node, random, true, {from: rplWithdrwalAddress});
+            await setStakeRPLForAllowedWithNodeAddress(node, random, true, {from: rplWithdrawalAddress});
 
             // Stake RPL
             await nodeStakeRPLFor(node, rplAmount, {from: random});
