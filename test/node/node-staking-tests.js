@@ -34,6 +34,7 @@ export default function() {
             trustedNode,
             random,
             rplWithdrawalAddress,
+            withdrawalAddress,
         ] = accounts;
 
         let scrubPeriod = (60 * 60 * 24); // 24 hours
@@ -61,6 +62,8 @@ export default function() {
             const rplAmount = '10000'.ether;
             await mintRPL(owner, node, rplAmount);
             await mintRPL(owner, random, rplAmount);
+            await mintRPL(owner, rplWithdrawalAddress, rplAmount);
+            await mintRPL(owner, withdrawalAddress, rplAmount);
 
         });
 
@@ -313,6 +316,30 @@ export default function() {
 
             // Stake RPL
             await shouldRevert(nodeStakeRPL(rplAmount, {from: node}), 'Was able to stake', 'Not allowed to stake for');
+        });
+
+
+        it(printTitle('node operator', 'can stake from primary withdrawal address'), async () => {
+            // Set parameters
+            const rplAmount = '10000'.ether;
+
+            // Set RPL withdrawal address
+            await setNodeWithdrawalAddress(node, withdrawalAddress, {from: node});
+
+            // Stake RPL
+            await nodeStakeRPLFor(node, rplAmount, {from: withdrawalAddress});
+        });
+
+
+        it(printTitle('node operator', 'can stake from RPL withdrawal address'), async () => {
+            // Set parameters
+            const rplAmount = '10000'.ether;
+
+            // Set RPL withdrawal address
+            await setNodeRPLWithdrawalAddress(node, rplWithdrawalAddress, {from: node});
+
+            // Stake RPL
+            await nodeStakeRPLFor(node, rplAmount, {from: rplWithdrawalAddress});
         });
     });
 }

@@ -268,7 +268,8 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
                address rplWithdrawalAddress = rocketNodeManager.getNodeRPLWithdrawalAddress(_nodeAddress);
                fromNode = msg.sender == rplWithdrawalAddress;
            } else {
-               fromNode = msg.sender == _nodeAddress;
+               address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
+               fromNode = (msg.sender == _nodeAddress) || (msg.sender == withdrawalAddress);
            }
            if (!fromNode) {
                require(getBool(keccak256(abi.encodePacked("node.stake.for.allowed", _nodeAddress, msg.sender))), "Not allowed to stake for");
