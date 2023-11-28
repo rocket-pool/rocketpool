@@ -247,12 +247,11 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         return getBool(keccak256(abi.encodePacked("rpl.locking.allowed", _nodeAddress)));
     }
 
-    /// @notice Accept an RPL stake
-    ///         Only accepts calls from registered nodes
-    ///         Requires call to have approved this contract to spend RPL
+    /// @notice Accept an RPL stake from the node operator's own address
+    ///         Requires the node's RPL withdrawal address to be unset
     /// @param _amount The amount of RPL to stake
-    function stakeRPL(uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(msg.sender) {
-        _stakeRPL(msg.sender, _amount);
+    function stakeRPL(uint256 _amount) override external {
+        stakeRPLFor(msg.sender, _amount);
     }
 
     /// @notice Accept an RPL stake from any address for a specified node
@@ -260,7 +259,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     ///         Requires caller to be on the node operator's allow list (see `setStakeForAllowed`)
     /// @param _nodeAddress The address of the node operator to stake on behalf of
     /// @param _amount The amount of RPL to stake
-    function stakeRPLFor(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(_nodeAddress) {
+    function stakeRPLFor(address _nodeAddress, uint256 _amount) override public onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(_nodeAddress) {
        // Must be node's RPL withdrawal address if set or the node's address or an allow listed address or rocketMerkleDistributorMainnet
        if (msg.sender != getAddress(keccak256(abi.encodePacked("contract.address", "rocketMerkleDistributorMainnet")))) {
            RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));

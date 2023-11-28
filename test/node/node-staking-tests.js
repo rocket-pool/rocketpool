@@ -302,5 +302,17 @@ export default function() {
             // Stake RPL
             await nodeStakeRPLFor(node, rplAmount, {from: random});
         });
+
+
+        it(printTitle('node operator', 'cannot stake from node address once RPL withdrawal address is set'), async () => {
+            // Set parameters
+            const rplAmount = '10000'.ether;
+
+            // Set RPL withdrawal address
+            await setNodeRPLWithdrawalAddress(node, rplWithdrawalAddress, {from: node});
+
+            // Stake RPL
+            await shouldRevert(nodeStakeRPL(rplAmount, {from: node}), 'Was able to stake', 'Not allowed to stake for');
+        });
     });
 }
