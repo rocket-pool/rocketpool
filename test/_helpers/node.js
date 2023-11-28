@@ -118,6 +118,12 @@ export async function setNodeWithdrawalAddress(nodeAddress, withdrawalAddress, t
     await rocketStorage.setWithdrawalAddress(nodeAddress, withdrawalAddress, true, txOptions);
 }
 
+// Set an RPL withdrawal address for a node
+export async function setNodeRPLWithdrawalAddress(nodeAddress, rplWithdrawalAddress, txOptions) {
+    assert(await upgradeExecuted());
+    const rocketNodeManager = await RocketNodeManagerNew.deployed();
+    await rocketNodeManager.setRPLWithdrawalAddress(nodeAddress, rplWithdrawalAddress, true, txOptions);
+}
 
 // Submit a node RPL stake
 export async function nodeStakeRPL(amount, txOptions) {
@@ -174,6 +180,13 @@ export async function setStakeRPLForAllowed(caller, state, txOptions) {
     await rocketNodeStaking.methods['setStakeRPLForAllowed(address,bool)'](caller, state, txOptions);
 }
 
+
+// Sets allow state for staking on behalf
+export async function setStakeRPLForAllowedWithNodeAddress(nodeAddress, caller, state, txOptions) {
+    assert.isTrue(await upgradeExecuted());
+    const rocketNodeStaking = await RocketNodeStakingNew.deployed();
+    await rocketNodeStaking.methods['setStakeRPLForAllowed(address,address,bool)'](nodeAddress, caller, state, txOptions);
+}
 
 // Withdraw a node RPL stake
 export async function nodeWithdrawRPL(amount, txOptions) {

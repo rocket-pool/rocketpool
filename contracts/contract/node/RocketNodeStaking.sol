@@ -302,9 +302,9 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @param _allowed Whether the address is allowed or denied
     function setStakeRPLForAllowed(address _nodeAddress, address _caller, bool _allowed) override public onlyLatestContract("rocketNodeStaking", address(this)) onlyRPLWithdrawalAddressOrNode(_nodeAddress) {
         // Set the value
-        setBool(keccak256(abi.encodePacked("node.stake.for.allowed", msg.sender, _caller)), _allowed);
+        setBool(keccak256(abi.encodePacked("node.stake.for.allowed", _nodeAddress, _caller)), _allowed);
         // Log it
-        emit StakeRPLForAllowed(msg.sender, _caller, _allowed, block.timestamp);
+        emit StakeRPLForAllowed(_nodeAddress, _caller, _allowed, block.timestamp);
     }
 
     /// @dev Internal logic for staking RPL

@@ -10,7 +10,7 @@ import {
     nodeDeposit,
     setNodeTrusted,
     nodeStakeRPLFor,
-    setStakeRPLForAllowed,
+    setStakeRPLForAllowed, setNodeWithdrawalAddress, setNodeRPLWithdrawalAddress, setStakeRPLForAllowedWithNodeAddress,
 } from '../_helpers/node';
 import { mintRPL, approveRPL } from '../_helpers/tokens';
 import { stakeRpl } from './scenario-stake-rpl';
@@ -33,6 +33,7 @@ export default function() {
             node,
             trustedNode,
             random,
+            rplWithdrwalAddress,
         ] = accounts;
 
         let scrubPeriod = (60 * 60 * 24); // 24 hours
@@ -279,6 +280,24 @@ export default function() {
 
             // Allow
             await setStakeRPLForAllowed(random, true, {from: node});
+
+            // Stake RPL
+            await nodeStakeRPLFor(node, rplAmount, {from: random});
+        });
+
+
+        it(printTitle('random address', 'can stake on behalf of a node with allowance from withdrawal address'), async () => {
+            // Set parameters
+            const rplAmount = '10000'.ether;
+
+            // Set RPL withdrawal address
+            await setNodeRPLWithdrawalAddress(node, rplWithdrwalAddress, {from: node});
+
+            // Not allowed to set from node address any more
+            await shouldRevert(setStakeRPLForAllowed(random, true, {from: node}), 'Was able to allow', 'Must be called from RPL withdrawal address');
+
+            // Allow from RPL withdrawal address
+            await setStakeRPLForAllowedWithNodeAddress(node, random, true, {from: rplWithdrwalAddress});
 
             // Stake RPL
             await nodeStakeRPLFor(node, rplAmount, {from: random});
