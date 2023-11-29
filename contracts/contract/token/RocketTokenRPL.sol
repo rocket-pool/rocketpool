@@ -11,7 +11,7 @@ import "../../interface/token/RocketTokenRPLInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
 
 // RPL Governance and utility token
-// Inlfationary with rate determined by DAO
+// Inflationary with rate determined by DAO
 
 contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
 
