@@ -19,6 +19,9 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
     // Constants
     bytes32 immutable internal priceKey;
 
+    // Events
+    event DelegateSet(address nodeOperator, address delegate, uint256 time);
+
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
         // Precompute keys
@@ -123,6 +126,7 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         bytes32 key = keccak256(abi.encodePacked("node.delegate", msg.sender));
         rocketNetworkSnapshots.push(key, uint32(block.number), uint224(uint160(_newDelegate)));
+        emit DelegateSet(msg.sender, _newDelegate, block.timestamp);
     }
 
     function getDelegate(address _nodeAddress, uint32 _block) external override view returns (address) {

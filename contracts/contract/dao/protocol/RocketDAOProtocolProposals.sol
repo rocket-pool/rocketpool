@@ -19,6 +19,16 @@ import "../../../interface/dao/security/RocketDAOSecurityProposalsInterface.sol"
 /// @notice Manages protocol DAO proposals
 contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInterface {
 
+    // Events
+    event ProposalSettingUint(string settingContractName, string settingPath, uint256 value, uint256 time);
+    event ProposalSettingBool(string settingContractName, string settingPath, bool value, uint256 time);
+    event ProposalSettingAddress(string settingContractName, string settingPath, address value, uint256 time);
+    event ProposalSettingRewardsClaimers(uint256 trustedNodePercent, uint256 protocolPercent, uint256 nodePercent, uint256 time);
+    event ProposalSecurityInvite(string id, address memberAddress, uint256 time);
+    event ProposalSecurityKick(address memberAddress, uint256 time);
+    event ProposalSecurityKickMulti(address[] memberAddresses, uint256 time);
+    event ProposalSecurityReplace(address existingMemberAddress, string newMemberId, address newMemberAddress, uint256 time);
+
     // Only allow certain contracts to execute methods
     modifier onlyExecutingContracts() {
         // Methods are either executed by bootstrapping methods in rocketDAONodeTrusted or by people executing passed proposals on this contract
@@ -62,10 +72,9 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     /// @param _settingPath Setting path to change
     /// @param _value New setting value
     function proposalSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) override public onlyExecutingContracts() {
-        // Load contracts
         RocketDAOProtocolSettingsInterface rocketDAOProtocolSettings = RocketDAOProtocolSettingsInterface(getContractAddress(_settingContractName));
-        // Lets update
         rocketDAOProtocolSettings.setSettingUint(_settingPath, _value);
+        emit ProposalSettingUint(_settingContractName, _settingPath, _value, block.timestamp);
     }
 
     /// @notice Change one of the current bool settings of the protocol DAO
@@ -73,10 +82,9 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     /// @param _settingPath Setting path to change
     /// @param _value New setting value
     function proposalSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) override public onlyExecutingContracts() {
-        // Load contracts
         RocketDAOProtocolSettingsInterface rocketDAOProtocolSettings = RocketDAOProtocolSettingsInterface(getContractAddress(_settingContractName));
-        // Lets update
         rocketDAOProtocolSettings.setSettingBool(_settingPath, _value);
+        emit ProposalSettingBool(_settingContractName, _settingPath, _value, block.timestamp);
     }
 
     /// @notice Change one of the current address settings of the protocol DAO
@@ -84,10 +92,9 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     /// @param _settingPath Setting path to change
     /// @param _value New setting value
     function proposalSettingAddress(string memory _settingContractName, string memory _settingPath, address _value) override public onlyExecutingContracts() {
-        // Load contracts
         RocketDAOProtocolSettingsInterface rocketDAOProtocolSettings = RocketDAOProtocolSettingsInterface(getContractAddress(_settingContractName));
-        // Lets update
         rocketDAOProtocolSettings.setSettingAddress(_settingPath, _value);
+        emit ProposalSettingAddress(_settingContractName, _settingPath, _value, block.timestamp);
     }
 
     /// @notice Updates the percentages the trusted nodes use when calculating RPL reward trees. Percentages must add up to 100%
@@ -95,10 +102,9 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     /// @param _protocolPercent The percentage of rewards paid to the protocol dao (as a fraction of 1e18)
     /// @param _nodePercent The percentage of rewards paid to the node operators (as a fraction of 1e18)
     function proposalSettingRewardsClaimers(uint256 _trustedNodePercent, uint256 _protocolPercent, uint256 _nodePercent) override external onlyExecutingContracts() {
-        // Load contracts
         RocketDAOProtocolSettingsRewardsInterface rocketDAOProtocolSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
-        // Update now
         rocketDAOProtocolSettingsRewards.setSettingRewardsClaimers(_trustedNodePercent, _protocolPercent, _nodePercent);
+        emit ProposalSettingRewardsClaimers(_trustedNodePercent, _protocolPercent, _nodePercent, block.timestamp);
     }
 
     /// @notice Spend RPL from the DAO's treasury immediately
@@ -139,6 +145,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     function proposalSecurityInvite(string calldata _id, address _memberAddress) override external onlyExecutingContracts() {
         RocketDAOSecurityProposalsInterface rocketDAOSecurityProposals = RocketDAOSecurityProposalsInterface(getContractAddress("rocketDAOSecurityProposals"));
         rocketDAOSecurityProposals.proposalInvite(_id, _memberAddress);
+        emit ProposalSecurityInvite(_id, _memberAddress, block.timestamp);
     }
 
     /// @notice Propose to kick a current member from the security council
@@ -146,6 +153,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     function proposalSecurityKick(address _memberAddress) override external onlyExecutingContracts {
         RocketDAOSecurityProposalsInterface rocketDAOSecurityProposals = RocketDAOSecurityProposalsInterface(getContractAddress("rocketDAOSecurityProposals"));
         rocketDAOSecurityProposals.proposalKick(_memberAddress);
+        emit ProposalSecurityKick(_memberAddress, block.timestamp);
     }
 
     /// @notice Propose to kick multiple current members from the security council
@@ -153,6 +161,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     function proposalSecurityKickMulti(address[] calldata _memberAddresses) override external onlyExecutingContracts {
         RocketDAOSecurityProposalsInterface rocketDAOSecurityProposals = RocketDAOSecurityProposalsInterface(getContractAddress("rocketDAOSecurityProposals"));
         rocketDAOSecurityProposals.proposalKickMulti(_memberAddresses);
+        emit ProposalSecurityKickMulti(_memberAddresses, block.timestamp);
     }
 
     /// @notice Propose to replace a current member from the security council
@@ -162,5 +171,6 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     function proposalSecurityReplace(address _existingMemberAddress, string calldata _newMemberId, address _newMemberAddress) override external onlyExecutingContracts {
         RocketDAOSecurityProposalsInterface rocketDAOSecurityProposals = RocketDAOSecurityProposalsInterface(getContractAddress("rocketDAOSecurityProposals"));
         rocketDAOSecurityProposals.proposalReplace(_existingMemberAddress, _newMemberId, _newMemberAddress);
+        emit ProposalSecurityReplace(_existingMemberAddress, _newMemberId, _newMemberAddress, block.timestamp);
     }
 }
