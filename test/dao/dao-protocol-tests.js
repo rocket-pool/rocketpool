@@ -268,9 +268,11 @@ export default function() {
             await setRPLLockingAllowed(node, true, {from: node});
         }
 
-        async function createValidProposal(name = 'Test proposal', payload = '0x0') {
+        async function createValidProposal(name = 'Test proposal', payload = '0x0', block = null) {
             // Setup
-            const block = await hre.web3.eth.getBlockNumber();
+            if (block === null) {
+                block = await hre.web3.eth.getBlockNumber();
+            }
             const power = await getDelegatedVotingPower(block);
             const leaves = constructTreeLeaves(power);
 
@@ -376,6 +378,15 @@ export default function() {
 
             // Create a valid proposal
             await createValidProposal();
+        });
+
+        it(printTitle('proposer', 'can not submit a proposal with a past block'), async () => {
+            // Setup
+            await mockNodeSet();
+            await createNode(1, proposer);
+
+            const block = await hre.web3.eth.getBlockNumber() + 5;
+            await shouldRevert(createValidProposal('Test proposal', '0x0', block), 'Was able to create proposal with future block', 'Block must be in the past');
         });
 
         it(printTitle('proposer', 'can not submit a proposal if locking is not allowed'), async () => {
