@@ -133,6 +133,8 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @notice Used by a verifier to challenge a specific index of a proposal's voting power tree
     /// @param _proposalID The ID of the proposal being challenged
     /// @param _index The global index of the node being challenged
+    /// @param _node The node that is being challenged as submitted by the proposer
+    /// @param _witness A merkle proof of the challenged node (using the previously challenged index as a root)
     function createChallenge(uint256 _proposalID, uint256 _index, Types.Node calldata _node, Types.Node[] calldata _witness) external onlyLatestContract("rocketDAOProtocolVerifier", address(this)) onlyRegisteredNode(msg.sender) {
         {  // Scope to prevent stack too deep
             // Check whether the proposal is on the Pending state

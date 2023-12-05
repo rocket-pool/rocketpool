@@ -266,7 +266,7 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
         return votesVeto >= quorum;
     }
 
-    /// @notice Get the votes against count of this proposal
+    /// @notice Get the proposal payload
     /// @param _proposalID The ID of the proposal to query
     function getPayload(uint256 _proposalID) override public view returns (bytes memory) {
         return getBytes(keccak256(abi.encodePacked(daoProposalNameSpace, "payload", _proposalID)));
@@ -279,7 +279,7 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
         return getReceiptDirection(_proposalID, _nodeAddress) != VoteDirection.NoVote;
     }
 
-    /// @notice Returns true if this proposal was supported by this node
+    /// @notice Returns the direction a node voted on a given proposal
     /// @param _proposalID The ID of the proposal to query
     /// @param _nodeAddress The node operator address to query
     function getReceiptDirection(uint256 _proposalID, address _nodeAddress) override public view returns (VoteDirection) {
