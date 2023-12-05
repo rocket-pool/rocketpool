@@ -62,7 +62,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @param _proposer The node raising the proposal
     /// @param _blockNumber The block number used to generate the voting power tree
     /// @param _treeNodes A pollard of the voting power tree
-    function submitProposalRoot(uint256 _proposalID, address _proposer, uint32 _blockNumber, Types.Node[] memory _treeNodes) external onlyLatestContract("rocketDAOProtocolProposal", msg.sender) onlyLatestContract("rocketDAOProtocolVerifier", address(this)) {
+    function submitProposalRoot(uint256 _proposalID, address _proposer, uint32 _blockNumber, Types.Node[] calldata _treeNodes) external onlyLatestContract("rocketDAOProtocolProposal", msg.sender) onlyLatestContract("rocketDAOProtocolVerifier", address(this)) {
         // Retrieve the node count at _blockNumber
         uint256 nodeCount;
         {
@@ -354,7 +354,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @param _proposalID The ID of the proposal
     /// @param _index The global index of the node for which the proposer is submitting a new pollard
     /// @param _nodes A list of nodes making up the new pollard
-    function submitRoot(uint256 _proposalID, uint256 _index, Types.Node[] memory _nodes) external onlyLatestContract("rocketDAOProtocolVerifier", address(this)) onlyRegisteredNode(msg.sender) {
+    function submitRoot(uint256 _proposalID, uint256 _index, Types.Node[] calldata _nodes) external onlyLatestContract("rocketDAOProtocolVerifier", address(this)) onlyRegisteredNode(msg.sender) {
         {
             // Get challenge state
             bytes32 challengeKey = keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, _index));
@@ -386,25 +386,26 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         require(expected.sum == actual.sum, "Invalid sum");
 
         // Determine if this index is a leaf node of the primary tree or sub tree
-        uint256 treeDepth = Math.log2(nodeCount, Math.Rounding.Up);
+        {
+            uint256 treeDepth = Math.log2(nodeCount, Math.Rounding.Up);
 
-        if (indexDepth == treeDepth) {
-            // The leaf node of the primary tree is just a hash of the sum
-            bytes32 actualHash = keccak256(abi.encodePacked(actual.sum));
-            require(expected.hash == actualHash, "Invalid hash");
+            if (indexDepth == treeDepth) {
+                // The leaf node of the primary tree is just a hash of the sum
+                bytes32 actualHash = keccak256(abi.encodePacked(actual.sum));
+                require(expected.hash == actualHash, "Invalid hash");
 
-            // Update the node to include the root hash of the sub tree
-            setNode(_proposalID, _index, actual);
-        } else {
-            require(expected.hash == actual.hash, "Invalid hash");
+                // Update the node to include the root hash of the sub tree
+                setNode(_proposalID, _index, actual);
+            } else {
+                require(expected.hash == actual.hash, "Invalid hash");
 
-            // Verify sub-tree leaves with known values
-            if (indexDepth + depthPerRound >= treeDepth * 2) {
-                // Calculate the offset into the leaf nodes in the final tree that match the supplied nodes
-                uint256 n = getNextDepth(_index, nodeCount) - indexDepth;
-                uint256 offset = (_index * (2 ** n)) - (2 ** (treeDepth * 2));
-                // Verify the leaves match the values we know on chain
-                require(verifyLeaves(getUint(bytes32(proposalKey + blockNumberOffset)), nodeCount, offset, _nodes), "Invalid leaves");
+                // Verify sub-tree leaves with known values
+                if (indexDepth + depthPerRound >= treeDepth * 2) {
+                    // Calculate the offset into the leaf nodes in the final tree that match the supplied nodes
+                    uint256 offset = (_index * (2 ** (getNextDepth(_index, nodeCount) - indexDepth))) - (2 ** (treeDepth * 2));
+                    // Verify the leaves match the values we know on chain
+                    require(verifyLeaves(getUint(bytes32(proposalKey + blockNumberOffset)), nodeCount, offset, _nodes), "Invalid leaves");
+                }
             }
         }
 
@@ -418,12 +419,13 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @param _offset The pollard's offset into the leaves
     /// @param _leaves The pollard's leaves
     /// @return True if the leaves match what is known on chain
-    function verifyLeaves(uint256 _blockNumber, uint256 _nodeCount, uint256 _offset, Types.Node[] memory _leaves) internal view returns (bool) {
+    function verifyLeaves(uint256 _blockNumber, uint256 _nodeCount, uint256 _offset, Types.Node[] calldata _leaves) internal view returns (bool) {
         // Get contracts
         RocketNetworkVotingInterface rocketNetworkVoting = RocketNetworkVotingInterface(getContractAddress("rocketNetworkVoting"));
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         // Calculate the closest power of 2 of the node count
         uint256 nodeCount = 2 ** Math.log2(_nodeCount, Math.Rounding.Up);
+        uint32 blockNumber32 = uint32(_blockNumber);
         // Iterate over the leaves
         for (uint256 i = 0; i < _leaves.length; i++) {
             // The leaf nodes are a 2d array of voting power in the form of [delegateIndex][nodeIndex] where both
@@ -434,10 +436,11 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
             uint256 actual = 0;
             if (nodeIndex < _nodeCount && delegateIndex < _nodeCount) {
                 // Calculate the node and the delegate referred to by this leaf node
-                address actualDelegate = rocketNetworkVoting.getDelegate(rocketNodeManager.getNodeAt(nodeIndex), uint32(_blockNumber));
+                address nodeAddress = rocketNodeManager.getNodeAt(nodeIndex);
+                address actualDelegate = rocketNetworkVoting.getDelegate(nodeAddress, blockNumber32);
                 // If a delegation exists, retrieve the node's voting power
                 if (actualDelegate == rocketNodeManager.getNodeAt(delegateIndex)) {
-                    actual = rocketNetworkVoting.getVotingPower(rocketNodeManager.getNodeAt(nodeIndex), uint32(_blockNumber));
+                    actual = rocketNetworkVoting.getVotingPower(nodeAddress, blockNumber32);
                 }
             }
             // Check provided leaves against actual sum
@@ -512,7 +515,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @dev Computes the root node given a pollard
     /// @param _nodes An array of nodes to compute a root node for
     /// @return The computed root node
-    function computeRootFromNodes(Types.Node[] memory _nodes) internal pure returns (Types.Node memory) {
+    function computeRootFromNodes(Types.Node[] calldata _nodes) internal pure returns (Types.Node memory) {
         uint256 len = _nodes.length / 2;
         // Perform first step into a new temporary memory buffer to leave original intact
         Types.Node[] memory temp = new Types.Node[](len);
