@@ -40,12 +40,6 @@ contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDA
         setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount.updated.time")), block.timestamp);
     }
 
-    /// @notice Updates the number of submission periods between new claiming periods
-    /// @param _periods The number of prices/balances submissions
-    function setSettingRewardClaimPeriods(uint256 _periods) override external onlyDAOProtocolProposal() {
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "periods")), _periods);
-    }
-
     /// @notice Get the percentage of rewards paid to a contract by its internal name. Deprecated in favour of individual
     ///         getRewardClaimers*Perc() methods. Retained for backwards compatibility.
     function getRewardsClaimerPerc(string memory _contractName) override public view returns (uint256) {
