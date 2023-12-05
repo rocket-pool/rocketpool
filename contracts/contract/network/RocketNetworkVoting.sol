@@ -75,6 +75,9 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
     /// @param _nodeAddress Address of the node operator
     /// @param _block Block number to query
     function getVotingPower(address _nodeAddress, uint32 _block) external override view returns (uint256) {
+        // Validate block number
+        require(_block <= block.number, "Block must be in the past");
+
         // Check if the node operator has enabled voting
         if (!getBool(keccak256(abi.encodePacked("node.voting.enabled", _nodeAddress)))) {
             return 0;
@@ -105,11 +108,11 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         key = keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress));
         uint256 rplStake = uint256(rocketNetworkSnapshots.lookupRecent(key, uint32(_block), 5));
 
-        return calculateVotingPower(rplStake, ethMatched, ethProvided, rplPrice);
+        return calculateVotingPower(rplStake, ethProvided, rplPrice);
     }
 
     /// @dev Calculates and returns a node's voting power based on the given inputs
-    function calculateVotingPower(uint256 rplStake, uint256 matchedETH, uint256 providedETH, uint256 rplPrice) internal view returns (uint256) {
+    function calculateVotingPower(uint256 rplStake, uint256 providedETH, uint256 rplPrice) internal view returns (uint256) {
         // Get contracts
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         // RPL stake cannot exceed maximum
