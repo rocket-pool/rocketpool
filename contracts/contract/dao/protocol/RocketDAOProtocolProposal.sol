@@ -174,25 +174,26 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
         return getString(keccak256(abi.encodePacked(daoProposalNameSpace, "message", _proposalID)));
     }
 
-    /// @notice Get the start block of this proposal
+    /// @notice Get the start of this proposal as a timestamp
     /// @param _proposalID The ID of the proposal to query
     function getStart(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "start", _proposalID)));
     }
 
-    /// @notice Get the end of phase1 block of this proposal
+    /// @notice Get the end of phase1 of this proposal as a timestamp
     /// @param _proposalID The ID of the proposal to query
     function getPhase1End(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "phase1End", _proposalID)));
     }
 
-    /// @notice Get the end of phase2 block of this proposal
+    /// @notice Get the end of phase2 of this proposal as a timestamp
     /// @param _proposalID The ID of the proposal to query
+    /// @return timestamp for the end of phase2
     function getPhase2End(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "phase2End", _proposalID)));
     }
 
-    /// @notice The block where the proposal expires and can no longer be executed if it is successful
+    /// @notice The timestamp where the proposal expires and can no longer be executed if it is successful
     /// @param _proposalID The ID of the proposal to query
     function getExpires(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "expires", _proposalID)));

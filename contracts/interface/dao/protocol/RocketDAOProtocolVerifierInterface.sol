@@ -30,6 +30,10 @@ interface Types {
 }
 
 interface RocketDAOProtocolVerifierInterface {
+    function getDefeatIndex(uint256 _proposalID) external view returns (uint256);
+    function getProposalBond(uint256 _proposalID) external view returns (uint256);
+    function getChallengeBond(uint256 _proposalID) external view returns (uint256);
+    function getChallengePeriod(uint256 _proposalID) external view returns (uint256);
     function getDepthPerRound() external pure returns (uint256);
     function submitProposalRoot(uint256 _proposalId, address _proposer, uint32 _blockNumber, Types.Node[] memory _treeNodes) external;
     function burnProposalBond(uint256 _proposalID) external;

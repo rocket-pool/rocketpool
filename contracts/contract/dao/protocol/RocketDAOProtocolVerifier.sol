@@ -57,6 +57,38 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         return depthPerRound;
     }
 
+    /// @notice Returns the defeat index for this proposal
+    /// @param _proposalID The proposal to fetch details
+    function getDefeatIndex(uint256 _proposalID) override external view returns (uint256) {
+        // Fetch the proposal key
+        uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
+        return getUint(bytes32(proposalKey + defeatIndexOffset));
+    }
+
+    /// @notice Returns the proposal bond for this proposal
+    /// @param _proposalID The proposal to fetch details
+    function getProposalBond(uint256 _proposalID) override external view returns (uint256) {
+        // Fetch the proposal key
+        uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
+        return getUint(bytes32(proposalKey + proposalBondOffset));
+    }
+
+    /// @notice Returns the challenge bond for this proposal
+    /// @param _proposalID The proposal to fetch details
+    function getChallengeBond(uint256 _proposalID) override external view returns (uint256) {
+        // Fetch the proposal key
+        uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
+        return getUint(bytes32(proposalKey + challengeBondOffset));
+    }
+
+    /// @notice Returns the duration of the challenge period for this proposal
+    /// @param _proposalID The proposal to fetch details
+    function getChallengePeriod(uint256 _proposalID) override external view returns (uint256) {
+        // Fetch the proposal key
+        uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
+        return getUint(bytes32(proposalKey + challengePeriodOffset));
+    }
+
     /// @dev Called during a proposal submission to calculate and store the proposal root so it is available for challenging
     /// @param _proposalID The ID of the proposal
     /// @param _proposer The node raising the proposal
