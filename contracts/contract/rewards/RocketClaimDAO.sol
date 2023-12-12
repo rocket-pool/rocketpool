@@ -30,6 +30,13 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
         version = 3;
     }
 
+    /// @notice Returns whether a contract with the given name exists
+    /// @param _contractName Name of the contract to check existence of
+    function getContractExists(string calldata _contractName) external view returns (bool) {
+        uint256 contractKey = uint256(keccak256(abi.encodePacked("dao.protocol.treasury.contract", _contractName)));
+        return getBool(bytes32(contractKey + existsOffset));
+    }
+
     /// @notice Gets details about a given payment contract
     /// @param _contractName Name of the contract to retrieve details for
     function getContract(string calldata _contractName) override external view returns (PaymentContract memory) {

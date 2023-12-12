@@ -13,6 +13,7 @@ interface RocketClaimDAOInterface {
         uint256 periodsPaid;
     }
 
+    function getContractExists(string calldata _contractName) external view returns (bool);
     function getContract(string calldata _contractName) external view returns (PaymentContract memory);
     function getBalance(address _recipientAddress) external view returns (uint256);
     function spend(string memory _invoiceID, address _recipientAddress, uint256 _amount) external;
