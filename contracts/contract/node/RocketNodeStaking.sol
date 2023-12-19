@@ -408,20 +408,20 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         RocketDAOProtocolSettingsRewardsInterface rocketDAOProtocolSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check cooldown period (one claim period) has passed since RPL last staked
-        require(block.timestamp - getNodeRPLStakedTime(msg.sender) >= rocketDAOProtocolSettingsRewards.getRewardsClaimIntervalTime(), "The withdrawal cooldown period has not passed");
+        require(block.timestamp - getNodeRPLStakedTime(_nodeAddress) >= rocketDAOProtocolSettingsRewards.getRewardsClaimIntervalTime(), "The withdrawal cooldown period has not passed");
         // Get & check node's current RPL stake
-        uint256 rplStake = getNodeRPLStake(msg.sender);
-        uint256 lockedStake = getNodeRPLLocked(msg.sender);
+        uint256 rplStake = getNodeRPLStake(_nodeAddress);
+        uint256 lockedStake = getNodeRPLLocked(_nodeAddress);
         require(rplStake >= _amount, "Withdrawal amount exceeds node's staked RPL balance");
-        // Check withdrawal would not undercollateralize node
-        require(rplStake - _amount - lockedStake >= getNodeMaximumRPLStake(msg.sender), "Node's staked RPL balance after withdrawal is less than required balance");
+        // Check withdrawal would not under collateralise node
+        require(rplStake - _amount - lockedStake >= getNodeMaximumRPLStake(_nodeAddress), "Node's staked RPL balance after withdrawal is less than required balance");
         // Update RPL stake amounts
         decreaseTotalRPLStake(_amount);
-        decreaseNodeRPLStake(msg.sender, _amount);
+        decreaseNodeRPLStake(_nodeAddress, _amount);
         // Transfer RPL tokens to node's RPL withdrawal address (if unset, defaults to primary withdrawal address)
         rocketVault.withdrawToken(rplWithdrawalAddress, IERC20(getContractAddress("rocketTokenRPL")), _amount);
         // Emit RPL withdrawn event
-        emit RPLWithdrawn(msg.sender, _amount, block.timestamp);
+        emit RPLWithdrawn(_nodeAddress, _amount, block.timestamp);
     }
 
     /// @notice Slash a node's RPL by an ETH amount
