@@ -1,5 +1,5 @@
 name: CI
-on: [push, pull_request]
+on: [push]
 
 jobs:
   run-ci:
@@ -8,7 +8,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 16
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Install Components
