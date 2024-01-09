@@ -76,7 +76,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     /// @notice Compute intervals since last claim period
     /// @return uint256 Time intervals since last update
     function getClaimIntervalsPassed() override public view returns(uint256) {
-        return block.timestamp - (getClaimIntervalTimeStart() / getClaimIntervalTime());
+        return (block.timestamp - getClaimIntervalTimeStart()) / getClaimIntervalTime();
     }
 
     /// @notice Returns the block number that the given claim interval was executed at
