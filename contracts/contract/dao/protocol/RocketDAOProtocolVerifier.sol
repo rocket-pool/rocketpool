@@ -625,28 +625,28 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @param _index The index to calculate a pollard root index from
     /// @return The pollard root index for node with global index of `_index`
     function getPollardRootIndex(uint256 _index, uint256 _nodeCount) internal pure returns (uint256) {
-        // Index is within the first pollard depth
-        if (_index < 2 ** depthPerRound) {
-            return 1;
-        }
+        require(_index > 1, "Invalid index");
+
         uint256 indexDepth = Math.log2(_index, Math.Rounding.Down);
         uint256 maxDepth = Math.log2(_nodeCount, Math.Rounding.Up);
 
-        // Index is leaf of phase 1 tree
-        if (indexDepth == maxDepth) {
+        if (indexDepth < maxDepth) {
+            // Index is leaf of phase 1 tree
             uint256 remainder = indexDepth % depthPerRound;
-            if (remainder != 0) {
-                return _index / (2 ** remainder);
-            }
-        // Index is phase 2 pollard
-        } else if (indexDepth > maxDepth) {
-            if (indexDepth < maxDepth + depthPerRound) {
-                // Previous index is a phase 1 leaf node
-                return _index / (2 ** (indexDepth - maxDepth));
-            }
+            require(remainder == 0, "Invalid index");
+            return _index / (2 ** depthPerRound);
+        } else if (indexDepth == maxDepth) {
+            // Index is a network tree leaf
+            uint256 remainder = indexDepth % depthPerRound;
+            return _index / (2 ** remainder);
+        } else if (indexDepth < maxDepth * 2) {
+            // Index is phase 2 pollard
+            uint256 subIndexDepth = indexDepth - maxDepth;
+            uint256 remainder = subIndexDepth % depthPerRound;
+            require(remainder == 0, "Invalid index");
+            return _index / (2 ** depthPerRound);
         }
-
-        return _index / (2 ** depthPerRound);
+        revert("Invalid index");
     }
 
     /// @dev Returns true if the given `_index` is in the path from the proposal root down to `_defeatIndex`

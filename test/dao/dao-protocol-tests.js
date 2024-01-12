@@ -1266,7 +1266,10 @@ export default function() {
             // Create a valid proposal
             const { propId, leaves } = await createValidProposal();
 
-            const index = 2;
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const { phase1Indices, subRootIndex, phase2Indices } = getChallengeIndices(2 ** maxDepth, leaves.length);
+            const index = phase1Indices[0];
 
             // Challenge
             let challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
@@ -1295,7 +1298,10 @@ export default function() {
             // Create a valid proposal
             const { propId, leaves } = await createValidProposal();
 
-            const index = 2;
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const { phase1Indices, subRootIndex, phase2Indices } = getChallengeIndices(2 ** maxDepth, leaves.length);
+            const index = phase1Indices[0];
 
             // Let the challenge expire
             await increaseTime(hre.web3, voteDelayTime + 1);
@@ -1317,7 +1323,10 @@ export default function() {
             // Create a valid proposal
             const { propId, leaves } = await createValidProposal();
 
-            const index = 2;
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const { phase1Indices, subRootIndex, phase2Indices } = getChallengeIndices(2 ** maxDepth, leaves.length);
+            const index = phase1Indices[0];
 
             // Challenge
             let challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
