@@ -211,6 +211,82 @@ export default function() {
         });
 
 
+        it(printTitle('node operator', 'can make a deposit to create a minipool using deposit credit and deposit balance'), async () => {
+            // Stake RPL to cover minipools
+            let minipoolRplStake = await getMinipoolMinimumRPLStake();
+            let rplStake = minipoolRplStake.mul('3'.BN);
+            await mintRPL(owner, node, rplStake);
+            await nodeStakeRPL(rplStake, {from: node});
+
+            // Create a 16 ETH minipool
+            await userDeposit({ from: random, value: '24'.ether, });
+            const minipoolAddress = await depositV2(noMinimumNodeFee, halfDepositNodeAmount, {
+                from: node,
+                value: halfDepositNodeAmount,
+            });
+            const minipool = await RocketMinipoolDelegate.at(minipoolAddress);
+
+            // Stake the minipool
+            await increaseTime(web3, launchTimeout + 1);
+            await stakeMinipool(minipool, {from: node});
+
+            // Signal wanting to reduce and wait 7 days
+            const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
+            await rocketMinipoolBondReducer.beginReduceBondAmount(minipool.address, '8'.ether, {from: node});
+            await increaseTime(web3, bondReductionWindowStart + 1);
+
+            // Reduce the bond to 8 ether to receive a deposit credit
+            await reduceBond(minipool, {from: node});
+
+            // Deposit ETH to the node operator
+            await nodeDepositEthFor(node, {from: owner, value: '8'.ether});
+
+            // Create an 16 ether minipool (using 8 ether from credit and 8 ether from balance)
+            await depositV2(noMinimumNodeFee, halfDepositNodeAmount, {
+                from: node,
+                value: '0'.BN
+            });
+        });
+
+
+        it(printTitle('node operator', 'can make a deposit to create a minipool using deposit credit, deposit balance and supplying shortfall'), async () => {
+            // Stake RPL to cover minipools
+            let minipoolRplStake = await getMinipoolMinimumRPLStake();
+            let rplStake = minipoolRplStake.mul('3'.BN);
+            await mintRPL(owner, node, rplStake);
+            await nodeStakeRPL(rplStake, {from: node});
+
+            // Create a 16 ETH minipool
+            await userDeposit({ from: random, value: '24'.ether, });
+            const minipoolAddress = await depositV2(noMinimumNodeFee, halfDepositNodeAmount, {
+                from: node,
+                value: halfDepositNodeAmount,
+            });
+            const minipool = await RocketMinipoolDelegate.at(minipoolAddress);
+
+            // Stake the minipool
+            await increaseTime(web3, launchTimeout + 1);
+            await stakeMinipool(minipool, {from: node});
+
+            // Signal wanting to reduce and wait 7 days
+            const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
+            await rocketMinipoolBondReducer.beginReduceBondAmount(minipool.address, '8'.ether, {from: node});
+            await increaseTime(web3, bondReductionWindowStart + 1);
+
+            // Reduce the bond to 8 ether to receive a deposit credit
+            await reduceBond(minipool, {from: node});
+
+            // Deposit ETH to the node operator
+            await nodeDepositEthFor(node, {from: owner, value: '4'.ether});
+
+            // Create a 16 ether minipool (using 8 ether from credit,  4 ether from balance and 4 ether in msg.value)
+            await depositV2(noMinimumNodeFee, halfDepositNodeAmount, {
+                from: node,
+                value: '4'.ether
+            });
+        });
+
+
         it(printTitle('node operator', 'can deposit ETH then use it to create a minipool'), async () => {
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();

@@ -218,13 +218,15 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         // Retrieve ETH from deposit pool if required
         uint256 shortFall = 0;
-        if (msg.value < _preLaunchValue) {
-            shortFall = _preLaunchValue- msg.value;
+        if (address(this).balance < _preLaunchValue) {
+            shortFall = _preLaunchValue - address(this).balance;
             rocketDepositPool.nodeCreditWithdrawal(shortFall);
         }
-        uint256 remaining = msg.value + shortFall - _preLaunchValue;
+        uint256 remaining = address(this).balance - _preLaunchValue;
         // Deposit the left over value into the deposit pool
-        rocketDepositPool.nodeDeposit{value: remaining}(_bondAmount - _preLaunchValue);
+        if (remaining > 0) {
+            rocketDepositPool.nodeDeposit{value: remaining}(_bondAmount - _preLaunchValue);
+        }
     }
 
     /// @notice Creates a "vacant" minipool which a node operator can use to migrate a validator with a BLS withdrawal credential
