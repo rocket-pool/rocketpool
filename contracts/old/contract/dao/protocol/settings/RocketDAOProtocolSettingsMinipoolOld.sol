@@ -1,18 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity 0.8.18;
+pragma solidity 0.7.6;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../../../contract/dao/protocol/settings/RocketDAOProtocolSettings.sol";
-import "../../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import "../../../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMinipoolInterface.sol";
+import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterfaceOld.sol";
 
 
 /// @notice Network minipool settings
-contract RocketDAOProtocolSettingsMinipoolOld is RocketDAOProtocolSettings, RocketDAOProtocolSettingsMinipoolInterface {
+contract RocketDAOProtocolSettingsMinipoolOld is RocketDAOProtocolSettings, RocketDAOProtocolSettingsMinipoolInterfaceOld {
 
-    uint256 constant minipoolUserDistributeWindowStart = 90 days;
+    // Libs
+    using SafeMath for uint;
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "minipool") {
         // Set version
-        version = 3;
+        version = 2;
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
@@ -20,6 +23,7 @@ contract RocketDAOProtocolSettingsMinipoolOld is RocketDAOProtocolSettings, Rock
             setSettingBool("minipool.bond.reduction.enabled", false);
             setSettingUint("minipool.launch.timeout", 72 hours);
             setSettingUint("minipool.maximum.count", 14);
+            setSettingUint("minipool.user.distribute.window.start", 14 days);
             setSettingUint("minipool.user.distribute.window.length", 2 days);
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
@@ -32,11 +36,10 @@ contract RocketDAOProtocolSettingsMinipoolOld is RocketDAOProtocolSettings, Rock
     function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
         // Some safety guards for certain settings
         if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
-            bytes32 settingKey = keccak256(abi.encodePacked(_settingPath));
-            if(settingKey == keccak256(abi.encodePacked("minipool.launch.timeout"))) {
-                // >= 12 hours (RPIP-33)
-                require(_value >= 12 hours, "Launch timeout must be greater than 12 hours");
-            } 
+            if(keccak256(abi.encodePacked(_settingPath)) == keccak256(abi.encodePacked("minipool.launch.timeout"))) {
+                RocketDAONodeTrustedSettingsMinipoolInterface rocketDAONodeTrustedSettingsMinipool = RocketDAONodeTrustedSettingsMinipoolInterface(getContractAddress("rocketDAONodeTrustedSettingsMinipool"));
+                require(_value >= (rocketDAONodeTrustedSettingsMinipool.getScrubPeriod().add(1 hours)), "Launch timeout must be greater than scrub period");
+            }
         }
         // Update setting now
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
@@ -61,17 +64,17 @@ contract RocketDAOProtocolSettingsMinipoolOld is RocketDAOProtocolSettings, Rock
 
     /// @notice Returns the user amount for a "Full" deposit minipool
     function getFullDepositUserAmount() override public pure returns (uint256) {
-        return getLaunchBalance() / 2;
+        return getLaunchBalance().div(2);
     }
 
     /// @notice Returns the user amount for a "Half" deposit minipool
     function getHalfDepositUserAmount() override public pure returns (uint256) {
-        return getLaunchBalance() / 2;
+        return getLaunchBalance().div(2);
     }
 
     /// @notice Returns the amount a "Variable" minipool requires to move to staking status
     function getVariableDepositAmount() override public pure returns (uint256) {
-        return getLaunchBalance() - getPreLaunchValue();
+        return getLaunchBalance().sub(getPreLaunchValue());
     }
 
     /// @notice Submit minipool withdrawable events currently enabled (trusted nodes only)
@@ -91,26 +94,26 @@ contract RocketDAOProtocolSettingsMinipoolOld is RocketDAOProtocolSettings, Rock
 
     /// @notice Returns the maximum number of minipools allowed at one time
     function getMaximumCount() override external view returns (uint256) {
-      return getSettingUint("minipool.maximum.count");
+        return getSettingUint("minipool.maximum.count");
     }
 
     /// @notice Returns true if the given time is within the user distribute window
     function isWithinUserDistributeWindow(uint256 _time) override external view returns (bool) {
         uint256 start = getUserDistributeWindowStart();
         uint256 length = getUserDistributeWindowLength();
-        return (_time >= start && _time < (start + length));
+        return (_time >= start && _time < (start.add(length)));
     }
 
     /// @notice Returns true if the given time has passed the distribute window
     function hasUserDistributeWindowPassed(uint256 _time) override external view returns (bool) {
         uint256 start = getUserDistributeWindowStart();
         uint256 length = getUserDistributeWindowLength();
-        return _time >= start + length;
+        return _time >= start.add(length);
     }
 
     /// @notice Returns the start of the user distribute window
-    function getUserDistributeWindowStart() override public pure returns (uint256) {
-        return minipoolUserDistributeWindowStart;
+    function getUserDistributeWindowStart() override public view returns (uint256) {
+        return getSettingUint("minipool.user.distribute.window.start");
     }
 
     /// @notice Returns the length of the user distribute window
