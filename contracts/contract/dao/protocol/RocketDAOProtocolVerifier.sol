@@ -424,6 +424,14 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         {
             uint256 treeDepth = Math.log2(nodeCount, Math.Rounding.Up);
 
+            // Verify sub-tree leaves with known values
+            if (indexDepth + depthPerRound >= treeDepth * 2) {
+                // Calculate the offset into the leaf nodes in the final tree that match the supplied nodes
+                uint256 offset = (_index * (2 ** (getNextDepth(_index, nodeCount) - indexDepth))) - (2 ** (treeDepth * 2));
+                // Verify the leaves match the values we know on chain
+                require(verifyLeaves(getUint(bytes32(proposalKey + blockNumberOffset)), nodeCount, offset, _nodes), "Invalid leaves");
+            }
+
             if (indexDepth == treeDepth) {
                 // The leaf node of the primary tree is just a hash of the sum
                 bytes32 actualHash = keccak256(abi.encodePacked(actual.sum));
@@ -433,14 +441,6 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
                 setNode(_proposalID, _index, actual);
             } else {
                 require(expected.hash == actual.hash, "Invalid hash");
-
-                // Verify sub-tree leaves with known values
-                if (indexDepth + depthPerRound >= treeDepth * 2) {
-                    // Calculate the offset into the leaf nodes in the final tree that match the supplied nodes
-                    uint256 offset = (_index * (2 ** (getNextDepth(_index, nodeCount) - indexDepth))) - (2 ** (treeDepth * 2));
-                    // Verify the leaves match the values we know on chain
-                    require(verifyLeaves(getUint(bytes32(proposalKey + blockNumberOffset)), nodeCount, offset, _nodes), "Invalid leaves");
-                }
             }
         }
 
