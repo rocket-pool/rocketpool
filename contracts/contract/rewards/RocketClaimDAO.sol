@@ -186,7 +186,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
 
         // Update last paid timestamp and periods paid
         setUint(bytes32(contractKey + lastPaymentOffset), lastPaymentTime + (periodsToPay * periodLength));
-        setUint(bytes32(contractKey + periodsPaid), periodsPaid + periodsToPay);
+        setUint(bytes32(contractKey + periodsPaidOffset), periodsPaid + periodsToPay);
 
         // Add to the recipient's balance
         addUint(keccak256(abi.encodePacked("dao.protocol.treasury.balance", recipientAddress)), amountToPay);
