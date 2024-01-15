@@ -148,7 +148,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
     /// @notice Executes payout on the given contracts
     /// @param _contractNames An array of contract names to execute a payout on
     function payOutContracts(string[] calldata _contractNames) external onlyLatestContract("rocketClaimDAO", address(this)) {
-        for (uint256 i = 0; i < _contractNames.length; i++) {
+        for (uint256 i = 0; i < _contractNames.length; ++i) {
             payOutContract(_contractNames[i]);
         }
     }
@@ -167,17 +167,17 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
         uint256 periodLength = getUint(bytes32(contractKey + periodLengthOffset));
         uint256 periodsToPay = (block.timestamp - lastPaymentTime) / periodLength;
 
-        // Already paid up to date
-        if (periodsToPay == 0) {
-            return;
-        }
-
         uint256 periodsPaid = getUint(bytes32(contractKey + periodsPaidOffset));
         uint256 numPeriods = getUint(bytes32(contractKey + numPeriodsOffset));
 
         // Calculate how many periods to pay
         if (periodsToPay + periodsPaid > numPeriods) {
             periodsToPay = numPeriods - periodsPaid;
+        }
+
+        // Already paid up to date
+        if (periodsToPay == 0) {
+            return;
         }
 
         address recipientAddress = getAddress(bytes32(contractKey + recipientOffset));

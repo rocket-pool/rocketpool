@@ -51,7 +51,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         // Check lengths of all arguments are the same
         require(_settingContractNames.length == _settingPaths.length && _settingPaths.length == _types.length && _types.length == _data.length, "Invalid parameters supplied");
         // Loop through settings
-        for (uint256 i = 0; i < _settingContractNames.length; i++) {
+        for (uint256 i = 0; i < _settingContractNames.length; ++i) {
             if (_types[i] == SettingType.UINT256) {
                 uint256 value = abi.decode(_data[i], (uint256));
                 proposalSettingUint(_settingContractNames[i], _settingPaths[i], value);

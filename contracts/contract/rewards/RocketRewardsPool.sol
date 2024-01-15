@@ -107,7 +107,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         RocketDAOProtocolSettingsRewardsInterface daoSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
         // Get the % amount allocated to this claim contract
         uint256[] memory percentages = new uint256[](_claimingContracts.length);
-        for (uint256 i = 0; i < _claimingContracts.length; i++){
+        for (uint256 i = 0; i < _claimingContracts.length; ++i){
             percentages[i] = daoSettingsRewards.getRewardsClaimerPerc(_claimingContracts[i]);
         }
         return percentages;
@@ -142,10 +142,10 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // Calculate RPL reward total and validate
         { // Scope to prevent stack too deep
             uint256 totalRewardsRPL = _submission.treasuryRPL;
-            for (uint256 i = 0; i < _submission.nodeRPL.length; i++){
+            for (uint256 i = 0; i < _submission.nodeRPL.length; ++i){
                 totalRewardsRPL = totalRewardsRPL + _submission.nodeRPL[i];
             }
-            for (uint256 i = 0; i < _submission.trustedNodeRPL.length; i++){
+            for (uint256 i = 0; i < _submission.trustedNodeRPL.length; ++i){
                 totalRewardsRPL = totalRewardsRPL + _submission.trustedNodeRPL[i];
             }
             require(totalRewardsRPL <= getPendingRPLRewards(), "Invalid RPL rewards");
@@ -153,7 +153,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // Calculate ETH reward total and validate
         { // Scope to prevent stack too deep
             uint256 totalRewardsETH = 0;
-            for (uint256 i = 0; i < _submission.nodeETH.length; i++){
+            for (uint256 i = 0; i < _submission.nodeETH.length; ++i){
                 totalRewardsETH = totalRewardsETH + _submission.nodeETH[i];
             }
             require(totalRewardsETH <= getPendingETHRewards(), "Invalid ETH rewards");
@@ -228,7 +228,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
             rocketSmoothingPool.withdrawEther(rocketTokenRETHAddress, _submission.userETH);
         }
         // Loop over each network and distribute rewards
-        for (uint i = 0; i < _submission.nodeRPL.length; i++) {
+        for (uint i = 0; i < _submission.nodeRPL.length; ++i) {
             // Quick out if no rewards for this network
             uint256 rewardsRPL = _submission.nodeRPL[i] + _submission.trustedNodeRPL[i];
             uint256 rewardsETH = _submission.nodeETH[i];

@@ -54,12 +54,12 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         TimezoneCount[] memory counts = new TimezoneCount[](max - _offset);
         uint256 uniqueTimezoneCount = 0;
         // Iterate the minipool range
-        for (uint256 i = _offset; i < max; i++) {
+        for (uint256 i = _offset; i < max; ++i) {
             address nodeAddress = addressSetStorage.getItem(nodeKey, i);
             string memory timezone = getString(keccak256(abi.encodePacked("node.timezone.location", nodeAddress)));
             // Find existing entry in our array
             bool existing = false;
-            for (uint256 j = 0; j < uniqueTimezoneCount; j++) {
+            for (uint256 j = 0; j < uniqueTimezoneCount; ++j) {
                 if (keccak256(bytes(counts[j].timezone)) == keccak256(bytes(timezone))) {
                     existing = true;
                     // Increment the counter
@@ -245,7 +245,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         if (count > 0){
             uint256 numerator = 0;
             // Note: this loop is safe as long as all current node operators at the time of upgrade have few enough minipools
-            for (uint256 i = 0; i < count; i++) {
+            for (uint256 i = 0; i < count; ++i) {
                 RocketMinipoolInterface minipool = RocketMinipoolInterface(rocketMinipoolManager.getNodeMinipoolAt(msg.sender, i));
                 if (minipool.getStatus() == MinipoolStatus.Staking){
                     numerator = numerator + minipool.getNodeFee();
@@ -280,7 +280,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         uint256 totalCount;
         uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
         // Retrieve the number of staking minipools per deposit size
-        for (uint256 i = 0; i < depositSizes.length; i++) {
+        for (uint256 i = 0; i < depositSizes.length; ++i) {
             depositCounts[i] = rocketMinipoolManager.getNodeStakingMinipoolCountBySize(_nodeAddress, depositSizes[i]);
             totalCount = totalCount + depositCounts[i];
         }
@@ -288,16 +288,16 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
             return 0;
         }
         // Calculate the weights of each deposit size
-        for (uint256 i = 0; i < depositSizes.length; i++) {
+        for (uint256 i = 0; i < depositSizes.length; ++i) {
             depositWeights[i] = (launchAmount - depositSizes[i]) * depositCounts[i];
             depositWeightTotal = depositWeightTotal + depositWeights[i];
         }
-        for (uint256 i = 0; i < depositSizes.length; i++) {
+        for (uint256 i = 0; i < depositSizes.length; ++i) {
             depositWeights[i] = depositWeights[i] * calcBase / depositWeightTotal;
         }
         // Calculate the weighted average
         uint256 weightedAverage = 0;
-        for (uint256 i = 0; i < depositSizes.length; i++) {
+        for (uint256 i = 0; i < depositSizes.length; ++i) {
             if (depositCounts[i] > 0) {
                 bytes32 numeratorKey;
                 if (depositSizes[i] == 16 ether) {
@@ -375,7 +375,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         uint256 max = _offset + _limit;
         if (max > totalNodes || _limit == 0) { max = totalNodes; }
         uint256 count = 0;
-        for (uint256 i = _offset; i < max; i++) {
+        for (uint256 i = _offset; i < max; ++i) {
             address nodeAddress = addressSetStorage.getItem(nodeKey, i);
             if (getSmoothingPoolRegistrationState(nodeAddress)) {
                 count++;
@@ -444,7 +444,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Create array big enough for every minipool
         address[] memory nodes = new address[](max - _offset);
         uint256 total = 0;
-        for (uint256 i = _offset; i < max; i++) {
+        for (uint256 i = _offset; i < max; ++i) {
             nodes[total] = addressSetStorage.getItem(nodeKey, i);
             total++;
         }

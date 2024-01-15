@@ -95,7 +95,7 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
         {
             uint256 totalAmountRPL = 0;
             uint256 totalAmountETH = 0;
-            for (uint256 i = 0; i < _rewardIndex.length; i++) {
+            for (uint256 i = 0; i < _rewardIndex.length; ++i) {
                 totalAmountRPL = totalAmountRPL + _amountRPL[i];
                 totalAmountETH = totalAmountETH + _amountETH[i];
             }
@@ -137,7 +137,7 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
         bytes32 claimedWordKey = keccak256(abi.encodePacked('rewards.interval.claimed', _nodeAddress, indexWordIndex));
         uint256 claimedWord = getUint(claimedWordKey);
         // Loop over every entry
-        for (uint256 i = 0; i < _rewardIndex.length; i++) {
+        for (uint256 i = 0; i < _rewardIndex.length; ++i) {
             // Prevent accidental claim of 0
             require(_amountRPL[i] > 0 || _amountETH[i] > 0, "Invalid amount");
             // Check if this entry has a different word index than the previous

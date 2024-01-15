@@ -279,7 +279,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         // Keep track of the number of indices the claimer had which were involved in defeating the proposal
         uint256 rewardedIndices = 0;
 
-        for (uint256 i = 0; i < _indices.length; i++) {
+        for (uint256 i = 0; i < _indices.length; ++i) {
             bytes32 challengeKey = keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, _indices[i]));
             uint256 challengeData = getUint(challengeKey);
             Types.ChallengeState challengeState = _getChallengeState(challengeData);
@@ -361,7 +361,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         // Get staking contract
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
 
-        for (uint256 i = 0; i < _indices.length; i++) {
+        for (uint256 i = 0; i < _indices.length; ++i) {
             // Check the challenge of the given index was responded to
             bytes32 challengeKey = keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, _indices[i]));
             uint256 state = getUint(challengeKey);
@@ -462,7 +462,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         uint256 nodeCount = 2 ** Math.log2(_nodeCount, Math.Rounding.Up);
         uint32 blockNumber32 = uint32(_blockNumber);
         // Iterate over the leaves
-        for (uint256 i = 0; i < _leaves.length; i++) {
+        for (uint256 i = 0; i < _leaves.length; ++i) {
             // The leaf nodes are a 2d array of voting power in the form of [delegateIndex][nodeIndex] where both
             // arrays are padded out to the closest power of 2 with zeros
             uint256 nodeIndex = (_offset + i) % nodeCount;
@@ -528,7 +528,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @return The computed root node for the given witness
     function computeRootFromWitness(uint256 _index, Types.Node memory _leaf, Types.Node[] calldata _witness) internal pure returns (Types.Node memory) {
         Types.Node memory root = _leaf;
-        for (uint256 i = 0; i < _witness.length; i++) {
+        for (uint256 i = 0; i < _witness.length; ++i) {
             if (_index % 2 == 1) {
                 root.hash = keccak256(abi.encodePacked(
                         _witness[i].hash, _witness[i].sum,
@@ -554,7 +554,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         uint256 len = _nodes.length / 2;
         // Perform first step into a new temporary memory buffer to leave original intact
         Types.Node[] memory temp = new Types.Node[](len);
-        for (uint256 i = 0; i < len; i++) {
+        for (uint256 i = 0; i < len; ++i) {
             temp[i].hash = keccak256(abi.encodePacked(
                     _nodes[i * 2].hash, _nodes[i * 2].sum,
                     _nodes[i * 2 + 1].hash, _nodes[i * 2 + 1].sum
@@ -564,7 +564,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         // Compute the remainder within the temporary buffer
         while (len > 1) {
             len /= 2;
-            for (uint256 i = 0; i < len; i++) {
+            for (uint256 i = 0; i < len; ++i) {
                 temp[i].hash = keccak256(abi.encodePacked(
                         temp[i * 2].hash, temp[i * 2].sum,
                         temp[i * 2 + 1].hash, temp[i * 2 + 1].sum

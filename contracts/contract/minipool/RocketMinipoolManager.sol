@@ -81,7 +81,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         uint256 totalMinipools = getMinipoolCount();
         uint256 max = _offset + _limit;
         if (max > totalMinipools || _limit == 0) { max = totalMinipools; }
-        for (uint256 i = _offset; i < max; i++) {
+        for (uint256 i = _offset; i < max; ++i) {
             // Get the minipool at index i
             RocketMinipoolInterface minipool = RocketMinipoolInterface(addressSetStorage.getItem(minipoolKey, i));
             // Get the minipool's status, and update the appropriate counter
@@ -120,7 +120,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Create array big enough for every minipool
         address[] memory minipools = new address[](max - _offset);
         uint256 total = 0;
-        for (uint256 i = _offset; i < max; i++) {
+        for (uint256 i = _offset; i < max; ++i) {
             // Get the minipool at index i
             RocketMinipoolInterface minipool = RocketMinipoolInterface(addressSetStorage.getItem(minipoolKey, i));
             // Get the minipool's status, and to array if it's in prelaunch
@@ -172,7 +172,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Get valid deposit amounts
         uint256[] memory depositSizes = rocketNodeDeposit.getDepositAmounts();
         uint256 total;
-        for (uint256 i = 0; i < depositSizes.length; i++){
+        for (uint256 i = 0; i < depositSizes.length; ++i){
             total = total + getNodeStakingMinipoolCountBySize(_nodeAddress, depositSizes[i]);
         }
         return total;

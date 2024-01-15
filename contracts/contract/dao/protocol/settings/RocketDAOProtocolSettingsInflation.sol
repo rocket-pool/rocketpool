@@ -36,6 +36,9 @@ contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, Rocket
                     require(getInflationIntervalStartTime() > block.timestamp, "Inflation has already started");
                 }
             } else if(settingKey == keccak256(bytes("rpl.inflation.interval.rate"))) {
+                // No greater than 1e16 more than the previous value. (RPIP-33)
+                require(_value <= getSettingUint("rpl.inflation.interval.rate") + 0.01 ether, "No greater than 1e16 more than the previous value");
+                require(_value >= 1, "Inflation can't be negative");
                 // RPL contract address
                 address rplContractAddress = getContractAddressUnsafe("rocketTokenRPL");
                 if(rplContractAddress != address(0x0)) {
@@ -44,9 +47,6 @@ contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, Rocket
                     // Mint any new tokens from the RPL inflation
                     rplContract.inflationMintTokens();
                 }
-                // No greater than 1e16 more than the previous value. (RPIP-33)
-                require(_value <= getSettingUint("rpl.inflation.interval.rate") + 0.01 ether, "No greater than 1e16 more than the previous value");
-                require(_value >= 1, "Inflation can't be negative");
             }
         }
         // Update setting now
