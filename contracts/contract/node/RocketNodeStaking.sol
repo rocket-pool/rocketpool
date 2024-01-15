@@ -370,7 +370,10 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @param _from The node to transfer from
     /// @param _to The node to transfer to
     /// @param _amount The amount of RPL to transfer
-    function transferRPL(address _from, address _to, uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyLatestNetworkContract() {
+    function transferRPL(address _from, address _to, uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyLatestNetworkContract() onlyRegisteredNode(_from) {
+        // Check sender has enough RPL
+        bytes32 key = keccak256(abi.encodePacked("rpl.staked.node.amount", _from));
+        require(getUint(key) >= _amount, "Sender has insufficient RPL");
         // Transfer the stake
         decreaseNodeRPLStake(_from, _amount);
         increaseNodeRPLStake(_to, _amount);

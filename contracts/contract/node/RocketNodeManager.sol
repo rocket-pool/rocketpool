@@ -154,7 +154,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     }
 
     /// @notice Confirm a node's new RPL withdrawal address
-    function confirmRPLWithdrawalAddress(address _nodeAddress) external override {
+    function confirmRPLWithdrawalAddress(address _nodeAddress) external override onlyRegisteredNode(_nodeAddress) {
         bytes32 pendingKey = keccak256(abi.encodePacked("node.pending.rpl.withdrawal.address", _nodeAddress));
         // Get node by pending withdrawal address
         require(getAddress(pendingKey) == msg.sender, "Confirmation must come from the pending RPL withdrawal address");

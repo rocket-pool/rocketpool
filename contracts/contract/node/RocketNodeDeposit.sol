@@ -82,6 +82,8 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
     /// @notice Deposits ETH for the given node operator
     /// @param _nodeAddress The address of the node operator to deposit ETH for
     function depositEthFor(address _nodeAddress) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(_nodeAddress) {
+        // Sanity check caller is not node itself
+        require(msg.sender != _nodeAddress, "Cannot deposit ETH for self");
         // Send the ETH to vault
         uint256 amount = msg.value;
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
@@ -128,7 +130,8 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
         _deposit(_bondAmount, _minimumNodeFee, _validatorPubkey, _validatorSignature, _depositDataRoot, _salt, _expectedMinipoolAddress);
     }
 
-    /// @notice Accept a node deposit and create a new minipool under the node. Only accepts calls from registered nodes
+    /// @notice Accept a node deposit and create a new minipool under the node. Uses node's credit balance to cover
+    ///         shortfall in value provided to cover bond. Only accepts calls from registered nodes
     /// @param _bondAmount The amount of capital the node operator wants to put up as his bond
     /// @param _minimumNodeFee Transaction will revert if network commission rate drops below this amount
     /// @param _validatorPubkey Pubkey of the validator the node operator wishes to migrate
@@ -137,6 +140,8 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
     /// @param _salt Salt used to deterministically construct the minipool's address
     /// @param _expectedMinipoolAddress The expected deterministic minipool address. Will revert if it doesn't match
     function depositWithCredit(uint256 _bondAmount, uint256 _minimumNodeFee, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot, uint256 _salt, address _expectedMinipoolAddress) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(msg.sender) {
+        // Sanity check
+        require(msg.value <= _bondAmount, "Excessive value for requested bond");
         {
             uint256 balanceToUse = 0;
             uint256 creditToUse = 0;
@@ -210,7 +215,9 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
         assignDeposits();
     }
 
-    /// @dev Processes a node deposit with the deposit pool
+    /// @dev Processes a node deposit with the deposit pool. If user has not supplied full bond amount with the transaction
+    ///      the shortfall will be taken from their credit. Any excess ETH after prelaunch value is sent to minipool is
+    //       then deposited into the deposit pool
     /// @param _preLaunchValue The prelaunch value (result of call to `RocketDAOProtocolSettingsMinipool.getPreLaunchValue()`
     /// @param _bondAmount The bond amount for this deposit
     function _processNodeDeposit(uint256 _preLaunchValue, uint256 _bondAmount) private {
