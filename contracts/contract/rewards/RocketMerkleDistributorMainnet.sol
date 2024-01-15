@@ -62,19 +62,37 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
         claimAndStake(_nodeAddress, _rewardIndex, _amountRPL, _amountETH, _merkleProof, 0);
     }
 
-    // Node operators can call this method to claim rewards for one or more reward intervals and specify an amount of RPL to stake at the same time
     function claimAndStake(address _nodeAddress, uint256[] calldata _rewardIndex, uint256[] calldata _amountRPL, uint256[] calldata _amountETH, bytes32[][] calldata _merkleProof, uint256 _stakeAmount) public override {
+        _verifyClaim(_rewardIndex, _nodeAddress, _amountRPL, _amountETH, _merkleProof);
+        _claimAndStake(_nodeAddress, _rewardIndex, _amountRPL, _amountETH, _stakeAmount);
+    }
+
+    // Node operators can call this method to claim rewards for one or more reward intervals and specify an amount of RPL to stake at the same time
+    function _claimAndStake(address _nodeAddress, uint256[] calldata _rewardIndex, uint256[] calldata _amountRPL, uint256[] calldata _amountETH, uint256 _stakeAmount) internal {
         // Get contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getAddress(rocketVaultKey));
-        address rocketTokenRPLAddress = getAddress(rocketTokenRPLKey);
-        // Verify claims
-        _claim(_rewardIndex, _nodeAddress, _amountRPL, _amountETH, _merkleProof);
+
+        address rplWithdrawalAddress;
+        address withdrawalAddress;
+
+        // Confirm caller is permitted
         {
-            // Get withdrawal addresses
-            address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
-            address rplWithdrawalAddress= RocketNodeManagerInterface(getContractAddress("rocketNodeManager")).getNodeRPLWithdrawalAddress(_nodeAddress);
-            require(msg.sender == _nodeAddress || msg.sender == withdrawalAddress || msg.sender == rplWithdrawalAddress, "Can only claim from node or withdrawal addresses");
-            // Calculate totals
+            RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+            rplWithdrawalAddress = rocketNodeManager.getNodeRPLWithdrawalAddress(_nodeAddress);
+            withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
+            if (rocketNodeManager.getNodeRPLWithdrawalAddressIsSet(_nodeAddress)) {
+                // If RPL withdrawal address is set, must be called from it
+                require(msg.sender == rplWithdrawalAddress, "Can only claim from RPL withdrawal address");
+            } else {
+                // Otherwise, must be called from node address or withdrawal address
+                require(msg.sender == _nodeAddress || msg.sender == withdrawalAddress, "Can only claim from node address");
+            }
+        }
+
+        address rocketTokenRPLAddress = getAddress(rocketTokenRPLKey);
+
+        // Calculate totals
+        {
             uint256 totalAmountRPL = 0;
             uint256 totalAmountETH = 0;
             for (uint256 i = 0; i < _rewardIndex.length; i++) {
@@ -83,10 +101,12 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
             }
             // Validate input
             require(_stakeAmount <= totalAmountRPL, "Invalid stake amount");
-            // Distribute any remaining tokens to the node's withdrawal address
-            uint256 remaining = totalAmountRPL - _stakeAmount;
-            if (remaining > 0) {
-                rocketVault.withdrawToken(rplWithdrawalAddress, IERC20(rocketTokenRPLAddress), remaining);
+            {
+                // Distribute any remaining tokens to the node's withdrawal address
+                uint256 remaining = totalAmountRPL - _stakeAmount;
+                if (remaining > 0) {
+                    rocketVault.withdrawToken(rplWithdrawalAddress, IERC20(rocketTokenRPLAddress), remaining);
+                }
             }
             // Distribute ETH
             if (totalAmountETH > 0) {
@@ -95,6 +115,7 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
                 require(result, "Failed to claim ETH");
             }
         }
+
         // Restake requested amount
         if (_stakeAmount > 0) {
             RocketTokenRPLInterface rocketTokenRPL = RocketTokenRPLInterface(rocketTokenRPLAddress);
@@ -103,13 +124,14 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
             rocketTokenRPL.approve(address(rocketNodeStaking), _stakeAmount);
             rocketNodeStaking.stakeRPLFor(_nodeAddress, _stakeAmount);
         }
+
         // Emit event
         emit RewardsClaimed(_nodeAddress, _rewardIndex, _amountRPL, _amountETH);
     }
 
     // Verifies the given data exists as a leaf nodes for the specified reward interval and marks them as claimed if they are valid
     // Note: this function is optimised for gas when _rewardIndex is ordered numerically
-    function _claim(uint256[] calldata _rewardIndex, address _nodeAddress, uint256[] calldata _amountRPL, uint256[] calldata _amountETH, bytes32[][] calldata _merkleProof) internal {
+    function _verifyClaim(uint256[] calldata _rewardIndex, address _nodeAddress, uint256[] calldata _amountRPL, uint256[] calldata _amountETH, bytes32[][] calldata _merkleProof) internal {
         // Set initial parameters to the first reward index in the array
         uint256 indexWordIndex = _rewardIndex[0] / 256;
         bytes32 claimedWordKey = keccak256(abi.encodePacked('rewards.interval.claimed', _nodeAddress, indexWordIndex));
