@@ -1531,6 +1531,31 @@ export default function() {
             assertBN.equal(deltas.staked, '0'.BN);
         });
 
+        it(printTitle('challenger', 'can not create challenge with proof from a deeper index'), async () => {
+            // Setup
+            await mockNodeSet();
+            await createNode(1, proposer);
+
+            // Create a minipool with a node to use as a challenger
+            let challenger = node1;
+            await createNode(1, challenger);
+
+            // Create a valid proposal
+            const { propId, leaves } = await createValidProposal();
+
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const { phase1Indices, subRootIndex, phase2Indices } = getChallengeIndices(2 ** maxDepth, leaves.length);
+            const index = phase1Indices[0];
+            const proofIndex = phase1Indices[1];
+
+            // Create challenge using lower index
+            let challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, proofIndex);
+
+            // Proof length should be invalid
+            await shouldRevert(daoProtocolCreateChallenge(propId, index, challenge.node, challenge.proof, { from: challenger }), 'Challenge was submitted', 'Invalid proof length');
+        });
+
         /**
          * Other
          */

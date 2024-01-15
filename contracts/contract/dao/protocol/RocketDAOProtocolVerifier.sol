@@ -207,6 +207,9 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
             uint256 previousIndex = getPollardRootIndex(_index, nodeCount);
             require(_getChallengeState(getUint(keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, previousIndex)))) == Types.ChallengeState.Responded, "Invalid challenge depth");
 
+            // Check the proof contains the expected number of nodes
+            require(_witness.length == getDepthFromIndex(_index) - getDepthFromIndex(previousIndex), "Invalid proof length");
+
             // Get expected node and compute provided root node then compare
             Types.Node memory _expected = getNode(_proposalID, previousIndex);
             Types.Node memory rootFromWitness = computeRootFromWitness(_index, _node, _witness);
