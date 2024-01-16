@@ -63,6 +63,7 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', '1'.ether, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.frequency', submitPricesFrequency, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.deposit.delay', depositDeplay, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.user.distribute.window.start', userDistributeStartTime, {from: owner});
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
             // Stake RPL to cover minipools
