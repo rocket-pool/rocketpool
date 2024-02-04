@@ -396,7 +396,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
             uint256 state = getUint(challengeKey);
 
             // Make sure this index was actually challenged
-            require(state != 0, "Challenge does not exist");
+            require(_getChallengeState(state) == Types.ChallengeState.Challenged, "Challenge does not exist");
 
             // Mark the index as responded
             state = setChallengeState(state, Types.ChallengeState.Responded);
