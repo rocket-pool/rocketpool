@@ -31,6 +31,7 @@ contract RocketUpgradeOneDotThree is RocketBase {
     address public newRocketDAOProtocolSettingsDeposit;
     address public newRocketDAOProtocolSettingsInflation;
     address public newRocketDAOProtocolSettingsMinipool;
+    address public newRocketMerkleDistributorMainnet;
     address public rocketDAOProtocolVerifier;
     address public rocketDAOProtocolSettingsProposals;
     address public rocketDAOProtocolSettingsSecurity;
@@ -58,6 +59,7 @@ contract RocketUpgradeOneDotThree is RocketBase {
     string public newRocketDAOProtocolSettingsDepositAbi;
     string public newRocketDAOProtocolSettingsInflationAbi;
     string public newRocketDAOProtocolSettingsMinipoolAbi;
+    string public newRocketMerkleDistributorMainnetAbi;
     string public rocketDAOProtocolVerifierAbi;
     string public rocketDAOProtocolSettingsProposalsAbi;
     string public rocketDAOProtocolSettingsSecurityAbi;
@@ -106,15 +108,16 @@ contract RocketUpgradeOneDotThree is RocketBase {
         newRocketDAOProtocolSettingsDeposit = _addresses[13];
         newRocketDAOProtocolSettingsInflation = _addresses[14];
         newRocketDAOProtocolSettingsMinipool = _addresses[15];
-        rocketDAOProtocolVerifier = _addresses[16];
-        rocketDAOProtocolSettingsProposals = _addresses[17];
-        rocketDAOProtocolSettingsSecurity = _addresses[18];
-        rocketDAOSecurity = _addresses[19];
-        rocketDAOSecurityActions = _addresses[20];
-        rocketDAOSecurityProposals = _addresses[21];
-        rocketNetworkSnapshots = _addresses[22];
-        rocketNetworkVoting = _addresses[23];
-        rocketDAOProtocolProposal = _addresses[24];
+        newRocketMerkleDistributorMainnet = _addresses[16];
+        rocketDAOProtocolVerifier = _addresses[17];
+        rocketDAOProtocolSettingsProposals = _addresses[18];
+        rocketDAOProtocolSettingsSecurity = _addresses[19];
+        rocketDAOSecurity = _addresses[20];
+        rocketDAOSecurityActions = _addresses[21];
+        rocketDAOSecurityProposals = _addresses[22];
+        rocketNetworkSnapshots = _addresses[23];
+        rocketNetworkVoting = _addresses[24];
+        rocketDAOProtocolProposal = _addresses[25];
 
         // Set ABIs
         newRocketDAOProtocolAbi = _abis[0];
@@ -133,15 +136,16 @@ contract RocketUpgradeOneDotThree is RocketBase {
         newRocketDAOProtocolSettingsDepositAbi = _abis[13];
         newRocketDAOProtocolSettingsInflationAbi = _abis[14];
         newRocketDAOProtocolSettingsMinipoolAbi = _abis[15];
-        rocketDAOProtocolVerifierAbi = _abis[16];
-        rocketDAOProtocolSettingsProposalsAbi = _abis[17];
-        rocketDAOProtocolSettingsSecurityAbi = _abis[18];
-        rocketDAOSecurityAbi = _abis[19];
-        rocketDAOSecurityActionsAbi = _abis[20];
-        rocketDAOSecurityProposalsAbi = _abis[21];
-        rocketNetworkSnapshotsAbi = _abis[22];
-        rocketNetworkVotingAbi = _abis[23];
-        rocketDAOProtocolProposalAbi = _abis[24];
+        newRocketMerkleDistributorMainnetAbi = _abis[16];
+        rocketDAOProtocolVerifierAbi = _abis[17];
+        rocketDAOProtocolSettingsProposalsAbi = _abis[18];
+        rocketDAOProtocolSettingsSecurityAbi = _abis[19];
+        rocketDAOSecurityAbi = _abis[20];
+        rocketDAOSecurityActionsAbi = _abis[21];
+        rocketDAOSecurityProposalsAbi = _abis[22];
+        rocketNetworkSnapshotsAbi = _abis[23];
+        rocketNetworkVotingAbi = _abis[24];
+        rocketDAOProtocolProposalAbi = _abis[25];
     }
 
     /// @notice Prevents further changes from being applied
@@ -172,6 +176,7 @@ contract RocketUpgradeOneDotThree is RocketBase {
         _upgradeContract("rocketDAOProtocolSettingsDeposit", newRocketDAOProtocolSettingsDeposit, newRocketDAOProtocolSettingsDepositAbi);
         _upgradeContract("rocketDAOProtocolSettingsInflation", newRocketDAOProtocolSettingsInflation, newRocketDAOProtocolSettingsInflationAbi);
         _upgradeContract("rocketDAOProtocolSettingsMinipool", newRocketDAOProtocolSettingsMinipool, newRocketDAOProtocolSettingsMinipoolAbi);
+        _upgradeContract("rocketMerkleDistributorMainnet", newRocketMerkleDistributorMainnet, newRocketMerkleDistributorMainnetAbi);
 
         // Add new contracts
         _addContract("rocketDAOProtocolVerifier", rocketDAOProtocolVerifier, rocketDAOProtocolVerifierAbi);
@@ -183,6 +188,10 @@ contract RocketUpgradeOneDotThree is RocketBase {
         _addContract("rocketNetworkSnapshots", rocketNetworkSnapshots, rocketNetworkSnapshotsAbi);
         _addContract("rocketNetworkVoting", rocketNetworkVoting, rocketNetworkVotingAbi);
         _addContract("rocketDAOProtocolProposal", rocketDAOProtocolProposal, rocketDAOProtocolProposalAbi);
+
+        // Update the rewards relay address
+        bytes32 networkRelayKey = keccak256(abi.encodePacked("rewards.relay.address", uint256(0)));
+        setAddress(networkRelayKey, newRocketMerkleDistributorMainnet);
 
         // pDAO proposal settings
         bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "proposals"));
@@ -231,6 +240,9 @@ contract RocketUpgradeOneDotThree is RocketBase {
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         bytes32 priceKey = keccak256("network.prices.rpl");
         rocketNetworkSnapshots.push(priceKey, uint32(block.number), uint224(rocketNetworkPrices.getRPLPrice()));
+
+        // Set a protocol version value in storage for convenience with bindings
+        setString(keccak256(abi.encodePacked("protocol.version")), "1.3.0");
     }
 
     /// @dev Add a new network contract

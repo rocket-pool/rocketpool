@@ -32,12 +32,10 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Version
-        version = 1;
+        version = 2;
         // Precompute keys
         rocketVaultKey = keccak256(abi.encodePacked("contract.address", "rocketVault"));
         rocketTokenRPLKey = keccak256(abi.encodePacked("contract.address", "rocketTokenRPL"));
-        // Set this contract as the relay for network 0
-        setAddress(keccak256(abi.encodePacked("rewards.relay.address", uint256(0))), address(this));
     }
 
     // Called by RocketRewardsPool to include a snapshot into this distributor
