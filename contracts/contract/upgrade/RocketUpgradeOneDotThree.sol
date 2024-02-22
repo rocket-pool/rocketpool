@@ -286,25 +286,4 @@ contract RocketUpgradeOneDotThree is RocketBase {
         deleteString(keccak256(abi.encodePacked("contract.name", oldContractAddress)));
         deleteBool(keccak256(abi.encodePacked("contract.exists", oldContractAddress)));
     }
-
-    /// @dev Deletes a network contract
-    function _deleteContract(string memory _name) internal {
-        address contractAddress = getAddress(keccak256(abi.encodePacked("contract.address", _name)));
-        deleteString(keccak256(abi.encodePacked("contract.name", contractAddress)));
-        deleteBool(keccak256(abi.encodePacked("contract.exists", contractAddress)));
-        deleteAddress(keccak256(abi.encodePacked("contract.address", _name)));
-        deleteString(keccak256(abi.encodePacked("contract.abi", _name)));
-    }
-
-    /// @dev Upgrade a network contract ABI
-    function _upgradeABI(string memory _name, string memory _contractAbi) internal {
-        // Check ABI exists
-        string memory existingAbi = getString(keccak256(abi.encodePacked("contract.abi", _name)));
-        require(bytes(existingAbi).length > 0, "ABI does not exist");
-        // Sanity checks
-        require(bytes(_contractAbi).length > 0, "Empty ABI is invalid");
-        require(keccak256(bytes(existingAbi)) != keccak256(bytes(_contractAbi)), "ABIs are identical");
-        // Set ABI
-        setString(keccak256(abi.encodePacked("contract.abi", _name)), _contractAbi);
-    }
 }
