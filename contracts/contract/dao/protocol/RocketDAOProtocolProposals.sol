@@ -150,7 +150,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
 
     /// @notice Propose to kick a current member from the security council
     /// @param _memberAddress The address of the member to kick
-    function proposalSecurityKick(address _memberAddress) override external onlyExecutingContracts {
+    function proposalSecurityKick(address _memberAddress) override external onlyExecutingContracts() {
         RocketDAOSecurityProposalsInterface rocketDAOSecurityProposals = RocketDAOSecurityProposalsInterface(getContractAddress("rocketDAOSecurityProposals"));
         rocketDAOSecurityProposals.proposalKick(_memberAddress);
         emit ProposalSecurityKick(_memberAddress, block.timestamp);
@@ -158,7 +158,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
 
     /// @notice Propose to kick multiple current members from the security council
     /// @param _memberAddresses An array of addresses of the members to kick
-    function proposalSecurityKickMulti(address[] calldata _memberAddresses) override external onlyExecutingContracts {
+    function proposalSecurityKickMulti(address[] calldata _memberAddresses) override external onlyExecutingContracts() {
         RocketDAOSecurityProposalsInterface rocketDAOSecurityProposals = RocketDAOSecurityProposalsInterface(getContractAddress("rocketDAOSecurityProposals"));
         rocketDAOSecurityProposals.proposalKickMulti(_memberAddresses);
         emit ProposalSecurityKickMulti(_memberAddresses, block.timestamp);
@@ -168,7 +168,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     /// @param _existingMemberAddress The address of the member to kick
     /// @param _newMemberId A string to identify this member with
     /// @param _newMemberAddress The address of the new member
-    function proposalSecurityReplace(address _existingMemberAddress, string calldata _newMemberId, address _newMemberAddress) override external onlyExecutingContracts {
+    function proposalSecurityReplace(address _existingMemberAddress, string calldata _newMemberId, address _newMemberAddress) override external onlyExecutingContracts() {
         RocketDAOSecurityProposalsInterface rocketDAOSecurityProposals = RocketDAOSecurityProposalsInterface(getContractAddress("rocketDAOSecurityProposals"));
         rocketDAOSecurityProposals.proposalReplace(_existingMemberAddress, _newMemberId, _newMemberAddress);
         emit ProposalSecurityReplace(_existingMemberAddress, _newMemberId, _newMemberAddress, block.timestamp);
