@@ -415,9 +415,9 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Get & check node's current RPL stake
         uint256 rplStake = getNodeRPLStake(_nodeAddress);
         uint256 lockedStake = getNodeRPLLocked(_nodeAddress);
-        require(rplStake >= _amount, "Withdrawal amount exceeds node's staked RPL balance");
+        require(rplStake - lockedStake >= _amount, "Withdrawal amount exceeds node's staked RPL balance");
         // Check withdrawal would not under collateralise node
-        require(rplStake - _amount - lockedStake >= getNodeMaximumRPLStake(_nodeAddress), "Node's staked RPL balance after withdrawal is less than required balance");
+        require(rplStake - _amount >= getNodeMaximumRPLStake(_nodeAddress) + lockedStake, "Node's staked RPL balance after withdrawal is less than required balance");
         // Update RPL stake amounts
         decreaseTotalRPLStake(_amount);
         decreaseNodeRPLStake(_nodeAddress, _amount);
