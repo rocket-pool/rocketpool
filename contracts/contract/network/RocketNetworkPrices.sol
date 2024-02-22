@@ -11,8 +11,8 @@ import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
 contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
 
     // Constants
-    bytes32 priceKey;
-    bytes32 blockKey;
+    bytes32 immutable priceKey;
+    bytes32 immutable blockKey;
 
     // Events
     event PricesSubmitted(address indexed from, uint256 block, uint256 rplPrice, uint256 time);
