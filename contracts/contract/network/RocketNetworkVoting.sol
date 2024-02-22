@@ -106,7 +106,7 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
 
         // Get RPL staked by node operator
         key = keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress));
-        uint256 rplStake = uint256(rocketNetworkSnapshots.lookupRecent(key, uint32(_block), 5));
+        uint256 rplStake = uint256(rocketNetworkSnapshots.lookupRecent(key, _block, 5));
 
         return calculateVotingPower(rplStake, ethProvided, rplPrice);
     }
