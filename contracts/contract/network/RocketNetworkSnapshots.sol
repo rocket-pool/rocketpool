@@ -112,7 +112,7 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
         bytes32 raw = rocketStorage.getBytes32(key);
         Checkpoint224 memory result;
         result._block = uint32(uint256(raw) >> 224);
-        result._value = uint224(uint256(raw) & (2 ** 224 - 1));
+        result._value = uint224(uint256(raw));
         return result;
     }
 
@@ -125,7 +125,7 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
     function _valueAt(bytes32 _key, uint256 _pos) private view returns (uint224) {
         bytes32 key = bytes32(uint256(_key) + _pos);
         bytes32 raw = rocketStorage.getBytes32(key);
-        return uint224(uint256(raw) & (2 ** 224 - 1));
+        return uint224(uint256(raw));
     }
 
     function _push(bytes32 _key, Checkpoint224 memory _item) private {
