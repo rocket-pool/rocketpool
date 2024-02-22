@@ -344,7 +344,7 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
     /// @return The new proposal's ID
     function _propose(string memory _proposalMessage, uint256 _blockNumber, uint256 _totalVotingPower, bytes calldata _payload) internal returns (uint256) {
         // Validate block number
-        require(_blockNumber <= block.number, "Block must be in the past");
+        require(_blockNumber < block.number, "Block must be in the past");
         // Load contracts
         RocketDAOProtocolSettingsProposalsInterface rocketDAOProtocolSettingsProposals = RocketDAOProtocolSettingsProposalsInterface(getContractAddress("rocketDAOProtocolSettingsProposals"));
         require(_blockNumber + rocketDAOProtocolSettingsProposals.getProposalMaxBlockAge() > block.number, "Block too old");
