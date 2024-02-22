@@ -641,7 +641,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         } else if (indexDepth == maxDepth) {
             // Index is a network tree leaf
             uint256 remainder = indexDepth % depthPerRound;
-            return _index / (2 ** remainder);
+            return _index / (2 ** (remainder == 0 ? depthPerRound : remainder));
         } else if (indexDepth < maxDepth * 2) {
             // Index is phase 2 pollard
             uint256 subIndexDepth = indexDepth - maxDepth;
