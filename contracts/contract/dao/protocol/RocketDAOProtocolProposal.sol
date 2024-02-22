@@ -39,7 +39,8 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
     function propose(string memory _proposalMessage, bytes calldata _payload, uint32 _blockNumber, Types.Node[] calldata _treeNodes) override external onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAOProtocolProposal", address(this)) returns (uint256) {
         // Calculate total voting power by summing the pollard
         uint256 totalVotingPower = 0;
-        for (uint256 i = 0; i < _treeNodes.length; ++i) {
+        uint256 treeNodesLength = _treeNodes.length;
+        for (uint256 i = 0; i < treeNodesLength; ++i) {
             totalVotingPower += _treeNodes[i].sum;
         }
         // Create the proposal
