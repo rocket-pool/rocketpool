@@ -148,7 +148,8 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
     /// @notice Executes payout on the given contracts
     /// @param _contractNames An array of contract names to execute a payout on
     function payOutContracts(string[] calldata _contractNames) external onlyLatestContract("rocketClaimDAO", address(this)) {
-        for (uint256 i = 0; i < _contractNames.length; ++i) {
+        uint256 contractNamesLength = _contractNames.length;
+        for (uint256 i = 0; i < contractNamesLength; ++i) {
             payOutContract(_contractNames[i]);
         }
     }
