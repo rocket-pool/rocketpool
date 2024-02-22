@@ -2,14 +2,6 @@
 pragma solidity 0.8.18;
 
 import "../../RocketBase.sol";
-import "../../../interface/dao/protocol/RocketDAOProtocolInterface.sol";
-import "../../../interface/dao/protocol/RocketDAOProtocolProposalsInterface.sol";
-import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsInterface.sol";
-import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
-import "../../../interface/rewards/claims/RocketClaimDAOInterface.sol";
-import "../../../interface/dao/RocketDAOProposalInterface.sol";
-import "../../../interface/node/RocketNodeManagerInterface.sol";
-import "../../../types/SettingType.sol";
 import "../../../interface/dao/protocol/RocketDAOProtocolVerifierInterface.sol";
 import "../../../interface/network/RocketNetworkVotingInterface.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsProposalsInterface.sol";
