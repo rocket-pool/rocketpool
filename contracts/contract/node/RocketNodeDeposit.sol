@@ -202,7 +202,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, block.timestamp);
         // Increase ETH matched (used to calculate RPL collateral requirements)
-        _increaseEthMatched(msg.sender, launchAmount- _bondAmount);
+        _increaseEthMatched(msg.sender, launchAmount - _bondAmount);
         // Create the minipool
         RocketMinipoolInterface minipool = createMinipool(_salt, _expectedMinipoolAddress);
         // Process node deposit
@@ -231,9 +231,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
         }
         uint256 remaining = address(this).balance - _preLaunchValue;
         // Deposit the left over value into the deposit pool
-        if (remaining > 0) {
-            rocketDepositPool.nodeDeposit{value: remaining}(_bondAmount - _preLaunchValue);
-        }
+        rocketDepositPool.nodeDeposit{value: remaining}(_bondAmount - _preLaunchValue);
     }
 
     /// @notice Creates a "vacant" minipool which a node operator can use to migrate a validator with a BLS withdrawal credential
