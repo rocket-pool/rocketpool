@@ -13,7 +13,7 @@ contract RocketDAOProtocolSettingsSecurity is RocketDAOProtocolSettings, RocketD
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Init settings
             setSettingUint("members.quorum", 0.51 ether);      // Member quorum threshold that must be met for proposals to pass (51%)
-            setSettingUint("members.leave.time", 4 weeks);    // How long a member must give notice for before manually leaving the security council
+            setSettingUint("members.leave.time", 7 days);      // How long a member must give notice for before manually leaving the security council
             setSettingUint("proposal.vote.time", 2 weeks);     // How long a proposal can be voted on
             setSettingUint("proposal.execute.time", 4 weeks);  // How long a proposal can be executed after its voting period is finished
             setSettingUint("proposal.action.time", 4 weeks);   // Certain proposals require a secondary action to be run after the proposal is successful (joining, leaving etc). This is how long until that action expires
