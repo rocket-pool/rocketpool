@@ -4,6 +4,7 @@ pragma solidity 0.7.6;
 
 import "./RocketDAOProtocolSettings.sol";
 import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
+import "../../../../interface/network/RocketNetworkSnapshotsInterface.sol";
 
 // Network auction settings
 
@@ -25,6 +26,19 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
+    }
+
+    /// @notice Update a setting, overrides inherited setting method with extra checks for this contract
+    function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
+        bytes32 settingKey = keccak256(bytes(_settingPath));
+        if(settingKey == keccak256(bytes("node.per.minipool.stake.maximum"))) {
+            // Redirect the setting change to push a new value into the snapshot system instead
+            RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
+            rocketNetworkSnapshots.push(settingKey, uint32(block.number), uint224(_value));
+            return;
+        }
+        // Update setting now
+        setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }
 
     // Node registrations currently enabled
@@ -54,7 +68,9 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
 
     // Maximum RPL stake per minipool as a fraction of assigned user ETH value
     function getMaximumPerMinipoolStake() override external view returns (uint256) {
-        return getSettingUint("node.per.minipool.stake.maximum");
+        bytes32 settingKey = keccak256(bytes("node.per.minipool.stake.maximum"));
+        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
+        return uint256(rocketNetworkSnapshots.latestValue(settingKey));
     }
 
 }

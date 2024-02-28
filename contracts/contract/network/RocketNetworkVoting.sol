@@ -108,21 +108,22 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         key = keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress));
         uint256 rplStake = uint256(rocketNetworkSnapshots.lookupRecent(key, _block, 5));
 
-        return calculateVotingPower(rplStake, ethProvided, rplPrice);
+        // Get RPL max stake percent
+        key = keccak256(bytes("node.per.minipool.stake.maximum"));
+        uint256 maximumStakePercent = uint256(rocketNetworkSnapshots.lookupRecent(key, _block, 2));
+
+        return calculateVotingPower(rplStake, ethProvided, rplPrice, maximumStakePercent);
     }
 
     /// @dev Calculates and returns a node's voting power based on the given inputs
-    function calculateVotingPower(uint256 rplStake, uint256 providedETH, uint256 rplPrice) internal view returns (uint256) {
+    function calculateVotingPower(uint256 _rplStake, uint256 _providedETH, uint256 _rplPrice, uint256 _maxStakePercent) internal view returns (uint256) {
         // Get contracts
-        RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
-        // RPL stake cannot exceed maximum
-        uint256 maximumStakePercent = rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake();
-        uint256 maximumStake = providedETH * maximumStakePercent / rplPrice;
-        if (rplStake > maximumStake) {
-            rplStake = maximumStake;
+        uint256 maximumStake = _providedETH * _maxStakePercent / _rplPrice;
+        if (_rplStake > maximumStake) {
+            _rplStake = maximumStake;
         }
         // Return the calculated voting power as the square root of clamped RPL stake
-        return Math.sqrt(rplStake);
+        return Math.sqrt(_rplStake);
     }
 
     function setDelegate(address _newDelegate) external override onlyRegisteredNode(msg.sender) {
