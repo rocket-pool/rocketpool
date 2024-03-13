@@ -85,20 +85,18 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @param _amount How much to increase by
     function increaseNodeRPLStake(address _nodeAddress, uint256 _amount) private {
         bytes32 key = keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress));
-        uint256 value = getUint(key);
-        setUint(key, value + _amount);
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
-        rocketNetworkSnapshots.push(key, uint32(block.number), uint224(value + _amount));
+        uint224 value = rocketNetworkSnapshots.latestValue(key);
+        rocketNetworkSnapshots.push(key, uint32(block.number), value + uint224(_amount));
     }
 
     /// @dev Decrease a node operator's RPL stake
     /// @param _amount How much to decrease by
     function decreaseNodeRPLStake(address _nodeAddress, uint256 _amount) private {
         bytes32 key = keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress));
-        uint256 value = getUint(key);
-        setUint(key, value - _amount);
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
-        rocketNetworkSnapshots.push(key, uint32(block.number), uint224(value - _amount));
+        uint224 value = rocketNetworkSnapshots.latestValue(key);
+        rocketNetworkSnapshots.push(key, uint32(block.number), value - uint224(_amount));
     }
 
     /// @notice Returns a node's matched ETH amount (amount taken from protocol to stake)
@@ -372,8 +370,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @param _amount The amount of RPL to transfer
     function transferRPL(address _from, address _to, uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyLatestNetworkContract() onlyRegisteredNode(_from) {
         // Check sender has enough RPL
-        bytes32 key = keccak256(abi.encodePacked("rpl.staked.node.amount", _from));
-        require(getUint(key) >= _amount, "Sender has insufficient RPL");
+        require(getNodeRPLStake(_from) >= _amount, "Sender has insufficient RPL");
         // Transfer the stake
         decreaseNodeRPLStake(_from, _amount);
         increaseNodeRPLStake(_to, _amount);
