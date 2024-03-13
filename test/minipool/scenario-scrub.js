@@ -2,12 +2,13 @@
 import {
     RocketDAONodeTrusted,
     RocketDAONodeTrustedSettingsMinipool, RocketDAOProtocolSettingsNode, RocketNetworkPrices,
-    RocketNodeStaking,
+    RocketNodeStaking, RocketNodeStakingNew,
     RocketTokenRPL,
-    RocketVault
+    RocketVault,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 import { minipoolStates } from '../_helpers/minipool';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 
 export async function voteScrub(minipool, txOptions) {
@@ -15,7 +16,7 @@ export async function voteScrub(minipool, txOptions) {
     const nodeAddress = await minipool.getNodeAddress.call();
 
     // Get contracts
-    const rocketNodeStaking = await RocketNodeStaking.deployed();
+    const rocketNodeStaking = (await upgradeExecuted()) ? await RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed();
     const rocketVault = await RocketVault.deployed();
     const rocketTokenRPL = await RocketTokenRPL.deployed();
     const rocketDAONodeTrustedSettingsMinipool = await RocketDAONodeTrustedSettingsMinipool.deployed();
