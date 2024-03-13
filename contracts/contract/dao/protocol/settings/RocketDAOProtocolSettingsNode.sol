@@ -23,6 +23,7 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
             setSettingBool("node.vacant.minipools.enabled", false);
             setSettingUint("node.per.minipool.stake.minimum", 0.1 ether);      // 10% of user ETH value (matched ETH)
             setSettingUint("node.per.minipool.stake.maximum", 1.5 ether);      // 150% of node ETH value (provided ETH)
+            setSettingUint("node.voting.power.stake.maximum", 1.5 ether);      // 150% of node ETH value (provided ETH)
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -31,7 +32,7 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
     /// @notice Update a setting, overrides inherited setting method with extra checks for this contract
     function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
         bytes32 settingKey = keccak256(bytes(_settingPath));
-        if(settingKey == keccak256(bytes("node.per.minipool.stake.maximum"))) {
+        if(settingKey == keccak256(bytes("node.voting.power.stake.maximum"))) {
             // Redirect the setting change to push a new value into the snapshot system instead
             RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
             rocketNetworkSnapshots.push(settingKey, uint32(block.number), uint224(_value));
@@ -68,9 +69,13 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
 
     // Maximum RPL stake per minipool as a fraction of assigned user ETH value
     function getMaximumPerMinipoolStake() override external view returns (uint256) {
-        bytes32 settingKey = keccak256(bytes("node.per.minipool.stake.maximum"));
+        return getSettingUint("node.per.minipool.stake.maximum");
+    }
+
+    // Maximum staked RPL that applies to voting power per minipool as a fraction of assigned user ETH value
+    function getMaximumStakeForVotingPower() override external view returns (uint256) {
+        bytes32 settingKey = keccak256(bytes("node.voting.power.stake.maximum"));
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         return uint256(rocketNetworkSnapshots.latestValue(settingKey));
     }
-
 }

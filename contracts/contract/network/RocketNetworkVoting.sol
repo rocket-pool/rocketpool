@@ -12,6 +12,7 @@ import "../../interface/network/RocketNetworkPricesInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
 import "../../interface/network/RocketNetworkVotingInterface.sol";
+import "../../interface/node/RocketNodeManagerInterface.sol";
 
 /// @notice Accounting for snapshotting of governance related values based on block numbers
 contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
@@ -28,8 +29,21 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         priceKey = keccak256("network.prices.rpl");
     }
 
-    /// @notice Unlocks a node operator's voting power (only required for node operators who registered before governance structure was in place)
+    /// @notice Unlocks a node operator's voting power (only required for node operators who registered before
+    ///         governance structure was in place). Sets delegate to self.
     function initialiseVoting() onlyRegisteredNode(msg.sender) external override {
+        _initialiseVoting(msg.sender);
+    }
+
+    /// @notice Unlocks a node operator's voting power (only required for node operators who registered before
+    ///         governance structure was in place).
+    /// @param _delegate The node operator's desired delegate for their voting power
+    function initialiseVoting(address _delegate) onlyRegisteredNode(msg.sender) onlyRegisteredNode(_delegate) external override {
+        _initialiseVoting(_delegate);
+    }
+
+    /// @dev Initialises the snapshot values for the caller to participate in the on-chain governance
+    function _initialiseVoting(address _delegate) private {
         // Check if already registered
         require (!getBool(keccak256(abi.encodePacked("node.voting.enabled", msg.sender))), "Already registered");
         setBool(keccak256(abi.encodePacked("node.voting.enabled", msg.sender)), true);
@@ -55,7 +69,7 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
 
         // Set starting delegate to themself
         key = keccak256(abi.encodePacked("node.delegate", msg.sender));
-        rocketNetworkSnapshots.push(key, uint32(block.number), uint224(uint160(msg.sender)));
+        rocketNetworkSnapshots.push(key, uint32(block.number), uint224(uint160(_delegate)));
     }
 
     function getVotingInitialised(address _nodeAddress) external override view returns (bool) {
@@ -109,7 +123,7 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         uint256 rplStake = uint256(rocketNetworkSnapshots.lookupRecent(key, _block, 5));
 
         // Get RPL max stake percent
-        key = keccak256(bytes("node.per.minipool.stake.maximum"));
+        key = keccak256(bytes("node.voting.power.stake.maximum"));
         uint256 maximumStakePercent = uint256(rocketNetworkSnapshots.lookupRecent(key, _block, 2));
 
         return calculateVotingPower(rplStake, ethProvided, rplPrice, maximumStakePercent);
@@ -126,7 +140,7 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         return Math.sqrt(_rplStake);
     }
 
-    function setDelegate(address _newDelegate) external override onlyRegisteredNode(msg.sender) {
+    function setDelegate(address _newDelegate) external override onlyRegisteredNode(msg.sender) onlyRegisteredNode(_newDelegate) {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         bytes32 key = keccak256(abi.encodePacked("node.delegate", msg.sender));
         rocketNetworkSnapshots.push(key, uint32(block.number), uint224(uint160(_newDelegate)));

@@ -37,6 +37,11 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
     /// @param _blockNumber The block number the proposal is being made for
     /// @param _treeNodes A merkle pollard generated at _blockNumber for the voting power state of the DAO
     function propose(string memory _proposalMessage, bytes calldata _payload, uint32 _blockNumber, Types.Node[] calldata _treeNodes) override external onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAOProtocolProposal", address(this)) returns (uint256) {
+        // Check on-chain governance has been enabled
+        {
+            uint256 enabledBlock = getUint(keccak256(abi.encodePacked("protocol.dao.enabled.block")));
+            require(enabledBlock != 0 && _blockNumber >= enabledBlock, "DAO has not been enabled");
+        }
         // Calculate total voting power by summing the pollard
         uint256 totalVotingPower = 0;
         uint256 treeNodesLength = _treeNodes.length;

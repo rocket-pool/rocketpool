@@ -305,6 +305,13 @@ export async function setDAOProtocolBootstrapSettingMulti(_settingContractInstan
   }
 }
 
+export async function setDAOProtocolBootstrapEnableGovernance(txOptions) {
+    // Load contracts
+    const rocketDAOProtocol = (await upgradeExecuted()) ? await RocketDAOProtocolNew.deployed() : await RocketDAOProtocol.deployed();
+    // Execute enable transaction
+    await rocketDAOProtocol.bootstrapEnableGovernance();
+}
+
 /*** Security council *******/
 
 // Use bootstrap power to invite a member to the security council

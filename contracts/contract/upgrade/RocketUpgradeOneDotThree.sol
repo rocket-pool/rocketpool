@@ -5,6 +5,7 @@ import "../RocketBase.sol";
 import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
 import "../../interface/network/RocketNetworkPricesInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
+import "../../interface/util/AddressSetStorageInterface.sol";
 
 /// @notice Transient contract to upgrade Rocket Pool with the Houston set of contract upgrades
 contract RocketUpgradeOneDotThree is RocketBase {
@@ -164,9 +165,6 @@ contract RocketUpgradeOneDotThree is RocketBase {
         require(!executed, "Already executed");
         executed = true;
 
-        RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
-        uint224 maxPerMinipoolStake = uint224(rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake());
-
         // Upgrade contracts
         _upgradeContract("rocketDAOProtocol", newRocketDAOProtocol, newRocketDAOProtocolAbi);
         _upgradeContract("rocketDAOProtocolProposals", newRocketDAOProtocolProposals, newRocketDAOProtocolProposalsAbi);
@@ -250,9 +248,14 @@ contract RocketUpgradeOneDotThree is RocketBase {
         bytes32 snapshotKey = keccak256("network.prices.rpl");
         rocketNetworkSnapshots.push(snapshotKey, uint32(block.number), uint224(rocketNetworkPrices.getRPLPrice()));
 
-        // Add snapshot entry for maximum RPL stake
-        snapshotKey = keccak256(bytes("node.per.minipool.stake.maximum"));
-        rocketNetworkSnapshots.push(snapshotKey, uint32(block.number), maxPerMinipoolStake);
+        // Add snapshot entry for maximum RPL stake voting power (150%)
+        snapshotKey = keccak256(bytes("node.voting.power.stake.maximum"));
+        rocketNetworkSnapshots.push(snapshotKey, uint32(block.number), 1.5 ether);
+
+        // Add node count snapshot entry
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        bytes32 nodeIndexKey = keccak256(abi.encodePacked("nodes.index"));
+        rocketNetworkSnapshots.push(keccak256(abi.encodePacked("node.count")), uint32(block.number), uint224(addressSetStorage.getCount(nodeIndexKey)));
 
         // Set a protocol version value in storage for convenience with bindings
         setString(keccak256(abi.encodePacked("protocol.version")), "1.3.0");

@@ -9,4 +9,5 @@ interface RocketDAOProtocolSettingsNodeInterface {
     function getVacantMinipoolsEnabled() external view returns (bool);
     function getMinimumPerMinipoolStake() external view returns (uint256);
     function getMaximumPerMinipoolStake() external view returns (uint256);
+    function getMaximumStakeForVotingPower() external view returns (uint256);
 }

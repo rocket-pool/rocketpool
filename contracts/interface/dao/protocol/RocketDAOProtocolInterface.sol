@@ -19,4 +19,5 @@ interface RocketDAOProtocolInterface {
     function bootstrapSecurityInvite(string memory _id, address _memberAddress) external;
     function bootstrapSecurityKick(address _memberAddress) external;
     function bootstrapDisable(bool _confirmDisableBootstrapMode) external;
+    function bootstrapEnableGovernance() external;
 }

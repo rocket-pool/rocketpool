@@ -22,6 +22,7 @@ contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
     event BootstrapSecurityInvite(string id, address memberAddress, uint256 time);
     event BootstrapSecurityKick(address memberAddress, uint256 time);
     event BootstrapDisabled(uint256 time);
+    event BootstrapProtocolDAOEnabled(uint256 block, uint256 time);
 
     // The namespace for any data stored in the network DAO (do not change)
     string constant internal daoNameSpace = "dao.protocol.";
@@ -113,8 +114,17 @@ contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
 
     /// @notice Bootstrap mode - Disable RP Access (only RP can call this to hand over full control to the DAO)
     function bootstrapDisable(bool _confirmDisableBootstrapMode) override external onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
+        // Prevent disabling bootstrap if on-chain governance has not been enabled
+        require(getUint(keccak256(abi.encodePacked("protocol.dao.enabled.block"))) > 0, "On-chain governance must be enabled first");
+        // Disable bootstrap
         require(_confirmDisableBootstrapMode == true, "You must confirm disabling bootstrap mode, it can only be done once!");
         setBool(keccak256(abi.encodePacked(daoNameSpace, "bootstrapmode.disabled")), true);
         emit BootstrapDisabled(block.timestamp);
+    }
+
+    /// @notice Bootstrap mode - Enables on-chain governance proposals
+    function bootstrapEnableGovernance() override external onlyGuardian onlyLatestContract("rocketDAOProtocol", address(this)) {
+        setUint(keccak256(abi.encodePacked("protocol.dao.enabled.block")), block.number);
+        emit BootstrapProtocolDAOEnabled(block.number, block.timestamp);
     }
 }

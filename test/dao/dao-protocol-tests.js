@@ -1,6 +1,7 @@
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import {
+    setDAOProtocolBootstrapEnableGovernance,
     setDaoProtocolBootstrapModeDisabled, setDAOProtocolBootstrapSecurityInvite,
     setDAOProtocolBootstrapSetting,
     setDAOProtocolBootstrapSettingMulti,
@@ -196,6 +197,8 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.create.enabled', true, {
                 from: owner,
             });
+            // Enable governance so we can disable bootstrap
+            await setDAOProtocolBootstrapEnableGovernance({from: owner});
             // Disable bootstrap mode
             await setDaoProtocolBootstrapModeDisabled({
                 from: owner,
@@ -228,6 +231,8 @@ export default function() {
                 {
                     from: owner,
                 });
+            // Enable governance so we can disable bootstrap
+            await setDAOProtocolBootstrapEnableGovernance({from: owner});
             // Disable bootstrap mode
             await setDaoProtocolBootstrapModeDisabled({
                 from: owner,
@@ -370,9 +375,18 @@ export default function() {
          * Proposer
          */
 
+        it(printTitle('proposer', 'can not create a proposal until enabled by guardian'), async () => {
+            // Setup
+            await mockNodeSet();
+            await createNode(1, proposer);
+
+            // Create a valid proposal
+            await shouldRevert(createValidProposal(), 'Was able to create proposal', 'DAO has not been enabled');
+        });
 
         it(printTitle('proposer', 'can successfully submit a proposal'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -382,6 +396,7 @@ export default function() {
 
         it(printTitle('proposer', 'can not submit a proposal with a past block'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -391,6 +406,7 @@ export default function() {
 
         it(printTitle('proposer', 'can not submit a proposal if locking is not allowed'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
             await setRPLLockingAllowed(proposer, false, {from: proposer});
@@ -401,6 +417,7 @@ export default function() {
 
         it(printTitle('proposer', 'can successfully refute an invalid challenge'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -452,6 +469,7 @@ export default function() {
 
         it(printTitle('proposer', 'can successfully claim proposal bond'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -476,6 +494,7 @@ export default function() {
 
         it(printTitle('proposer', 'can successfully claim invalid challenge'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -519,6 +538,7 @@ export default function() {
 
         it(printTitle('proposer', 'can not withdraw excess RPL if it is locked'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -548,6 +568,7 @@ export default function() {
 
         it(printTitle('proposer', 'can withdraw excess RPL after it is unlocked'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -576,6 +597,7 @@ export default function() {
 
         it(printTitle('proposer', 'can not create proposal without enough RPL stake'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -588,6 +610,7 @@ export default function() {
 
         it(printTitle('proposer', 'can not create proposal with invalid leaf count'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -607,6 +630,7 @@ export default function() {
 
         it(printTitle('proposer', 'can not claim bond on defeated proposal'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -638,6 +662,7 @@ export default function() {
 
         it(printTitle('proposer', 'can not claim bond twice'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -663,6 +688,7 @@ export default function() {
 
         it(printTitle('proposer', 'can not claim reward twice'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -701,6 +727,7 @@ export default function() {
 
         it(printTitle('proposer', 'can not claim reward for unresponded index'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -732,6 +759,7 @@ export default function() {
 
         it(printTitle('proposer', 'can not claim reward for unchallenged index'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -754,6 +782,7 @@ export default function() {
 
         it(printTitle('proposer', 'can not respond to a challenge with an invalid pollard'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -792,6 +821,7 @@ export default function() {
 
         it(printTitle('proposer', 'can not respond to a challenge with an invalid leaves'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -863,6 +893,7 @@ export default function() {
 
         it(printTitle('proposer', 'can not respond to a challenge with an invalid leaves (invalid primary tree leaf hash)'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -915,6 +946,7 @@ export default function() {
 
         it(printTitle('voter', 'can vote against their delegate'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             const nodes = await mockNodeSet();
             await nodeSetDelegate(nodes[1], {from: nodes[0]});
             await createNode(1, proposer);
@@ -938,6 +970,7 @@ export default function() {
 
         it(printTitle('voter', 'can not override vote in the same direction as their delegate'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             const nodes = await mockNodeSet();
             await nodeSetDelegate(nodes[1], {from: nodes[0]});
             await createNode(1, proposer);
@@ -964,6 +997,7 @@ export default function() {
 
         it(printTitle('proposer', 'cannot execute a failed proposal'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -999,6 +1033,7 @@ export default function() {
 
         it(printTitle('proposer', 'can not execute a vetoed proposal but can destroy it'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1037,6 +1072,7 @@ export default function() {
 
         it(printTitle('proposer', 'can invite a security council member'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1072,6 +1108,7 @@ export default function() {
 
         it(printTitle('proposer', 'can kick a security council member'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
             await setDAOProtocolBootstrapSecurityInvite("Member", securityMember1, {from: owner});
@@ -1112,6 +1149,7 @@ export default function() {
 
         it(printTitle('challenger', 'can not challenge with insufficient RPL'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1138,6 +1176,7 @@ export default function() {
 
         it(printTitle('challenger', 'can not challenge if locking RPL is not allowed'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1162,6 +1201,7 @@ export default function() {
 
         it(printTitle('challenger', 'can not challenge the same index twice'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1186,6 +1226,7 @@ export default function() {
 
         it(printTitle('challenger', 'can not challenge an index with an unchallenged parent'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1208,6 +1249,7 @@ export default function() {
 
         it(printTitle('challenger', 'can not challenge an index with greater depth than max'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1230,6 +1272,7 @@ export default function() {
 
         it(printTitle('challenger', 'can not defeat a proposal before challenge period passes'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1256,6 +1299,7 @@ export default function() {
 
         it(printTitle('challenger', 'can not challenge a defeated proposal'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1288,6 +1332,7 @@ export default function() {
 
         it(printTitle('challenger', 'can not challenge after pending state'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1313,6 +1358,7 @@ export default function() {
 
         it(printTitle('challenger', 'can not claim bond while proposal is pending'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1339,6 +1385,7 @@ export default function() {
 
         it(printTitle('challenger', 'can not claim bond on invalid index'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1373,6 +1420,7 @@ export default function() {
 
         it(printTitle('challenger', 'can not claim bond on index twice'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1407,6 +1455,7 @@ export default function() {
 
         it(printTitle('challenger', 'can claim share on defeated proposal'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1456,6 +1505,7 @@ export default function() {
 
         it(printTitle('challenger', 'can recover bond if index was not used'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1498,6 +1548,7 @@ export default function() {
 
         it(printTitle('challenger', 'can recover bond if proposal was successful'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1533,6 +1584,7 @@ export default function() {
 
         it(printTitle('challenger', 'can not create challenge with proof from a deeper index'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1562,6 +1614,7 @@ export default function() {
 
         it(printTitle('other', 'can not claim reward on challenge they did not make'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1596,6 +1649,7 @@ export default function() {
 
         it(printTitle('other', 'can not claim bond on a proposal they did not make'), async () => {
             // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
             await createNode(1, proposer);
 
@@ -1617,6 +1671,15 @@ export default function() {
 
             // Claim bond on invalid index
             await shouldRevert(daoProtocolClaimBondProposer(propId, [1], { from: node2 }), 'Was able to claim proposal bond', 'Not proposer');
+        });
+
+        it(printTitle('proposer', 'can disable bootstrap after enabling DAO'), async () => {
+            // Should fail before enabling governance
+            await shouldRevert(setDaoProtocolBootstrapModeDisabled({ from: owner }), 'Was able to disable bootstrap', 'On-chain governance must be enabled first');
+            // Enable governance
+            await setDAOProtocolBootstrapEnableGovernance();
+            // Should succeed
+            await setDaoProtocolBootstrapModeDisabled({ from: owner });
         });
     });
 }
