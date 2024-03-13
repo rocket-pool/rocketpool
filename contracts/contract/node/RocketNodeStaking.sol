@@ -87,6 +87,9 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         bytes32 key = keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress));
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         uint224 value = rocketNetworkSnapshots.latestValue(key);
+        if (value == 0){
+            value = uint224(getUint(key));
+        }
         rocketNetworkSnapshots.push(key, uint32(block.number), value + uint224(_amount));
     }
 
@@ -96,6 +99,9 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         bytes32 key = keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress));
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         uint224 value = rocketNetworkSnapshots.latestValue(key);
+        if (value == 0){
+            value = uint224(getUint(key));
+        }
         rocketNetworkSnapshots.push(key, uint32(block.number), value - uint224(_amount));
     }
 
