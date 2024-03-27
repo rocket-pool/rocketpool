@@ -79,7 +79,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
 
     // A member official joins the DAO with their bond ready, if successful they are added as a member
     function _memberJoin(address _nodeAddress) private {
-        // Set some intiial contract address
+        // Set some initial contract address
         address rocketVaultAddress = getContractAddress("rocketVault");
         address rocketTokenRPLAddress = getContractAddress("rocketTokenRPL");
         // Load contracts
