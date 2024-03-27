@@ -155,7 +155,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     }
 
 
-    // Add a proposal to the an RP DAO, immeditately becomes active
+    // Add a proposal to the an RP DAO, immediately becomes active
     // Calldata is passed as the payload to execute upon passing the proposal
     function add(address _member, string memory _dao, string memory _message, uint256 _startTime, uint256 _duration, uint256 _expires, uint256 _votesRequired, bytes memory _payload) override external onlyDAOContract(_dao) returns (uint256) {
         // Basic checks
