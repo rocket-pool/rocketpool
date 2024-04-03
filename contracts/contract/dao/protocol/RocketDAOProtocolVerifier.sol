@@ -235,6 +235,12 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @param _proposalID The ID of the challenged proposal
     /// @param _index The index which was failed to respond to
     function defeatProposal(uint256 _proposalID, uint256 _index) external onlyLatestContract("rocketDAOProtocolVerifier", address(this)) onlyRegisteredNode(msg.sender) {
+        {  // Scope to prevent stack too deep
+            // Check whether the proposal is in the Pending state
+            RocketDAOProtocolProposalInterface daoProposal = RocketDAOProtocolProposalInterface(getContractAddress("rocketDAOProtocolProposal"));
+            RocketDAOProtocolProposalInterface.ProposalState proposalState = daoProposal.getState(_proposalID);
+            require(proposalState == RocketDAOProtocolProposalInterface.ProposalState.Pending, "Can not defeat a valid proposal");
+        }
         // Check the challenge at the given index has not been responded to
         bytes32 challengeKey = keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, _index));
         uint256 data = getUint(challengeKey);

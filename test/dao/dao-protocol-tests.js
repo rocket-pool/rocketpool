@@ -1302,6 +1302,36 @@ export default function() {
             await shouldRevert(daoProtocolDefeatProposal(propId, index, { from: challenger }), 'Was able to claim before period', 'Not enough time has passed');
         });
 
+        it(printTitle('challenger', 'can not defeat a proposal once in Active state'), async () => {
+            // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
+            await mockNodeSet();
+            await createNode(1, proposer);
+
+            // Create a minipool with a node to use as a challenger
+            let challenger = node1;
+            await createNode(1, challenger);
+
+            // Create a valid proposal
+            const { propId, leaves } = await createValidProposal();
+
+            // Challenge/response
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const indices = getChallengeIndices(2 ** maxDepth, leaves.length).phase1Indices;
+            const index = indices[0];
+
+            // Challenge
+            let challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
+            await daoProtocolCreateChallenge(propId, index, challenge.node, challenge.proof, { from: challenger });
+
+            // Let the challenge pass
+            await increaseTime(hre.web3, voteDelayTime + 1);
+
+            // Defeat it
+            await shouldRevert(daoProtocolDefeatProposal(propId, index, { from: challenger }), 'Was able to defeat successful proposal', 'Can not defeat a valid proposal');
+        });
+
         it(printTitle('challenger', 'can not challenge a defeated proposal'), async () => {
             // Setup
             await setDAOProtocolBootstrapEnableGovernance();
