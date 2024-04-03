@@ -15,7 +15,11 @@ import {
     RocketDAOProtocolSettingsMinipool,
     RocketDAOProtocolSettingsNetwork,
     RocketDAOProtocolSettingsProposals,
-    RocketDAOProtocolSettingsRewards, RocketDAOProtocolSettingsRewardsNew,
+    RocketDAOProtocolSettingsRewards,
+    RocketDAOProtocolSettingsRewardsNew,
+    RocketMinipoolManagerNew,
+    RocketNodeManagerNew,
+    RocketNodeStakingNew,
 } from '../_utils/artifacts';
 import {
     cloneLeaves,
@@ -540,6 +544,7 @@ export default function() {
             // Setup
             await setDAOProtocolBootstrapEnableGovernance();
             await mockNodeSet();
+
             await createNode(1, proposer);
 
             // Give the proposer 150% collateral + proposal bond + 50

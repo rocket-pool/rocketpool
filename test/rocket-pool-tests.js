@@ -30,6 +30,7 @@ import { injectBNHelpers } from './_helpers/bn';
 import { checkInvariants } from './_helpers/invariants';
 import networkSnapshotsTests from './network/network-snapshots-tests';
 import networkVotingTests from './network/network-voting-tests';
+import upgradeTests from './upgrade/upgrade-tests';
 
 // Header
 console.log('\n');
@@ -69,6 +70,7 @@ auctionTests();
 depositPoolTests();
 minipoolScrubTests();
 minipoolTests();
+upgradeTests();
 minipoolVacantTests();
 minipoolStatusTests();
 minipoolWithdrawalTests();

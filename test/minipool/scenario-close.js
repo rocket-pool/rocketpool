@@ -1,12 +1,14 @@
-import { RocketNodeManager, RocketNodeStaking } from '../_utils/artifacts';
+import { RocketNodeManager, RocketNodeStaking, RocketNodeStakingNew } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Close a minipool
 export async function close(minipool, txOptions) {
     // Load contracts
+    const upgraded = await upgradeExecuted();
     const rocketNodeManager = await RocketNodeManager.deployed();
-    const rocketNodeStaking = await RocketNodeStaking.deployed();
+    const rocketNodeStaking = upgraded ? await RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed();
 
     // Get parameters
     let nodeAddress = await minipool.getNodeAddress.call();
