@@ -21,6 +21,7 @@ import {
 } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { submitPrices } from '../_helpers/network';
 import { assertBN } from '../_helpers/bn';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -46,6 +47,15 @@ export default function() {
         let userDistributeLength = (60 * 60);
 
         before(async () => {
+            // Hard code fee to 50%
+            const fee = '0.5'.ether;
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.minimum', fee, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.target', fee, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.maximum', fee, {from: owner});
+
+            // Upgrade to Houston
+            await upgradeOneDotThree();
+
             // Register node & set withdrawal address
             await registerNode({from: node});
             await setNodeWithdrawalAddress(node, nodeWithdrawalAddress, {from: node});
@@ -79,12 +89,6 @@ export default function() {
             // Enable penalties
             const rocketMinipoolPenalty = await RocketMinipoolPenalty.deployed();
             await rocketMinipoolPenalty.setMaxPenaltyRate(maxPenaltyRate, {from: owner})
-
-            // Hard code fee to 50%
-            const fee = '0.5'.ether;
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.minimum', fee, {from: owner});
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.target', fee, {from: owner});
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.maximum', fee, {from: owner});
 
             // Deposit some user funds to assign to pools
             let userDepositAmount = '16'.ether;

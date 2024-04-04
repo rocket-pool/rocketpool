@@ -33,6 +33,7 @@ export default function() {
 
         // Setup
         before(async () => {
+            // Upgrade to Houston
             await upgradeOneDotThree();
 
             // Register node

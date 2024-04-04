@@ -39,6 +39,7 @@ export default function() {
         let halfDepositNodeAmount;
 
         before(async () => {
+            // Upgrade to Houston
             await upgradeOneDotThree();
 
             // Set settings

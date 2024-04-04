@@ -2,7 +2,7 @@ import { printTitle } from '../_utils/formatting';
 import {
     RocketNodeManager,
     RocketDAONodeTrustedSettingsMinipool,
-    RocketNodeDistributorFactory
+    RocketNodeDistributorFactory, RocketNodeManagerNew,
 } from '../_utils/artifacts';
 import {
     createMinipool,
@@ -16,6 +16,7 @@ import { increaseTime } from '../_utils/evm';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { shouldRevert } from '../_utils/testing';
 import { userDeposit } from '../_helpers/deposit';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketNodeDistributor', async (accounts) => {
@@ -36,6 +37,8 @@ export default function() {
         let rplStake;
 
         before(async () => {
+            // Upgrade to Houston
+            await upgradeOneDotThree();
             // Get contracts
             const rocketNodeDistributorFactory = await RocketNodeDistributorFactory.deployed();
             // Set settings
@@ -60,7 +63,7 @@ export default function() {
             await registerNode({from: node2});
             await nodeStakeRPL(rplStake, {from: node2});
             // Get contracts
-            const rocketNodeManager = await RocketNodeManager.deployed();
+            const rocketNodeManager = await RocketNodeManagerNew.deployed();
             // Attempt to initialise
             await shouldRevert(rocketNodeManager.initialiseFeeDistributor({from: node2}), 'Was able to initialise again', 'Already initialised');
         });
@@ -68,7 +71,7 @@ export default function() {
 
         it(printTitle('node operator', 'can not initialise fee distributor if already initialised'), async () => {
             // Attempt to initialise a second time
-            const rocketNodeManager = await RocketNodeManager.deployed();
+            const rocketNodeManager = await RocketNodeManagerNew.deployed();
             await shouldRevert(rocketNodeManager.initialiseFeeDistributor({from: node1}), 'Was able to initialise again', 'Already initialised');
         });
 

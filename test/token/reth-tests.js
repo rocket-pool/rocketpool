@@ -17,6 +17,7 @@ import { beginUserDistribute, withdrawValidatorBalance } from '../minipool/scena
 import { increaseTime, mineBlocks } from '../_utils/evm'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { assertBN } from '../_helpers/bn';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketTokenRETH', async (accounts) => {
@@ -43,6 +44,9 @@ export default function() {
         const userDistributeStartTime = 60 * 60 * 24 * 90; // 90 days
 
         before(async () => {
+            // Upgrade to Houston
+            await upgradeOneDotThree();
+
             let slotTimestamp = '1600000000';
 
             // Get current rETH exchange rate

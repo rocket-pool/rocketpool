@@ -1,8 +1,13 @@
 // Dissolve a minipool
 import {
     RocketDAONodeTrusted,
-    RocketDAONodeTrustedSettingsMinipool, RocketDAOProtocolSettingsNode, RocketNetworkPrices,
-    RocketNodeStaking, RocketNodeStakingNew,
+    RocketDAONodeTrustedSettingsMinipool,
+    RocketDAOProtocolSettingsNode,
+    RocketMinipoolManager,
+    RocketMinipoolManagerNew,
+    RocketNetworkPrices,
+    RocketNodeStaking,
+    RocketNodeStakingNew,
     RocketTokenRPL,
     RocketVault,
 } from '../_utils/artifacts';
@@ -32,7 +37,7 @@ export async function voteScrub(minipool, txOptions) {
             rocketNodeStaking.getNodeRPLStake.call(nodeAddress),
             rocketVault.balanceOfToken('rocketAuctionManager', rocketTokenRPL.address),
             rocketDAONodeTrustedSettingsMinipool.getScrubPenaltyEnabled(),
-            minipool.getVacant.call()
+            minipool.getVacant.call(),
         ]).then(
             ([status, userDepositBalance, votes, nodeRPLStake, auctionBalance, penaltyEnabled, vacant]) =>
             ({status, userDepositBalance, votes, nodeRPLStake, auctionBalance, penaltyEnabled, vacant})
@@ -70,6 +75,13 @@ export async function voteScrub(minipool, txOptions) {
             // Perform checks
             assertBN.equal(slashAmountEth, expectedSlash, 'Amount of RPL slashed is incorrect');
             assertBN.equal(details2.auctionBalance.sub(details1.auctionBalance), slashAmount, 'RPL was not sent to auction manager');
+        }
+        if (details1.vacant) {
+            // Expect pubkey -> minipool mapping to be removed
+            const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+            const actualPubKey = await rocketMinipoolManager.getMinipoolPubkey(minipool.address);
+            const reverseAddress = await rocketMinipoolManager.getMinipoolByPubkey(actualPubKey);
+            assert.equal(reverseAddress, "0x0000000000000000000000000000000000000000");
         }
     } else {
         assertBN.equal(details2.votes.sub(details1.votes), 1, 'Vote count not incremented');

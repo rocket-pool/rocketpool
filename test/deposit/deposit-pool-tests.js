@@ -15,6 +15,7 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
 import { assignDepositsV2 } from './scenario-assign-deposits-v2';
 import { assertBN } from '../_helpers/bn';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketDepositPool', async (accounts) => {
@@ -32,6 +33,9 @@ export default function() {
 
         // Setup
         before(async () => {
+            // Upgrade to Houston
+            await upgradeOneDotThree();
+
             // Register node
             await registerNode({from: node});
 

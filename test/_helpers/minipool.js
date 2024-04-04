@@ -242,6 +242,13 @@ export async function stakeMinipool(minipool, txOptions) {
 // Promote a minipool to staking
 export async function promoteMinipool(minipool, txOptions) {
     await minipool.promote(txOptions);
+    if (await upgradeExecuted()) {
+        // Expect pubkey -> minipool mapping still exists
+        const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+        const actualPubKey = await rocketMinipoolManager.getMinipoolPubkey(minipool.address);
+        const reverseAddress = await rocketMinipoolManager.getMinipoolByPubkey(actualPubKey);
+        assert.equal(reverseAddress, minipool.address);
+    }
 }
 
 

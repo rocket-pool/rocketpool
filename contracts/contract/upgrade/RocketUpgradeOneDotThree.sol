@@ -6,6 +6,7 @@ import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
 import "../../interface/network/RocketNetworkPricesInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
+import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 
 /// @notice Transient contract to upgrade Rocket Pool with the Houston set of contract upgrades
 contract RocketUpgradeOneDotThree is RocketBase {
@@ -212,6 +213,7 @@ contract RocketUpgradeOneDotThree is RocketBase {
         setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.quorum")), 0.51 ether);            // The quorum required to pass a proposal
         setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.veto.quorum")), 0.51 ether);       // The quorum required to veto a proposal
         setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.max.block.age")), 1024);           // The maximum age of a block a proposal can be raised at
+        setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
 
         // pDAO network settings
         settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "network"));
@@ -229,6 +231,7 @@ contract RocketUpgradeOneDotThree is RocketBase {
         setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.vote.time")), 2 weeks);      // How long a proposal can be voted on
         setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.execute.time")), 4 weeks);   // How long a proposal can be executed after its voting period is finished
         setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.action.time")), 4 weeks);    // Certain proposals require a secondary action to be run after the proposal is successful (joining, leaving etc). This is how long until that action expires
+        setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
 
         // Default permissions for security council
         setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "deposit", "deposit.enabled")), true);
@@ -259,6 +262,21 @@ contract RocketUpgradeOneDotThree is RocketBase {
 
         // Set a protocol version value in storage for convenience with bindings
         setString(keccak256(abi.encodePacked("protocol.version")), "1.3.0");
+    }
+
+    /// @notice Used to fix incorrect mapping of pubkey to minipool caused by a bug in previous release
+    function fixPubkeys(address[] calldata _minipoolAddresses) external onlyGuardian {
+        for (uint256 i = 0; i < _minipoolAddresses.length; ++i) {
+            address minipoolAddress = _minipoolAddresses[i];
+            // Require minipool exists
+            require(getBool(keccak256(abi.encodePacked("minipool.exists", minipoolAddress))), "Minipool does not exist");
+            // Check the minipool hasn't been dissolved as this could prevent a failed vacant minipool from trying again
+            RocketMinipoolInterface minipool = RocketMinipoolInterface(minipoolAddress);
+            require(minipool.getStatus() != MinipoolStatus.Dissolved, "Minipool was dissolved");
+            // Update reverse lookup
+            bytes memory pubkey = getBytes(keccak256(abi.encodePacked("minipool.pubkey", minipoolAddress)));
+            setAddress(keccak256(abi.encodePacked("validator.minipool", pubkey)), minipoolAddress);
+        }
     }
 
     /// @dev Add a new network contract

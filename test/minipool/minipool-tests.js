@@ -84,6 +84,7 @@ export default function() {
         const halfDepositNodeAmount = '16'.ether;
 
         before(async () => {
+            // Upgrade to Houston
             await upgradeOneDotThree();
 
             oldDelegateAddress = (await RocketMinipoolDelegate.deployed()).address;

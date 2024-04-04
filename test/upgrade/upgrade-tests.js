@@ -7,11 +7,17 @@ import {
     RocketMinipoolManagerNew,
     RocketNetworkVoting,
     RocketNodeStaking,
-    RocketNodeStakingNew,
+    RocketNodeStakingNew, RocketUpgradeOneDotThree,
 } from '../_utils/artifacts';
 import { increaseTime } from '../_utils/evm';
 import { userDeposit } from '../_helpers/deposit';
-import { createMinipool, getMinipoolMinimumRPLStake, stakeMinipool } from '../_helpers/minipool';
+import {
+    createMinipool,
+    createVacantMinipool,
+    getMinipoolMinimumRPLStake,
+    promoteMinipool,
+    stakeMinipool,
+} from '../_helpers/minipool';
 import { nodeStakeRPL, registerNode, setNodeTrusted } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
 import { close } from '../minipool/scenario-close';
@@ -20,6 +26,7 @@ import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trus
 import { assertBN } from '../_helpers/bn';
 import { upgradeExecuted, upgradeOneDotThree } from '../_utils/upgrade';
 import { voteScrub } from '../minipool/scenario-scrub';
+import { shouldRevert } from '../_utils/testing';
 
 export default function() {
     contract('RocketUpgrade', async (accounts) => {
@@ -46,6 +53,7 @@ export default function() {
         let bondReductionWindowLength = (2 * 24 * 60 * 60);
         let rewardClaimBalanceIntervals = 28;
         let balanceSubmissionFrequency = (60 * 60 * 24);
+        let promotionScrubDelay = (60 * 60 * 24); // 24 hours
 
         let rocketNetworkVoting;
 
@@ -64,6 +72,7 @@ export default function() {
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.bond.reduction.window.length', bondReductionWindowLength, { from: owner });
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.balances.frequency', balanceSubmissionFrequency, { from: owner });
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rewards.claimsperiods', rewardClaimBalanceIntervals, { from: owner });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.promotion.scrub.period', promotionScrubDelay, {from: owner});
 
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', '50'.ether, { from: owner });
@@ -134,11 +143,53 @@ export default function() {
         }
 
         //
+        // Pubkey mapping fix
+        //
+
+        it('should be able to fix the reverse pubkey mapping', async () => {
+            // Register and stake RPL for 1 node
+            await setupNode(node1);
+
+            // Create a vacant minipool with current balance of 33
+            let minipool1 = await createVacantMinipool('8'.ether, {from: node1}, null, '33'.ether);
+            let minipool2 = await createVacantMinipool('16'.ether, {from: node1});
+
+            // Scrub minipool2
+            await voteScrub(minipool2, {from: trustedNode});
+
+            // Wait required scrub period
+            await increaseTime(hre.web3, promotionScrubDelay + 1);
+
+            // Promote the minipool
+            await promoteMinipool(minipool1, {from: node1});
+
+            // Pubkey should be wrong due to bug in previous version
+            const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+            let actualPubKey = await rocketMinipoolManager.getMinipoolPubkey(minipool1.address);
+            let reverseAddress = await rocketMinipoolManager.getMinipoolByPubkey(actualPubKey);
+            assert.equal(reverseAddress, "0x0000000000000000000000000000000000000000");
+
+            // Perform upgrade
+            await upgradeOneDotThree();
+
+            // Call the fix method
+            const rocketUpgrade = await RocketUpgradeOneDotThree.deployed();
+            await rocketUpgrade.fixPubkeys([minipool1.address]);
+
+            // Pubkey should be correct now
+            actualPubKey = await rocketMinipoolManager.getMinipoolPubkey(minipool1.address);
+            reverseAddress = await rocketMinipoolManager.getMinipoolByPubkey(actualPubKey);
+            assert.equal(reverseAddress, minipool1.address);
+
+            // Should not be able to call it on the scrubbed minipool
+            await shouldRevert(rocketUpgrade.fixPubkeys([minipool2.address]), "Was able to call fix on dissolved minipool", "Minipool was dissolved");
+        });
+
+        //
         // State differential tests
         //
 
         it('creating minipools before and after upgrade', async () => {
-
             // Register and stake RPL for 3 nodes
             await setupNode(node1);
             await setupNode(node2);

@@ -10,6 +10,7 @@ import { setRPLInflationIntervalRate, setRPLInflationStartTime } from '../dao/sc
 // Contracts
 import { RocketTokenRPL } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 
 export default function() {
@@ -31,6 +32,8 @@ export default function() {
 
 
         before(async () => {
+            // Upgrade to Houston
+            await upgradeOneDotThree();
             // Mint RPL fixed supply for the users to simulate current users having RPL
             await mintDummyRPL(userOne, userOneRPLBalance, {from: owner});
         });

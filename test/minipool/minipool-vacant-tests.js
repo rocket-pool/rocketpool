@@ -1,7 +1,7 @@
 import {
     RocketDAOProtocolSettingsMinipool,
     RocketDAOProtocolSettingsNetwork,
-    RocketDAONodeTrustedSettingsMinipool, RocketNodeStaking,
+    RocketDAONodeTrustedSettingsMinipool, RocketNodeStaking, RocketNodeStakingNew,
 } from '../_utils/artifacts';
 import { increaseTime } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
@@ -26,6 +26,7 @@ import { voteScrub } from './scenario-scrub';
 import { assertBN } from '../_helpers/bn';
 import { refund } from './scenario-refund';
 import { getValidatorPubkey } from '../_utils/beacon';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -53,7 +54,10 @@ export default function() {
         let rocketNodeStaking;
 
         before(async () => {
-            rocketNodeStaking = await RocketNodeStaking.deployed();
+            // Upgrade to Houston
+            await upgradeOneDotThree();
+
+            rocketNodeStaking = await RocketNodeStakingNew.deployed();
 
             // Register node & set withdrawal address
             await registerNode({from: node});

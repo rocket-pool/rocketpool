@@ -120,6 +120,7 @@ export default function() {
 
         // Setup
         before(async () => {
+            // Upgrade to Houston
             await upgradeOneDotThree();
 
             let slotTimestamp = '1600000000';

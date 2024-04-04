@@ -45,6 +45,7 @@ export default function() {
         let prelaunchMinipool;
 
         before(async () => {
+            // Upgrade to Houston
             await upgradeOneDotThree();
 
             // Register node & set withdrawal address

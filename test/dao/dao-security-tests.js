@@ -39,6 +39,7 @@ export default function() {
 
         // Setup
         before(async () => {
+            // Upgrade to Houston
             await upgradeOneDotThree();
 
             await userDeposit({ from: random, value: '320'.ether });

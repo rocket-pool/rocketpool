@@ -43,7 +43,8 @@ export default function() {
         // Setup
         let rocketNodeStaking;
         before(async () => {
-            await upgradeOneDotThree(owner);
+            // Upgrade to Houston
+            await upgradeOneDotThree();
 
             // Load contracts
             rocketNodeStaking = await RocketNodeStakingNew.deployed();

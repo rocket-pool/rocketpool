@@ -454,9 +454,12 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Remove from vacant set
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.vacant.index")), msg.sender);
-        // Remove mapping of pubkey to minipool to allow NO to try again in future
-        bytes memory pubkey = getMinipoolPubkey(msg.sender);
-        deleteAddress(keccak256(abi.encodePacked("validator.minipool", pubkey)));
+        // If minipool was dissolved, remove mapping of pubkey to minipool to allow NO to try again in future
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
+        if (minipool.getStatus() == MinipoolStatus.Dissolved) {
+            bytes memory pubkey = getMinipoolPubkey(msg.sender);
+            deleteAddress(keccak256(abi.encodePacked("validator.minipool", pubkey)));
+        }
     }
 
     /// @notice Returns the number of minipools in the vacant minipool set
