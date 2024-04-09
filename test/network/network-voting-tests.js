@@ -61,8 +61,8 @@ export default function() {
             const votingPowerBefore = await networkVoting.getVotingPower(node, blockBefore);
             const votingPowerAfter = await networkVoting.getVotingPower(node, blockAfter);
 
-            assertBN.equal(votingPowerBefore, sqrt('2400'.ether));
-            assertBN.equal(votingPowerAfter, sqrt('4800'.ether));
+            assertBN.equal(votingPowerBefore, sqrt('2400'.ether.mul('1'.ether)));
+            assertBN.equal(votingPowerAfter, sqrt('4800'.ether.mul('1'.ether)));
         });
     });
 }

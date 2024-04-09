@@ -137,7 +137,7 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
             _rplStake = maximumStake;
         }
         // Return the calculated voting power as the square root of clamped RPL stake
-        return Math.sqrt(_rplStake);
+        return Math.sqrt(_rplStake * calcBase);
     }
 
     function setDelegate(address _newDelegate) external override onlyRegisteredNode(msg.sender) onlyRegisteredNode(_newDelegate) {
