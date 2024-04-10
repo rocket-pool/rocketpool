@@ -471,6 +471,37 @@ export default function() {
             }
         });
 
+        it(printTitle('proposer', 'can not respond to a challenge after proposal enters voting'), async () => {
+            // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
+            await mockNodeSet();
+            await createNode(1, proposer);
+
+            // Create a minipool with a node to use as a challenger
+            let challenger = node1;
+            await createNode(1, challenger);
+
+            // Create a valid proposal
+            const { propId, leaves, block } = await createValidProposal();
+
+            // Challenge/response
+            const phase1Depth = getMaxDepth(leaves.length);
+            const maxDepth = phase1Depth * 2;
+            const { phase1Indices, subRootIndex, phase2Indices } = getChallengeIndices(2 ** maxDepth, leaves.length);
+
+            // Challenge
+            let index = phase1Indices[0]
+            const challenge = daoProtocolGenerateChallengeProof(leaves, depthPerRound, index);
+            await daoProtocolCreateChallenge(propId, index, challenge.node, challenge.proof, { from: challenger });
+
+            // Let proposal enter voting
+            await increaseTime(hre.web3, voteDelayTime + 1);
+
+            // Response
+            let pollard = await daoProtocolGeneratePollard(leaves, depthPerRound, index);
+            await shouldRevert(daoProtocolSubmitRoot(propId, index, pollard, { from: proposer }), 'Was able to submit root', 'Can not submit root for a valid proposal');
+        });
+
         it(printTitle('proposer', 'can successfully claim proposal bond'), async () => {
             // Setup
             await setDAOProtocolBootstrapEnableGovernance();
