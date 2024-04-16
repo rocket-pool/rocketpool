@@ -20,4 +20,6 @@ interface RocketClaimDAOInterface {
     function newContract(string memory _contractName, address _recipientAddress, uint256 _amountPerPeriod, uint256 _periodLength, uint256 _startTime, uint256 _numPeriods) external;
     function updateContract(string memory _contractName, address _recipientAddress, uint256 _amountPerPeriod, uint256 _periodLength, uint256 _numPeriods) external;
     function withdrawBalance(address _recipientAddress) external;
+    function payOutContracts(string[] calldata _contractNames) external;
+    function payOutContractsAndWithdraw(string[] calldata _contractNames) external;
 }

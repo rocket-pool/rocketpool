@@ -124,7 +124,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
         emit RPLTreasuryContractUpdated(_contractName, _recipientAddress, _amountPerPeriod, _periodLength, _numPeriods);
     }
 
-    /// @notice Can be called by a recipient to withdraw any paid amounts of RPL
+    /// @notice Can be called to withdraw any paid amounts of RPL to the supplied recipient
     /// @param _recipientAddress The recipient address to claim for
     function withdrawBalance(address _recipientAddress) override external onlyLatestContract("rocketClaimDAO", address(this)) {
         // Load contracts
@@ -147,10 +147,24 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
 
     /// @notice Executes payout on the given contracts
     /// @param _contractNames An array of contract names to execute a payout on
-    function payOutContracts(string[] calldata _contractNames) external onlyLatestContract("rocketClaimDAO", address(this)) {
+    function payOutContracts(string[] calldata _contractNames) override external onlyLatestContract("rocketClaimDAO", address(this)) {
         uint256 contractNamesLength = _contractNames.length;
         for (uint256 i = 0; i < contractNamesLength; ++i) {
             payOutContract(_contractNames[i]);
+        }
+    }
+
+    /// @notice Executes a payout on given contracts and withdraws the resulting balance to the recipient
+    /// @param _contractNames An array of contract names to execute a payout and withdraw on
+    function payOutContractsAndWithdraw(string[] calldata _contractNames) override external onlyLatestContract("rocketClaimDAO", address(this)) {
+        uint256 contractNamesLength = _contractNames.length;
+        for (uint256 i = 0; i < contractNamesLength; ++i) {
+            // Payout contract
+            payOutContract(_contractNames[i]);
+            // Withdraw to contract recipient
+            uint256 contractKey = uint256(keccak256(abi.encodePacked("dao.protocol.treasury.contract", _contractNames[i])));
+            address recipient = getAddress(bytes32(contractKey + recipientOffset));
+            withdrawBalance(recipient);
         }
     }
 
