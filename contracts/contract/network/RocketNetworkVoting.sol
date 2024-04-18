@@ -38,7 +38,7 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
     /// @notice Unlocks a node operator's voting power (only required for node operators who registered before
     ///         governance structure was in place).
     /// @param _delegate The node operator's desired delegate for their voting power
-    function initialiseVoting(address _delegate) onlyRegisteredNode(msg.sender) onlyRegisteredNode(_delegate) external override {
+    function initialiseVotingWithDelegate(address _delegate) onlyRegisteredNode(msg.sender) onlyRegisteredNode(_delegate) external override {
         _initialiseVoting(_delegate);
     }
 
