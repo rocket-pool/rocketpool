@@ -126,7 +126,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
 
     /// @notice Can be called to withdraw any paid amounts of RPL to the supplied recipient
     /// @param _recipientAddress The recipient address to claim for
-    function withdrawBalance(address _recipientAddress) override external onlyLatestContract("rocketClaimDAO", address(this)) {
+    function withdrawBalance(address _recipientAddress) override public onlyLatestContract("rocketClaimDAO", address(this)) {
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Addresses
