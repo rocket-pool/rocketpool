@@ -15,8 +15,8 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     bytes32 immutable blockKey;
 
     // Events
-    event PricesSubmitted(address indexed from, uint256 block, uint256 rplPrice, uint256 time);
-    event PricesUpdated(uint256 block, uint256 _slotTimestamp, uint256 rplPrice, uint256 time);
+    event PricesSubmitted(address indexed from, uint256 block, uint256 slotTimestamp, uint256 rplPrice, uint256 time);
+    event PricesUpdated(uint256 indexed block, uint256 slotTimestamp, uint256 rplPrice, uint256 time);
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Set contract version
@@ -77,7 +77,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         uint256 submissionCount = getUint(submissionCountKey) + 1;
         setUint(submissionCountKey, submissionCount);
         // Emit prices submitted event
-        emit PricesSubmitted(msg.sender, _block, _rplPrice, block.timestamp);
+        emit PricesSubmitted(msg.sender, _block, _slotTimestamp, _rplPrice, block.timestamp);
         // If voting past consensus, return
         if (_block == lastPricesBlock) {
             return;
