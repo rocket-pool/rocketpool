@@ -83,7 +83,8 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
                 require(msg.sender == rplWithdrawalAddress, "Can only claim from RPL withdrawal address");
             } else {
                 // Otherwise, must be called from node address or withdrawal address
-                require(msg.sender == _nodeAddress || msg.sender == withdrawalAddress, "Can only claim from node address");
+                address senderWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(msg.sender);
+                require(msg.sender == _nodeAddress || msg.sender == withdrawalAddress || senderWithdrawalAddress == _nodeAddress, "Can only claim from node address");
             }
         }
 
