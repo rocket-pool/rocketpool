@@ -237,7 +237,7 @@ export default function() {
         /*** Regular Nodes *************************/
 
 
-        it.only(printTitle('node', 'can claim RPL and ETH'), async () => {
+        it(printTitle('node', 'can claim RPL and ETH'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
             await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
@@ -499,7 +499,7 @@ export default function() {
         });
 
 
-        it.only(printTitle('node', 'can claim mulitiple periods in a single tx'), async () => {
+        it(printTitle('node', 'can claim mulitiple periods in a single tx'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
             await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
@@ -548,7 +548,7 @@ export default function() {
         });
 
 
-        it.only(printTitle('node', 'can only claim and stake if no withdrawal address set'), async () => {
+        it(printTitle('node', 'can only claim and stake if no withdrawal address set'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
             await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
@@ -600,7 +600,7 @@ export default function() {
         });
 
 
-        it.only(printTitle('node', 'can not stake amount greater than claim'), async () => {
+        it(printTitle('node', 'can not stake amount greater than claim'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
             await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
@@ -633,7 +633,7 @@ export default function() {
         /*** Random *************************/
 
 
-        it.only(printTitle('random', 'can execute reward period if consensus is reached'), async () => {
+        it(printTitle('random', 'can execute reward period if consensus is reached'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
             await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
@@ -668,7 +668,7 @@ export default function() {
             await executeRewards(0, rewards, '0'.ether, '0'.ether, {from: random});
         });
 
-        it.only(printTitle('random', 'cant execute reward period twice'), async () => {
+        it(printTitle('random', 'cant execute reward period twice'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
             await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
@@ -704,7 +704,7 @@ export default function() {
             await shouldRevert(executeRewards(0, rewards, '0'.ether, '0'.ether, {from: random}), 'Already executed');
         });
 
-        it.only(printTitle('random', 'can submit past consensus'), async () => {
+        it(printTitle('random', 'can submit past consensus'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
             await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
@@ -742,7 +742,7 @@ export default function() {
         /*** Misc *************************/
 
 
-        it.only(printTitle('misc', 'claim bitmap is correct'), async () => {
+        it(printTitle('misc', 'claim bitmap is correct'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
             await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
