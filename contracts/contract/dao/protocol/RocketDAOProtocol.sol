@@ -123,7 +123,7 @@ contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
     }
 
     /// @notice Bootstrap mode - Enables on-chain governance proposals
-    function bootstrapEnableGovernance() override external onlyGuardian onlyLatestContract("rocketDAOProtocol", address(this)) {
+    function bootstrapEnableGovernance() override external onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
         setUint(keccak256(abi.encodePacked("protocol.dao.enabled.block")), block.number);
         emit BootstrapProtocolDAOEnabled(block.number, block.timestamp);
     }
