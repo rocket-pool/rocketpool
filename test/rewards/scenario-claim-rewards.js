@@ -1,6 +1,6 @@
 import {
     RocketMerkleDistributorMainnet,
-    RocketNodeManager,
+    RocketNodeManagerNew,
     RocketRewardsPool,
     RocketStorage, RocketTokenRPL
 } from '../_utils/artifacts';
@@ -20,7 +20,7 @@ export async function claimRewards(nodeAddress, indices, rewards, txOptions) {
         rocketTokenRPL,
     ] = await Promise.all([
         RocketRewardsPool.deployed(),
-        RocketNodeManager.deployed(),
+        RocketNodeManagerNew.deployed(),
         RocketMerkleDistributorMainnet.deployed(),
         RocketStorage.deployed(),
         RocketTokenRPL.deployed(),
@@ -28,12 +28,14 @@ export async function claimRewards(nodeAddress, indices, rewards, txOptions) {
 
     // Get node withdrawal address
     let nodeWithdrawalAddress = await rocketNodeManager.getNodeWithdrawalAddress.call(nodeAddress);
+    // Get node RPL withdrawal address
+    let nodeRPLWithdrawalAddress = await rocketNodeManager.getNodeRPLWithdrawalAddress.call(nodeAddress);
 
     // Get balances
     function getBalances() {
         return Promise.all([
             rocketRewardsPool.getClaimIntervalTimeStart(),
-            rocketTokenRPL.balanceOf.call(nodeWithdrawalAddress),
+            rocketTokenRPL.balanceOf.call(nodeRPLWithdrawalAddress),
             web3.eth.getBalance(nodeWithdrawalAddress)
         ]).then(
           ([claimIntervalTimeStart, nodeRpl, nodeEth]) =>
