@@ -9,12 +9,13 @@ import "../../interface/rewards/RocketRewardsRelayInterface.sol";
 import "../../interface/rewards/RocketSmoothingPoolInterface.sol";
 import "../../interface/RocketVaultWithdrawerInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
+import "../../interface/rewards/RocketMerkleDistributorMainnetInterface.sol";
 
 import "@openzeppelin4/contracts/utils/cryptography/MerkleProof.sol";
 
 /// @dev On mainnet, the relay and the distributor are the same contract as there is no need for an intermediate contract to
 ///      handle cross-chain messaging.
-contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterface, RocketVaultWithdrawerInterface {
+contract RocketMerkleDistributorMainnet is RocketBase, RocketMerkleDistributorMainnetInterface, RocketVaultWithdrawerInterface {
 
     // Events
     event RewardsClaimed(address indexed claimer, uint256[] rewardIndex, uint256[] amountRPL, uint256[] amountETH);
@@ -79,10 +80,15 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
             rplWithdrawalAddress = rocketNodeManager.getNodeRPLWithdrawalAddress(_nodeAddress);
             withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
             if (rocketNodeManager.getNodeRPLWithdrawalAddressIsSet(_nodeAddress)) {
-                // If RPL withdrawal address is set, must be called from it
-                require(msg.sender == rplWithdrawalAddress, "Can only claim from RPL withdrawal address");
+                if (_stakeAmount > 0) {
+                    // If staking and RPL withdrawal address is set, must be called from RPL withdrawal address
+                    require(msg.sender == rplWithdrawalAddress, "Can only claim and stake from RPL withdrawal address");
+                } else {
+                    // Otherwise, must be called from RPL withdrawal address, node address or withdrawal address
+                    require(msg.sender == rplWithdrawalAddress || msg.sender == _nodeAddress || msg.sender == withdrawalAddress, "Can only claim from withdrawal addresses or node address");
+                }
             } else {
-                // Otherwise, must be called from node address or withdrawal address
+                // If RPL withdrawal address isn't set, must be called from node address or withdrawal address
                 require(msg.sender == _nodeAddress || msg.sender == withdrawalAddress, "Can only claim from node address");
             }
         }
@@ -109,8 +115,15 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
             // Distribute ETH
             if (totalAmountETH > 0) {
                 rocketVault.withdrawEther(totalAmountETH);
-                (bool result,) = withdrawalAddress.call{value: totalAmountETH}("");
-                require(result, "Failed to claim ETH");
+                // Allow up to 2300 gas to send ETH to the withdrawal address
+                (bool result,) = withdrawalAddress.call{value: totalAmountETH, gas: 2300}("");
+                if (!result) {
+                    // If the withdrawal address cannot accept the ETH with 2300 gas, add it to their balance to be claimed later at their own expense
+                    bytes32 balanceKey = keccak256(abi.encodePacked('rewards.eth.balance', withdrawalAddress));
+                    addUint(balanceKey, totalAmountETH);
+                    // Return the ETH to the vault
+                    rocketVault.depositEther{value: totalAmountETH}();
+                }
             }
         }
 
@@ -125,6 +138,27 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
 
         // Emit event
         emit RewardsClaimed(_nodeAddress, _rewardIndex, _amountRPL, _amountETH);
+    }
+
+    // If ETH was claimed but was unable to be sent to the withdrawal address, it can be claimed via this function
+    function claimOutstandingEth() external override {
+        // Get contracts
+        RocketVaultInterface rocketVault = RocketVaultInterface(getAddress(rocketVaultKey));
+        // Get the amount and zero it out
+        bytes32 balanceKey = keccak256(abi.encodePacked('rewards.eth.balance', msg.sender));
+        uint256 amount = getUint(balanceKey);
+        setUint(balanceKey, 0);
+        // Withdraw the ETH from the vault
+        rocketVault.withdrawEther(amount);
+        // Attempt to send it to the caller
+        (bool result,) = payable(msg.sender).call{value: amount}("");
+        require(result, 'Transfer failed');
+    }
+
+    // Returns the amount of ETH that can be claimed by a withdrawal address
+    function getOutstandingEth(address _address) external override view returns (uint256) {
+        bytes32 balanceKey = keccak256(abi.encodePacked('rewards.eth.balance', _address));
+        return getUint(balanceKey);
     }
 
     // Verifies the given data exists as a leaf nodes for the specified reward interval and marks them as claimed if they are valid
@@ -161,7 +195,7 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
         setUint(claimedWordKey, claimedWord);
     }
 
-    // Verifies that the
+    // Verifies that the given proof is valid
     function _verifyProof(uint256 _rewardIndex, address _nodeAddress, uint256 _amountRPL, uint256 _amountETH, bytes32[] calldata _merkleProof) internal view returns (bool) {
         bytes32 node = keccak256(abi.encodePacked(_nodeAddress, network, _amountRPL, _amountETH));
         bytes32 key = keccak256(abi.encodePacked('rewards.merkle.root', _rewardIndex));

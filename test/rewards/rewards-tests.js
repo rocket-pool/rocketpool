@@ -2,14 +2,16 @@ import { getCurrentTime, increaseTime } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { submitPrices } from '../_helpers/network';
+import { bufferToHex, keccak256 } from 'ethereumjs-util';
 import {
     registerNode,
     setNodeTrusted,
     setNodeWithdrawalAddress,
     nodeStakeRPL,
-    getNodeEffectiveRPLStake,
-} from '../_helpers/node'
+    getNodeEffectiveRPLStake, setNodeRPLWithdrawalAddress,
+} from '../_helpers/node';
 import {
+    RevertOnTransfer,
     RocketDAONodeTrustedSettingsMinipool,
     RocketDAOProtocolSettingsNode,
     RocketMerkleDistributorMainnet,
@@ -533,6 +535,77 @@ export default function() {
         });
 
 
+        it(printTitle('node', 'can not claim RPL and stake from non-rpl-withdrawal credential address if RPL withdrawal credentials set'), async () => {
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartTime = await rplInflationSetup();
+            await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
+
+            // Set RPL withdrawal address to a random address
+            await setNodeRPLWithdrawalAddress(registeredNode1, random, { from: node1WithdrawalAddress })
+
+            // Move to inflation start plus one claim interval
+            let currentTime = await getCurrentTime(web3);
+            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
+            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
+
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    trustedNodeRPL: '0'.ether,
+                    nodeRPL: '1'.ether,
+                    nodeETH: '0'.ether
+                }
+            ]
+            await submitRewards(0, rewards, '0'.ether, '0'.ether, {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0'.ether, '0'.ether, {from: registeredNodeTrusted2});
+
+            // Can't claim from node address
+            await shouldRevert(claimAndStakeRewards(registeredNode1, [0], [rewards], '1'.ether, {
+                from: registeredNode1,
+            }), "Was able to claim", "Can only claim and stake from RPL withdrawal address");
+            // Can't claim from withdrawal address
+            await shouldRevert(claimAndStakeRewards(registeredNode1, [0], [rewards], '1'.ether, {
+                from: node1WithdrawalAddress,
+            }), "Was able to claim", "Can only claim and stake from RPL withdrawal address");
+            // Can claim from rpl withdrawal address
+            await claimAndStakeRewards(registeredNode1, [0], [rewards], '1'.ether, {
+                from: random,
+            });
+        });
+
+
+        it(printTitle('node', 'can claim and stake RPL from withdrawal address if RPL withdrawal address not set'), async () => {
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartTime = await rplInflationSetup();
+            await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
+
+            // Move to inflation start plus one claim interval
+            let currentTime = await getCurrentTime(web3);
+            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
+            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
+
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    trustedNodeRPL: '0'.ether,
+                    nodeRPL: '1'.ether,
+                    nodeETH: '0'.ether
+                }
+            ]
+            await submitRewards(0, rewards, '0'.ether, '0'.ether, {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0'.ether, '0'.ether, {from: registeredNodeTrusted2});
+
+            // Can claim from withdrawal address
+            await claimAndStakeRewards(registeredNode1, [0], [rewards], '1'.ether, {
+                from: node1WithdrawalAddress,
+            });
+        });
+
+
         it(printTitle('node', 'can not stake amount greater than claim'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
@@ -764,5 +837,58 @@ export default function() {
                 }), 'Was able to claim again', 'Already claimed');
             }
         });
+
+
+        it(printTitle('withdrawal address', 'can recover ETH rewards on reverting transfer to withdrawal address'), async () => {
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartTime = await rplInflationSetup();
+            await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
+
+            // Set RPL withdrawal address to the revert on transfer helper
+            const revertOnTransfer = await RevertOnTransfer.deployed()
+            await setNodeWithdrawalAddress(registeredNode1, revertOnTransfer.address, { from: node1WithdrawalAddress })
+
+            // Move to inflation start plus one claim interval
+            let currentTime = await getCurrentTime(web3);
+            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
+            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
+
+            // Send ETH to rewards pool
+            const rocketSmoothingPool = await RocketSmoothingPool.deployed();
+            await web3.eth.sendTransaction({ from: owner, to: rocketSmoothingPool.address, value: '20'.ether});
+
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    trustedNodeRPL: '0'.ether,
+                    nodeRPL: '0'.ether,
+                    nodeETH: '1'.ether
+                }
+            ]
+            await submitRewards(0, rewards, '0'.ether, '1'.ether, {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0'.ether, '1'.ether, {from: registeredNodeTrusted2});
+
+            // Claim from node which should fail to send the ETH and increase outstanding balance
+            await claimAndStakeRewards(registeredNode1, [0], [rewards], '0'.ether, {
+                from: registeredNode1,
+            });
+
+            const rocketMerkleDistributorMainnet = await RocketMerkleDistributorMainnet.deployed();
+
+            // Check outstanding balance is correct
+            const balance = await rocketMerkleDistributorMainnet.getOutstandingEth(revertOnTransfer.address);
+            assertBN.equal(balance, '1'.ether);
+
+            // Attempt to claim the ETH from the previously reverting withdrawal address
+            await revertOnTransfer.setEnabled(false);
+            const payload = '0x' + keccak256('claimOutstandingEth()').toString('hex').substring(0,8);
+            await revertOnTransfer.call(rocketMerkleDistributorMainnet.address, payload);
+
+            // Check ETH was sent to withdrawal address
+            const withdrawalAddressBalance = (await web3.eth.getBalance(revertOnTransfer.address)).BN;
+            assertBN.equal(withdrawalAddressBalance, '1'.ether);
+        })
     });
 }
