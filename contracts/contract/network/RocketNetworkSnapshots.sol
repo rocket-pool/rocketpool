@@ -16,8 +16,8 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
         version = 1;
     }
 
-    function push(bytes32 _key, uint32 _block, uint224 _value) onlyLatestContract("rocketNetworkSnapshots", address(this)) onlyLatestNetworkContract external {
-        _insert(_key, _block, _value);
+    function push(bytes32 _key, uint224 _value) onlyLatestContract("rocketNetworkSnapshots", address(this)) onlyLatestNetworkContract external {
+        _insert(_key, _value);
     }
 
     function length(bytes32 _key) public view returns (uint256) {
@@ -69,24 +69,25 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
         return pos == 0 ? 0 : _valueAt(_key, pos - 1);
     }
 
-    function _insert(bytes32 _key, uint32 _block, uint224 _value) private {
+    function _insert(bytes32 _key, uint224 _value) private {
+        uint32 blockNumber = uint32(block.number);
         uint256 pos = length(_key);
 
         if (pos > 0) {
             Checkpoint224 memory last = _load(_key, pos - 1);
 
             // Checkpoint keys must be non-decreasing.
-            require (last._block <= _block, "Unordered snapshot insertion");
+            require (last._block <= blockNumber, "Unordered snapshot insertion");
 
             // Update or push new checkpoint
-            if (last._block == _block) {
+            if (last._block == blockNumber) {
                 last._value = _value;
                 _set(_key, pos - 1, last);
             } else {
-                _push(_key, Checkpoint224({_block: _block, _value: _value}));
+                _push(_key, Checkpoint224({_block: blockNumber, _value: _value}));
             }
         } else {
-            _push(_key, Checkpoint224({_block: _block, _value: _value}));
+            _push(_key, Checkpoint224({_block: blockNumber, _value: _value}));
         }
     }
 

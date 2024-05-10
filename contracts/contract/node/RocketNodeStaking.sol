@@ -91,7 +91,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         if (!exists){
             value = uint224(getUint(key));
         }
-        rocketNetworkSnapshots.push(key, uint32(block.number), value + uint224(_amount));
+        rocketNetworkSnapshots.push(key, value + uint224(_amount));
     }
 
     /// @dev Decrease a node operator's RPL stake
@@ -103,7 +103,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         if (!exists){
             value = uint224(getUint(key));
         }
-        rocketNetworkSnapshots.push(key, uint32(block.number), value - uint224(_amount));
+        rocketNetworkSnapshots.push(key, value - uint224(_amount));
     }
 
     /// @notice Returns a node's matched ETH amount (amount taken from protocol to stake)

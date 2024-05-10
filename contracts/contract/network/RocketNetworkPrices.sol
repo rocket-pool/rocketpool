@@ -50,7 +50,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     /// @dev Sets the current network RPL price in ETH
     function setRPLPrice(uint256 _value) private {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
-        rocketNetworkSnapshots.push(priceKey, uint32(block.number), uint224(_value));
+        rocketNetworkSnapshots.push(priceKey, uint224(_value));
     }
 
     /// @notice Submit network price data for a block

@@ -17,9 +17,10 @@ contract SnapshotTest is RocketBase {
         snapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
     }
 
-    function push(string calldata _key, uint32 _block, uint224 _value) external {
+    function push(string calldata _key, uint224 _value) external {
         bytes32 key = keccak256(abi.encodePacked(_key));
-        snapshots.push(key, _block, _value);
+
+        snapshots.push(key, _value);
     }
 
     function lookup(string calldata _key, uint32 _block) external view returns (uint224){

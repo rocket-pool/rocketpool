@@ -198,9 +198,9 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Set node registration time (uses old storage key name for backwards compatibility)
         setUint(keccak256(abi.encodePacked("rewards.pool.claim.contract.registered.time", "rocketClaimNode", msg.sender)), block.timestamp);
         // Update count
-        rocketNetworkSnapshots.push(keccak256(abi.encodePacked("node.count")), uint32(block.number), uint224(addressSetStorage.getCount(nodeIndexKey)));
+        rocketNetworkSnapshots.push(keccak256(abi.encodePacked("node.count")), uint224(addressSetStorage.getCount(nodeIndexKey)));
         // Default voting delegate to themself
-        rocketNetworkSnapshots.push(keccak256(abi.encodePacked("node.delegate", msg.sender)), uint32(block.number), uint224(uint160(msg.sender)));
+        rocketNetworkSnapshots.push(keccak256(abi.encodePacked("node.delegate", msg.sender)), uint224(uint160(msg.sender)));
         // Emit node registered event
         emit NodeRegistered(msg.sender, block.timestamp);
     }

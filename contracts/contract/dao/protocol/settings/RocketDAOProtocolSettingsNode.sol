@@ -35,7 +35,7 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
         if(settingKey == keccak256(bytes("node.voting.power.stake.maximum"))) {
             // Redirect the setting change to push a new value into the snapshot system instead
             RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
-            rocketNetworkSnapshots.push(settingKey, uint32(block.number), uint224(_value));
+            rocketNetworkSnapshots.push(settingKey, uint224(_value));
             return;
         }
         // Update setting now

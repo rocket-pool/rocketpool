@@ -57,19 +57,19 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
 
         // ETH matched
         key = keccak256(abi.encodePacked("eth.matched.node.amount", msg.sender));
-        rocketNetworkSnapshots.push(key, uint32(block.number), uint224(rocketNodeStaking.getNodeETHMatched(msg.sender)));
+        rocketNetworkSnapshots.push(key, uint224(rocketNodeStaking.getNodeETHMatched(msg.sender)));
 
         // Active minipools
         key = keccak256(abi.encodePacked("minipools.active.count", msg.sender));
-        rocketNetworkSnapshots.push(key, uint32(block.number), uint224(rocketMinipoolManager.getNodeActiveMinipoolCount(msg.sender)));
+        rocketNetworkSnapshots.push(key, uint224(rocketMinipoolManager.getNodeActiveMinipoolCount(msg.sender)));
 
         // RPL staked
         key = keccak256(abi.encodePacked("rpl.staked.node.amount", msg.sender));
-        rocketNetworkSnapshots.push(key, uint32(block.number), uint224(rocketNodeStaking.getNodeRPLStake(msg.sender)));
+        rocketNetworkSnapshots.push(key, uint224(rocketNodeStaking.getNodeRPLStake(msg.sender)));
 
         // Set starting delegate to themself
         key = keccak256(abi.encodePacked("node.delegate", msg.sender));
-        rocketNetworkSnapshots.push(key, uint32(block.number), uint224(uint160(_delegate)));
+        rocketNetworkSnapshots.push(key, uint224(uint160(_delegate)));
     }
 
     function getVotingInitialised(address _nodeAddress) external override view returns (bool) {
@@ -143,7 +143,7 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
     function setDelegate(address _newDelegate) external override onlyRegisteredNode(msg.sender) onlyRegisteredNode(_newDelegate) {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         bytes32 key = keccak256(abi.encodePacked("node.delegate", msg.sender));
-        rocketNetworkSnapshots.push(key, uint32(block.number), uint224(uint160(_newDelegate)));
+        rocketNetworkSnapshots.push(key, uint224(uint160(_newDelegate)));
         emit DelegateSet(msg.sender, _newDelegate, block.timestamp);
     }
 

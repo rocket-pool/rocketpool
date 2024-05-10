@@ -390,10 +390,10 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         uint256 ethMatched = rocketNodeStaking.getNodeETHMatched(_nodeAddress);
         ethMatched -= RocketMinipoolInterface(msg.sender).getUserDepositBalance();
         bytes32 key = keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress));
-        rocketNetworkSnapshots.push(key, uint32(block.number), uint224(ethMatched));
+        rocketNetworkSnapshots.push(key, uint224(ethMatched));
         // Decrement active count
         key = keccak256(abi.encodePacked("minipools.active.count", _nodeAddress));
-        rocketNetworkSnapshots.push(key, uint32(block.number), uint224(activeMinipoolCount - 1));
+        rocketNetworkSnapshots.push(key, uint224(activeMinipoolCount - 1));
     }
 
     /// @dev Create a minipool. Only accepts calls from the RocketNodeDeposit contract
@@ -421,7 +421,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Increment active count
         RocketNetworkSnapshots rocketNetworkSnapshots = RocketNetworkSnapshots(getContractAddress("rocketNetworkSnapshots"));
         bytes32 key = keccak256(abi.encodePacked("minipools.active.count", _nodeAddress));
-        rocketNetworkSnapshots.push(key, uint32(block.number), uint224(activeMinipoolCount + 1));
+        rocketNetworkSnapshots.push(key, uint224(activeMinipoolCount + 1));
         // Emit minipool created event
         emit MinipoolCreated(contractAddress, _nodeAddress, block.timestamp);
         // Return created minipool address
@@ -489,7 +489,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Record in snapshot manager
         RocketNetworkSnapshots rocketNetworkSnapshots = RocketNetworkSnapshots(getContractAddress("rocketNetworkSnapshots"));
         bytes32 key = keccak256(abi.encodePacked("eth.matched.node.amount", nodeAddress));
-        rocketNetworkSnapshots.push(key, uint32(block.number), uint224(ethMatched));
+        rocketNetworkSnapshots.push(key, uint224(ethMatched));
         // Update minipool data
         setBool(keccak256(abi.encodePacked("minipool.exists", msg.sender)), false);
         // Record minipool as destroyed to prevent recreation at same address
@@ -505,7 +505,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         deleteAddress(keccak256(abi.encodePacked("validator.minipool", pubkey)));
         // Decrement active count
         key = keccak256(abi.encodePacked("minipools.active.count", nodeAddress));
-        rocketNetworkSnapshots.push(key, uint32(block.number), uint224(activeMinipoolCount - 1));
+        rocketNetworkSnapshots.push(key, uint224(activeMinipoolCount - 1));
         // Emit minipool destroyed event
         emit MinipoolDestroyed(msg.sender, nodeAddress, block.timestamp);
     }

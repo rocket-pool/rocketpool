@@ -275,7 +275,7 @@ contract RocketNodeDepositLEB4 is RocketBase, RocketNodeDepositInterface {
         );
         // Push the change to snapshot manager
         bytes32 key = keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress));
-        rocketNetworkSnapshots.push(key, uint32(block.number), uint224(ethMatched));
+        rocketNetworkSnapshots.push(key, uint224(ethMatched));
     }
 
     /// @dev Adds a minipool to the queue

@@ -249,16 +249,16 @@ contract RocketUpgradeOneDotThree is RocketBase {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         bytes32 snapshotKey = keccak256("network.prices.rpl");
-        rocketNetworkSnapshots.push(snapshotKey, uint32(block.number), uint224(rocketNetworkPrices.getRPLPrice()));
+        rocketNetworkSnapshots.push(snapshotKey, uint224(rocketNetworkPrices.getRPLPrice()));
 
         // Add snapshot entry for maximum RPL stake voting power (150%)
         snapshotKey = keccak256(bytes("node.voting.power.stake.maximum"));
-        rocketNetworkSnapshots.push(snapshotKey, uint32(block.number), 1.5 ether);
+        rocketNetworkSnapshots.push(snapshotKey, 1.5 ether);
 
         // Add node count snapshot entry
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         bytes32 nodeIndexKey = keccak256(abi.encodePacked("nodes.index"));
-        rocketNetworkSnapshots.push(keccak256(abi.encodePacked("node.count")), uint32(block.number), uint224(addressSetStorage.getCount(nodeIndexKey)));
+        rocketNetworkSnapshots.push(keccak256(abi.encodePacked("node.count")), uint224(addressSetStorage.getCount(nodeIndexKey)));
 
         // Set a protocol version value in storage for convenience with bindings
         setString(keccak256(abi.encodePacked("protocol.version")), "1.3.0");
