@@ -543,9 +543,10 @@ export async function daoProtocolOverrideVote(_proposalID, _vote, txOptions) {
             rocketDAOProtocolProposal.getVotingPowerVeto.call(_proposalID),
             rocketDAOProtocolProposal.getReceiptDirection.call(_proposalID, txOptions.from),
             rocketDAOProtocolProposal.getReceiptDirection.call(_proposalID, delegate),
+            rocketDAOProtocolProposal.getReceiptHasVotedPhase1.call(_proposalID, delegate),
         ]).then(
-            ([proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired, proposalVotesAgainst, proposalVotesVeto, direction, delegateDirection]) =>
-                ({proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired, proposalVotesAgainst, proposalVotesVeto, direction: direction.toNumber(), delegateDirection: delegateDirection.toNumber()})
+            ([proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired, proposalVotesAgainst, proposalVotesVeto, direction, delegateDirection, delegateVotedPhase1]) =>
+                ({proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired, proposalVotesAgainst, proposalVotesVeto, direction: direction.toNumber(), delegateDirection: delegateDirection.toNumber(), delegateVotedPhase1})
         );
     }
 
@@ -553,7 +554,7 @@ export async function daoProtocolOverrideVote(_proposalID, _vote, txOptions) {
     let ds1 = await getTxData();
 
     // Add a new proposal
-    if (_vote === ds1.delegateDirection) {
+    if (ds1.delegateVotedPhase1 && _vote === ds1.delegateDirection) {
         await shouldRevert(rocketDAOProtocolProposal.overrideVote(_proposalID, _vote, txOptions), 'Vote was accepted', 'Vote direction is the same as delegate');
         return;
     } else {
@@ -570,7 +571,22 @@ export async function daoProtocolOverrideVote(_proposalID, _vote, txOptions) {
     let expectedForDelta, expectedAgainstDelta;
     let expectedVetoDelta = '0'.BN;
 
-    if (ds1.delegateDirection === voteStates.For) {
+    if (!ds1.delegateVotedPhase1) {
+        if (_vote === voteStates.For) {
+            expectedForDelta = votingPower
+            expectedAgainstDelta = '0'.BN
+        } else if (_vote === voteStates.Against) {
+            expectedForDelta = '0'.BN
+            expectedAgainstDelta = votingPower
+        } else if (_vote === voteStates.AgainstWithVeto) {
+            expectedForDelta = '0'.BN
+            expectedAgainstDelta = votingPower
+            expectedVetoDelta = votingPower
+        } else if (_vote === voteStates.Abstain) {
+            expectedForDelta = '0'.BN
+            expectedAgainstDelta = '0'.BN
+        }
+    } else if (ds1.delegateDirection === voteStates.For) {
         expectedForDelta = votingPower.neg();
 
         if (_vote !== voteStates.Abstain) {

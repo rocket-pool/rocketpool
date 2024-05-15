@@ -71,7 +71,7 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
         RocketDAOProtocolVerifierInterface rocketDAOProtocolVerifier = RocketDAOProtocolVerifierInterface(getContractAddress("rocketDAOProtocolVerifier"));
         require(rocketDAOProtocolVerifier.verifyVote(msg.sender, _nodeIndex, _proposalID, _votingPower, _witness), "Invalid proof");
         // Apply vote
-        _vote(msg.sender, _votingPower, _proposalID, _voteDirection);
+        _vote(msg.sender, _votingPower, _proposalID, _voteDirection, true);
     }
 
     /// @notice Applies a vote during phase 2 (can be used to override vote direction of delegate)
@@ -88,15 +88,16 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
         uint32 blockNumber = uint32(getProposalBlock(_proposalID));
         uint256 votingPower = rocketNetworkVoting.getVotingPower(msg.sender, blockNumber);
         address delegate = rocketNetworkVoting.getDelegate(msg.sender, blockNumber);
-        // Get the vote direction of their delegate
-        VoteDirection delegateVote = getReceiptDirection(_proposalID, delegate);
-        require (delegateVote != _voteDirection, "Vote direction is the same as delegate");
-        // Reverse the delegate's vote
-        if (delegateVote != VoteDirection.NoVote) {
+        // Check if delegate voted in phase 1
+        if (getReceiptHasVotedPhase1(_proposalID, delegate)) {
+            // Get the vote direction of their delegate
+            VoteDirection delegateVote = getReceiptDirection(_proposalID, delegate);
+            require (delegateVote != _voteDirection, "Vote direction is the same as delegate");
+            // Reverse the delegate's vote
             _overrideVote(delegate, msg.sender, _proposalID, votingPower, delegateVote);
         }
         // Apply this voter's vote
-        _vote(msg.sender, votingPower, _proposalID, _voteDirection);
+        _vote(msg.sender, votingPower, _proposalID, _voteDirection, false);
     }
 
     /// @notice Finalises a vetoed proposal by burning the proposer's bond
@@ -278,6 +279,13 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
         return getReceiptDirection(_proposalID, _nodeAddress) != VoteDirection.NoVote;
     }
 
+    /// @notice Returns true if this proposal has been voted on in phase 1 by a node
+    /// @param _proposalID The ID of the proposal to query
+    /// @param _nodeAddress The node operator address to query
+    function getReceiptHasVotedPhase1(uint256 _proposalID, address _nodeAddress) override public view returns (bool) {
+        return getBool(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.phase1", _proposalID, _nodeAddress)));
+    }
+
     /// @notice Returns the direction a node voted on a given proposal
     /// @param _proposalID The ID of the proposal to query
     /// @param _nodeAddress The node operator address to query
@@ -429,7 +437,7 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
     }
 
     /// @dev Internal method to apply voting power against a proposal
-    function _vote(address _nodeOperator, uint256 _votes, uint256 _proposalID, VoteDirection _voteDirection) internal {
+    function _vote(address _nodeOperator, uint256 _votes, uint256 _proposalID, VoteDirection _voteDirection, bool _phase1) internal {
         // Has this node already voted on this proposal?
         require(!getReceiptHasVoted(_proposalID, _nodeOperator), "Node operator has already voted on proposal");
         // Add votes to proposal
@@ -446,6 +454,10 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
         // Record the vote receipt now
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.votes", _proposalID, _nodeOperator)), _votes);
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.direction", _proposalID, _nodeOperator)), uint256(_voteDirection));
+        // Record delegate voted in phase 1
+        if (_phase1) {
+            setBool(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.phase1", _proposalID, _nodeOperator)), true);
+        }
         // Log it
         emit ProposalVoted(_proposalID, _nodeOperator, _voteDirection, _votes, block.timestamp);
     }

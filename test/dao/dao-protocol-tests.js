@@ -1027,6 +1027,56 @@ export default function() {
             await daoProtocolOverrideVote(propId, voteStates.For, {from: nodes[0]});
         });
 
+
+        it(printTitle('voter', 'can vote in same direction as delegate if both voting in phase 2'), async () => {
+            // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
+            const nodes = await mockNodeSet();
+            await nodeSetDelegate(nodes[1], {from: nodes[0]});
+            await createNode(1, proposer);
+
+            // Create a valid proposal
+            const { propId, leaves } = await createValidProposal();
+
+            // Wait for proposal wait period to end
+            await increaseTime(hre.web3, voteDelayTime + 1);
+
+            // Skip phase 1 of the voting period
+            await increaseTime(hre.web3, votePhase1Time + 1);
+
+            // Vote for from delegate
+            await daoProtocolOverrideVote(propId, voteStates.For, {from: nodes[1]});
+
+            // Vote for from node
+            await daoProtocolOverrideVote(propId, voteStates.For, {from: nodes[0]});
+        });
+
+
+        it(printTitle('voter', 'can not vote in phase 1 then in phase 2'), async () => {
+            // Setup
+            await setDAOProtocolBootstrapEnableGovernance();
+            const nodes = await mockNodeSet();
+            await nodeSetDelegate(nodes[1], {from: nodes[0]});
+            await createNode(1, proposer);
+
+            // Create a valid proposal
+            const { propId, leaves } = await createValidProposal();
+
+            // Wait for proposal wait period to end
+            await increaseTime(hre.web3, voteDelayTime + 1);
+
+            // Vote as a delegate
+            const nodeIndex = nodeMap[nodes[0]];
+            const voteProof = daoProtocolGenerateVoteProof(leaves, nodeIndex);
+            await daoProtocolVote(propId, voteStates.For, voteProof.sum, nodeIndex, voteProof.witness, {from: nodes[0]});
+
+            // Skip phase 1 of the voting period
+            await increaseTime(hre.web3, votePhase1Time + 1);
+
+            // Try to override own vote
+            await shouldRevert(daoProtocolOverrideVote(propId, voteStates.Against, {from: nodes[0]}), 'Was able to override self', 'Node operator has already voted on proposal');
+        });
+
         /**
          * Failed Proposals
          */

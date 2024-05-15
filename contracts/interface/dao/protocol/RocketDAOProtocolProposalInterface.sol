@@ -48,6 +48,7 @@ interface RocketDAOProtocolProposalInterface {
     function getVetoed(uint256 _proposalID) external view returns (bool);
     function getPayload(uint256 _proposalID) external view returns (bytes memory);
     function getReceiptHasVoted(uint256 _proposalID, address _nodeAddress) external view returns (bool);
+    function getReceiptHasVotedPhase1(uint256 _proposalID, address _nodeAddress) external view returns (bool);
     function getReceiptDirection(uint256 _proposalID, address _nodeAddress) external view returns (VoteDirection);
     function getState(uint256 _proposalID) external view returns (ProposalState);
 
