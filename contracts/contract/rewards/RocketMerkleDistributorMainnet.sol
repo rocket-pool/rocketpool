@@ -116,9 +116,9 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketMerkleDistributorMa
             if (totalAmountETH > 0) {
                 rocketVault.withdrawEther(totalAmountETH);
                 // Allow up to 2300 gas to send ETH to the withdrawal address
-                (bool result,) = withdrawalAddress.call{value: totalAmountETH, gas: 2300}("");
+                (bool result,) = withdrawalAddress.call{value: totalAmountETH, gas: 10000}("");
                 if (!result) {
-                    // If the withdrawal address cannot accept the ETH with 2300 gas, add it to their balance to be claimed later at their own expense
+                    // If the withdrawal address cannot accept the ETH with 10000 gas, add it to their balance to be claimed later at their own expense
                     bytes32 balanceKey = keccak256(abi.encodePacked('rewards.eth.balance', withdrawalAddress));
                     addUint(balanceKey, totalAmountETH);
                     // Return the ETH to the vault
