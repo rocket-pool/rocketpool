@@ -2,7 +2,7 @@ import { printTitle } from '../_utils/formatting';
 import {
     RocketNodeManager,
     RocketDAONodeTrustedSettingsMinipool,
-    RocketNodeDistributorFactory, RocketNodeManagerNew,
+    RocketNodeDistributorFactory,
 } from '../_utils/artifacts';
 import {
     createMinipool,
@@ -63,7 +63,7 @@ export default function() {
             await registerNode({from: node2});
             await nodeStakeRPL(rplStake, {from: node2});
             // Get contracts
-            const rocketNodeManager = await RocketNodeManagerNew.deployed();
+            const rocketNodeManager = await RocketNodeManager.deployed();
             // Attempt to initialise
             await shouldRevert(rocketNodeManager.initialiseFeeDistributor({from: node2}), 'Was able to initialise again', 'Already initialised');
         });
@@ -71,7 +71,7 @@ export default function() {
 
         it(printTitle('node operator', 'can not initialise fee distributor if already initialised'), async () => {
             // Attempt to initialise a second time
-            const rocketNodeManager = await RocketNodeManagerNew.deployed();
+            const rocketNodeManager = await RocketNodeManager.deployed();
             await shouldRevert(rocketNodeManager.initialiseFeeDistributor({from: node1}), 'Was able to initialise again', 'Already initialised');
         });
 

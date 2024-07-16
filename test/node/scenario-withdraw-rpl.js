@@ -6,16 +6,13 @@ import {
     RocketNodeStaking,
     RocketTokenRPL,
     RocketVault,
-    RocketNetworkPricesNew, RocketNodeStakingNew, RocketNodeManager, RocketNodeManagerNew,
+    RocketNodeManager,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
-import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Withdraw RPL staked against the node
 export async function withdrawRpl(amount, txOptions) {
-    const upgraded = await upgradeExecuted();
-
     // Load contracts
     const [
         rocketMinipoolManager,
@@ -29,10 +26,10 @@ export async function withdrawRpl(amount, txOptions) {
     ] = await Promise.all([
         RocketMinipoolManager.deployed(),
         RocketDAOProtocolSettingsMinipool.deployed(),
-        upgraded ? RocketNetworkPricesNew.deployed() : RocketNetworkPrices.deployed(),
+        RocketNetworkPrices.deployed(),
         RocketDAOProtocolSettingsNode.deployed(),
-        upgraded ? RocketNodeManagerNew.deployed() : RocketNodeManager.deployed(),
-        upgraded ? RocketNodeStakingNew.deployed() : RocketNodeStaking.deployed(),
+        RocketNodeManager.deployed(),
+        RocketNodeStaking.deployed(),
         RocketTokenRPL.deployed(),
         RocketVault.deployed(),
     ]);
@@ -49,7 +46,7 @@ export async function withdrawRpl(amount, txOptions) {
         rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake.call(),
         rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake.call(),
         rocketNetworkPrices.getRPLPrice.call(),
-        upgraded ? rocketNodeManager.getNodeRPLWithdrawalAddress(txOptions.from) : txOptions.from,
+        rocketNodeManager.getNodeRPLWithdrawalAddress(txOptions.from),
     ]);
 
     // Get token balances
@@ -96,7 +93,7 @@ export async function withdrawRpl(amount, txOptions) {
     ]);
 
     // Withdraw RPL
-    await (upgraded ? rocketNodeStaking.methods['withdrawRPL(uint256)'](amount, txOptions) : rocketNodeStaking.withdrawRPL(amount, txOptions));
+    await rocketNodeStaking.methods['withdrawRPL(uint256)'](amount, txOptions);
 
     // Get updated token balances, staking details & minipool counts
     let [balances2, details2, minipoolCounts] = await Promise.all([

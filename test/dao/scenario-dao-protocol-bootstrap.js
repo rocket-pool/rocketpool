@@ -4,15 +4,9 @@ import {
     RocketDAOProtocolSettingsRewards,
     RocketDAOProtocolSettingsInflation,
     RocketTokenRPL,
-    RocketVault,
-    RocketDAOProtocolNew,
-    RocketNetworkPricesNew,
-    RocketNetworkPrices,
-    RocketDAOProtocolSettingsRewardsNew,
-    RocketClaimDAO, RocketClaimDAONew,
+    RocketVault, RocketClaimDAO,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
-import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Change a trusted node DAO setting while bootstrap mode is enabled
@@ -24,7 +18,7 @@ export async function setDAOProtocolBootstrapSetting(_settingContractInstance, _
     }
 
     // Load contracts
-    const rocketDAOProtocol = (await upgradeExecuted()) ? await RocketDAOProtocolNew.deployed() : await RocketDAOProtocol.deployed();
+    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
     const rocketDAOProtocolSettingsContract = await _settingContractInstance.deployed();
 
     // Get data about the tx
@@ -42,11 +36,7 @@ export async function setDAOProtocolBootstrapSetting(_settingContractInstance, _
     // Capture data
     let ds1 = await getTxData();
 
-    // Trim "Old" off contract name
     let contractName = _settingContractInstance._json.contractName.lowerCaseFirstLetter();
-    if (contractName.endsWith('Old')) {
-        contractName = contractName.substring(0, contractName.length - 3);
-    }
 
     // Set as a bootstrapped setting. detect type first, can be a number, string or bn object
     if(Web3.utils.isAddress(_value)) {
@@ -75,8 +65,8 @@ export async function setDAOProtocolBootstrapSetting(_settingContractInstance, _
 // Set a contract that can claim rewards
 export async function setDAONetworkBootstrapRewardsClaimers(_trustedNodePerc, _protocolPerc, _nodePerc, txOptions) {
     // Load contracts
-    const rocketDAOProtocol = (await upgradeExecuted()) ? await RocketDAOProtocolNew.deployed() : await RocketDAOProtocol.deployed();
-    const rocketDAOProtocolSettingsRewards = (await upgradeExecuted()) ? await RocketDAOProtocolSettingsRewardsNew.deployed() : await RocketDAOProtocolSettingsRewards.deployed();
+    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+    const rocketDAOProtocolSettingsRewards = await RocketDAOProtocolSettingsRewards.deployed();
     // Get data about the tx
     function getTxData() {
         return Promise.all([
@@ -144,11 +134,9 @@ export async function spendRewardsClaimTreasury(_invoiceID, _recipientAddress, _
 
 // Create a new recurring payment via bootstrap
 export async function bootstrapTreasuryNewContract(_contractName, _recipientAddress, _amount, _periodLength, _startTime, _numPeriods, txOptions) {
-    assert(await upgradeExecuted());
-
     // Load contracts
-    const rocketDAOProtocol = await RocketDAOProtocolNew.deployed();
-    const rocketClaimDAO = await RocketClaimDAONew.deployed();
+    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+    const rocketClaimDAO = await RocketClaimDAO.deployed();
 
     // Perform tx
     await rocketDAOProtocol.bootstrapTreasuryNewContract(_contractName, _recipientAddress, _amount, _periodLength, _startTime, _numPeriods, txOptions);
@@ -165,11 +153,9 @@ export async function bootstrapTreasuryNewContract(_contractName, _recipientAddr
 
 // Update an existing recurring payment via bootstrap
 export async function bootstrapTreasuryUpdateContract(_contractName, _recipientAddress, _amount, _periodLength, _numPeriods, txOptions) {
-    assert(await upgradeExecuted());
-
     // Load contracts
-    const rocketDAOProtocol = await RocketDAOProtocolNew.deployed();
-    const rocketClaimDAO = await RocketClaimDAONew.deployed();
+    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+    const rocketClaimDAO = await RocketClaimDAO.deployed();
 
     // Perform tx
     await rocketDAOProtocol.bootstrapTreasuryUpdateContract(_contractName, _recipientAddress, _amount, _periodLength, _numPeriods, txOptions);
@@ -203,7 +189,7 @@ export async function setRPLInflationStartTime(startTime, txOptions) {
 // Disable bootstrap mode
 export async function setDaoProtocolBootstrapModeDisabled(txOptions) {
     // Load contracts
-    const rocketDAOProtocol = (await upgradeExecuted()) ? await RocketDAOProtocolNew.deployed() : await RocketDAOProtocol.deployed();
+    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
 
     // Get data about the tx
     function getTxData() {
@@ -236,7 +222,7 @@ export async function setDAOProtocolBootstrapSettingMulti(_settingContractInstan
   }
 
   // Load contracts
-  const rocketDAOProtocol = (await upgradeExecuted()) ? await RocketDAOProtocolNew.deployed() : await RocketDAOProtocol.deployed();
+  const rocketDAOProtocol = await RocketDAOProtocol.deployed();
 
 
   const contractNames = [];
@@ -307,7 +293,7 @@ export async function setDAOProtocolBootstrapSettingMulti(_settingContractInstan
 
 export async function setDAOProtocolBootstrapEnableGovernance(txOptions) {
     // Load contracts
-    const rocketDAOProtocol = (await upgradeExecuted()) ? await RocketDAOProtocolNew.deployed() : await RocketDAOProtocol.deployed();
+    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
     // Execute enable transaction
     await rocketDAOProtocol.bootstrapEnableGovernance();
 }
@@ -317,7 +303,7 @@ export async function setDAOProtocolBootstrapEnableGovernance(txOptions) {
 // Use bootstrap power to invite a member to the security council
 export async function setDAOProtocolBootstrapSecurityInvite(_id, _memberAddress, txOptions) {
     // Load contracts
-    const rocketDAOProtocol = (await upgradeExecuted()) ? await RocketDAOProtocolNew.deployed() : await RocketDAOProtocol.deployed();
+    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
     // Execute the invite
     await rocketDAOProtocol.bootstrapSecurityInvite(_id, _memberAddress, txOptions);
 }
@@ -325,7 +311,7 @@ export async function setDAOProtocolBootstrapSecurityInvite(_id, _memberAddress,
 // Use bootstrap power to kick a member from the security council
 export async function setDAOProtocolBootstrapSecurityKick(_id, _memberAddress, txOptions) {
     // Load contracts
-    const rocketDAOProtocol = (await upgradeExecuted()) ? await RocketDAOProtocolNew.deployed() : await RocketDAOProtocol.deployed();
+    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
     // Execute the kick
     await rocketDAOProtocol.bootstrapSecurityKick(_memberAddress, txOptions);
 }

@@ -2,7 +2,7 @@ import {
     RocketNetworkVoting,
     RocketDAOProtocolVerifier,
     RocketDAOProtocolSettingsProposals,
-    RocketNodeStakingNew, RocketNodeManagerNew, RocketDAOProtocolProposal,
+    RocketDAOProtocolProposal, RocketNodeManager, RocketNodeStaking,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 import { voteStates } from './scenario-dao-proposal';
@@ -43,7 +43,7 @@ export async function getDAOProposalVotesRequired(proposalID, txOptions) {
 export async function getDelegatedVotingPower(block) {
     // Load contracts
     const rocketNetworkVoting = await RocketNetworkVoting.deployed();
-    const rocketNodeManager = await RocketNodeManagerNew.deployed();
+    const rocketNodeManager = await RocketNodeManager.deployed();
 
     // Grab the number of nodes at the block
     const nodeCount = (await rocketNetworkVoting.getNodeCount(block)).toNumber();
@@ -88,7 +88,7 @@ export async function getDelegatedVotingPower(block) {
 export async function getPhase2VotingPower(block, nodeIndex) {
     // Load contracts
     const rocketNetworkVoting = await RocketNetworkVoting.deployed();
-    const rocketNodeManager = await RocketNodeManagerNew.deployed();
+    const rocketNodeManager = await RocketNodeManager.deployed();
 
     // Grab the number of nodes at the block
     const nodeCount = (await rocketNetworkVoting.getNodeCount(block)).toNumber();
@@ -667,7 +667,7 @@ export async function daoProtocolExecute(_proposalID, txOptions) {
 export async function daoProtocolFinalise(_proposalID, txOptions) {
     // Load contracts
     const rocketDAOProtocolProposal = await RocketDAOProtocolProposal.deployed();
-    const rocketNodeStaking = await RocketNodeStakingNew.deployed();
+    const rocketNodeStaking = await RocketNodeStaking.deployed();
 
     const proposer = await rocketDAOProtocolProposal.getProposer(_proposalID);
     const proposalBond = await getDaoProtocolProposalBond();
@@ -705,7 +705,7 @@ export async function daoProtocolFinalise(_proposalID, txOptions) {
 
 export async function daoProtocolClaimBondProposer(_proposalID, _indices, txOptions) {
     const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
-    const rocketNodeStaking = await RocketNodeStakingNew.deployed();
+    const rocketNodeStaking = await RocketNodeStaking.deployed();
 
     const lockedBalanceBefore = await rocketNodeStaking.getNodeRPLLocked(txOptions.from);
     const balanceBefore = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
@@ -723,7 +723,7 @@ export async function daoProtocolClaimBondProposer(_proposalID, _indices, txOpti
 
 export async function daoProtocolClaimBondChallenger(_proposalID, _indices, txOptions) {
     const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
-    const rocketNodeStaking = await RocketNodeStakingNew.deployed();
+    const rocketNodeStaking = await RocketNodeStaking.deployed();
 
     const lockedBalanceBefore = await rocketNodeStaking.getNodeRPLLocked(txOptions.from);
     const balanceBefore = await rocketNodeStaking.getNodeRPLStake(txOptions.from);

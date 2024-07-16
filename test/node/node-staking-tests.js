@@ -1,6 +1,6 @@
 import {
     RocketDAONodeTrustedSettingsMinipool, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsRewards,
-    RocketNodeStaking, RocketNodeStakingNew,
+    RocketNodeStaking,
 } from '../_utils/artifacts';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
@@ -47,7 +47,7 @@ export default function() {
             await upgradeOneDotThree();
 
             // Load contracts
-            rocketNodeStaking = await RocketNodeStakingNew.deployed();
+            rocketNodeStaking = await RocketNodeStaking.deployed();
 
             // Set settings
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});

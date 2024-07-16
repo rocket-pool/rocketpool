@@ -1,7 +1,7 @@
 import {
     RocketDAOProtocolSettingsMinipool,
     RocketDAOProtocolSettingsNetwork,
-    RocketDAONodeTrustedSettingsMinipool, RocketNodeStaking, RocketNodeStakingNew,
+    RocketDAONodeTrustedSettingsMinipool, RocketNodeStaking,
 } from '../_utils/artifacts';
 import { increaseTime } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
@@ -57,7 +57,7 @@ export default function() {
             // Upgrade to Houston
             await upgradeOneDotThree();
 
-            rocketNodeStaking = await RocketNodeStakingNew.deployed();
+            rocketNodeStaking = await RocketNodeStaking.deployed();
 
             // Register node & set withdrawal address
             await registerNode({from: node});

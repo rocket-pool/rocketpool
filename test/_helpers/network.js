@@ -1,11 +1,9 @@
 import {
-    RocketNetworkBalances, RocketNetworkBalancesNew,
+    RocketNetworkBalances,
     RocketNetworkFees,
-    RocketNetworkPrices, RocketNetworkPricesNew,
+    RocketNetworkPrices,
     RocketNetworkVoting,
-    RocketNetworkWithdrawal,
 } from '../_utils/artifacts';
-import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Get the network total ETH balance
@@ -34,31 +32,21 @@ export async function getETHUtilizationRate() {
 
 // Submit network balances
 export async function submitBalances(block, slotTimestamp, totalEth, stakingEth, rethSupply, txOptions) {
-    if (await upgradeExecuted()) {
-        const rocketNetworkBalances = await RocketNetworkBalancesNew.deployed();
-        await rocketNetworkBalances.submitBalances(block, slotTimestamp, totalEth, stakingEth, rethSupply, txOptions);
-    } else {
-        const rocketNetworkBalances = await RocketNetworkBalances.deployed();
-        await rocketNetworkBalances.submitBalances(block, totalEth, stakingEth, rethSupply, txOptions);
-    }
+    const rocketNetworkBalances = await RocketNetworkBalances.deployed();
+    await rocketNetworkBalances.submitBalances(block, slotTimestamp, totalEth, stakingEth, rethSupply, txOptions);
 }
 
 
 // Submit network token prices
 export async function submitPrices(block, slotTimestamp, rplPrice, txOptions) {
-    if (await upgradeExecuted()) {
-        const rocketNetworkPrices = await RocketNetworkPricesNew.deployed();
-        await rocketNetworkPrices.submitPrices(block, slotTimestamp, rplPrice, txOptions);
-    } else {
-        const rocketNetworkPrices = await RocketNetworkPrices.deployed();
-        await rocketNetworkPrices.submitPrices(block, rplPrice, txOptions);
-    }
+    const rocketNetworkPrices = await RocketNetworkPrices.deployed();
+    await rocketNetworkPrices.submitPrices(block, slotTimestamp, rplPrice, txOptions);
 }
 
 
 // Get network RPL price
 export async function getRPLPrice() {
-    const rocketNetworkPrices = (await upgradeExecuted()) ? await RocketNetworkPricesNew.deployed() : await RocketNetworkPrices.deployed();
+    const rocketNetworkPrices = await RocketNetworkPrices.deployed();
     let price = await rocketNetworkPrices.getRPLPrice.call();
     return price;
 }

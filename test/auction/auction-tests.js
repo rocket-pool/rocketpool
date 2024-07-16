@@ -34,6 +34,7 @@ export default function() {
             random2,
         ] = accounts;
 
+        const defaultAuctionDuration = 40320;
 
         // Setup
         let scrubPeriod = (60 * 60 * 24); // 24 hours
@@ -107,9 +108,9 @@ export default function() {
 
         it(printTitle('auction lot', 'has correct price at block'), async () => {
             // Set lot settings
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 100, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 100000, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.price.start', '1'.ether, {from: owner});
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.price.reserve', '0'.ether, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.price.reserve', '0.5'.ether, {from: owner});
 
             // Set RPL price
             let block = await web3.eth.getBlockNumber();
@@ -125,15 +126,15 @@ export default function() {
 
             // Set expected prices at blocks
             const values = [
-                {block: startBlock +   0, expectedPrice: '1.0000'.ether},
-                {block: startBlock +  12, expectedPrice: '0.9856'.ether},
-                {block: startBlock +  25, expectedPrice: '0.9375'.ether},
-                {block: startBlock +  37, expectedPrice: '0.8631'.ether},
-                {block: startBlock +  50, expectedPrice: '0.7500'.ether},
-                {block: startBlock +  63, expectedPrice: '0.6031'.ether},
-                {block: startBlock +  75, expectedPrice: '0.4375'.ether},
-                {block: startBlock +  88, expectedPrice: '0.2256'.ether},
-                {block: startBlock + 100, expectedPrice: '0.0000'.ether},
+                {block: startBlock +      0, expectedPrice: '1.00000'.ether},
+                {block: startBlock +  12000, expectedPrice: '0.99280'.ether},
+                {block: startBlock +  25000, expectedPrice: '0.96875'.ether},
+                {block: startBlock +  37000, expectedPrice: '0.93155'.ether},
+                {block: startBlock +  50000, expectedPrice: '0.87500'.ether},
+                {block: startBlock +  63000, expectedPrice: '0.80155'.ether},
+                {block: startBlock +  75000, expectedPrice: '0.71875'.ether},
+                {block: startBlock +  88000, expectedPrice: '0.61280'.ether},
+                {block: startBlock + 100000, expectedPrice: '0.50000'.ether},
             ];
 
             // Check fees
@@ -241,12 +242,12 @@ export default function() {
 
         it(printTitle('random address', 'cannot bid on a lot after the lot bidding period has concluded'), async () => {
 
-            // Set lot duration
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 0, {from: owner});
-
             // Create lot
             await withdrawValidatorBalance(minipool, '0'.ether, node, true);
             await auctionCreateLot({from: random1});
+
+            // Wait for duration to end
+            await mineBlocks(web3, defaultAuctionDuration);
 
             // Attempt to place bid
             await shouldRevert(placeBid(0, {
@@ -360,10 +361,12 @@ export default function() {
         it(printTitle('random address', 'can recover unclaimed RPL from a lot'), async () => {
 
             // Create closed lots
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 0, {from: owner});
             await withdrawValidatorBalance(minipool, '0'.ether, node, true);
             await auctionCreateLot({from: random1});
             await auctionCreateLot({from: random1});
+
+            // Wait for duration to end
+            await mineBlocks(web3, defaultAuctionDuration);
 
             // Recover RPL from first lot
             await recoverUnclaimedRPL(0, {
@@ -381,9 +384,11 @@ export default function() {
         it(printTitle('random address', 'cannot recover unclaimed RPL from a lot which doesn\'t exist'), async () => {
 
             // Create closed lot
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 0, {from: owner});
             await withdrawValidatorBalance(minipool, '0'.ether, node, true);
             await auctionCreateLot({from: random1});
+
+            // Wait for duration to end
+            await mineBlocks(web3, defaultAuctionDuration);
 
             // Attempt to recover RPL
             await shouldRevert(recoverUnclaimedRPL(1, {
@@ -410,9 +415,11 @@ export default function() {
         it(printTitle('random address', 'cannot recover unclaimed RPL from a lot twice'), async () => {
 
             // Create closed lot
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 0, {from: owner});
             await withdrawValidatorBalance(minipool, '0'.ether, node, true);
             await auctionCreateLot({from: random1});
+
+            // Wait for duration to end
+            await mineBlocks(web3, defaultAuctionDuration);
 
             // Recover RPL
             await recoverUnclaimedRPL(0, {from: random1});
@@ -427,16 +434,13 @@ export default function() {
 
         it(printTitle('random address', 'cannot recover unclaimed RPL from a lot which has no RPL to recover'), async () => {
 
-            // Set lot duration
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 10, {from: owner});
-
             // Create lot & place bid to clear
             await withdrawValidatorBalance(minipool, '0'.ether, node, true);
             await auctionCreateLot({from: random1});
             await auctionPlaceBid(0, {from: random1, value: '1000'.ether});
 
-            // Move to lot bidding period end
-            await mineBlocks(web3, 10);
+            // Wait for duration to end
+            await mineBlocks(web3, defaultAuctionDuration);
 
             // Attempt to recover RPL again
             await shouldRevert(recoverUnclaimedRPL(0, {

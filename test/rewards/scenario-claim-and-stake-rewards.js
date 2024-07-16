@@ -1,18 +1,15 @@
 import {
     RocketMerkleDistributorMainnet,
-    RocketNodeManager, RocketNodeStaking, RocketNodeStakingNew,
+    RocketNodeManager, RocketNodeStaking,
     RocketRewardsPool,
     RocketStorage, RocketTokenRPL,
 } from '../_utils/artifacts';
 import { parseRewardsMap } from '../_utils/merkle-tree';
 import { assertBN } from '../_helpers/bn';
-import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Submit network prices
 export async function claimAndStakeRewards(nodeAddress, indices, rewards, stakeAmount, txOptions) {
-
-    const upgraded = await upgradeExecuted();
 
     // Load contracts
     const [
@@ -25,7 +22,7 @@ export async function claimAndStakeRewards(nodeAddress, indices, rewards, stakeA
     ] = await Promise.all([
         RocketRewardsPool.deployed(),
         RocketNodeManager.deployed(),
-        upgraded ? RocketNodeStakingNew.deployed() : RocketNodeStaking.deployed(),
+        RocketNodeStaking.deployed(),
         RocketMerkleDistributorMainnet.deployed(),
         RocketStorage.deployed(),
         RocketTokenRPL.deployed(),

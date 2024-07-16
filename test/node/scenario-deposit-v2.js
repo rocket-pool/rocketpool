@@ -1,12 +1,11 @@
 import {
     RocketMinipoolDelegate, RocketMinipoolFactory,
     RocketMinipoolManager,
-    RocketNodeDeposit, RocketNodeDepositNew,
+    RocketNodeDeposit,
     RocketStorage,
 } from '../_utils/artifacts';
 import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '../_utils/beacon';
 import { assertBN } from '../_helpers/bn';
-import { upgradeExecuted } from '../_utils/upgrade';
 
 let minipoolSalt = 0;
 
@@ -22,7 +21,7 @@ export async function depositV2(minimumNodeFee, bondAmount, txOptions) {
     ] = await Promise.all([
         RocketMinipoolManager.deployed(),
         RocketMinipoolFactory.deployed(),
-        (await upgradeExecuted()) ? RocketNodeDepositNew.deployed() : RocketNodeDeposit.deployed(),
+        RocketNodeDeposit.deployed(),
         RocketStorage.deployed()
     ]);
 

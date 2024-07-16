@@ -9,6 +9,29 @@ contract RocketDAOProtocolSettingsSecurity is RocketDAOProtocolSettings, RocketD
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "security") {
         version = 1;
+        // Initialize settings on deployment
+        if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
+            // Init settings
+            setSettingUint("members.quorum", 0.5 ether);        // Member quorum threshold that must be met for proposals to pass (51%)
+            setSettingUint("members.leave.time", 4 weeks);      // How long a member must give notice for before manually leaving the security council
+            setSettingUint("proposal.vote.time", 2 weeks);      // How long a proposal can be voted on
+            setSettingUint("proposal.execute.time", 4 weeks);   // How long a proposal can be executed after its voting period is finished
+            setSettingUint("proposal.action.time", 4 weeks);    // Certain proposals require a secondary action to be run after the proposal is successful (joining, leaving etc). This is how long until that action expires
+
+            // Default permissions for security council
+            setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "deposit", "deposit.enabled")), true);
+            setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "deposit", "deposit.assign.enabled")), true);
+            setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "minipool", "minipool.submit.withdrawable.enabled")), true);
+            setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "minipool", "minipool.bond.reduction.enabled")), true);
+            setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "network", "network.submit.balances.enabled")), true);
+            setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "network", "network.submit.prices.enabled")), true);
+            setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "node", "node.registration.enabled")), true);
+            setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "node", "node.smoothing.pool.registration.enabled")), true);
+            setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "node", "node.deposit.enabled")), true);
+            setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "node", "node.vacant.minipools.enabled")), true);
+
+            setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
+        }
     }
 
     /// @dev Overrides inherited setting method with extra sanity checks for this contract

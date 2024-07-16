@@ -14,6 +14,12 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Set contract version
         version = 1;
+
+        // Setup for if this contract is being deployed as part of a new instance deployment
+        if (!rocketStorage.getDeployedStatus()) {
+            _insert(keccak256("network.prices.rpl"), 0.01 ether);
+            _insert(keccak256("node.voting.power.stake.maximum"), 1.5 ether);
+        }
     }
 
     function push(bytes32 _key, uint224 _value) onlyLatestContract("rocketNetworkSnapshots", address(this)) onlyLatestNetworkContract external {

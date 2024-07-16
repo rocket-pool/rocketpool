@@ -1,18 +1,14 @@
 import Web3 from 'web3';
 import {
-    RocketClaimDAONew,
-    RocketDAOProtocol,
-    RocketDAOProtocolNew, RocketTokenRPL,
+    RocketClaimDAO,
+    RocketTokenRPL,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
-import { upgradeExecuted } from '../_utils/upgrade';
 import { getCurrentTime } from '../_utils/evm';
 
 export async function payOutContracts(_contractNames, txOptions) {
-    assert(await upgradeExecuted());
-
     // Load contracts
-    const rocketClaimDAO = await RocketClaimDAONew.deployed();
+    const rocketClaimDAO = await RocketClaimDAO.deployed();
 
     // Calculate expected payouts
     let contracts = [];
@@ -66,10 +62,8 @@ export async function payOutContracts(_contractNames, txOptions) {
 }
 
 export async function withdrawBalance(recipient, txOptions) {
-    assert(await upgradeExecuted());
-
     // Load contracts
-    const rocketClaimDAO = await RocketClaimDAONew.deployed();
+    const rocketClaimDAO = await RocketClaimDAO.deployed();
     const rocketTokenRPL = await RocketTokenRPL.deployed();
 
     // Get balance before withdrawal

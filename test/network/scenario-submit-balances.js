@@ -1,17 +1,13 @@
 import {
     RocketDAONodeTrusted,
     RocketNetworkBalances,
-    RocketNetworkBalancesNew,
     RocketStorage,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
-import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Submit network balances
 export async function submitBalances(block, slotTimestamp, totalEth, stakingEth, rethSupply, txOptions) {
-    const upgraded = await upgradeExecuted();
-
     // Load contracts
     const [
         rocketDAONodeTrusted,
@@ -19,7 +15,7 @@ export async function submitBalances(block, slotTimestamp, totalEth, stakingEth,
         rocketStorage,
     ] = await Promise.all([
         RocketDAONodeTrusted.deployed(),
-        upgraded ? RocketNetworkBalancesNew.deployed() : RocketNetworkBalances.deployed(),
+        RocketNetworkBalances.deployed(),
         RocketStorage.deployed(),
     ]);
 
@@ -91,7 +87,7 @@ export async function submitBalances(block, slotTimestamp, totalEth, stakingEth,
 // Execute update network balances
 export async function executeUpdateBalances(block, slotTimestamp, totalEth, stakingEth, rethSupply, txOptions) {
     // Load contracts
-    const rocketNetworkBalances = (await upgradeExecuted()) ? await RocketNetworkBalancesNew.deployed() : await RocketNetworkBalances.deployed();
+    const rocketNetworkBalances = await RocketNetworkBalances.deployed();
 
     // Get balances
     function getBalances() {

@@ -7,11 +7,10 @@ import {
     RocketNodeDeposit,
     RocketDAOProtocolSettingsNode,
     RocketStorage,
-    RocketNodeStaking, RocketNodeDepositNew, RocketNodeStakingNew, RocketNetworkPricesNew, RocketMinipoolManagerNew,
+    RocketNodeStaking,
 } from '../_utils/artifacts';
 import { getValidatorPubkey, getValidatorSignature, getDepositDataRoot } from '../_utils/beacon';
 import { assertBN } from './bn';
-import { upgradeExecuted } from '../_utils/upgrade';
 
 // Possible states that a proposal may be in
 export const minipoolStates = {
@@ -73,14 +72,13 @@ export async function getMinipoolMinimumRPLStake() {
 export async function getMinipoolMaximumRPLStake() {
 
     // Load contracts
-    const upgraded = await upgradeExecuted();
     const [
         rocketDAOProtocolSettingsMinipool,
         rocketNetworkPrices,
         rocketDAOProtocolSettingsNode,
     ] = await Promise.all([
         RocketDAOProtocolSettingsMinipool.deployed(),
-        (upgraded) ? RocketNetworkPricesNew.deployed() : await RocketNetworkPrices.deployed(),
+        RocketNetworkPrices.deployed(),
         RocketDAOProtocolSettingsNode.deployed(),
     ]);
 
@@ -105,15 +103,14 @@ export async function createMinipool(txOptions, salt = null) {
 
 export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt = null) {
     // Load contracts
-    const upgraded = await upgradeExecuted();
     const [
         rocketMinipoolFactory,
         rocketNodeDeposit,
         rocketNodeStaking,
     ] = await Promise.all([
         RocketMinipoolFactory.deployed(),
-        (upgraded) ? RocketNodeDepositNew.deployed() : await RocketNodeDeposit.deployed(),
-        (upgraded) ? RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed(),
+        RocketNodeDeposit.deployed(),
+        RocketNodeStaking.deployed(),
     ]);
 
     // Get minipool contract bytecode
@@ -158,7 +155,6 @@ export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt =
 // Create a vacant minipool
 export async function createVacantMinipool(bondAmount, txOptions, salt = null, currentBalance = '32'.ether, pubkey = null) {
     // Load contracts
-    const upgraded = await upgradeExecuted();
     const [
         rocketMinipoolFactory,
         rocketNodeDeposit,
@@ -166,8 +162,8 @@ export async function createVacantMinipool(bondAmount, txOptions, salt = null, c
         rocketStorage,
     ] = await Promise.all([
         RocketMinipoolFactory.deployed(),
-        (upgraded) ? RocketNodeDepositNew.deployed() : await RocketNodeDeposit.deployed(),
-        (upgraded) ? RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed(),
+        RocketNodeDeposit.deployed(),
+        RocketNodeStaking.deployed(),
         RocketStorage.deployed()
     ]);
 
@@ -202,7 +198,7 @@ export async function refundMinipoolNodeETH(minipool, txOptions) {
 export async function stakeMinipool(minipool, txOptions) {
 
     // Get contracts
-    const rocketMinipoolManager = (await upgradeExecuted()) ? await RocketMinipoolManagerNew.deployed() : await RocketMinipoolManager.deployed();
+    const rocketMinipoolManager = await RocketMinipoolManager.deployed();
 
     // Get minipool validator pubkey
     const validatorPubkey = await rocketMinipoolManager.getMinipoolPubkey(minipool.address);
@@ -242,13 +238,11 @@ export async function stakeMinipool(minipool, txOptions) {
 // Promote a minipool to staking
 export async function promoteMinipool(minipool, txOptions) {
     await minipool.promote(txOptions);
-    if (await upgradeExecuted()) {
-        // Expect pubkey -> minipool mapping still exists
-        const rocketMinipoolManager = await RocketMinipoolManager.deployed();
-        const actualPubKey = await rocketMinipoolManager.getMinipoolPubkey(minipool.address);
-        const reverseAddress = await rocketMinipoolManager.getMinipoolByPubkey(actualPubKey);
-        assert.equal(reverseAddress, minipool.address);
-    }
+    // Expect pubkey -> minipool mapping still exists
+    const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+    const actualPubKey = await rocketMinipoolManager.getMinipoolPubkey(minipool.address);
+    const reverseAddress = await rocketMinipoolManager.getMinipoolByPubkey(actualPubKey);
+    assert.equal(reverseAddress, minipool.address);
 }
 
 

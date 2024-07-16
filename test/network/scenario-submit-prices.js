@@ -1,11 +1,9 @@
-import { RocketDAONodeTrusted, RocketNetworkPrices, RocketNetworkPricesNew, RocketStorage } from '../_utils/artifacts';
+import { RocketDAONodeTrusted, RocketNetworkPrices, RocketStorage } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
-import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Submit network prices
 export async function submitPrices(block, slotTimestamp, rplPrice, txOptions) {
-    const upgraded = await upgradeExecuted();
     // Load contracts
     const [
         rocketDAONodeTrusted,
@@ -13,7 +11,7 @@ export async function submitPrices(block, slotTimestamp, rplPrice, txOptions) {
         rocketStorage,
     ] = await Promise.all([
         RocketDAONodeTrusted.deployed(),
-        upgraded ? RocketNetworkPricesNew.deployed() : RocketNetworkPrices.deployed(),
+        RocketNetworkPrices.deployed(),
         RocketStorage.deployed(),
     ]);
 
@@ -80,7 +78,7 @@ export async function submitPrices(block, slotTimestamp, rplPrice, txOptions) {
 // Execute price update
 export async function executeUpdatePrices(block, slotTimestamp, rplPrice, txOptions) {
     // Load contracts
-    const rocketNetworkPrices = (await upgradeExecuted()) ? await RocketNetworkPricesNew.deployed() : await RocketNetworkPrices.deployed();
+    const rocketNetworkPrices = await RocketNetworkPrices.deployed();
 
     // Get prices
     function getPrices() {

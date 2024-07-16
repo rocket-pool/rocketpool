@@ -47,8 +47,8 @@ export default function() {
         let userDistributeLength = (60 * 60);
 
         before(async () => {
-            // Hard code fee to 50%
-            const fee = '0.5'.ether;
+            // Hard code fee to 10%
+            const fee = '0.1'.ether;
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.minimum', fee, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.target', fee, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.maximum', fee, {from: owner});
@@ -157,13 +157,13 @@ export default function() {
 
         it(printTitle('node operator withdrawal address', 'can process withdrawal when balance is greater than 32 ETH and not marked as withdrawable'), async () => {
             // Process withdraw
-            await withdrawAndCheck(minipool, '36', nodeWithdrawalAddress, false, '17', '19');
+            await withdrawAndCheck(minipool, '36', nodeWithdrawalAddress, false, '17.8', '18.2');
         });
 
 
         it(printTitle('random user', 'can process withdrawal when balance is greater than 32 ETH and not marked as withdrawable'), async () => {
             // Process withdraw
-            await withdrawAndCheck(minipool, '36', random, false, '17', '19', true);
+            await withdrawAndCheck(minipool, '36', random, false, '17.8', '18.2', true);
         });
 
 
@@ -262,8 +262,8 @@ export default function() {
         it(printTitle('node operator withdrawal address', 'can process withdrawal and finalise pool when penalised by DAO'), async () => {
             // Penalise the minipool 50% of it's ETH
             await penaltyTestContract.setPenaltyRate(minipool.address, maxPenaltyRate);
-            // Process withdraw - 36 ETH would normally give node operator 19 and user 17 but with a 50% penalty, and extra 9.5 goes to the user
-            await withdrawAndCheck(minipool, '36', nodeWithdrawalAddress, true, '26.5', '9.5');
+            // Process withdraw - 36 ETH would normally give node operator 18.2 and user 17.8 but with a 50% penalty, and extra 9.1 goes to the user
+            await withdrawAndCheck(minipool, '36', nodeWithdrawalAddress, true, '26.9', '9.1');
         });
 
 
@@ -271,7 +271,7 @@ export default function() {
             // Try to penalise the minipool 75% of it's ETH (max is 50%)
             await penaltyTestContract.setPenaltyRate(minipool.address, web3.utils.toWei('0.75'));
             // Process withdraw - 36 ETH would normally give node operator 19 and user 17 but with a 50% penalty, and extra 9.5 goes to the user
-            await withdrawAndCheck(minipool, '36', nodeWithdrawalAddress, true, '26.5', '9.5');
+            await withdrawAndCheck(minipool, '36', nodeWithdrawalAddress, true, '26.9', '9.1');
         });
 
 
@@ -282,7 +282,7 @@ export default function() {
             // Try to penalise the minipool 50%
             await penaltyTestContract.setPenaltyRate(minipool.address, web3.utils.toWei('0.5'));
             // Process withdraw
-            await withdrawAndCheck(minipool, '36', nodeWithdrawalAddress, true, '17', '19');
+            await withdrawAndCheck(minipool, '36', nodeWithdrawalAddress, true, '17.8', '18.2');
         });
     })
 }

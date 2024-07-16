@@ -16,9 +16,9 @@ export default function() {
 
 
         // Setup
-        let minNodeFee = '0.00'.ether;
-        let targetNodeFee = '0.50'.ether;
-        let maxNodeFee = '1.00'.ether;
+        let minNodeFee = '0.10'.ether;
+        let targetNodeFee = '0.15'.ether;
+        let maxNodeFee = '0.20'.ether;
         let demandRange = '1'.ether;
 
         before(async () => {
@@ -36,17 +36,17 @@ export default function() {
         it(printTitle('network node fee', 'has correct value based on node demand'), async () => {
             // Set expected fees for node demand values
             let values = [
-                {demand: '-1.25'.ether, expectedFee: '0'.ether},
-                {demand: '-1.00'.ether, expectedFee: '0'.ether},
-                {demand: '-0.75'.ether, expectedFee: '0.2890625'.ether},
-                {demand: '-0.50'.ether, expectedFee: '0.4375'.ether},
-                {demand: '-0.25'.ether, expectedFee: '0.4921875'.ether},
-                {demand:  '0.00'.ether, expectedFee: '0.5'.ether},
-                {demand:  '0.25'.ether, expectedFee: '0.5078125'.ether},
-                {demand:  '0.50'.ether, expectedFee: '0.5625'.ether},
-                {demand:  '0.75'.ether, expectedFee: '0.7109375'.ether},
-                {demand:  '1.00'.ether, expectedFee: '1'.ether},
-                {demand:  '1.25'.ether, expectedFee: '1'.ether},
+                {demand: '-1.25'.ether, expectedFee: '0.1'.ether},
+                {demand: '-1.00'.ether, expectedFee: '0.1'.ether},
+                {demand: '-0.75'.ether, expectedFee: '0.12890625'.ether},
+                {demand: '-0.50'.ether, expectedFee: '0.14375'.ether},
+                {demand: '-0.25'.ether, expectedFee: '0.14921875'.ether},
+                {demand:  '0.00'.ether, expectedFee: '0.15'.ether},
+                {demand:  '0.25'.ether, expectedFee: '0.15078125'.ether},
+                {demand:  '0.50'.ether, expectedFee: '0.15625'.ether},
+                {demand:  '0.75'.ether, expectedFee: '0.17109375'.ether},
+                {demand:  '1.00'.ether, expectedFee: '0.2'.ether},
+                {demand:  '1.25'.ether, expectedFee: '0.2'.ether},
             ];
 
             // Check fees
