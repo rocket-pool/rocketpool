@@ -8,7 +8,7 @@ import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsPro
 contract RocketDAOProtocolSettingsProposals is RocketDAOProtocolSettings, RocketDAOProtocolSettingsProposalsInterface {
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "proposals") {
-        version = 1;
+        version = 2;
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Init settings
@@ -53,11 +53,11 @@ contract RocketDAOProtocolSettingsProposals is RocketDAOProtocolSettings, Rocket
             // Must be at least 30 minutes (RPIP-33)
             require(_value >= 30 minutes, "Value must be at least 30 minutes");
         } else if(settingKey == keccak256(bytes("proposal.quorum"))) {
-            // Must be >= 51% & < 75% (RPIP-33)
-            require(_value >= 0.51 ether && _value < 0.75 ether, "Value must be >= 51% & < 75%");
+            // Must be >= 15% & < 75%
+            require(_value >= 0.15 ether && _value < 0.75 ether, "Value must be >= 51% & < 75%");
         } else if(settingKey == keccak256(bytes("proposal.veto.quorum"))) {
-            // Must be >= 51% & < 75% (RPIP-33)
-            require(_value >= 0.51 ether && _value < 0.75 ether, "Value must be >= 51% & < 75%");
+            // Must be >= 15% & < 75%
+            require(_value >= 0.15 ether && _value < 0.75 ether, "Value must be >= 51% & < 75%");
         } else if(settingKey == keccak256(bytes("proposal.max.block.age"))) {
             // Must be > 128 blocks & < 7200 blocks (RPIP-33)
             require(_value > 128 && _value < 7200, "Value must be > 128 blocks & < 7200 blocks");

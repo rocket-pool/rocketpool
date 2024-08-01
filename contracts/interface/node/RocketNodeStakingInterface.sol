@@ -22,6 +22,7 @@ interface RocketNodeStakingInterface {
     function lockRPL(address _nodeAddress, uint256 _amount) external;
     function unlockRPL(address _nodeAddress, uint256 _amount) external;
     function transferRPL(address _from, address _to, uint256 _amount) external;
+    function burnRPL(address _from, uint256 _amount) external;
     function withdrawRPL(uint256 _amount) external;
     function withdrawRPL(address _nodeAddress, uint256 _amount) external;
     function slashRPL(address _nodeAddress, uint256 _ethSlashAmount) external;

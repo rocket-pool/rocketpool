@@ -2,7 +2,7 @@ import {
     RocketNetworkVoting,
     RocketDAOProtocolVerifier,
     RocketDAOProtocolSettingsProposals,
-    RocketDAOProtocolProposal, RocketNodeManager, RocketNodeStaking,
+    RocketDAOProtocolProposal, RocketNodeManager, RocketNodeStaking, RocketTokenRPL,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 import { voteStates } from './scenario-dao-proposal';
@@ -706,35 +706,43 @@ export async function daoProtocolFinalise(_proposalID, txOptions) {
 export async function daoProtocolClaimBondProposer(_proposalID, _indices, txOptions) {
     const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
     const rocketNodeStaking = await RocketNodeStaking.deployed();
+    const rocketTokenRPL = await RocketTokenRPL.deployed();
 
     const lockedBalanceBefore = await rocketNodeStaking.getNodeRPLLocked(txOptions.from);
     const balanceBefore = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
+    const supplyBefore = await rocketTokenRPL.totalSupply();
 
     await rocketDAOProtocolVerifier.claimBondProposer(_proposalID, _indices, txOptions);
 
     const lockedBalanceAfter = await rocketNodeStaking.getNodeRPLLocked(txOptions.from);
     const balanceAfter = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
+    const supplyAfter = await rocketTokenRPL.totalSupply();
 
     return {
         staked: balanceAfter.sub(balanceBefore),
         locked: lockedBalanceAfter.sub(lockedBalanceBefore),
+        burned: supplyBefore.sub(supplyAfter),
     }
 }
 
 export async function daoProtocolClaimBondChallenger(_proposalID, _indices, txOptions) {
     const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
     const rocketNodeStaking = await RocketNodeStaking.deployed();
+    const rocketTokenRPL = await RocketTokenRPL.deployed();
 
     const lockedBalanceBefore = await rocketNodeStaking.getNodeRPLLocked(txOptions.from);
     const balanceBefore = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
+    const supplyBefore = await rocketTokenRPL.totalSupply();
 
     await rocketDAOProtocolVerifier.claimBondChallenger(_proposalID, _indices, txOptions);
 
     const lockedBalanceAfter = await rocketNodeStaking.getNodeRPLLocked(txOptions.from);
     const balanceAfter = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
+    const supplyAfter = await rocketTokenRPL.totalSupply();
 
     return {
         staked: balanceAfter.sub(balanceBefore),
         locked: lockedBalanceAfter.sub(lockedBalanceBefore),
+        burned: supplyBefore.sub(supplyAfter),
     }
 }

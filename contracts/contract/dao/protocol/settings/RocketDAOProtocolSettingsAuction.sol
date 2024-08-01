@@ -8,8 +8,8 @@ import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsAuc
 contract RocketDAOProtocolSettingsAuction is RocketDAOProtocolSettings, RocketDAOProtocolSettingsAuctionInterface {
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "auction") {
-        version = 2;
-        // Initialize settings on deployment
+        version = 3;
+        // Initialise settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
             setSettingBool("auction.lot.create.enabled", true);      
@@ -36,8 +36,8 @@ contract RocketDAOProtocolSettingsAuction is RocketDAOProtocolSettings, RocketDA
                 // >= 1 RPL (RPIP-33)
                 require(_value >= 1 ether, "Value must be >= 1 RPL");
             } else if(settingKey == keccak256(abi.encodePacked("auction.lot.duration"))) {
-                // >= 1 day (RPIP-33)
-                require(_value >= 1 days, "Value must be >= 1 day");
+                // >= 1 day (RPIP-33) (approximated by blocks)
+                require(_value >= 7200, "Value must be >= 7200");
             } else if(settingKey == keccak256(abi.encodePacked("auction.price.start"))) {
                 // >= 10% (RPIP-33)
                 require(_value >= 0.1 ether, "Value must be >= 10%");

@@ -111,6 +111,18 @@ export default function() {
         });
 
         //
+        // Utilities
+        //
+
+        function burnAmount(bond) {
+            return bond.mul('0.2'.ether).div('1'.ether)
+        }
+
+        function bondAfterBurn(bond) {
+            return bond.sub(burnAmount(bond));
+        }
+
+        //
         // Start Tests
         //
 
@@ -525,6 +537,7 @@ export default function() {
             const deltas = await daoProtocolClaimBondProposer(propId, [1], { from: proposer });
             assertBN.equal(deltas.locked, proposalBond.neg());
             assertBN.equal(deltas.staked, '0'.BN);
+            assertBN.equal(deltas.burned, '0'.BN);
         });
 
         it(printTitle('proposer', 'can successfully claim invalid challenge'), async () => {
@@ -551,12 +564,6 @@ export default function() {
                 // Response
                 let pollard = await daoProtocolGeneratePollard(leaves, depthPerRound, index);
                 await daoProtocolSubmitRoot(propId, index, pollard, { from: proposer });
-
-                // // Challenge
-                // await daoProtocolCreateChallenge(propId, index, { from: challenger });
-                // // Response
-                // let response = await daoProtocolGeneratePollard(leaves, depthPerRound, index);
-                // await daoProtocolSubmitRoot(propId, index, response.proof, response.nodes, { from: proposer });
             }
 
             // Wait for proposal wait period to end
@@ -568,7 +575,8 @@ export default function() {
             // Claim bond and rewards
             const deltas = await daoProtocolClaimBondProposer(propId, [1, ...indices], { from: proposer });
             assertBN.equal(deltas.locked, proposalBond.neg());
-            assertBN.equal(deltas.staked, challengeBond.mul(indices.length.toString().BN));
+            assertBN.equal(deltas.staked, bondAfterBurn(challengeBond).mul(indices.length.toString().BN));
+            assertBN.equal(deltas.burned, burnAmount(challengeBond).mul(indices.length.toString().BN));
         });
 
         it(printTitle('proposer', 'can not withdraw excess RPL if it is locked'), async () => {
@@ -1612,11 +1620,13 @@ export default function() {
             const deltas1 = await daoProtocolClaimBondChallenger(propId, [indices[0]], { from: challenger1 });
             const deltas2 = await daoProtocolClaimBondChallenger(propId, [indices[1]], { from: challenger2 });
 
-            // Each should receive 1/2 of the proposal bond as a reward and their challenge bond back
-            assertBN.equal(deltas1.staked, proposalBond.div('2'.BN));
-            assertBN.equal(deltas2.staked, proposalBond.div('2'.BN));
+            // Each should receive 1/2 of the proposal bond as a reward and their challenge bond back (with 20% being burned)
+            assertBN.equal(deltas1.staked, bondAfterBurn(proposalBond.div('2'.BN)));
+            assertBN.equal(deltas2.staked, bondAfterBurn(proposalBond.div('2'.BN)));
             assertBN.equal(deltas1.locked, challengeBond.neg());
             assertBN.equal(deltas2.locked, challengeBond.neg());
+            assertBN.equal(deltas1.burned, burnAmount(proposalBond.div('2'.BN)));
+            assertBN.equal(deltas2.burned, burnAmount(proposalBond.div('2'.BN)));
         });
 
         it(printTitle('challenger', 'can recover bond if index was not used'), async () => {
@@ -1657,9 +1667,11 @@ export default function() {
             const deltas2 = await daoProtocolClaimBondChallenger(propId, [index + 1], { from: challenger2 });
 
             assertBN.equal(deltas1.locked, challengeBond.neg());
-            assertBN.equal(deltas1.staked, proposalBond);
+            assertBN.equal(deltas1.staked, bondAfterBurn(proposalBond));
+            assertBN.equal(deltas1.burned, burnAmount(proposalBond));
             assertBN.equal(deltas2.locked, challengeBond.neg());
             assertBN.equal(deltas2.staked, '0'.BN);
+            assertBN.equal(deltas2.burned, '0'.BN);
         });
 
         it(printTitle('challenger', 'can recover bond if proposal was successful'), async () => {
@@ -1696,6 +1708,7 @@ export default function() {
 
             assertBN.equal(deltas.locked, challengeBond.neg());
             assertBN.equal(deltas.staked, '0'.BN);
+            assertBN.equal(deltas.burned, '0'.BN);
         });
 
         it(printTitle('challenger', 'can not create challenge with proof from a deeper index'), async () => {

@@ -8,7 +8,11 @@ import {
     RocketDAONodeTrustedSettingsMinipool,
     RocketMinipoolBase,
     RocketMinipoolBondReducer,
-    RocketDAOProtocolSettingsRewards, RocketNodeManager, RocketMinipoolDelegate, RocketNodeDistributorFactory,
+    RocketDAOProtocolSettingsRewards,
+    RocketNodeManager,
+    RocketMinipoolDelegate,
+    RocketNodeDistributorFactory,
+    RocketDAOProtocolSettingsNode,
 } from '../_utils/artifacts';
 import { increaseTime } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
@@ -932,6 +936,18 @@ export default function() {
             await increaseTime(web3, bondReductionWindowStart + 1);
         });
 
+        //
+        // Zero min stake
+        //
+
+        it(printTitle('node operator', 'can create minipools when minimum stake is set to zero'), async () => {
+            // Set min stake to 0
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.per.minipool.stake.minimum', 0, {from: owner});
+            // Create multiple minipools from a new node with 0 RPL staked
+            for (let i = 0; i < 5; i++) {
+                await createMinipool({from: emptyNode, value: '8'.ether});
+            }
+        });
 
         //
         // Misc checks
