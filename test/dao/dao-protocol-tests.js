@@ -1074,15 +1074,15 @@ export default function() {
             await increaseTime(hre.web3, voteDelayTime + 1);
 
             // Vote as a delegate
-            const nodeIndex = nodeMap[nodes[0]];
+            const nodeIndex = nodeMap[nodes[1]];
             const voteProof = daoProtocolGenerateVoteProof(leaves, nodeIndex);
-            await daoProtocolVote(propId, voteStates.For, voteProof.sum, nodeIndex, voteProof.witness, {from: nodes[0]});
+            await daoProtocolVote(propId, voteStates.For, voteProof.sum, nodeIndex, voteProof.witness, {from: nodes[1]});
 
             // Skip phase 1 of the voting period
             await increaseTime(hre.web3, votePhase1Time + 1);
 
             // Try to override own vote
-            await shouldRevert(daoProtocolOverrideVote(propId, voteStates.Against, {from: nodes[0]}), 'Was able to override self', 'Node operator has already voted on proposal');
+            await shouldRevert(daoProtocolOverrideVote(propId, voteStates.Against, {from: nodes[1]}), 'Was able to override self', 'Node operator has already voted on proposal');
         });
 
         /**

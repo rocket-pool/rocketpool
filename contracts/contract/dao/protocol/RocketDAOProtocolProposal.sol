@@ -419,6 +419,8 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
 
     /// @dev Internal method to override the vote of a delegate
     function _overrideVote(address _delegate, address _voter, uint256 _proposalID, uint256 _votes, VoteDirection _voteDirection) internal {
+        // Check for non-zero voting power
+        require(_votes > 0, "Cannot vote with 0 voting power");
         // Remove votes from proposal
         if (_voteDirection == VoteDirection.For) {
             subUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.for", _proposalID)), _votes);
@@ -438,6 +440,8 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
 
     /// @dev Internal method to apply voting power against a proposal
     function _vote(address _nodeOperator, uint256 _votes, uint256 _proposalID, VoteDirection _voteDirection, bool _phase1) internal {
+        // Check for non-zero voting power
+        require(_votes > 0, "Cannot vote with 0 voting power");
         // Has this node already voted on this proposal?
         require(!getReceiptHasVoted(_proposalID, _nodeOperator), "Node operator has already voted on proposal");
         // Add votes to proposal
