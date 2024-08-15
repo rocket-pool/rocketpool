@@ -25,6 +25,7 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
     address public newRocketDAOProtocolSettingsAuction;
     address public newRocketMinipoolManager;
     address public newRocketNodeStaking;
+    address public newRocketMinipoolDelegate;
 
     // Upgrade ABIs
     string public newRocketDAOProposalAbi;
@@ -34,6 +35,7 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
     string public newRocketDAOProtocolSettingsAuctionAbi;
     string public newRocketMinipoolManagerAbi;
     string public newRocketNodeStakingAbi;
+    string public newRocketMinipoolDelegateAbi;
 
     // Save deployer to limit access to set functions
     address immutable deployer;
@@ -64,6 +66,7 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
         newRocketDAOProtocolSettingsAuction = _addresses[4];
         newRocketMinipoolManager = _addresses[5];
         newRocketNodeStaking = _addresses[6];
+        newRocketMinipoolDelegate = _addresses[7];
 
         // Set ABIs
         newRocketDAOProposalAbi = _abis[0];
@@ -73,6 +76,9 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
         newRocketDAOProtocolSettingsAuctionAbi = _abis[4];
         newRocketMinipoolManagerAbi = _abis[5];
         newRocketNodeStakingAbi = _abis[6];
+        newRocketMinipoolDelegateAbi = _abis[7];
+
+        // Note: rocketMinipool abi has not changed so does not require updating
     }
 
     /// @notice Prevents further changes from being applied

@@ -21,25 +21,21 @@ export async function voteScrub(minipool, txOptions) {
 
     // Get contracts
     const rocketNodeStaking = await RocketNodeStaking.deployed();
-    const rocketVault = await RocketVault.deployed();
-    const rocketTokenRPL = await RocketTokenRPL.deployed();
     const rocketDAONodeTrustedSettingsMinipool = await RocketDAONodeTrustedSettingsMinipool.deployed();
-    const rocketNetworkPrices = await RocketNetworkPrices.deployed();
-    const rocketDAOProtocolSettingsNode = await RocketDAOProtocolSettingsNode.deployed();
 
     // Get minipool details
     function getMinipoolDetails() {
         return Promise.all([
             minipool.getStatus.call(),
             minipool.getUserDepositBalance.call(),
+            hre.web3.eth.getBalance(minipool.address),
             minipool.getTotalScrubVotes.call(),
             rocketNodeStaking.getNodeRPLStake.call(nodeAddress),
-            rocketVault.balanceOfToken('rocketAuctionManager', rocketTokenRPL.address),
             rocketDAONodeTrustedSettingsMinipool.getScrubPenaltyEnabled(),
             minipool.getVacant.call(),
         ]).then(
-            ([status, userDepositBalance, votes, nodeRPLStake, auctionBalance, penaltyEnabled, vacant]) =>
-            ({status, userDepositBalance, votes, nodeRPLStake, auctionBalance, penaltyEnabled, vacant})
+            ([status, userDepositBalance, minipoolBalance, votes, nodeRPLStake, penaltyEnabled, vacant]) =>
+            ({status, userDepositBalance, minipoolBalance: hre.web3.utils.toBN(minipoolBalance), votes, nodeRPLStake, penaltyEnabled, vacant})
         );
     }
 
@@ -62,18 +58,13 @@ export async function voteScrub(minipool, txOptions) {
         assertBN.equal(details2.status, minipoolStates.Dissolved, 'Incorrect updated minipool status');
         // Check slashing if penalties are enabled
         if (details1.penaltyEnabled && !details1.vacant) {
-            // Calculate amount slashed
-            const slashAmount = details1.nodeRPLStake.sub(details2.nodeRPLStake);
-            // Get current RPL price
-            const rplPrice = await rocketNetworkPrices.getRPLPrice.call();
-            // Calculate amount slashed in ETH
-            const slashAmountEth = slashAmount.mul(rplPrice).div('1'.ether);
-            // Calculate expected slash amount
-            const minimumStake = await rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake();
-            const expectedSlash = details1.userDepositBalance.mul(minimumStake).div('1'.ether);
-            // Perform checks
-            assertBN.equal(slashAmountEth, expectedSlash, 'Amount of RPL slashed is incorrect');
-            assertBN.equal(details2.auctionBalance.sub(details1.auctionBalance), slashAmount, 'RPL was not sent to auction manager');
+            // Check user deposit balance + 2.4 eth penalty left the minipool
+            const minipoolBalanceDiff = details2.minipoolBalance.sub(details1.minipoolBalance);
+            assertBN.equal(minipoolBalanceDiff, details1.userDepositBalance.add('2.4'.ether).neg(), 'User balance is incorrect');
+        } else {
+            // Check user deposit balance left the minipool
+            const minipoolBalanceDiff = details2.minipoolBalance.sub(details1.minipoolBalance);
+            assertBN.equal(minipoolBalanceDiff, details1.userDepositBalance.neg(), 'User balance is incorrect');
         }
         if (details1.vacant) {
             // Expect pubkey -> minipool mapping to be removed
