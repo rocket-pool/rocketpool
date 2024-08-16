@@ -11,6 +11,12 @@ import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 /// @notice v1.3.1 hotfix upgrade contract
 contract RocketUpgradeOneDotThreeDotOne is RocketBase {
 
+    // Struct to hold data for correcting miscalculated ETH matched
+    struct Correction {
+        address nodeAddress;
+        int256 delta;
+    }
+
     // Whether the upgrade has been performed or not
     bool public executed;
 
@@ -44,6 +50,9 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
     // Save deployer to limit access to set functions
     address immutable deployer;
 
+    // Corrections
+    Correction[] public corrections;
+
     // Construct
     constructor(
         RocketStorageInterface _rocketStorageAddress
@@ -71,7 +80,7 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
         newRocketMinipoolManager = _addresses[5];
         newRocketNodeStaking = _addresses[6];
         newRocketMinipoolDelegate = _addresses[7];
-        newRocketNodeStaking = _addresses[8];
+        newRocketNodeDeposit = _addresses[8];
         newRocketNetworkVoting = _addresses[9];
 
         // Set ABIs
@@ -83,10 +92,33 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
         newRocketMinipoolManagerAbi = _abis[5];
         newRocketNodeStakingAbi = _abis[6];
         newRocketMinipoolDelegateAbi = _abis[7];
-        newRocketNodeStakingAbi = _abis[8];
+        newRocketNodeDepositAbi = _abis[8];
         newRocketNetworkVotingAbi = _abis[9];
 
         // Note: rocketMinipool abi has not changed so does not require updating
+
+        // Apply ETH matched corrections
+        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
+        bytes32 key;
+        for (uint256 i = 0; i < corrections.length; i++) {
+            Correction memory correction = corrections[i];
+            key = keccak256(abi.encodePacked("eth.matched.node.amount", correction.nodeAddress));
+            // Cast is safe as current values cannot exceed max value of int256 as not enough ETH exists for that
+            (,uint224 currentValue,) = rocketNetworkSnapshots.latest(key);
+            int256 newValue = int256(uint256(currentValue)) + correction.delta;
+            rocketNetworkSnapshots.push(key, uint224(uint256(newValue)));
+        }
+    }
+
+    /// @notice Adds a new entry into the array of corrections for ETH matched
+    function addCorrection(address _nodeAddress, int256 _delta) external {
+        require(msg.sender == deployer, "Only deployer");
+        require(!locked, "Contract locked");
+
+        corrections.push(Correction({
+            nodeAddress: _nodeAddress,
+            delta: _delta
+        }));
     }
 
     /// @notice Prevents further changes from being applied
@@ -109,7 +141,7 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
         _upgradeContract("rocketMinipoolManager", newRocketMinipoolManager, newRocketMinipoolManagerAbi);
         _upgradeContract("rocketNodeStaking", newRocketNodeStaking, newRocketNodeStakingAbi);
         _upgradeContract("rocketMinipoolDelegate", newRocketMinipoolDelegate, newRocketMinipoolDelegateAbi);
-        _upgradeContract("rocketNodeStaking", newRocketNodeStaking, newRocketNodeStakingAbi);
+        _upgradeContract("rocketNodeDeposit", newRocketNodeDeposit, newRocketNodeDepositAbi);
         _upgradeContract("rocketNetworkVoting", newRocketNetworkVoting, newRocketNetworkVotingAbi);
 
         // Set a protocol version value in storage for convenience with bindings
