@@ -30,7 +30,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     uint8 public constant override version = 3;                   // Used to identify which delegate contract each minipool is using
     uint256 internal constant calcBase = 1 ether;                 // Fixed point arithmetic uses this for value for precision
     uint256 internal constant legacyPrelaunchAmount = 16 ether;   // The amount of ETH initially deposited when minipool is created (for legacy minipools)
-    // TODO: Confirm this value
     uint256 internal constant scrubPenalty = 2.4 ether;           // Amount of ETH penalised during a successful scrub
 
     // Libs
