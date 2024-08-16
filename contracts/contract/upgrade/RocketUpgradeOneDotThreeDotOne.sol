@@ -26,6 +26,8 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
     address public newRocketMinipoolManager;
     address public newRocketNodeStaking;
     address public newRocketMinipoolDelegate;
+    address public newRocketNodeDeposit;
+    address public newRocketNetworkVoting;
 
     // Upgrade ABIs
     string public newRocketDAOProposalAbi;
@@ -36,6 +38,8 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
     string public newRocketMinipoolManagerAbi;
     string public newRocketNodeStakingAbi;
     string public newRocketMinipoolDelegateAbi;
+    string public newRocketNodeDepositAbi;
+    string public newRocketNetworkVotingAbi;
 
     // Save deployer to limit access to set functions
     address immutable deployer;
@@ -67,6 +71,8 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
         newRocketMinipoolManager = _addresses[5];
         newRocketNodeStaking = _addresses[6];
         newRocketMinipoolDelegate = _addresses[7];
+        newRocketNodeStaking = _addresses[8];
+        newRocketNetworkVoting = _addresses[9];
 
         // Set ABIs
         newRocketDAOProposalAbi = _abis[0];
@@ -77,6 +83,8 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
         newRocketMinipoolManagerAbi = _abis[5];
         newRocketNodeStakingAbi = _abis[6];
         newRocketMinipoolDelegateAbi = _abis[7];
+        newRocketNodeStakingAbi = _abis[8];
+        newRocketNetworkVotingAbi = _abis[9];
 
         // Note: rocketMinipool abi has not changed so does not require updating
     }
@@ -100,6 +108,9 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
         _upgradeContract("rocketDAOProtocolSettingsAuction", newRocketDAOProtocolSettingsAuction, newRocketDAOProtocolSettingsAuctionAbi);
         _upgradeContract("rocketMinipoolManager", newRocketMinipoolManager, newRocketMinipoolManagerAbi);
         _upgradeContract("rocketNodeStaking", newRocketNodeStaking, newRocketNodeStakingAbi);
+        _upgradeContract("rocketMinipoolDelegate", newRocketMinipoolDelegate, newRocketMinipoolDelegateAbi);
+        _upgradeContract("rocketNodeStaking", newRocketNodeStaking, newRocketNodeStakingAbi);
+        _upgradeContract("rocketNetworkVoting", newRocketNetworkVoting, newRocketNetworkVotingAbi);
 
         // Set a protocol version value in storage for convenience with bindings
         setString(keccak256(abi.encodePacked("protocol.version")), "1.3.1");

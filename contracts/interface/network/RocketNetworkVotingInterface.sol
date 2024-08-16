@@ -2,6 +2,7 @@
 pragma solidity >0.5.0 <0.9.0;
 
 interface RocketNetworkVotingInterface {
+    function initialiseVotingFor(address _nodeAddress) external;
     function initialiseVoting() external;
     function initialiseVotingWithDelegate(address _delegate) external;
     function getVotingInitialised(address _nodeAddress) external view returns (bool);

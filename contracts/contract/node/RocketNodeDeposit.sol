@@ -20,6 +20,7 @@ import "../../interface/RocketVaultInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../network/RocketNetworkSnapshots.sol";
 import "../../interface/RocketVaultWithdrawerInterface.sol";
+import "../../interface/network/RocketNetworkVotingInterface.sol";
 
 /// @notice Handles node deposits and minipool creation
 contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaultWithdrawerInterface {
@@ -187,6 +188,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
     /// @dev Internal logic to process a deposit
     function _deposit(uint256 _bondAmount, uint256 _minimumNodeFee, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot, uint256 _salt, address _expectedMinipoolAddress) private {
         // Check pre-conditions
+        checkVotingInitialised();
         checkDepositsEnabled();
         checkDistributorInitialised();
         checkNodeFee(_minimumNodeFee);
@@ -287,6 +289,13 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
     function enqueueMinipool(address _minipoolAddress) private {
         // Add minipool to queue
         RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue")).enqueueMinipool(_minipoolAddress);
+    }
+
+    /// @dev Initialises node's voting power if not already done
+    function checkVotingInitialised() private {
+        // Ensure voting has been initialised for this node
+        RocketNetworkVotingInterface rocketNetworkVoting = RocketNetworkVotingInterface(getContractAddress("rocketNetworkVoting"));
+        rocketNetworkVoting.initialiseVotingFor(msg.sender);
     }
 
     /// @dev Reverts if node operator has not initialised their fee distributor

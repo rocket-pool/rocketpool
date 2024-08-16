@@ -15,6 +15,7 @@ import "../../interface/util/AddressSetStorageInterface.sol";
 import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
 import "../network/RocketNetworkSnapshots.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
+import "../../interface/network/RocketNetworkVotingInterface.sol";
 
 /// @notice Handles node deposits and minipool creation
 contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
@@ -317,6 +318,9 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @param _nodeAddress The address to increase the RPL stake of
     /// @param _amount The amount of RPL to stake
     function _stakeRPL(address _nodeAddress, uint256 _amount) internal {
+        // Ensure voting has been initialised for this node
+        RocketNetworkVotingInterface rocketNetworkVoting = RocketNetworkVotingInterface(getContractAddress("rocketNetworkVoting"));
+        rocketNetworkVoting.initialiseVotingFor(_nodeAddress);
         // Load contracts
         address rplTokenAddress = getContractAddress("rocketTokenRPL");
         address rocketVaultAddress = getContractAddress("rocketVault");
