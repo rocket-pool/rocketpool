@@ -56,17 +56,22 @@ export async function voteScrub(minipool, txOptions) {
     // Check state
     if (details1.votes.add('1'.BN).gt(quorum)){
         assertBN.equal(details2.status, minipoolStates.Dissolved, 'Incorrect updated minipool status');
-        // Check slashing if penalties are enabled
-        if (details1.penaltyEnabled && !details1.vacant) {
-            // Check user deposit balance + 2.4 eth penalty left the minipool
-            const minipoolBalanceDiff = details2.minipoolBalance.sub(details1.minipoolBalance);
-            assertBN.equal(minipoolBalanceDiff, details1.userDepositBalance.add('2.4'.ether).neg(), 'User balance is incorrect');
+        // Check if vacant
+        if (!details1.vacant) {
+            // Check slashing if penalties are enabled
+            if (details1.penaltyEnabled) {
+                // Check user deposit balance + 2.4 eth penalty left the minipool
+                const minipoolBalanceDiff = details2.minipoolBalance.sub(details1.minipoolBalance);
+                assertBN.equal(minipoolBalanceDiff, details1.userDepositBalance.add('2.4'.ether).neg(), 'User balance is incorrect');
+            } else {
+                // Check user deposit balance left the minipool
+                const minipoolBalanceDiff = details2.minipoolBalance.sub(details1.minipoolBalance);
+                assertBN.equal(minipoolBalanceDiff, details1.userDepositBalance.neg(), 'User balance is incorrect');
+            }
         } else {
-            // Check user deposit balance left the minipool
+            // Expect no change in minipool balance
             const minipoolBalanceDiff = details2.minipoolBalance.sub(details1.minipoolBalance);
-            assertBN.equal(minipoolBalanceDiff, details1.userDepositBalance.neg(), 'User balance is incorrect');
-        }
-        if (details1.vacant) {
+            assertBN.equal(minipoolBalanceDiff, '0'.BN, 'User balance is incorrect');
             // Expect pubkey -> minipool mapping to be removed
             const rocketMinipoolManager = await RocketMinipoolManager.deployed();
             const actualPubKey = await rocketMinipoolManager.getMinipoolPubkey(minipool.address);
