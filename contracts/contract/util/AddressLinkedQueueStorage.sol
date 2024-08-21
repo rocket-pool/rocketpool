@@ -1,19 +1,12 @@
-pragma solidity 0.7.6;
+pragma solidity 0.8.18;
 
 // SPDX-License-Identifier: GPL-3.0-only
-
-import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "../RocketBase.sol";
 import "../../interface/util/AddressLinkedQueueStorageInterface.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-
 // Address linked queue storage helper for RocketStorage data (linked list implementation)
 contract AddressLinkedQueueStorage is RocketBase, AddressLinkedQueueStorageInterface {
-
-    // Libs
-    using SafeMath for uint256;
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -27,7 +20,7 @@ contract AddressLinkedQueueStorage is RocketBase, AddressLinkedQueueStorageInter
 
     // The item in a queue by index
     function getItem(bytes32 _key, uint _index) override external view returns (address) {
-        uint index = getUint(keccak256(abi.encodePacked(_key, ".start"))).add(_index);
+        uint index = getUint(keccak256(abi.encodePacked(_key, ".start"))) + _index;
         return getAddress(keccak256(abi.encodePacked(_key, ".item", index)));
     }
 
@@ -69,7 +62,7 @@ contract AddressLinkedQueueStorage is RocketBase, AddressLinkedQueueStorageInter
     // onlyLatestContract("addressLinkedListStorage", address(this)) onlyLatestNetworkContract {
         require(getUint(keccak256(abi.encodePacked(_key, ".index", _value))) == 0, "Item already exists in queue");
         uint endIndex = getUint(keccak256(abi.encodePacked(_key, ".end")));
-        uint newIndex = endIndex.add(1);
+        uint newIndex = endIndex + 1;
 
         if (endIndex > 0) {
             setUint(keccak256(abi.encodePacked(_key, ".next", endIndex)), newIndex);
@@ -83,7 +76,7 @@ contract AddressLinkedQueueStorage is RocketBase, AddressLinkedQueueStorageInter
         setUint(keccak256(abi.encodePacked(_key, ".end")), newIndex);
 
         // Update the length of the queue
-        setUint(keccak256(abi.encodePacked(_key, ".length")), getLength(_key).add(1));
+        setUint(keccak256(abi.encodePacked(_key, ".length")), getLength(_key) + 1);
     }
 
     // Remove an item from the start of a queue and return it
@@ -104,7 +97,7 @@ contract AddressLinkedQueueStorage is RocketBase, AddressLinkedQueueStorageInter
         }
 
         // Update the length of the queue
-        setUint(keccak256(abi.encodePacked(_key, ".length")), getLength(_key).sub(1));
+        setUint(keccak256(abi.encodePacked(_key, ".length")), getLength(_key) - 1);
 
         return item;
     }
@@ -139,7 +132,7 @@ contract AddressLinkedQueueStorage is RocketBase, AddressLinkedQueueStorageInter
         setUint(keccak256(abi.encodePacked(_key, ".prev", index)), 0);
 
         // Update the length of the queue
-        setUint(keccak256(abi.encodePacked(_key, ".length")), getLength(_key).sub(1));
+        setUint(keccak256(abi.encodePacked(_key, ".length")), getLength(_key) - 1);
     }
 
 }
