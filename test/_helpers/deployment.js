@@ -1,6 +1,5 @@
 /*** Dependencies ********************/
-import { RocketDAOProtocolSettingsNode, RocketStorage } from '../_utils/artifacts';
-import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
+import { LinkedListStorage, RocketStorage } from '../_utils/artifacts';
 
 const hre = require('hardhat');
 const pako = require('pako');
@@ -101,6 +100,7 @@ const contracts = {
     rocketDAOProtocolProposal:                artifacts.require('RocketDAOProtocolProposal.sol'),
     // Utils
     addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
+    LinkedListStorage:                        artifacts.require('LinkedListStorageHelper.sol'),
     addressSetStorage:                        artifacts.require('AddressSetStorage.sol'),
 };
 

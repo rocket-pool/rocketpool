@@ -1,3 +1,5 @@
+import { artifacts } from "hardhat";
+
 export const RocketAuctionManager = artifacts.require('RocketAuctionManager.sol');
 export const RocketClaimDAO = artifacts.require('RocketClaimDAO.sol');
 export const RocketDAONodeTrusted = artifacts.require('RocketDAONodeTrusted.sol');
@@ -50,6 +52,7 @@ export const RocketMinipoolQueue = artifacts.require('RocketMinipoolQueue.sol');
 export const RocketNodeDeposit = artifacts.require('RocketNodeDeposit.sol');
 export const RocketMinipoolDelegate = artifacts.require('RocketMinipoolDelegate.sol');
 export const RocketDAOProtocolSettingsMinipool = artifacts.require('RocketDAOProtocolSettingsMinipool.sol');
+export const LinkedListStorage = artifacts.require('LinkedListStorageHelper.sol');
 export const RocketDepositPool = artifacts.require('RocketDepositPool.sol');
 export const RocketMinipoolBondReducer = artifacts.require('RocketMinipoolBondReducer.sol');
 export const RocketNetworkSnapshots = artifacts.require('RocketNetworkSnapshots.sol');

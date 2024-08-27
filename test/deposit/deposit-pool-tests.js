@@ -9,7 +9,7 @@ import { getDepositSetting } from '../_helpers/settings';
 import { deposit } from './scenario-deposit';
 import {
     RocketDAONodeTrustedSettingsMembers,
-    RocketDAOProtocolSettingsDeposit, RocketDepositPool,
+    RocketDAOProtocolSettingsDeposit, RocketDepositPool, AddressLinkedQueueStorage
 } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'

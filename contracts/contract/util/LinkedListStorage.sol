@@ -4,17 +4,17 @@ pragma abicoder v2;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
-import "../../interface/util/AddressLinkedQueueStorageInterface.sol";
+import "../../interface/util/LinkedListStorageInterface.sol";
 
-/// @notice Address linked queue storage helper for RocketStorage data (linked list implementation)
-contract AddressLinkedQueueStorage is RocketBase, AddressLinkedQueueStorageInterface {
+/// @notice A linked list storage helper for the deposit requests queue data
+contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
 
     // Constants for packing queue metadata into a single uint256
     uint256 constant internal startOffset = 256 - 64;
     uint256 constant internal endOffset = 256 - 128;
     uint256 constant internal lengthOffset = 256 - 192;
 
-    // Constants for packing a deposit queue struct into a single uint256
+    // Constants for packing a deposit item (struct) into a single uint256
     uint256 constant internal receiverOffset = 256 - 160;
     uint256 constant internal indexOffset = 256 - 160 - 32;
     uint256 constant internal suppliedOffset = 256 - 160 - 32 - 32;
@@ -29,27 +29,22 @@ contract AddressLinkedQueueStorage is RocketBase, AddressLinkedQueueStorageInter
     /// @notice The number of items in the queue
     /// @param _namespace defines the queue to be used
     function getLength(bytes32 _namespace) override public view returns (uint256) {
-        return uint256(uint64(getUint(keccak256(abi.encodePacked(_namespace, ".data"))) >> lengthOffset));
+        return uint64(getUint(keccak256(abi.encodePacked(_namespace, ".data"))) >> lengthOffset);
     }
 
     /// @notice The item in a queue by index
     /// @param _namespace defines the queue to be used
     /// @param _index the item index
     function getItem(bytes32 _namespace, uint256 _index) override external view returns (DepositQueueValue memory) {
-        uint256 index = getUint(keccak256(abi.encodePacked(_namespace, ".data"))) >> startOffset + _index;
-        uint256 packedValue = getUint(keccak256(abi.encodePacked(_namespace, ".item", index)));
-        return unpackDepositQueueValue(packedValue);
+        uint256 packedValue = getUint(keccak256(abi.encodePacked(_namespace, ".item", _index)));
+        return _unpackItem(packedValue);
     }
 
-    /// @notice The index of an item in a queue. Returns -1 if the value is not found
+    /// @notice The index of an item in a queue. Returns 0 if the value is not found
     /// @param _namespace defines the queue to be used
     /// @param _value the deposit queue value
-    function getIndexOf(bytes32 _namespace, DepositQueueValue memory _value) override external view returns (int) {
-        uint256 index = getUint(keccak256(abi.encodePacked(_namespace, ".index", _value.receiver, _value.validatorId)));
-        if (index > 0) {
-            return int256(index);
-        }
-        return -1;
+    function getIndexOf(bytes32 _namespace, DepositQueueValue memory _value) override external view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked(_namespace, ".index", _value.receiver, _value.validatorId)));
     }
 
     /// @notice Finds an item index in a queue and returns the previous item
@@ -59,7 +54,7 @@ contract AddressLinkedQueueStorage is RocketBase, AddressLinkedQueueStorageInter
         uint256 index = getUint(keccak256(abi.encodePacked(_namespace, ".index", _value.receiver, _value.validatorId)));
         if (index > 0) {
             uint256 previousIndex = getUint(keccak256(abi.encodePacked(_namespace, ".prev", index)));
-            previousItem = unpackDepositQueueValue(getUint(keccak256(abi.encodePacked(_namespace, ".item", previousIndex))));
+            previousItem = _unpackItem(getUint(keccak256(abi.encodePacked(_namespace, ".item", previousIndex))));
         }
     }
 
@@ -70,16 +65,22 @@ contract AddressLinkedQueueStorage is RocketBase, AddressLinkedQueueStorageInter
         uint256 index = getUint(keccak256(abi.encodePacked(_namespace, ".index", _value.receiver, _value.validatorId)));
         if (index > 0) {
             uint256 nextIndex = getUint(keccak256(abi.encodePacked(_namespace, ".next", index)));
-            nextItem = unpackDepositQueueValue(getUint(keccak256(abi.encodePacked(_namespace, ".item", nextIndex))));
+            nextItem = _unpackItem(getUint(keccak256(abi.encodePacked(_namespace, ".item", nextIndex))));
         }
     }
 
     /// @notice Add an item to the end of the list. Requires that the item does not exist in the list
     /// @param _namespace defines the queue to be used
-    /// @param _value the deposit queue value
-    function enqueueItem(bytes32 _namespace, DepositQueueValue memory _value) virtual override external {
-    // onlyLatestContract("addressLinkedListStorage", address(this)) onlyLatestNetworkContract {
-        require(getUint(keccak256(abi.encodePacked(_namespace, ".index", _value.receiver, _value.validatorId))) == 0, "Item already exists in queue");
+    /// @param _item the deposit queue item to be added
+    function enqueueItem(bytes32 _namespace, DepositQueueValue memory _item) virtual override external onlyLatestContract("addressLinkedListStorage", address(this)) onlyLatestNetworkContract {
+        _enqueueItem(_namespace, _item);
+    }
+
+    /// @notice Internal function created to allow testing enqueueItem
+    /// @param _namespace defines the queue to be used
+    /// @param _item the deposit queue value
+    function _enqueueItem(bytes32 _namespace, DepositQueueValue memory _item) internal {
+        require(getUint(keccak256(abi.encodePacked(_namespace, ".index", _item.receiver, _item.validatorId))) == 0, "Item already exists in queue");
         uint256 data = getUint(keccak256(abi.encodePacked(_namespace, ".data")));
         uint256 endIndex = uint64(data >> endOffset);
         uint256 newIndex = endIndex + 1;
@@ -93,8 +94,8 @@ contract AddressLinkedQueueStorage is RocketBase, AddressLinkedQueueStorageInter
             data |= newIndex << startOffset;
         }
         
-        setUint(keccak256(abi.encodePacked(_namespace, ".item", newIndex)), packDepositQueueValue(_value));
-        setUint(keccak256(abi.encodePacked(_namespace, ".index", _value.receiver, _value.validatorId)), newIndex);
+        setUint(keccak256(abi.encodePacked(_namespace, ".item", newIndex)), _packItem(_item));
+        setUint(keccak256(abi.encodePacked(_namespace, ".index", _item.receiver, _item.validatorId)), newIndex);
         // clear the 64 bits used to stored the 'end' pointer
         data &= ~(uint256(ones64Bits) << endOffset);
         data |= newIndex << endOffset;
@@ -110,11 +111,18 @@ contract AddressLinkedQueueStorage is RocketBase, AddressLinkedQueueStorageInter
     /// @notice Remove an item from the start of a queue and return it. Requires that the queue is not empty
     /// @param _namespace defines the queue to be used
     function dequeueItem(bytes32 _namespace) public virtual override onlyLatestContract("addressLinkedListStorage", address(this)) onlyLatestNetworkContract returns (DepositQueueValue memory item) {
-        require(getLength(_namespace) > 0, "Queue is empty");
+        return _dequeueItem(_namespace);
+    }
+
+    /// @notice Remove an item from the start of a queue and return it. Requires that the queue is not empty
+    /// @param _namespace defines the queue to be used
+    function _dequeueItem(bytes32 _namespace) internal returns (DepositQueueValue memory item) {
         uint256 data = getUint(keccak256(abi.encodePacked(_namespace, ".data")));
+        uint256 length = uint64(data >> lengthOffset);
+        require(length > 0, "Queue can't be empty");
         uint256 start = uint64(data >> startOffset);
         uint256 packedItem = getUint(keccak256(abi.encodePacked(_namespace, ".item", start)));
-        item = unpackDepositQueueValue(packedItem);
+        item = _unpackItem(packedItem);
         
         uint256 nextItem = getUint(keccak256(abi.encodePacked(_namespace, ".next", start)));
         // clear the 64 bits used to stored the 'start' pointer
@@ -130,10 +138,9 @@ contract AddressLinkedQueueStorage is RocketBase, AddressLinkedQueueStorageInter
         }
  
         // Update the length of the queue
-        uint256 currentLength = uint64(data >> lengthOffset);
         // clear the 64 bits used to stored the 'length' information
         data &= ~(uint256(ones64Bits) << lengthOffset);
-        data |= (currentLength -1) << lengthOffset;
+        data |= (length - 1) << lengthOffset;
         setUint(keccak256(abi.encodePacked(_namespace, ".data")), data);
 
         return item;
@@ -141,8 +148,16 @@ contract AddressLinkedQueueStorage is RocketBase, AddressLinkedQueueStorageInter
 
     /// @notice Removes an item from a queue. Requires that the item exists in the queue
     /// @param _namespace defines the queue to be used
-    function removeItem(bytes32 _namespace, DepositQueueValue memory _value) public virtual override onlyLatestContract("addressLinkedListStorage", address(this)) onlyLatestNetworkContract {
-        uint256 index = getUint(keccak256(abi.encodePacked(_namespace, ".index", _value.receiver, _value.validatorId)));
+    /// @param _item to be removed from the queue
+    function removeItem(bytes32 _namespace, DepositQueueValue memory _item) public virtual override onlyLatestContract("addressLinkedListStorage", address(this)) onlyLatestNetworkContract {
+        _removeItem(_namespace, _item);
+    }
+
+    /// @notice Internal funciton to remove an item from a queue. Requires that the item exists in the queue
+    /// @param _namespace defines the queue to be used
+    /// @param _item to be removed from the queue
+    function _removeItem(bytes32 _namespace, DepositQueueValue memory _item) internal {
+        uint256 index = getUint(keccak256(abi.encodePacked(_namespace, ".index", _item.receiver, _item.validatorId)));
         uint256 data = getUint(keccak256(abi.encodePacked(_namespace, ".data")));
         require(index > 0, "Item does not exist in queue");
         
@@ -169,7 +184,7 @@ contract AddressLinkedQueueStorage is RocketBase, AddressLinkedQueueStorageInter
             data |= prevIndex << endOffset;
         }
 
-        setUint(keccak256(abi.encodePacked(_namespace, ".index", _value.receiver, _value.validatorId)), 0);
+        setUint(keccak256(abi.encodePacked(_namespace, ".index", _item.receiver, _item.validatorId)), 0);
         setUint(keccak256(abi.encodePacked(_namespace, ".next", index)), 0);
         setUint(keccak256(abi.encodePacked(_namespace, ".prev", index)), 0);
 
@@ -182,21 +197,21 @@ contract AddressLinkedQueueStorage is RocketBase, AddressLinkedQueueStorageInter
     }
 
     /// @notice packs a deposit queue value into a single uint256
-    /// @param _struct the deposit queue value to be packed
-    function packDepositQueueValue(DepositQueueValue memory _struct) internal pure returns (uint256 packed) {
-        packed |= uint256(uint160(_struct.receiver)) << receiverOffset;
-        packed |= uint256(_struct.validatorId) << indexOffset;
-        packed |= uint256(_struct.suppliedValue) << suppliedOffset;
-        packed |= uint256(_struct.requestedValue);
+    /// @param _item the deposit queue item to be packed
+    function _packItem(DepositQueueValue memory _item) internal pure returns (uint256 packed) {
+        packed |= uint256(uint160(_item.receiver)) << receiverOffset;
+        packed |= uint256(_item.validatorId) << indexOffset;
+        packed |= uint256(_item.suppliedValue) << suppliedOffset;
+        packed |= uint256(_item.requestedValue);
     }
 
     /// @notice unpacks an uint256 value into a deposit queue struct 
     /// @param _packedValue the packed deposit queue value 
-    function unpackDepositQueueValue(uint256 _packedValue) internal pure returns (DepositQueueValue memory value) {
-        value.receiver = address(uint160(_packedValue >> receiverOffset));
-        value.validatorId = uint32(_packedValue >> indexOffset);
-        value.suppliedValue = uint32(_packedValue >> suppliedOffset);
-        value.requestedValue = uint32(_packedValue);
+    function _unpackItem(uint256 _packedValue) internal pure returns (DepositQueueValue memory item) {
+        item.receiver = address(uint160(_packedValue >> receiverOffset));
+        item.validatorId = uint32(_packedValue >> indexOffset);
+        item.suppliedValue = uint32(_packedValue >> suppliedOffset);
+        item.requestedValue = uint32(_packedValue);
     }
 
 }
