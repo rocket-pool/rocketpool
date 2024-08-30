@@ -22,7 +22,7 @@ export default function() {
 
         });
 
-        it.only(printTitle('random', 'pack/unpack shouldnt change values'), async () => {
+        it(printTitle('random', 'pack/unpack shouldnt change values'), async () => {
             const linkedListStorage = await LinkedListStorage.deployed();            
             let item = {
                 receiver: random,
@@ -79,7 +79,7 @@ export default function() {
             assert.equal(listLength, 0)
         });
 
-        it.only(printTitle('random', 'can remove the only queue item'), async () => {
+        it(printTitle('random', 'can remove the only queue item'), async () => {
             const linkedListStorage = await LinkedListStorage.deployed();
             let itemIn = {
                 receiver: random,

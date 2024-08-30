@@ -1,5 +1,5 @@
 /*** Dependencies ********************/
-import { LinkedListStorage, RocketStorage } from '../_utils/artifacts';
+import { RocketStorage } from '../_utils/artifacts';
 
 const hre = require('hardhat');
 const pako = require('pako');
@@ -100,13 +100,18 @@ const contracts = {
     rocketDAOProtocolProposal:                artifacts.require('RocketDAOProtocolProposal.sol'),
     // Utils
     addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
-    LinkedListStorage:                        artifacts.require('LinkedListStorageHelper.sol'),
     addressSetStorage:                        artifacts.require('AddressSetStorage.sol'),
 };
 
 // Development helper contracts
 const revertOnTransfer = artifacts.require('RevertOnTransfer.sol');
 const rocketNodeDepositLEB4 = artifacts.require('RocketNodeDepositLEB4.sol');
+if (network.name !== 'live' && network.name !== 'goerli') {
+    // the linked list storage helper needs to be added as a network contract
+    contracts.linkedListStorage = artifacts.require('LinkedListStorageHelper.sol');
+} else {
+    contracts.linkedListStorage = artifacts.require('LinkedListStorage.sol');
+}
 
 // Instance contract ABIs
 const abis = {
