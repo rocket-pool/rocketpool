@@ -38,7 +38,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     uint256 constant internal sumOffset = 1;
     uint256 constant internal hashOffset = 2;
 
-    // Burn address
+    // Burn rate
     uint256 constant internal bondBurnPercent = 0.2 ether;
 
     // Events

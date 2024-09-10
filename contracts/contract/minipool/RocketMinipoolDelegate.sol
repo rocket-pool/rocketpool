@@ -727,7 +727,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
                 uint256 userCapital = getUserDepositBalance();
                 rocketDepositPool.recycleDissolvedDeposit{value : userCapital + _penalty}();
                 // Emit ether withdrawn event
-                emit EtherWithdrawn(address(rocketDepositPool), userCapital, block.timestamp);
+                emit EtherWithdrawn(address(rocketDepositPool), userCapital + _penalty, block.timestamp);
             }
         }
     }
