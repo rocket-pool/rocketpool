@@ -102,6 +102,8 @@ const contracts = {
     // Utils
     addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
     addressSetStorage:                        artifacts.require('AddressSetStorage.sol'),
+    beaconStateVerifier:                      artifacts.require('BeaconStateVerifier.sol'),
+    blockRoots:                               artifacts.require('BlockRootsMock.sol'),
 };
 
 // Development helper contracts
@@ -226,6 +228,7 @@ export async function deployRocketPool() {
                     case 'rocketMinipoolDelegate':
                     case 'rocketNodeDistributorDelegate':
                     case 'rocketMinipoolBase':
+                    case 'blockRoots':
                         instance = await contracts[contract].new();
                         contracts[contract].setAsDeployed(instance);
                         break;

@@ -54,3 +54,5 @@ export const RocketDepositPool = artifacts.require('RocketDepositPool.sol');
 export const RocketMinipoolBondReducer = artifacts.require('RocketMinipoolBondReducer.sol');
 export const RocketNetworkSnapshots = artifacts.require('RocketNetworkSnapshots.sol');
 export const RocketNetworkVoting = artifacts.require('RocketNetworkVoting.sol');
+export const BeaconStateVerifier = artifacts.require('BeaconStateVerifier.sol');
+export const BlockRootsMock = artifacts.require('BlockRootsMock.sol');
