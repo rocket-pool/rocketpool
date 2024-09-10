@@ -39,4 +39,6 @@ interface RocketNodeManagerInterface {
     function getSmoothingPoolRegisteredNodeCount(uint256 _offset, uint256 _limit) external view returns (uint256);
     function getNodeDetails(address _nodeAddress) external view returns (NodeDetails memory);
     function getNodeAddresses(uint256 _offset, uint256 _limit) external view returns (address[] memory);
+    function deployMegapool(address _nodeAddress) external returns (address);
+    function getMegapoolAddress(address _nodeAddress) external view returns (address);
 }

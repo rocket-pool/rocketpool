@@ -60,6 +60,14 @@ abstract contract RocketBase {
         require(getBool(keccak256(abi.encodePacked("minipool.exists", _minipoolAddress))), "Invalid minipool");
         _;
     }
+
+    /**
+    * @dev Throws if called by any sender that isn't a registered megapool
+    */
+    modifier onlyRegisteredMegapool(address _megapoolAddress) {
+        require(getBool(keccak256(abi.encodePacked("megapool.exists", _megapoolAddress))), "Invalid megapool");
+        _;
+    }
     
 
     /**

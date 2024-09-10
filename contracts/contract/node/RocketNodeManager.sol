@@ -18,6 +18,8 @@ import "../../interface/node/RocketNodeDepositInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../interface/util/IERC20.sol";
 import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
+import "../../interface/megapool/RocketMegapoolInterface.sol";
+import "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
 
 /// @notice Node registration and management
 contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
@@ -453,5 +455,32 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
             mstore(nodes, total)
         }
         return nodes;
+    }
+
+    /// @notice Deploys a single Megapool contract
+    /// @param _nodeAddress address of the node associated to the megapool
+    function deployMegapool(address _nodeAddress) override external returns (address) {
+        require(getMegapoolAddress(_nodeAddress) == address(0), "Megapool already deployed for this node");
+
+        RocketMegapoolFactoryInterface rocketMegapool = RocketMegapoolFactoryInterface(getContractAddress("rocketMegapoolFactory"));
+        return rocketMegapool.createProxy(_nodeAddress);
+    }
+
+    /// @notice Returns true if node has deployed their Megapool contract
+    /// @param _nodeAddress address of the node associated to the megapool
+    function getMegapoolAddress(address _nodeAddress) override public view returns (address) {
+        // Load contracts
+        RocketMegapoolFactoryInterface rocketMegapoolFactory = RocketMegapoolFactoryInterface(getContractAddress("rocketMegapoolFactory"));
+        // Get Megapool address
+        address contractAddress = rocketMegapoolFactory.getProxyAddress(_nodeAddress);
+        // Check if contract exists at that address
+        uint32 codeSize;
+        assembly {
+            codeSize := extcodesize(contractAddress)
+        }
+        if (codeSize > 0) {
+            return contractAddress;
+        }
+        return address(0);
     }
 }
