@@ -55,6 +55,7 @@ contract RocketMegapool is RocketBase, RocketMegapoolInterface {
     // Events
     event MegapoolValidatorEnqueued(address indexed megapool, uint256 indexed validatorId, uint256 time);
     event MegapoolValidatorDequeued(address indexed megapool, uint256 indexed validatorId, uint256 time);
+    event MegapoolValidatorAssigned(address indexed megapool, uint256 indexed validatorId, uint256 time);
 
 
     // Immutables
@@ -124,6 +125,8 @@ contract RocketMegapool is RocketBase, RocketMegapoolInterface {
         validators[validatorId].status = Status.Assigned;
         assignedValue += msg.value;
         validators[validatorId].assignmentTime = uint32(block.timestamp);
+
+        emit MegapoolValidatorAssigned(address(this), validatorId, block.timestamp);
     }
 
     /// @notice Executes the first 1 ETH deposit on the Beacon Chain 

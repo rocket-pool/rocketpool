@@ -333,7 +333,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         //uint256 ethSupplied = RocketNodeManagerInterface.getEthSupplied(nodeAddress) + msg.value;
         //uint256 ethMatched = RocketNodeManagerInterface.getEthMatched(nodeAddress) + amount;
 
-        // Check that the ratio of ethSupplied and ethMatched meets minimum requirement
+        // TODO: Check that the ratio of ethSupplied and ethMatched meets minimum requirement
         // If useExpressTicket, subtract an express ticket
 
         DepositQueueValue memory value = DepositQueueValue({
@@ -343,12 +343,8 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             requestedValue: uint32(amount	 / 10 ** 15)  // Amount being requested
         });
 
-        bytes32 namespace;
-        if (_expressQueue) {
-            namespace = keccak256("deposit.queue.express");
-        } else {
-            namespace = keccak256("deposit.queue.standard");
-        }
+        bytes32 namespace = getQueueNamespace(_expressQueue);
+        
         linkedListStorage.enqueueItem(namespace, value);
     }
 
@@ -360,12 +356,46 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             suppliedValue: 0,
             requestedValue: 0
         });
-        bytes32 namespace;
-        if (_expressQueue) {
-            namespace = keccak256("deposit.queue.express");
-        } else {
-            namespace = keccak256("deposit.queue.standard");
-        }
+        bytes32 namespace = getQueueNamespace(_expressQueue);
+        
         linkedListStorage.removeItem(namespace, key);
+    }
+
+    function assignMegapools() external {
+        LinkedListStorageInterface linkedListStorage = LinkedListStorageInterface(getContractAddress("linkedListStorage"));
+
+        uint256 expressQueueLength = linkedListStorage.getLength(keccak256("deposit.queue.express"));
+        uint256 standardQueueLength = linkedListStorage.getLength(keccak256("deposit.queue.standard"));
+
+        require(expressQueueLength != 0 || standardQueueLength != 0, "Empty queues");
+
+        uint256 queueIndex = getUint(keccak256(abi.encodePacked("megapoolQueueIndex")));
+        bool express = (queueIndex++) % 3 != 0;
+
+        if (express && expressQueueLength == 0) {
+            express = false;
+        }
+        if (!express && standardQueueLength == 0) {
+            express = true;
+        }
+        bytes32 namespace = getQueueNamespace(express);
+
+        DepositQueueValue memory head = linkedListStorage.dequeueItem(namespace);
+
+        // Convert from milliEther to wei
+        uint256 ethRequired = head.suppliedValue * 10**15 + head.requestedValue * 10**15;
+        if (address(this).balance >= ethRequired) {
+            // If there's enough ETH to assign
+            RocketMegapoolInterface(head.receiver).assignFunds{value: ethRequired}(head.validatorId);
+            setUint(keccak256(abi.encodePacked("megapoolQueueIndex")), queueIndex);
+        }
+    }
+
+    /// @notice 
+    function getQueueNamespace(bool _expressQueue) internal pure returns (bytes32) {
+        if (_expressQueue) {
+            return keccak256("deposit.queue.express");
+        } 
+        return keccak256("deposit.queue.standard");
     }
 }
