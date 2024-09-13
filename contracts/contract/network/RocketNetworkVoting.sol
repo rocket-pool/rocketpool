@@ -55,8 +55,8 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
     /// @param _nodeAddress The address of the node to initialise
     /// @param _delegate The address to delegate the node's voting power to
     function _initialiseVoting(address _nodeAddress, address _delegate) private {
-        // Check if already registered
-        require (!getBool(keccak256(abi.encodePacked("node.voting.enabled", _nodeAddress))), "Already registered");
+        // Check if already initialised
+        require (!getBool(keccak256(abi.encodePacked("node.voting.enabled", _nodeAddress))), "Voting power already initialised");
         setBool(keccak256(abi.encodePacked("node.voting.enabled", _nodeAddress)), true);
 
         // Get contracts
