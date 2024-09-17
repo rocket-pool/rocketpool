@@ -16,7 +16,7 @@ contract RocketDAOProtocolSettingsAuction is RocketDAOProtocolSettings, RocketDA
             setSettingBool("auction.lot.bidding.enabled", true);
             setSettingUint("auction.lot.value.minimum", 1 ether);   
             setSettingUint("auction.lot.value.maximum", 10 ether);
-            setSettingUint("auction.lot.duration", 40320);          // 7 days
+            setSettingUint("auction.lot.duration", 50400);          // 7 days
             setSettingUint("auction.price.start", 1 ether);         // 100%
             setSettingUint("auction.price.reserve", 0.5 ether);     // 50%
             // Settings initialised

@@ -34,7 +34,7 @@ export default function() {
             random2,
         ] = accounts;
 
-        const defaultAuctionDuration = 40320;
+        const auctionDuration = 7200;
 
         // Setup
         let scrubPeriod = (60 * 60 * 24); // 24 hours
@@ -42,6 +42,7 @@ export default function() {
         before(async () => {
             // Set settings
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', auctionDuration, {from: owner});
 
             // Register node
             await registerNode({from: node});
@@ -247,7 +248,7 @@ export default function() {
             await auctionCreateLot({from: random1});
 
             // Wait for duration to end
-            await mineBlocks(web3, defaultAuctionDuration);
+            await mineBlocks(web3, auctionDuration);
 
             // Attempt to place bid
             await shouldRevert(placeBid(0, {
@@ -366,7 +367,7 @@ export default function() {
             await auctionCreateLot({from: random1});
 
             // Wait for duration to end
-            await mineBlocks(web3, defaultAuctionDuration);
+            await mineBlocks(web3, auctionDuration);
 
             // Recover RPL from first lot
             await recoverUnclaimedRPL(0, {
@@ -388,7 +389,7 @@ export default function() {
             await auctionCreateLot({from: random1});
 
             // Wait for duration to end
-            await mineBlocks(web3, defaultAuctionDuration);
+            await mineBlocks(web3, auctionDuration);
 
             // Attempt to recover RPL
             await shouldRevert(recoverUnclaimedRPL(1, {
@@ -419,7 +420,7 @@ export default function() {
             await auctionCreateLot({from: random1});
 
             // Wait for duration to end
-            await mineBlocks(web3, defaultAuctionDuration);
+            await mineBlocks(web3, auctionDuration);
 
             // Recover RPL
             await recoverUnclaimedRPL(0, {from: random1});
@@ -440,7 +441,7 @@ export default function() {
             await auctionPlaceBid(0, {from: random1, value: '1000'.ether});
 
             // Wait for duration to end
-            await mineBlocks(web3, defaultAuctionDuration);
+            await mineBlocks(web3, auctionDuration);
 
             // Attempt to recover RPL again
             await shouldRevert(recoverUnclaimedRPL(0, {

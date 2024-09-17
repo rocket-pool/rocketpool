@@ -270,7 +270,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         setUint(defeatIndexKey, _index);
     }
 
-    /// @notice Called by a challenger to claim bonds (both refunded bonds and any rewards paid)
+    /// @notice Called by a challenger to claim bonds (both refunded bonds and any rewards paid minus the 20% bond burn)
     /// @param _proposalID The ID of the proposal
     /// @param _indices An array of indices which the challenger has a claim against
     function claimBondChallenger(uint256 _proposalID, uint256[] calldata _indices) external onlyLatestContract("rocketDAOProtocolVerifier", address(this)) onlyRegisteredNode(msg.sender) {
@@ -339,7 +339,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         }
     }
 
-    /// @notice Called by a proposer to claim bonds (both refunded bond and any rewards paid)
+    /// @notice Called by a proposer to claim bonds (both refunded bond and any rewards paid minus the 20% bond burn)
     /// @param _proposalID The ID of the proposal
     /// @param _indices An array of indices which the proposer has a claim against
     function claimBondProposer(uint256 _proposalID, uint256[] calldata _indices) external onlyLatestContract("rocketDAOProtocolVerifier", address(this)) onlyRegisteredNode(msg.sender) {
