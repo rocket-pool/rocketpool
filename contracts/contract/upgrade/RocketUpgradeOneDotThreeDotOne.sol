@@ -97,6 +97,10 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
 
         // Note: rocketMinipool abi has not changed so does not require updating
 
+        // Modify pDAO quorum to 30% per RPIP-63
+        bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "proposals"));
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.quorum")), 0.30 ether);
+
         // Apply ETH matched corrections
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         bytes32 key;
