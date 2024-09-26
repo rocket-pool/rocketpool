@@ -8,6 +8,7 @@ import { createMinipool, getMinipoolMinimumRPLStake } from '../_helpers/minipool
 import { mintRPL } from '../_helpers/tokens';
 import { userDeposit } from '../_helpers/deposit';
 import * as assert from 'assert';
+import { shouldRevert } from '../_utils/testing';
 
 export default function() {
     contract('RocketUpgradeOneDotThreeDotOne', async (accounts) => {
@@ -99,12 +100,28 @@ export default function() {
             }
         });
 
-        it(printTitle('upgrade', 'updates addresses correctly'), async () => {
+        async function executeUpgrade() {
+            const rocketStorage = await RocketStorage.deployed();
+
+            // Lock contract and execute upgrade
             await rocketUpgradeOneDotThreeDotOne.lock();
             await setDaoNodeTrustedBootstrapUpgrade('addContract', 'rocketUpgradeOneDotThreeDotOne', contracts.rocketUpgradeOneDotThreeDotOne.abi, rocketUpgradeOneDotThreeDotOne.address, { from: owner });
             await rocketUpgradeOneDotThreeDotOne.execute();
 
+            // Confirm version string updated
+            const versionString = await rocketStorage.getString(hre.web3.utils.soliditySha3('protocol.version'));
+            assert.equal(versionString, '1.3.1');
+        }
+
+        it(printTitle('upgrade', 'cannot execute twice'), async () => {
+            await executeUpgrade();
+            await shouldRevert(rocketUpgradeOneDotThreeDotOne.execute(), 'Was able to execute twice', 'Already executed');
+        });
+
+        it(printTitle('upgrade', 'updates addresses correctly'), async () => {
             const rocketStorage = await RocketStorage.deployed();
+
+            await executeUpgrade();
 
             for (let contract in addresses) {
                 const key = hre.web3.utils.soliditySha3('contract.address', contract);
@@ -112,15 +129,10 @@ export default function() {
 
                 assert.equal(address, addresses[contract]);
             }
-
-            const versionString = await rocketStorage.getString(hre.web3.utils.soliditySha3('protocol.version'));
-            assert.equal(versionString, '1.3.1');
         });
 
         it(printTitle('upgrade', 'adjusts quorum parameter correctly'), async () => {
-            await rocketUpgradeOneDotThreeDotOne.lock();
-            await setDaoNodeTrustedBootstrapUpgrade('addContract', 'rocketUpgradeOneDotThreeDotOne', contracts.rocketUpgradeOneDotThreeDotOne.abi, rocketUpgradeOneDotThreeDotOne.address, { from: owner });
-            await rocketUpgradeOneDotThreeDotOne.execute();
+            await executeUpgrade();
 
             const rocketDAOProtocolSettingsProposal = await RocketDAOProtocolSettingsProposals.deployed();
             const proposalQuorum = await rocketDAOProtocolSettingsProposal.getProposalQuorum.call();
@@ -174,9 +186,7 @@ export default function() {
             }
 
             // Execute upgrade
-            await rocketUpgradeOneDotThreeDotOne.lock();
-            await setDaoNodeTrustedBootstrapUpgrade('addContract', 'rocketUpgradeOneDotThreeDotOne', contracts.rocketUpgradeOneDotThreeDotOne.abi, rocketUpgradeOneDotThreeDotOne.address, { from: owner });
-            await rocketUpgradeOneDotThreeDotOne.execute();
+            await executeUpgrade();
 
             // Confirm changes
             for (let i = 0; i < nodes.length; i++) {
