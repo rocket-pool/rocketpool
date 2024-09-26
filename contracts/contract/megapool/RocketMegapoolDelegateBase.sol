@@ -1,0 +1,68 @@
+// SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.8.18;
+
+import {RocketBase} from "../RocketBase.sol";
+import {RocketMegapoolDelegateBaseInterface} from "../../interface/megapool/RocketMegapoolDelegateBaseInterface.sol";
+import "./RocketMegapoolStorageLayout.sol";
+import "../../interface/node/RocketNodeManagerInterface.sol";
+
+/// @dev All megapool delegate contracts should extend this base to include the expected deprecation functionality
+contract RocketMegapoolDelegateBase is RocketMegapoolStorageLayout, RocketMegapoolDelegateBaseInterface {
+    // Constants
+    uint256 constant internal upgradeBuffer = 864000; // ~120 days
+
+    // Immutables
+    RocketStorageInterface immutable internal rocketStorage;
+    uint256 immutable public version;
+
+    // Construct
+    constructor(RocketStorageInterface _rocketStorageAddress, uint256 _version) {
+        version = _version;
+        rocketStorage = _rocketStorageAddress;
+    }
+
+    /// @notice Called by an upgrade to begin the expiry countdown for this delegate
+    function deprecate() external override onlyLatestContract("rocketMegapoolFactory", msg.sender) {
+        // Expiry is only used on the delegate contract itself
+        require(!storageState);
+        expiry = block.number + upgradeBuffer;
+    }
+
+    /// @notice Returns the block at which this delegate expires (or 0 if not yet deprecated)
+    function getExpiryBlock() external override view returns (uint256) {
+        return expiry;
+    }
+
+    /// @dev Get the address of a Rocket Pool network contract
+    /// @param _contractName The internal name of the contract to retrieve the address for
+    function getContractAddress(string memory _contractName) internal view returns (address) {
+        address contractAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", _contractName)));
+        require(contractAddress != address(0x0), "Contract not found");
+        return contractAddress;
+    }
+
+    modifier onlyMegapoolOwner() {
+        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
+        require(msg.sender == nodeAddress || msg.sender == withdrawalAddress, "Only the node operator can access this method");
+        _;
+    }
+
+    /// @dev Throws if called by any sender that doesn't match one of the supplied contract or is the latest version of that contract
+    modifier onlyLatestContract(string memory _contractName, address _contractAddress) {
+        require(_contractAddress == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", _contractName))), "Invalid or outdated contract");
+        _;
+    }
+
+    /// @dev Only allow access from node address or if RPL address is set, only from it
+    modifier onlyRPLWithdrawalAddressOrNode() {
+        // Check that the call is coming from RPL withdrawal address (or node if unset)
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+        if (rocketNodeManager.getNodeRPLWithdrawalAddressIsSet(nodeAddress)) {
+            address rplWithdrawalAddress = rocketNodeManager.getNodeRPLWithdrawalAddress(nodeAddress);
+            require(msg.sender == rplWithdrawalAddress, "Must be called from RPL withdrawal address");
+        } else {
+            require(msg.sender == nodeAddress, "Must be called from node address");
+        }
+        _;
+    }
+}

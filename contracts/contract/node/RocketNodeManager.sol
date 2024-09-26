@@ -463,7 +463,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         require(getMegapoolAddress(_nodeAddress) == address(0), "Megapool already deployed for this node");
 
         RocketMegapoolFactoryInterface rocketMegapool = RocketMegapoolFactoryInterface(getContractAddress("rocketMegapoolFactory"));
-        return rocketMegapool.createProxy(_nodeAddress);
+        return rocketMegapool.deployContract(_nodeAddress);
     }
 
     /// @notice Returns true if node has deployed their Megapool contract
@@ -472,7 +472,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Load contracts
         RocketMegapoolFactoryInterface rocketMegapoolFactory = RocketMegapoolFactoryInterface(getContractAddress("rocketMegapoolFactory"));
         // Get Megapool address
-        address contractAddress = rocketMegapoolFactory.getProxyAddress(_nodeAddress);
+        address contractAddress = rocketMegapoolFactory.getExpectedAddress(_nodeAddress);
         // Check if contract exists at that address
         uint32 codeSize;
         assembly {
