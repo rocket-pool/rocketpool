@@ -96,22 +96,6 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
         newRocketNetworkVotingAbi = _abis[9];
 
         // Note: rocketMinipool abi has not changed so does not require updating
-
-        // Modify pDAO quorum to 30% per RPIP-63
-        bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "proposals"));
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.quorum")), 0.30 ether);
-
-        // Apply ETH matched corrections
-        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
-        bytes32 key;
-        for (uint256 i = 0; i < corrections.length; i++) {
-            Correction memory correction = corrections[i];
-            key = keccak256(abi.encodePacked("eth.matched.node.amount", correction.nodeAddress));
-            // Cast is safe as current values cannot exceed max value of int256 as not enough ETH exists for that
-            (,uint224 currentValue,) = rocketNetworkSnapshots.latest(key);
-            int256 newValue = int256(uint256(currentValue)) + correction.delta;
-            rocketNetworkSnapshots.push(key, uint224(uint256(newValue)));
-        }
     }
 
     /// @notice Adds a new entry into the array of corrections for ETH matched
@@ -151,6 +135,22 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
         // Add missing security council permissions
         setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "auction", "auction.lot.create.enabled")), true);
         setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "auction", "auction.lot.bidding.enabled")), true);
+
+        // Modify pDAO quorum to 30% per RPIP-63
+        bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "proposals"));
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "proposal.quorum")), 0.30 ether);
+
+        // Apply ETH matched corrections
+        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
+        bytes32 key;
+        for (uint256 i = 0; i < corrections.length; i++) {
+            Correction memory correction = corrections[i];
+            key = keccak256(abi.encodePacked("eth.matched.node.amount", correction.nodeAddress));
+            // Cast is safe as current values cannot exceed max value of int256 as not enough ETH exists for that
+            (,uint224 currentValue,) = rocketNetworkSnapshots.latest(key);
+            int256 newValue = int256(uint256(currentValue)) + correction.delta;
+            rocketNetworkSnapshots.push(key, uint224(uint256(newValue)));
+        }
 
         // Set a protocol version value in storage for convenience with bindings
         setString(keccak256(abi.encodePacked("protocol.version")), "1.3.1");
