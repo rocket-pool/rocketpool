@@ -148,6 +148,10 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
         _upgradeContract("rocketNodeDeposit", newRocketNodeDeposit, newRocketNodeDepositAbi);
         _upgradeContract("rocketNetworkVoting", newRocketNetworkVoting, newRocketNetworkVotingAbi);
 
+        // Add missing security council permissions
+        setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "auction", "auction.lot.create.enabled")), true);
+        setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "auction", "auction.lot.bidding.enabled")), true);
+
         // Set a protocol version value in storage for convenience with bindings
         setString(keccak256(abi.encodePacked("protocol.version")), "1.3.1");
     }
