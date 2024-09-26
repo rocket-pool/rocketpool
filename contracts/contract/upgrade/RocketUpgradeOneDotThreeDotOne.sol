@@ -147,7 +147,7 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
             Correction memory correction = corrections[i];
             key = keccak256(abi.encodePacked("eth.matched.node.amount", correction.nodeAddress));
             // Cast is safe as current values cannot exceed max value of int256 as not enough ETH exists for that
-            (,uint224 currentValue,) = rocketNetworkSnapshots.latest(key);
+            (,,uint224 currentValue) = rocketNetworkSnapshots.latest(key);
             int256 newValue = int256(uint256(currentValue)) + correction.delta;
             rocketNetworkSnapshots.push(key, uint224(uint256(newValue)));
         }
