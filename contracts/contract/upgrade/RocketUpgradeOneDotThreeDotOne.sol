@@ -149,6 +149,8 @@ contract RocketUpgradeOneDotThreeDotOne is RocketBase {
             // Cast is safe as current values cannot exceed max value of int256 as not enough ETH exists for that
             (,,uint224 currentValue) = rocketNetworkSnapshots.latest(key);
             int256 newValue = int256(uint256(currentValue)) + correction.delta;
+            // Sanity check new value
+            require(newValue >= 0, "Invalid correction");
             rocketNetworkSnapshots.push(key, uint224(uint256(newValue)));
         }
 
