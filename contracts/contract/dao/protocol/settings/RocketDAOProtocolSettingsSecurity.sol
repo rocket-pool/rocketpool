@@ -29,6 +29,8 @@ contract RocketDAOProtocolSettingsSecurity is RocketDAOProtocolSettings, RocketD
             setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "node", "node.smoothing.pool.registration.enabled")), true);
             setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "node", "node.deposit.enabled")), true);
             setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "node", "node.vacant.minipools.enabled")), true);
+            setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "auction", "auction.lot.create.enabled")), true);
+            setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "auction", "auction.lot.bidding.enabled")), true);
 
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
