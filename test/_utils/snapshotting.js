@@ -1,25 +1,18 @@
-import { revertSnapshot, takeSnapshot } from './evm'
+const helpers = require('@nomicfoundation/hardhat-network-helpers');
 
-let snapshotId, globalSnapshotId;
+let globalSnapshot, snapshot;
 
 export async function startSnapShot() {
-  snapshotId = await takeSnapshot(web3);
+    snapshot = await helpers.takeSnapshot();
 }
 
 export async function endSnapShot() {
-  await revertSnapshot(web3, snapshotId);
+    await snapshot.restore();
 }
 
 export async function globalSnapShot() {
-  if (globalSnapshotId) {
-    await revertSnapshot(web3, globalSnapshotId);
-  }
-  globalSnapshotId = await takeSnapshot(web3);
-}
-
-export function injectGlobalSnapShot(suite, depth) {
-  suite.suites.forEach(suite => injectGlobalSnapShot(suite, depth +1));
-  if (!suite.root) {
-    suite._beforeAll.unshift(suite._createHook('Global snapshot', globalSnapShot));
-  }
+    if (globalSnapshot) {
+        await globalSnapshot.restore();
+    }
+    globalSnapshot = await helpers.takeSnapshot();
 }

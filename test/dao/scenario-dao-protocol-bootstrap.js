@@ -1,13 +1,16 @@
-import Web3 from 'web3';
 import {
+    RocketClaimDAO,
     RocketDAOProtocol,
-    RocketDAOProtocolSettingsRewards,
     RocketDAOProtocolSettingsInflation,
+    RocketDAOProtocolSettingsRewards,
     RocketTokenRPL,
-    RocketVault, RocketClaimDAO,
+    RocketVault,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
+import * as assert from 'assert';
 
+const hre = require('hardhat');
+const ethers = hre.ethers;
 
 // Change a trusted node DAO setting while bootstrap mode is enabled
 export async function setDAOProtocolBootstrapSetting(_settingContractInstance, _settingPath, _value, txOptions) {
@@ -15,48 +18,48 @@ export async function setDAOProtocolBootstrapSetting(_settingContractInstance, _
     // Helper function
     String.prototype.lowerCaseFirstLetter = function() {
         return this.charAt(0).toLowerCase() + this.slice(1);
-    }
+    };
 
     // Load contracts
-    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+    const rocketDAOProtocol = (await RocketDAOProtocol.deployed()).connect(txOptions.from);
     const rocketDAOProtocolSettingsContract = await _settingContractInstance.deployed();
 
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAOProtocolSettingsContract.getSettingUint.call(_settingPath),
-            rocketDAOProtocolSettingsContract.getSettingBool.call(_settingPath),
-            rocketDAOProtocolSettingsContract.getSettingAddress.call(_settingPath)
+            rocketDAOProtocolSettingsContract.getSettingUint(_settingPath),
+            rocketDAOProtocolSettingsContract.getSettingBool(_settingPath),
+            rocketDAOProtocolSettingsContract.getSettingAddress(_settingPath),
         ]).then(
             ([settingUintValue, settingBoolValue, settingAddressValue]) =>
-            ({settingUintValue, settingBoolValue, settingAddressValue})
+                ({ settingUintValue, settingBoolValue, settingAddressValue }),
         );
     }
 
     // Capture data
     let ds1 = await getTxData();
 
-    let contractName = _settingContractInstance._json.contractName.lowerCaseFirstLetter();
+    let contractName = _settingContractInstance.name.lowerCaseFirstLetter();
 
     // Set as a bootstrapped setting. detect type first, can be a number, string or bn object
-    if(Web3.utils.isAddress(_value)) {
+    if (ethers.isAddress(_value)) {
         await rocketDAOProtocol.bootstrapSettingAddress(contractName, _settingPath, _value, txOptions);
-    }else{
-        if(typeof(_value) == 'number' || typeof(_value) == 'string' || typeof(_value) == 'object') await rocketDAOProtocol.bootstrapSettingUint(contractName, _settingPath, _value, txOptions);
-        if(typeof(_value) == 'boolean') await rocketDAOProtocol.bootstrapSettingBool(contractName, _settingPath, _value, txOptions);
+    } else {
+        if (typeof (_value) == 'number' || typeof (_value) == 'string' || typeof (_value) == 'bigint') await rocketDAOProtocol.bootstrapSettingUint(contractName, _settingPath, _value, txOptions);
+        if (typeof (_value) == 'boolean') await rocketDAOProtocol.bootstrapSettingBool(contractName, _settingPath, _value, txOptions);
     }
 
     // Capture data
     let ds2 = await getTxData();
 
     // Check it was updated
-    if (Web3.utils.isAddress(_value)) {
+    if (ethers.isAddress(_value)) {
         assert.strictEqual(ds2.settingAddressValue, _value, 'DAO protocol address setting not updated in bootstrap mode');
     } else {
-        if(typeof(_value) == 'number' || typeof(_value) == 'string') {
+        if (typeof (_value) == 'number' || typeof (_value) == 'string' || typeof (_value) == 'bigint') {
             assertBN.equal(ds2.settingUintValue, _value, 'DAO protocol uint256 setting not updated in bootstrap mode');
         }
-        if(typeof(_value) == 'boolean') {
+        if (typeof (_value) == 'boolean') {
             assert.strictEqual(ds2.settingBoolValue, _value, 'DAO protocol boolean setting not updated in bootstrap mode');
         }
     }
@@ -67,17 +70,19 @@ export async function setDAONetworkBootstrapRewardsClaimers(_trustedNodePerc, _p
     // Load contracts
     const rocketDAOProtocol = await RocketDAOProtocol.deployed();
     const rocketDAOProtocolSettingsRewards = await RocketDAOProtocolSettingsRewards.deployed();
+
     // Get data about the tx
     function getTxData() {
         return Promise.all([
             rocketDAOProtocolSettingsRewards.getRewardsClaimersPerc(),
         ]).then(
             ([rewardsClaimerPerc]) =>
-            ({rewardsClaimerPerc})
+                ({ rewardsClaimerPerc }),
         );
     }
+
     // Perform tx
-    await rocketDAOProtocol.bootstrapSettingClaimers(_trustedNodePerc, _protocolPerc, _nodePerc, txOptions);
+    await rocketDAOProtocol.connect(txOptions.from).bootstrapSettingClaimers(_trustedNodePerc, _protocolPerc, _nodePerc, txOptions);
     // Capture data
     let dataSet2 = await getTxData();
     // Verify
@@ -86,7 +91,6 @@ export async function setDAONetworkBootstrapRewardsClaimers(_trustedNodePerc, _p
     assertBN.equal(dataSet2.rewardsClaimerPerc[2], _nodePerc, 'Claim percentage not updated correctly');
 }
 
-
 /*** Rewards *******/
 
 // Set the current rewards claim period in seconds
@@ -94,7 +98,6 @@ export async function setRewardsClaimIntervalTime(intervalTime, txOptions) {
     // Set it now
     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rpl.rewards.claim.period.time', intervalTime, txOptions);
 }
-
 
 // Spend the DAO treasury in bootstrap mode
 export async function spendRewardsClaimTreasury(_invoiceID, _recipientAddress, _amount, txOptions) {
@@ -110,7 +113,7 @@ export async function spendRewardsClaimTreasury(_invoiceID, _recipientAddress, _
             rocketTokenRPL.balanceOf(_recipientAddress),
         ]).then(
             ([daoClaimTreasuryBalance, recipientBalance]) =>
-            ({daoClaimTreasuryBalance, recipientBalance})
+                ({ daoClaimTreasuryBalance, recipientBalance }),
         );
     }
 
@@ -128,9 +131,8 @@ export async function spendRewardsClaimTreasury(_invoiceID, _recipientAddress, _
     // console.log(web3.utils.fromWei(ds2.daoClaimTreasuryBalance), web3.utils.fromWei(ds2.recipientBalance), web3.utils.fromWei(_amount));
 
     // Verify the amount sent is correct
-    assertBN.equal(ds2.recipientBalance, ds1.recipientBalance.add(_amount), "Amount spent by treasury does not match recipients received amount");
+    assertBN.equal(ds2.recipientBalance, ds1.recipientBalance.add(_amount), 'Amount spent by treasury does not match recipients received amount');
 }
-
 
 // Create a new recurring payment via bootstrap
 export async function bootstrapTreasuryNewContract(_contractName, _recipientAddress, _amount, _periodLength, _startTime, _numPeriods, txOptions) {
@@ -143,13 +145,12 @@ export async function bootstrapTreasuryNewContract(_contractName, _recipientAddr
 
     // Sanity check
     const contract = await rocketClaimDAO.getContract(_contractName);
-    assert(contract.recipient === _recipientAddress);
-    assertBN.equal(contract.amountPerPeriod, _amount, "Invalid amount");
-    assert(Number(contract.periodLength) === _periodLength);
-    assert(Number(contract.numPeriods) === _numPeriods);
-    assert(Number(contract.lastPaymentTime) === _startTime);
+    assert.strictEqual(contract.recipient, _recipientAddress);
+    assertBN.equal(contract.amountPerPeriod, _amount, 'Invalid amount');
+    assert.strictEqual(Number(contract.periodLength), _periodLength);
+    assert.strictEqual(Number(contract.numPeriods), _numPeriods);
+    assert.strictEqual(Number(contract.lastPaymentTime), _startTime);
 }
-
 
 // Update an existing recurring payment via bootstrap
 export async function bootstrapTreasuryUpdateContract(_contractName, _recipientAddress, _amount, _periodLength, _numPeriods, txOptions) {
@@ -162,10 +163,10 @@ export async function bootstrapTreasuryUpdateContract(_contractName, _recipientA
 
     // Sanity check
     const contract = await rocketClaimDAO.getContract(_contractName);
-    assert(contract.recipient === _recipientAddress);
-    assertBN.equal(contract.amountPerPeriod, _amount, "Invalid amount");
-    assert(Number(contract.periodLength) === _periodLength);
-    assert(Number(contract.numPeriods) === _numPeriods);
+    assert.strictEqual(contract.recipient, _recipientAddress);
+    assertBN.equal(contract.amountPerPeriod, _amount, 'Invalid amount');
+    assert.strictEqual(Number(contract.periodLength), _periodLength);
+    assert.strictEqual(Number(contract.numPeriods), _numPeriods);
 }
 
 /*** Inflation *******/
@@ -173,18 +174,16 @@ export async function bootstrapTreasuryUpdateContract(_contractName, _recipientA
 // Set the current RPL inflation rate
 export async function setRPLInflationIntervalRate(yearlyInflationPerc, txOptions) {
     // Calculate the inflation rate per day
-    let dailyInflation = (1 + yearlyInflationPerc) ** (1 / (365)).toFixed(18);
+    let dailyInflation = ((1 + yearlyInflationPerc) ** (1 / (365))).toFixed(18).ether;
     // Set it now
-    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.rate', dailyInflation.ether, txOptions);
+    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.rate', dailyInflation, txOptions);
 }
-
 
 // Set the current RPL inflation block interval
 export async function setRPLInflationStartTime(startTime, txOptions) {
     // Set it now
     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.start', startTime, txOptions);
 }
-
 
 // Disable bootstrap mode
 export async function setDaoProtocolBootstrapModeDisabled(txOptions) {
@@ -194,10 +193,10 @@ export async function setDaoProtocolBootstrapModeDisabled(txOptions) {
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAOProtocol.getBootstrapModeDisabled.call(),
+            rocketDAOProtocol.getBootstrapModeDisabled(),
         ]).then(
             ([bootstrapmodeDisabled]) =>
-            ({bootstrapmodeDisabled})
+                ({ bootstrapmodeDisabled }),
         );
     }
 
@@ -216,86 +215,82 @@ export async function setDaoProtocolBootstrapModeDisabled(txOptions) {
 
 // Change multiple trusted node DAO settings while bootstrap mode is enabled
 export async function setDAOProtocolBootstrapSettingMulti(_settingContractInstances, _settingPaths, _values, txOptions) {
-  // Helper function
-  String.prototype.lowerCaseFirstLetter = function() {
-    return this.charAt(0).toLowerCase() + this.slice(1);
-  }
+    // Helper function
+    String.prototype.lowerCaseFirstLetter = function() {
+        return this.charAt(0).toLowerCase() + this.slice(1);
+    };
 
-  // Load contracts
-  const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+    // Load contracts
+    const rocketDAOProtocol = (await RocketDAOProtocol.deployed()).connect(txOptions.from);
 
+    const contractNames = [];
+    const values = [];
+    const types = [];
 
-  const contractNames = [];
-  const values = [];
-  const types = [];
+    const abiCoder = ethers.AbiCoder.defaultAbiCoder();
 
-  for (let i = 0; i < _settingContractInstances.length; i++) {
-    const value = _values[i];
-    contractNames.push(_settingContractInstances[i]._json.contractName.lowerCaseFirstLetter());
-    if(Web3.utils.isAddress(value)) {
-      values.push(web3.eth.abi.encodeParameter('address', value));
-      types.push(2);
-    }else{
-      if(typeof(value) == 'number' || typeof(value) == 'string' || typeof(value) == 'object') {
-        values.push(web3.eth.abi.encodeParameter('uint256', value));
-        types.push(0);
-      } else if(typeof(value) == 'boolean') {
-        values.push(web3.eth.abi.encodeParameter('bool', value));
-        types.push(1);
-      } else {
-        throw new Error('Invalid value supplied');
-      }
+    for (let i = 0; i < _settingContractInstances.length; i++) {
+        const value = _values[i];
+        contractNames.push(_settingContractInstances[i].name.lowerCaseFirstLetter());
+        if (ethers.isAddress(value)) {
+            values.push(abiCoder.encode(['address'], [value]));
+            types.push(2);
+        } else {
+            if (typeof (value) == 'number' || typeof (value) == 'string' || typeof (value) == 'bigint') {
+                values.push(abiCoder.encode(['uint256'], [value]));
+                types.push(0);
+            } else if (typeof (value) == 'boolean') {
+                values.push(abiCoder.encode(['bool'], [value]));
+                types.push(1);
+            } else {
+                throw new Error('Invalid value supplied');
+            }
+        }
     }
-  }
 
-  // console.log(contractNames);
-  // console.log(_settingPaths);
-  // console.log(types);
-  // console.log(values);
+    // Set as a bootstrapped setting. detect type first, can be a number, string or bn object
+    await rocketDAOProtocol.bootstrapSettingMulti(contractNames, _settingPaths, types, values, txOptions);
 
-  // Set as a bootstrapped setting. detect type first, can be a number, string or bn object
-  await rocketDAOProtocol.bootstrapSettingMulti(contractNames, _settingPaths, types, values, txOptions);
-
-  // Get data about the tx
-  async function getTxData() {
-    const instances = await Promise.all(_settingContractInstances.map(instance => instance.deployed()));
-    return Promise.all(instances.map((rocketDAOProtocolSettingsContract, index) => {
-      switch (types[index]) {
-        case 0:
-          return rocketDAOProtocolSettingsContract.getSettingUint.call(_settingPaths[index]);
-        case 1:
-          return rocketDAOProtocolSettingsContract.getSettingBool.call(_settingPaths[index]);
-        case 2:
-          return rocketDAOProtocolSettingsContract.getSettingAddress.call(_settingPaths[index]);
-      }
-    }));
-  }
-
-  // Capture data
-  let data = await getTxData();
-
-  // Check it was updated
-  for (let i = 0; i < _values.length; i++) {
-    const value = _values[i];
-    switch (types[i]) {
-      case 0:
-        assertBN.equal(data[i], value, 'DAO protocol uint256 setting not updated in bootstrap mode');
-        break;
-      case 1:
-        assert.strictEqual(data[i], value, 'DAO protocol boolean setting not updated in bootstrap mode');
-        break;
-      case 2:
-        assert.strictEqual(data[i], value, 'DAO protocol address setting not updated in bootstrap mode');
-        break;
+    // Get data about the tx
+    async function getTxData() {
+        const instances = await Promise.all(_settingContractInstances.map(instance => instance.deployed()));
+        return Promise.all(instances.map((rocketDAOProtocolSettingsContract, index) => {
+            switch (types[index]) {
+                case 0:
+                    return rocketDAOProtocolSettingsContract.getSettingUint(_settingPaths[index]);
+                case 1:
+                    return rocketDAOProtocolSettingsContract.getSettingBool(_settingPaths[index]);
+                case 2:
+                    return rocketDAOProtocolSettingsContract.getSettingAddress(_settingPaths[index]);
+            }
+        }));
     }
-  }
+
+    // Capture data
+    let data = await getTxData();
+
+    // Check it was updated
+    for (let i = 0; i < _values.length; i++) {
+        const value = _values[i];
+        switch (types[i]) {
+            case 0:
+                assertBN.equal(data[i], value, 'DAO protocol uint256 setting not updated in bootstrap mode');
+                break;
+            case 1:
+                assert.strictEqual(data[i], value, 'DAO protocol boolean setting not updated in bootstrap mode');
+                break;
+            case 2:
+                assert.strictEqual(data[i], value, 'DAO protocol address setting not updated in bootstrap mode');
+                break;
+        }
+    }
 }
 
 export async function setDAOProtocolBootstrapEnableGovernance(txOptions) {
     // Load contracts
-    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+    const rocketDAOProtocol = (await RocketDAOProtocol.deployed()).connect(txOptions.from);
     // Execute enable transaction
-    await rocketDAOProtocol.bootstrapEnableGovernance();
+    await rocketDAOProtocol.bootstrapEnableGovernance(txOptions);
 }
 
 /*** Security council *******/
@@ -303,7 +298,7 @@ export async function setDAOProtocolBootstrapEnableGovernance(txOptions) {
 // Use bootstrap power to invite a member to the security council
 export async function setDAOProtocolBootstrapSecurityInvite(_id, _memberAddress, txOptions) {
     // Load contracts
-    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+    const rocketDAOProtocol = (await RocketDAOProtocol.deployed()).connect(txOptions.from);
     // Execute the invite
     await rocketDAOProtocol.bootstrapSecurityInvite(_id, _memberAddress, txOptions);
 }
@@ -311,7 +306,7 @@ export async function setDAOProtocolBootstrapSecurityInvite(_id, _memberAddress,
 // Use bootstrap power to kick a member from the security council
 export async function setDAOProtocolBootstrapSecurityKick(_id, _memberAddress, txOptions) {
     // Load contracts
-    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+    const rocketDAOProtocol = (await RocketDAOProtocol.deployed()).connect(txOptions.from);
     // Execute the kick
     await rocketDAOProtocol.bootstrapSecurityKick(_memberAddress, txOptions);
 }

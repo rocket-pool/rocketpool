@@ -7,7 +7,10 @@ import {
     RocketMinipoolDelegate,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
+import { BigMin } from '../_helpers/bigmath';
 
+const hre = require('hardhat');
+const ethers = hre.ethers;
 
 // Assign deposits to minipools
 export async function assignDepositsV2(txOptions) {
@@ -35,11 +38,11 @@ export async function assignDepositsV2(txOptions) {
         fullMinipoolQueueLength, halfMinipoolQueueLength, emptyMinipoolQueueLength,
         fullDepositUserAmount, halfDepositUserAmount, emptyDepositUserAmount,
     ] = await Promise.all([
-        rocketVault.balanceOf.call("rocketDepositPool"),
-        rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments.call(),
-        rocketDAOProtocolSettingsDeposit.getMaximumDepositSocialisedAssignments.call(),
-        rocketMinipoolQueue.getLength.call(),
-        rocketMinipoolQueue.getLengthLegacy.call(1), rocketMinipoolQueue.getLengthLegacy.call(2), rocketMinipoolQueue.getLengthLegacy.call(3),
+        rocketVault.balanceOf("rocketDepositPool"),
+        rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments(),
+        rocketDAOProtocolSettingsDeposit.getMaximumDepositSocialisedAssignments(),
+        rocketMinipoolQueue.getLength(),
+        rocketMinipoolQueue.getLengthLegacy(1), rocketMinipoolQueue.getLengthLegacy(2), rocketMinipoolQueue.getLengthLegacy(3),
         rocketDAOProtocolSettingsMinipool.getDepositUserAmount(1), rocketDAOProtocolSettingsMinipool.getDepositUserAmount(2), rocketDAOProtocolSettingsMinipool.getDepositUserAmount(3),
     ]);
 
@@ -50,13 +53,13 @@ export async function assignDepositsV2(txOptions) {
     for (let i = 0; i < emptyMinipoolQueueLength; ++i) minipoolCapacities.push(emptyDepositUserAmount);
 
     // Get expected deposit assignment parameters
-    let expectedDepositAssignments = 0;
+    let expectedDepositAssignments = 0n;
     let expectedEthAssigned = '0'.ether;
     let expectedNodeBalanceUsed = '0'.ether;
     let depositBalanceRemaining = depositPoolBalance;
     let depositAssignmentsRemaining = maxDepositAssignments;
 
-    while (minipoolCapacities.length > 0 && depositBalanceRemaining.gte(minipoolCapacities[0]) && depositAssignmentsRemaining > 0) {
+    while (minipoolCapacities.length > 0 && depositBalanceRemaining >= minipoolCapacities[0] && depositAssignmentsRemaining > 0) {
         let capacity = minipoolCapacities.shift();
         ++expectedDepositAssignments;
         expectedEthAssigned = expectedEthAssigned.add(capacity);
@@ -65,25 +68,25 @@ export async function assignDepositsV2(txOptions) {
     }
 
     // No legacy deposits
-    if (expectedDepositAssignments === 0) {
-        let scalingCount = maxSocialisedAssignments.toNumber();
-        let totalEthCount = depositPoolBalance.div('31'.ether).toNumber();
-        expectedDepositAssignments = Math.min(scalingCount, totalEthCount, maxDepositAssignments.toNumber(), minipoolQueueLength.toNumber());
-        expectedEthAssigned = '31'.ether.mul(expectedDepositAssignments.BN);
+    if (expectedDepositAssignments === 0n) {
+        let scalingCount = maxSocialisedAssignments;
+        let totalEthCount = depositPoolBalance / '31'.ether;
+        expectedDepositAssignments = BigMin(scalingCount, totalEthCount, maxDepositAssignments, minipoolQueueLength);
+        expectedEthAssigned = '31'.ether * expectedDepositAssignments;
 
-        let indices = [...Array(expectedDepositAssignments).keys()];
+        let indices = [...Array(Number(expectedDepositAssignments)).keys()];
         let addressesInQueue = await Promise.all(indices.map(i => rocketMinipoolQueue.getMinipoolAt(i)));
         let minipoolsInQueue = await Promise.all(addressesInQueue.map(a => RocketMinipoolDelegate.at(a)));
         let topUpValues = await Promise.all(minipoolsInQueue.map(m => m.getNodeTopUpValue()))
-        expectedNodeBalanceUsed = topUpValues.reduce((p, c) => p.add(c), expectedNodeBalanceUsed);
+        expectedNodeBalanceUsed = topUpValues.reduce((p, c) => p + c, expectedNodeBalanceUsed);
     }
 
     // Get balances
     function getBalances() {
         return Promise.all([
-            rocketDepositPool.getBalance.call(),
-            rocketDepositPool.getNodeBalance.call(),
-            web3.eth.getBalance(rocketVault.address).then(value => value.BN),
+            rocketDepositPool.getBalance(),
+            rocketDepositPool.getNodeBalance(),
+            ethers.provider.getBalance(rocketVault.target),
         ]).then(
             ([depositPoolEth, depositPoolNodeEth, vaultEth]) =>
             ({depositPoolEth, depositPoolNodeEth, vaultEth})
@@ -93,8 +96,8 @@ export async function assignDepositsV2(txOptions) {
     // Get minipool queue details
     function getMinipoolQueueDetails() {
         return Promise.all([
-            rocketMinipoolQueue.getTotalLength.call(),
-            rocketMinipoolQueue.getTotalCapacity.call(),
+            rocketMinipoolQueue.getTotalLength(),
+            rocketMinipoolQueue.getTotalCapacity(),
         ]).then(
             ([totalLength, totalCapacity]) =>
             ({totalLength, totalCapacity})
@@ -108,7 +111,7 @@ export async function assignDepositsV2(txOptions) {
     ]);
 
     // Assign deposits
-    await rocketDepositPool.assignDeposits(txOptions);
+    await rocketDepositPool.connect(txOptions.from).assignDeposits(txOptions);
 
     // Get updated balances & minipool queue details
     let [balances2, queue2] = await Promise.all([
@@ -117,11 +120,11 @@ export async function assignDepositsV2(txOptions) {
     ]);
 
     // Check balances
-    assertBN.equal(balances2.depositPoolEth, balances1.depositPoolEth.sub(expectedEthAssigned), 'Incorrect updated deposit pool ETH balance');
-    assertBN.equal(balances2.depositPoolNodeEth, balances1.depositPoolNodeEth.sub(expectedNodeBalanceUsed), 'Incorrect updated deposit pool node ETH balance');
-    assertBN.equal(balances2.vaultEth, balances1.vaultEth.sub(expectedEthAssigned), 'Incorrect updated vault ETH balance');
+    assertBN.equal(balances2.depositPoolEth, balances1.depositPoolEth - expectedEthAssigned, 'Incorrect updated deposit pool ETH balance');
+    assertBN.equal(balances2.depositPoolNodeEth, balances1.depositPoolNodeEth - expectedNodeBalanceUsed, 'Incorrect updated deposit pool node ETH balance');
+    assertBN.equal(balances2.vaultEth, balances1.vaultEth - expectedEthAssigned, 'Incorrect updated vault ETH balance');
 
     // Check minipool queues
-    assertBN.equal(queue2.totalLength, queue1.totalLength.sub(expectedDepositAssignments.BN), 'Incorrect updated minipool queue length');
-    assertBN.equal(queue2.totalCapacity, queue1.totalCapacity.sub(expectedEthAssigned), 'Incorrect updated minipool queue capacity');
+    assertBN.equal(queue2.totalLength, queue1.totalLength - BigInt(expectedDepositAssignments), 'Incorrect updated minipool queue length');
+    assertBN.equal(queue2.totalCapacity, queue1.totalCapacity - expectedEthAssigned, 'Incorrect updated minipool queue capacity');
 }

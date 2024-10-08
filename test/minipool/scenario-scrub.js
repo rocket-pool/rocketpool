@@ -1,23 +1,19 @@
-// Dissolve a minipool
 import {
     RocketDAONodeTrusted,
     RocketDAONodeTrustedSettingsMinipool,
-    RocketDAOProtocolSettingsNode,
     RocketMinipoolManager,
-    RocketMinipoolManagerNew,
-    RocketNetworkPrices,
     RocketNodeStaking,
-    RocketNodeStakingNew,
-    RocketTokenRPL,
-    RocketVault,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 import { minipoolStates } from '../_helpers/minipool';
+import * as assert from 'assert';
 
+const hre = require('hardhat');
+const ethers = hre.ethers;
 
 export async function voteScrub(minipool, txOptions) {
     // Get minipool owner
-    const nodeAddress = await minipool.getNodeAddress.call();
+    const nodeAddress = await minipool.getNodeAddress();
 
     // Get contracts
     const rocketNodeStaking = await RocketNodeStaking.deployed();
@@ -26,16 +22,24 @@ export async function voteScrub(minipool, txOptions) {
     // Get minipool details
     function getMinipoolDetails() {
         return Promise.all([
-            minipool.getStatus.call(),
-            minipool.getUserDepositBalance.call(),
-            hre.web3.eth.getBalance(minipool.address),
-            minipool.getTotalScrubVotes.call(),
-            rocketNodeStaking.getNodeRPLStake.call(nodeAddress),
+            minipool.getStatus(),
+            minipool.getUserDepositBalance(),
+            ethers.provider.getBalance(minipool.target),
+            minipool.getTotalScrubVotes(),
+            rocketNodeStaking.getNodeRPLStake(nodeAddress),
             rocketDAONodeTrustedSettingsMinipool.getScrubPenaltyEnabled(),
-            minipool.getVacant.call(),
+            minipool.getVacant(),
         ]).then(
             ([status, userDepositBalance, minipoolBalance, votes, nodeRPLStake, penaltyEnabled, vacant]) =>
-            ({status, userDepositBalance, minipoolBalance: hre.web3.utils.toBN(minipoolBalance), votes, nodeRPLStake, penaltyEnabled, vacant})
+                ({
+                    status: Number(status),
+                    userDepositBalance,
+                    minipoolBalance,
+                    votes,
+                    nodeRPLStake,
+                    penaltyEnabled,
+                    vacant,
+                }),
         );
     }
 
@@ -43,7 +47,7 @@ export async function voteScrub(minipool, txOptions) {
     let details1 = await getMinipoolDetails();
 
     // Dissolve
-    await minipool.voteScrub(txOptions);
+    await minipool.connect(txOptions.from).voteScrub(txOptions);
 
     // Get updated minipool details
     let details2 = await getMinipoolDetails();
@@ -51,35 +55,35 @@ export async function voteScrub(minipool, txOptions) {
     // Get member count
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
     const memberCount = await rocketDAONodeTrusted.getMemberCount();
-    const quorum = memberCount.div('2'.BN);
+    const quorum = memberCount / 2n;
 
     // Check state
-    if (details1.votes.add('1'.BN).gt(quorum)){
-        assertBN.equal(details2.status, minipoolStates.Dissolved, 'Incorrect updated minipool status');
+    if (details1.votes + 1n > quorum) {
+        assert.equal(details2.status, minipoolStates.Dissolved, 'Incorrect updated minipool status');
         // Check if vacant
         if (!details1.vacant) {
             // Check slashing if penalties are enabled
             if (details1.penaltyEnabled) {
                 // Check user deposit balance + 2.4 eth penalty left the minipool
-                const minipoolBalanceDiff = details2.minipoolBalance.sub(details1.minipoolBalance);
-                assertBN.equal(minipoolBalanceDiff, details1.userDepositBalance.add('2.4'.ether).neg(), 'User balance is incorrect');
+                const minipoolBalanceDiff = details2.minipoolBalance - details1.minipoolBalance;
+                assertBN.equal(minipoolBalanceDiff, -(details1.userDepositBalance + '2.4'.ether), 'User balance is incorrect');
             } else {
                 // Check user deposit balance left the minipool
-                const minipoolBalanceDiff = details2.minipoolBalance.sub(details1.minipoolBalance);
-                assertBN.equal(minipoolBalanceDiff, details1.userDepositBalance.neg(), 'User balance is incorrect');
+                const minipoolBalanceDiff = details2.minipoolBalance - details1.minipoolBalance;
+                assertBN.equal(minipoolBalanceDiff, -details1.userDepositBalance, 'User balance is incorrect');
             }
         } else {
             // Expect no change in minipool balance
-            const minipoolBalanceDiff = details2.minipoolBalance.sub(details1.minipoolBalance);
-            assertBN.equal(minipoolBalanceDiff, '0'.BN, 'User balance is incorrect');
+            const minipoolBalanceDiff = details2.minipoolBalance - details1.minipoolBalance;
+            assertBN.equal(minipoolBalanceDiff, 0n, 'User balance is incorrect');
             // Expect pubkey -> minipool mapping to be removed
             const rocketMinipoolManager = await RocketMinipoolManager.deployed();
-            const actualPubKey = await rocketMinipoolManager.getMinipoolPubkey(minipool.address);
+            const actualPubKey = await rocketMinipoolManager.getMinipoolPubkey(minipool.target);
             const reverseAddress = await rocketMinipoolManager.getMinipoolByPubkey(actualPubKey);
-            assert.equal(reverseAddress, "0x0000000000000000000000000000000000000000");
+            assert.equal(reverseAddress, '0x0000000000000000000000000000000000000000');
         }
     } else {
-        assertBN.equal(details2.votes.sub(details1.votes), 1, 'Vote count not incremented');
+        assertBN.equal(details2.votes - details1.votes, 1, 'Vote count not incremented');
         assertBN.notEqual(details2.status, minipoolStates.Dissolved, 'Incorrect updated minipool status');
         assertBN.equal(details2.nodeRPLStake, details1.nodeRPLStake, 'RPL was slashed');
     }

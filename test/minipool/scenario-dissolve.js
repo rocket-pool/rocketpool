@@ -1,16 +1,16 @@
 // Dissolve a minipool
 import { minipoolStates } from '../_helpers/minipool';
-import { assertBN } from '../_helpers/bn';
+import * as assert from 'assert';
 
 export async function dissolve(minipool, txOptions) {
     // Get minipool details
     function getMinipoolDetails() {
         return Promise.all([
-            minipool.getStatus.call(),
-            minipool.getUserDepositBalance.call(),
+            minipool.getStatus(),
+            minipool.getUserDepositBalance(),
         ]).then(
             ([status, userDepositBalance]) =>
-            ({status, userDepositBalance})
+                ({ status: Number(status), userDepositBalance }),
         );
     }
 
@@ -18,12 +18,12 @@ export async function dissolve(minipool, txOptions) {
     let details1 = await getMinipoolDetails();
 
     // Dissolve
-    await minipool.dissolve(txOptions);
+    await minipool.connect(txOptions.from).dissolve(txOptions);
 
     // Get updated minipool details
     let details2 = await getMinipoolDetails();
 
     // Check minipool details
-    assertBN.notEqual(details1.status, minipoolStates.Dissolved, 'Incorrect initial minipool status');
-    assertBN.equal(details2.status, minipoolStates.Dissolved, 'Incorrect updated minipool status');
+    assert.notEqual(details1.status, minipoolStates.Dissolved, 'Incorrect initial minipool status');
+    assert.equal(details2.status, minipoolStates.Dissolved, 'Incorrect updated minipool status');
 }

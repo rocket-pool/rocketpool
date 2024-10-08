@@ -1,40 +1,47 @@
 import {
-    RocketNetworkVoting,
-    RocketDAOProtocolVerifier,
+    RocketDAOProtocolProposal,
     RocketDAOProtocolSettingsProposals,
-    RocketDAOProtocolProposal, RocketNodeManager, RocketNodeStaking, RocketTokenRPL,
+    RocketDAOProtocolVerifier,
+    RocketNetworkVoting,
+    RocketNodeManager,
+    RocketNodeStaking,
+    RocketTokenRPL,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 import { voteStates } from './scenario-dao-proposal';
 import { shouldRevert } from '../_utils/testing';
 import { getDaoProtocolProposalBond } from '../_helpers/dao';
+import * as assert from 'assert';
+
+const hre = require('hardhat');
+const ethers = hre.ethers;
 
 // Possible states that a proposal may be in
 export const proposalStates = {
-    Pending      : 0,
-    ActivePhase1 : 1,
-    ActivePhase2 : 2,
-    Cancelled    : 3,
-    Vetoed       : 4,
-    QuorumNotMet : 5,
-    Defeated     : 6,
-    Succeeded    : 7,
-    Expired      : 8,
-    Executed     : 9
+    Pending: 0,
+    ActivePhase1: 1,
+    ActivePhase2: 2,
+    Cancelled: 3,
+    Vetoed: 4,
+    QuorumNotMet: 5,
+    Defeated: 6,
+    Succeeded: 7,
+    Expired: 8,
+    Executed: 9,
 };
 
 // Get the status of a proposal
-export async function getDAOProposalState(proposalID, txOptions) {
+export async function getDAOProposalState(proposalID) {
     // Load contracts
     const rocketDAOProposal = await RocketDAOProtocolProposal.deployed();
-    return await rocketDAOProposal.getState.call(proposalID);
+    return await rocketDAOProposal.getState(proposalID);
 }
 
 // Get the quorum for a proposal
 export async function getDAOProposalVotesRequired(proposalID, txOptions) {
     // Load contracts
     const rocketDAOProposal = await RocketDAOProtocolProposal.deployed();
-    return await rocketDAOProposal.getVotingPowerRequired.call(proposalID);
+    return await rocketDAOProposal.getVotingPowerRequired(proposalID);
 }
 
 /**
@@ -46,7 +53,7 @@ export async function getDelegatedVotingPower(block) {
     const rocketNodeManager = await RocketNodeManager.deployed();
 
     // Grab the number of nodes at the block
-    const nodeCount = (await rocketNetworkVoting.getNodeCount(block)).toNumber();
+    const nodeCount = await rocketNetworkVoting.getNodeCount(block);
 
     // Setup data structs for calculation
     const delegatedPower = [];
@@ -65,11 +72,11 @@ export async function getDelegatedVotingPower(block) {
         delegatedPower.push({
             nodeAddress,
             power,
-            delegate
+            delegate,
         });
 
         delegateIndices[nodeAddress] = i;
-        votingPower[i] = '0'.BN;
+        votingPower[i] = 0n;
     }
 
     // Loop over the nodes again and compute final delegated voting power
@@ -77,7 +84,7 @@ export async function getDelegatedVotingPower(block) {
         const delegateAddress = addresses[i];
         for (let j = 0; j < nodeCount; j++) {
             if (delegatedPower[j].delegate === delegateAddress) {
-                votingPower[i] = votingPower[i].add(delegatedPower[j].power);
+                votingPower[i] = votingPower[i] + delegatedPower[j].power;
             }
         }
     }
@@ -91,26 +98,23 @@ export async function getPhase2VotingPower(block, nodeIndex) {
     const rocketNodeManager = await RocketNodeManager.deployed();
 
     // Grab the number of nodes at the block
-    const nodeCount = (await rocketNetworkVoting.getNodeCount(block)).toNumber();
+    const nodeCount = Number(await rocketNetworkVoting.getNodeCount(block));
 
     // Setup data structs for calculation
     const delegatedPower = [];
     const delegateIndices = {};
-    const addresses = [];
     const votingPower = [];
 
     // Loop over each node and collect their delegate and voting power
     for (let i = 0; i < nodeCount; i++) {
         const nodeAddress = await rocketNodeManager.getNodeAt(i);
-        addresses[i] = nodeAddress;
-
         const power = await rocketNetworkVoting.getVotingPower(nodeAddress, block);
         const delegate = await rocketNetworkVoting.getDelegate(nodeAddress, block);
 
         delegatedPower.push({
             nodeAddress,
             power,
-            delegate
+            delegate,
         });
 
         delegateIndices[nodeAddress] = i;
@@ -123,7 +127,7 @@ export async function getPhase2VotingPower(block, nodeIndex) {
         if (delegatedPower[i].delegate === nodeAddress) {
             votingPower.push(delegatedPower[i].power);
         } else {
-            votingPower.push('0'.BN)
+            votingPower.push(0n);
         }
     }
 
@@ -144,13 +148,13 @@ export function constructTreeLeaves(votingPower) {
     let tree = [];
 
     for (let j = 0; j < leafCount; j++) {
-        let balance = "0".BN;
+        let balance = 0n;
         if (j < nodeCount) {
             balance = votingPower[j];
         }
         tree.push({
-            hash: web3.utils.soliditySha3({ v: balance, t: 'uint256' }),
-            sum: balance
+            hash: ethers.solidityPackedKeccak256(['uint256'], [balance]),
+            sum: balance,
         });
     }
 
@@ -200,14 +204,12 @@ export function daoProtocolGenerateVoteProof(leaves, index) {
             }
 
             leaves[i] = {
-                hash: web3.utils.soliditySha3(
-                    { t: 'bytes32', v: leaves[a].hash },
-                    { t: 'uint256', v: leaves[a].sum },
-                    { t: 'bytes32', v: leaves[b].hash },
-                    { t: 'uint256', v: leaves[b].sum },
+                hash: ethers.solidityPackedKeccak256(
+                    ['bytes32', 'uint256', 'bytes32', 'uint256'],
+                    [leaves[a].hash, leaves[a].sum, leaves[b].hash, leaves[b].sum],
                 ),
-                sum: leaves[a].sum.add(leaves[b].sum)
-            }
+                sum: leaves[a].sum + leaves[b].sum,
+            };
         }
 
         index = Math.floor(index / 2);
@@ -237,14 +239,12 @@ export function daoProtocolGenerateChallengeProof(leaves, order, index = 1) {
             const a = i * 2;
             const b = a + 1;
             leaves[i] = {
-                hash: web3.utils.soliditySha3(
-                    { t: 'bytes32', v: leaves[a].hash },
-                    { t: 'uint256', v: leaves[a].sum },
-                    { t: 'bytes32', v: leaves[b].hash },
-                    { t: 'uint256', v: leaves[b].sum },
+                hash: ethers.solidityPackedKeccak256(
+                    ['bytes32', 'uint256', 'bytes32', 'uint256'],
+                    [leaves[a].hash, leaves[a].sum, leaves[b].hash, leaves[b].sum],
                 ),
-                sum: leaves[a].sum.add(leaves[b].sum)
-            }
+                sum: leaves[a].sum + leaves[b].sum,
+            };
         }
     }
 
@@ -271,14 +271,12 @@ export function daoProtocolGenerateChallengeProof(leaves, order, index = 1) {
             }
 
             leaves[i] = {
-                hash: web3.utils.soliditySha3(
-                    { t: 'bytes32', v: leaves[a].hash },
-                    { t: 'uint256', v: leaves[a].sum },
-                    { t: 'bytes32', v: leaves[b].hash },
-                    { t: 'uint256', v: leaves[b].sum },
+                hash: ethers.solidityPackedKeccak256(
+                    ['bytes32', 'uint256', 'bytes32', 'uint256'],
+                    [leaves[a].hash, leaves[a].sum, leaves[b].hash, leaves[b].sum],
                 ),
-                sum: leaves[a].sum.add(leaves[b].sum)
-            }
+                sum: leaves[a].sum + leaves[b].sum,
+            };
         }
 
         index = Math.floor(index / 2);
@@ -297,7 +295,7 @@ export function daoProtocolGenerateChallengeProof(leaves, order, index = 1) {
     return {
         node: node,
         proof: proof.slice(0, proofLength),
-    }
+    };
 }
 
 // Construct a merkle tree pollard of a merkle sum tree of effective RPL stake to submit with a proposal
@@ -330,18 +328,16 @@ export async function daoProtocolGeneratePollard(leaves, order, index = 1) {
             const a = i * 2;
             const b = a + 1;
             leaves[i] = {
-                hash: web3.utils.soliditySha3(
-                    { t: 'bytes32', v: leaves[a].hash },
-                    { t: 'uint256', v: leaves[a].sum },
-                    { t: 'bytes32', v: leaves[b].hash },
-                    { t: 'uint256', v: leaves[b].sum },
+                hash: ethers.solidityPackedKeccak256(
+                    ['bytes32', 'uint256', 'bytes32', 'uint256'],
+                    [leaves[a].hash, leaves[a].sum, leaves[b].hash, leaves[b].sum],
                 ),
-                sum: leaves[a].sum.add(leaves[b].sum)
-            }
+                sum: leaves[a].sum + leaves[b].sum,
+            };
         }
 
         // Slice out the nodes for the pollard
-        if (level-1 === offset + order) {
+        if (level - 1 === offset + order) {
             nodes = leaves.slice(pollardOffset, pollardOffset + pollardSize);
         }
     }
@@ -375,15 +371,15 @@ export async function daoProtocolPropose(_proposalMessage, _payload, _block, _tr
     const rocketDAOProtocolProposal = await RocketDAOProtocolProposal.deployed();
     const rocketDAOProtocolSettingsProposal = await RocketDAOProtocolSettingsProposals.deployed();
 
-    const proposalQuorum = await rocketDAOProtocolSettingsProposal.getProposalQuorum.call();
+    const proposalQuorum = await rocketDAOProtocolSettingsProposal.getProposalQuorum();
 
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAOProtocolProposal.getTotal.call(),
+            rocketDAOProtocolProposal.getTotal(),
         ]).then(
             ([proposalTotal]) =>
-            ({proposalTotal})
+                ({ proposalTotal }),
         );
     }
 
@@ -391,18 +387,18 @@ export async function daoProtocolPropose(_proposalMessage, _payload, _block, _tr
     let ds1 = await getTxData();
 
     // Convert BNs to strings and calculate quorum
-    let quorum = '0'.BN;
+    let quorum = 0n;
     for (let i = 0; i < _treeNodes.length; i++) {
-        quorum = quorum.add(_treeNodes[i].sum);
+        quorum = quorum + _treeNodes[i].sum;
 
         treeNodes[i] = {
             sum: _treeNodes[i].sum.toString(),
-            hash: _treeNodes[i].hash
-        }
+            hash: _treeNodes[i].hash,
+        };
     }
-    quorum = quorum.mul(proposalQuorum).div('1'.ether);
+    quorum = quorum * proposalQuorum / '1'.ether;
 
-    await rocketDAOProtocolProposal.propose(_proposalMessage, _payload, _block, treeNodes, txOptions);
+    await rocketDAOProtocolProposal.connect(txOptions.from).propose(_proposalMessage, _payload, _block, treeNodes, txOptions);
 
     // Capture data
     let ds2 = await getTxData();
@@ -412,14 +408,13 @@ export async function daoProtocolPropose(_proposalMessage, _payload, _block, _tr
     let votesRequired = await getDAOProposalVotesRequired(ds2.proposalTotal);
 
     // Check proposals
-    assertBN.equal(ds2.proposalTotal, ds1.proposalTotal.add('1'.BN), 'Incorrect proposal total count');
+    assertBN.equal(ds2.proposalTotal, ds1.proposalTotal + 1n, 'Incorrect proposal total count');
     assert.strictEqual(state, proposalStates.Pending, 'Incorrect proposal state, should be pending');
     assertBN.equal(votesRequired, quorum, 'Incorrect votes required');
 
     // Return the proposal ID
     return Number(ds2.proposalTotal);
 }
-
 
 export async function daoProtocolCreateChallenge(_proposalID, _index, _node, _witness, txOptions) {
     _node.sum = _node.sum.toString();
@@ -428,24 +423,22 @@ export async function daoProtocolCreateChallenge(_proposalID, _index, _node, _wi
         _witness[i].sum = _witness[i].sum.toString();
     }
     // Load contracts
-    const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
+    const rocketDAOProtocolVerifier = (await RocketDAOProtocolVerifier.deployed()).connect(txOptions.from);
     // Create the challenge
     await rocketDAOProtocolVerifier.createChallenge(_proposalID, _index, _node, _witness, txOptions);
 }
 
-
 export async function daoProtocolDefeatProposal(_proposalID, _index, txOptions) {
     // Load contracts
-    const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
+    const rocketDAOProtocolVerifier = (await RocketDAOProtocolVerifier.deployed()).connect(txOptions.from);
     // Create the challenge
     await rocketDAOProtocolVerifier.defeatProposal(_proposalID, _index, txOptions);
 }
 
-
 export async function daoProtocolSubmitRoot(_proposalID, _index, _treeNodes, txOptions) {
     _treeNodes = cloneLeaves(_treeNodes);
     // Load contracts
-    const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
+    const rocketDAOProtocolVerifier = (await RocketDAOProtocolVerifier.deployed()).connect(txOptions.from);
     // Convert BN to strings
     for (let i = 0; i < _treeNodes.length; i++) {
         _treeNodes[i].sum = _treeNodes[i].sum.toString();
@@ -463,16 +456,24 @@ export async function daoProtocolVote(_proposalID, _vote, _votingPower, _nodeInd
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAOProtocolProposal.getTotal.call(),
-            rocketDAOProtocolProposal.getState.call(_proposalID),
-            rocketDAOProtocolProposal.getVotingPowerFor.call(_proposalID),
-            rocketDAOProtocolProposal.getVotingPowerRequired.call(_proposalID),
-            rocketDAOProtocolProposal.getVotingPowerAgainst.call(_proposalID),
-            rocketDAOProtocolProposal.getVotingPowerVeto.call(_proposalID),
-            rocketDAOProtocolProposal.getReceiptDirection.call(_proposalID, txOptions.from),
+            rocketDAOProtocolProposal.getTotal(),
+            rocketDAOProtocolProposal.getState(_proposalID),
+            rocketDAOProtocolProposal.getVotingPowerFor(_proposalID),
+            rocketDAOProtocolProposal.getVotingPowerRequired(_proposalID),
+            rocketDAOProtocolProposal.getVotingPowerAgainst(_proposalID),
+            rocketDAOProtocolProposal.getVotingPowerVeto(_proposalID),
+            rocketDAOProtocolProposal.getReceiptDirection(_proposalID, txOptions.from),
         ]).then(
             ([proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired, proposalVotesAgainst, proposalVotesVeto, direction]) =>
-                ({proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired, proposalVotesAgainst, proposalVotesVeto, direction: direction.toNumber()})
+                ({
+                    proposalTotal,
+                    proposalState,
+                    proposalVotesFor,
+                    proposalVotesRequired,
+                    proposalVotesAgainst,
+                    proposalVotesVeto,
+                    direction: direction,
+                }),
         );
     }
 
@@ -485,68 +486,77 @@ export async function daoProtocolVote(_proposalID, _vote, _votingPower, _nodeInd
     let ds1 = await getTxData();
 
     // Add a new proposal
-    await rocketDAOProtocolProposal.vote(_proposalID, _vote, _votingPower, _nodeIndex, _witness, txOptions);
+    await rocketDAOProtocolProposal.connect(txOptions.from).vote(_proposalID, _vote, _votingPower, _nodeIndex, _witness, txOptions);
 
     // Capture data
     let ds2 = await getTxData();
 
     // Check proposals
-    if(ds2.proposalState === proposalStates.Active) {
+    if (ds2.proposalState === proposalStates.Active) {
         assertBN.isBelow(ds2.proposalVotesFor, ds2.proposalVotesRequired, 'Proposal state is active, votes for proposal should be less than the votes required');
     }
-    if(ds2.proposalState === proposalStates.Succeeded) {
+    if (ds2.proposalState === proposalStates.Succeeded) {
         assertBN.isAtLeast(ds2.proposalVotesFor, ds2.proposalVotesRequired, 'Proposal state is successful, yet does not have the votes required');
     }
 
-    const forDelta = ds2.proposalVotesFor.sub(ds1.proposalVotesFor);
-    const againstDelta = ds2.proposalVotesAgainst.sub(ds1.proposalVotesAgainst);
-    const vetoDelta = ds2.proposalVotesVeto.sub(ds1.proposalVotesVeto);
+    const forDelta = ds2.proposalVotesFor - ds1.proposalVotesFor;
+    const againstDelta = ds2.proposalVotesAgainst - ds1.proposalVotesAgainst;
+    const vetoDelta = ds2.proposalVotesVeto - ds1.proposalVotesVeto;
 
     if (_vote === voteStates.For) {
         assertBN.equal(forDelta, _votingPower);
-        assertBN.equal(againstDelta, '0'.BN);
-        assertBN.equal(vetoDelta, '0'.BN);
+        assertBN.equal(againstDelta, 0n);
+        assertBN.equal(vetoDelta, 0n);
     } else if (_vote === voteStates.Against) {
-        assertBN.equal(forDelta, '0'.BN);
+        assertBN.equal(forDelta, 0n);
         assertBN.equal(againstDelta, _votingPower);
-        assertBN.equal(vetoDelta, '0'.BN);
+        assertBN.equal(vetoDelta, 0n);
     } else if (_vote === voteStates.AgainstWithVeto) {
-        assertBN.equal(forDelta, '0'.BN);
+        assertBN.equal(forDelta, 0n);
         assertBN.equal(againstDelta, _votingPower);
         assertBN.equal(vetoDelta, _votingPower);
     } else {
-        assertBN.equal(forDelta, '0'.BN);
-        assertBN.equal(againstDelta, '0'.BN);
-        assertBN.equal(vetoDelta, '0'.BN);
+        assertBN.equal(forDelta, 0n);
+        assertBN.equal(againstDelta, 0n);
+        assertBN.equal(vetoDelta, 0n);
     }
 }
-
 
 // Override vote on a proposal for this DAO
 export async function daoProtocolOverrideVote(_proposalID, _vote, txOptions) {
     // Load contracts
-    const rocketDAOProtocolProposal = await RocketDAOProtocolProposal.deployed();
+    const rocketDAOProtocolProposal = (await RocketDAOProtocolProposal.deployed()).connect(txOptions.from);
     const rocketNetworkVoting = await RocketNetworkVoting.deployed();
 
     const proposalBlock = await rocketDAOProtocolProposal.getProposalBlock(_proposalID);
     const delegate = await rocketNetworkVoting.getDelegate(txOptions.from, proposalBlock);
-    const votingPower = web3.utils.toBN(await rocketNetworkVoting.getVotingPower(txOptions.from, proposalBlock));
+    const votingPower = await rocketNetworkVoting.getVotingPower(txOptions.from, proposalBlock);
 
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAOProtocolProposal.getTotal.call(),
-            rocketDAOProtocolProposal.getState.call(_proposalID),
-            rocketDAOProtocolProposal.getVotingPowerFor.call(_proposalID),
-            rocketDAOProtocolProposal.getVotingPowerRequired.call(_proposalID),
-            rocketDAOProtocolProposal.getVotingPowerAgainst.call(_proposalID),
-            rocketDAOProtocolProposal.getVotingPowerVeto.call(_proposalID),
-            rocketDAOProtocolProposal.getReceiptDirection.call(_proposalID, txOptions.from),
-            rocketDAOProtocolProposal.getReceiptDirection.call(_proposalID, delegate),
-            rocketDAOProtocolProposal.getReceiptHasVotedPhase1.call(_proposalID, delegate),
+            rocketDAOProtocolProposal.getTotal(),
+            rocketDAOProtocolProposal.getState(_proposalID),
+            rocketDAOProtocolProposal.getVotingPowerFor(_proposalID),
+            rocketDAOProtocolProposal.getVotingPowerRequired(_proposalID),
+            rocketDAOProtocolProposal.getVotingPowerAgainst(_proposalID),
+            rocketDAOProtocolProposal.getVotingPowerVeto(_proposalID),
+            rocketDAOProtocolProposal.getReceiptDirection(_proposalID, txOptions.from),
+            rocketDAOProtocolProposal.getReceiptDirection(_proposalID, delegate),
+            rocketDAOProtocolProposal.getReceiptHasVotedPhase1(_proposalID, delegate),
         ]).then(
             ([proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired, proposalVotesAgainst, proposalVotesVeto, direction, delegateDirection, delegateVotedPhase1]) =>
-                ({proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired, proposalVotesAgainst, proposalVotesVeto, direction: direction.toNumber(), delegateDirection: delegateDirection.toNumber(), delegateVotedPhase1})
+                ({
+                    proposalTotal,
+                    proposalState,
+                    proposalVotesFor,
+                    proposalVotesRequired,
+                    proposalVotesAgainst,
+                    proposalVotesVeto,
+                    direction: Number(direction),
+                    delegateDirection: Number(delegateDirection),
+                    delegateVotedPhase1,
+                }),
         );
     }
 
@@ -564,30 +574,30 @@ export async function daoProtocolOverrideVote(_proposalID, _vote, txOptions) {
     // Capture data
     let ds2 = await getTxData();
 
-    const forDelta = ds2.proposalVotesFor.sub(ds1.proposalVotesFor);
-    const againstDelta = ds2.proposalVotesAgainst.sub(ds1.proposalVotesAgainst);
-    const vetoDelta = ds2.proposalVotesVeto.sub(ds1.proposalVotesVeto);
+    const forDelta = ds2.proposalVotesFor - ds1.proposalVotesFor;
+    const againstDelta = ds2.proposalVotesAgainst - ds1.proposalVotesAgainst;
+    const vetoDelta = ds2.proposalVotesVeto - ds1.proposalVotesVeto;
 
     let expectedForDelta, expectedAgainstDelta;
-    let expectedVetoDelta = '0'.BN;
+    let expectedVetoDelta = 0n;
 
     if (!ds1.delegateVotedPhase1) {
         if (_vote === voteStates.For) {
-            expectedForDelta = votingPower
-            expectedAgainstDelta = '0'.BN
+            expectedForDelta = votingPower;
+            expectedAgainstDelta = 0n;
         } else if (_vote === voteStates.Against) {
-            expectedForDelta = '0'.BN
-            expectedAgainstDelta = votingPower
+            expectedForDelta = 0n;
+            expectedAgainstDelta = votingPower;
         } else if (_vote === voteStates.AgainstWithVeto) {
-            expectedForDelta = '0'.BN
-            expectedAgainstDelta = votingPower
-            expectedVetoDelta = votingPower
+            expectedForDelta = 0n;
+            expectedAgainstDelta = votingPower;
+            expectedVetoDelta = votingPower;
         } else if (_vote === voteStates.Abstain) {
-            expectedForDelta = '0'.BN
-            expectedAgainstDelta = '0'.BN
+            expectedForDelta = 0n;
+            expectedAgainstDelta = 0n;
         }
     } else if (ds1.delegateDirection === voteStates.For) {
-        expectedForDelta = votingPower.neg();
+        expectedForDelta = -votingPower;
 
         if (_vote !== voteStates.Abstain) {
             expectedAgainstDelta = votingPower;
@@ -606,10 +616,10 @@ export async function daoProtocolOverrideVote(_proposalID, _vote, txOptions) {
             expectedVetoDelta = votingPower;
         }
     } else {
-        expectedAgainstDelta = votingPower.neg();
+        expectedAgainstDelta = -votingPower;
 
         if (ds1.delegateDirection === voteStates.AgainstWithVeto) {
-            expectedVetoDelta = votingPower.neg();
+            expectedVetoDelta = -votingPower;
         }
 
         if (_vote !== voteStates.For) {
@@ -637,19 +647,18 @@ export async function daoProtocolCancel(_proposalID, txOptions) {
     assert.strictEqual(state, proposalStates.Cancelled, 'Incorrect proposal state, should be cancelled');
 }
 
-
 // Execute a successful proposal
 export async function daoProtocolExecute(_proposalID, txOptions) {
     // Load contracts
-    const rocketDAOProtocolProposal = await RocketDAOProtocolProposal.deployed();
+    const rocketDAOProtocolProposal = (await RocketDAOProtocolProposal.deployed()).connect(txOptions.from);
 
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAOProtocolProposal.getState.call(_proposalID),
+            rocketDAOProtocolProposal.getState(_proposalID),
         ]).then(
             ([proposalState]) =>
-            ({proposalState})
+                ({ proposalState }),
         );
     }
 
@@ -666,7 +675,7 @@ export async function daoProtocolExecute(_proposalID, txOptions) {
 // Finalise a vetoed proposal
 export async function daoProtocolFinalise(_proposalID, txOptions) {
     // Load contracts
-    const rocketDAOProtocolProposal = await RocketDAOProtocolProposal.deployed();
+    const rocketDAOProtocolProposal = (await RocketDAOProtocolProposal.deployed()).connect(txOptions.from);
     const rocketNodeStaking = await RocketNodeStaking.deployed();
 
     const proposer = await rocketDAOProtocolProposal.getProposer(_proposalID);
@@ -675,13 +684,13 @@ export async function daoProtocolFinalise(_proposalID, txOptions) {
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAOProtocolProposal.getState.call(_proposalID),
-            rocketDAOProtocolProposal.getFinalised.call(_proposalID),
-            rocketNodeStaking.getNodeRPLLocked.call(proposer),
-            rocketNodeStaking.getNodeRPLStake.call(proposer),
+            rocketDAOProtocolProposal.getState(_proposalID),
+            rocketDAOProtocolProposal.getFinalised(_proposalID),
+            rocketNodeStaking.getNodeRPLLocked(proposer),
+            rocketNodeStaking.getNodeRPLStake(proposer),
         ]).then(
             ([proposalState, finalised, lockedRPL, stakedRPL]) =>
-                ({proposalState, finalised, lockedRPL, stakedRPL})
+                ({ proposalState, finalised, lockedRPL, stakedRPL }),
         );
     }
 
@@ -694,18 +703,18 @@ export async function daoProtocolFinalise(_proposalID, txOptions) {
     // Capture data
     let ds2 = await getTxData();
 
-    const lockedDelta = ds2.lockedRPL.sub(ds1.lockedRPL);
-    const stakedDelta = ds2.stakedRPL.sub(ds1.stakedRPL);
+    const lockedDelta = ds2.lockedRPL - ds1.lockedRPL;
+    const stakedDelta = ds2.stakedRPL - ds1.stakedRPL;
 
     // Check for bond burn of proposals staked RPL
-    assertBN.equal(lockedDelta.neg(), proposalBond);
-    assertBN.equal(stakedDelta.neg(), proposalBond);
-    assert(ds2.finalised);
+    assertBN.equal(-lockedDelta, proposalBond);
+    assertBN.equal(-stakedDelta, proposalBond);
+    assert.equal(ds2.finalised, true);
 }
 
 export async function daoProtocolClaimBondProposer(_proposalID, _indices, txOptions) {
-    const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
-    const rocketNodeStaking = await RocketNodeStaking.deployed();
+    const rocketDAOProtocolVerifier = (await RocketDAOProtocolVerifier.deployed()).connect(txOptions.from);
+    const rocketNodeStaking = (await RocketNodeStaking.deployed()).connect(txOptions.from);
     const rocketTokenRPL = await RocketTokenRPL.deployed();
 
     const lockedBalanceBefore = await rocketNodeStaking.getNodeRPLLocked(txOptions.from);
@@ -719,14 +728,14 @@ export async function daoProtocolClaimBondProposer(_proposalID, _indices, txOpti
     const supplyAfter = await rocketTokenRPL.totalSupply();
 
     return {
-        staked: balanceAfter.sub(balanceBefore),
-        locked: lockedBalanceAfter.sub(lockedBalanceBefore),
-        burned: supplyBefore.sub(supplyAfter),
-    }
+        staked: balanceAfter - balanceBefore,
+        locked: lockedBalanceAfter - lockedBalanceBefore,
+        burned: supplyBefore - supplyAfter,
+    };
 }
 
 export async function daoProtocolClaimBondChallenger(_proposalID, _indices, txOptions) {
-    const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
+    const rocketDAOProtocolVerifier = (await RocketDAOProtocolVerifier.deployed()).connect(txOptions.from);
     const rocketNodeStaking = await RocketNodeStaking.deployed();
     const rocketTokenRPL = await RocketTokenRPL.deployed();
 
@@ -741,8 +750,8 @@ export async function daoProtocolClaimBondChallenger(_proposalID, _indices, txOp
     const supplyAfter = await rocketTokenRPL.totalSupply();
 
     return {
-        staked: balanceAfter.sub(balanceBefore),
-        locked: lockedBalanceAfter.sub(lockedBalanceBefore),
-        burned: supplyBefore.sub(supplyAfter),
-    }
+        staked: balanceAfter - balanceBefore,
+        locked: lockedBalanceAfter - lockedBalanceBefore,
+        burned: supplyBefore - supplyAfter,
+    };
 }

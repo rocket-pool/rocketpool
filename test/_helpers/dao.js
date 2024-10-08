@@ -2,16 +2,13 @@ import {
     RocketDAONodeTrusted,
     RocketDAONodeTrustedActions,
     RocketDAONodeTrustedSettingsMembers,
-    RocketDAOProtocolProposals,
     RocketDAOProtocolSettingsProposals,
     RocketDAOProtocolSettingsSecurity,
     RocketDAOProtocolVerifier,
 } from '../_utils/artifacts';
-import { mintRPL, approveRPL } from './tokens';
-
+import { approveRPL, mintRPL } from './tokens';
 
 export async function mintRPLBond(owner, node) {
-
     // Load contracts
     const [
         rocketDAONodeTrustedActions,
@@ -26,16 +23,13 @@ export async function mintRPLBond(owner, node) {
 
     // Mint RPL amount and approve DAO node contract to spend
     await mintRPL(owner, node, bondAmount);
-    await approveRPL(rocketDAONodeTrustedActions.address, bondAmount, {from: node});
-
+    await approveRPL(rocketDAONodeTrustedActions.address, bondAmount, { from: node });
 }
-
 
 export async function bootstrapMember(address, id, url, txOptions) {
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
     await rocketDAONodeTrusted.bootstrapMember(id, url, address, txOptions);
 }
-
 
 export async function memberJoin(txOptions) {
     const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();

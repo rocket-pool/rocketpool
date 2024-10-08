@@ -1,45 +1,50 @@
+import * as assert from 'assert';
+
+const hre = require('hardhat');
+const ethers = hre.ethers;
+
 const _assertBN = {
     equal: function (actual, expected, message) {
-        assert.strictEqual(web3.utils.toBN(actual).toString(), web3.utils.toBN(expected).toString(), message);
+        assert.strictEqual(actual, BigInt(expected), message);
     },
     notEqual: function (actual, expected, message) {
-        assert.notEqual(web3.utils.toBN(actual).toString(), web3.utils.toBN(expected).toString(), message);
+        assert.notEqual(actual, BigInt(expected), message);
     },
     isBelow: function (actual, n, message) {
-        assert(web3.utils.toBN(actual).lt(web3.utils.toBN(n)), message);
+        assert.equal(actual < BigInt(n), true, message);
     },
     isAbove: function (actual, n, message) {
-        assert(web3.utils.toBN(actual).gt(web3.utils.toBN(n)), message);
+        assert.equal(actual > BigInt(n), true, message);
     },
     isAtMost: function (actual, n, message) {
-        assert(web3.utils.toBN(actual).lte(web3.utils.toBN(n)), message);
+        assert.equal(actual <= BigInt(n), true, message);
     },
     isAtLeast: function (actual, n, message) {
-        assert(web3.utils.toBN(actual).gte(web3.utils.toBN(n)), message);
+        assert.equal(actual >= BigInt(n), true, message);
     },
     isZero: function (actual, message) {
-        assert.strictEqual(web3.utils.toBN(actual).toString(), '0'.BN.toString(), message);
+        assert.strictEqual(actual, 0n, message);
     },
 }
 
 export function injectBNHelpers() {
     String.prototype.__defineGetter__('ether', function () {
-        return web3.utils.toBN(web3.utils.toWei(this));
+        return ethers.parseUnits(this, 'ether');
     });
     String.prototype.__defineGetter__('gwei', function () {
-        return web3.utils.toBN(web3.utils.toWei(this, 'gwei'));
+        return ethers.parseUnits(this, 'gwei');
     });
     String.prototype.__defineGetter__('BN', function () {
-        return web3.utils.toBN(this);
+        return BigInt(this);
     });
     Number.prototype.__defineGetter__('BN', function () {
-        return web3.utils.toBN(this.toString());
+        return BigInt(this);
     });
     Number.prototype.__defineGetter__('ether', function () {
-        return web3.utils.toBN(web3.utils.toWei(this.toString()));
+        return ethers.parseUnits(this.toString(), 'ether');
     });
     Number.prototype.__defineGetter__('gwei', function () {
-        return web3.utils.toBN(web3.utils.toWei(this.toString(), 'gwei'));
+        return ethers.parseUnits(this.toString(), 'gwei');
     });
 }
 

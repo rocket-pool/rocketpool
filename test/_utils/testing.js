@@ -1,4 +1,6 @@
 // Assert that a transaction reverts
+import * as assert from 'assert';
+
 export async function shouldRevert(txPromise, message, expectedErrorMessage = null) {
     let txSuccess = false;
     try {
@@ -12,4 +14,19 @@ export async function shouldRevert(txPromise, message, expectedErrorMessage = nu
     } finally {
         if (txSuccess) assert.fail(message);
     }
+}
+
+// Allows async describe functions
+export default async function asyncDescribe(desc, run) {
+    const its = {}
+
+    return run((testName, func) => {
+        its[testName] = func
+    }).then(() => {
+        describe(desc, () => {
+            for (const [testName, runFunction] of Object.entries(its)) {
+                it(testName, runFunction)
+            }
+        })
+    })
 }

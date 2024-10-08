@@ -2,34 +2,31 @@ import {
     RocketMinipoolDelegate, RocketMinipoolFactory,
     RocketMinipoolManager,
     RocketNodeDeposit,
-    RocketStorage,
 } from '../_utils/artifacts';
 import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '../_utils/beacon';
 import { assertBN } from '../_helpers/bn';
+import * as assert from 'assert';
 
 let minipoolSalt = 0;
 
 // Make a node deposit
 export async function depositV2(minimumNodeFee, bondAmount, txOptions) {
-
     // Load contracts
     const [
         rocketMinipoolManager,
         rocketMinipoolFactory,
         rocketNodeDeposit,
-        rocketStorage,
     ] = await Promise.all([
         RocketMinipoolManager.deployed(),
         RocketMinipoolFactory.deployed(),
         RocketNodeDeposit.deployed(),
-        RocketStorage.deployed()
     ]);
 
     // Get minipool counts
     function getMinipoolCounts(nodeAddress) {
         return Promise.all([
-            rocketMinipoolManager.getMinipoolCount.call(),
-            rocketMinipoolManager.getNodeMinipoolCount.call(nodeAddress),
+            rocketMinipoolManager.getMinipoolCount(),
+            rocketMinipoolManager.getNodeMinipoolCount(nodeAddress),
         ]).then(
             ([network, node]) =>
             ({network, node})
@@ -38,12 +35,13 @@ export async function depositV2(minimumNodeFee, bondAmount, txOptions) {
 
     // Get minipool details
     function getMinipoolDetails(minipoolAddress) {
-        return RocketMinipoolDelegate.at(minipoolAddress).then(minipool => Promise.all([
-            rocketMinipoolManager.getMinipoolExists.call(minipoolAddress),
-            minipool.getNodeAddress.call(),
-            minipool.getNodeDepositBalance.call(),
-            minipool.getNodeDepositAssigned.call(),
-        ])).then(
+        const minipool = RocketMinipoolDelegate.at(minipoolAddress);
+        return Promise.all([
+            rocketMinipoolManager.getMinipoolExists(minipoolAddress),
+            minipool.getNodeAddress(),
+            minipool.getNodeDepositBalance(),
+            minipool.getNodeDepositAssigned(),
+        ]).then(
             ([exists, nodeAddress, nodeDepositBalance, nodeDepositAssigned]) =>
             ({exists, nodeAddress, nodeDepositBalance, nodeDepositAssigned})
         );
@@ -68,10 +66,10 @@ export async function depositV2(minimumNodeFee, bondAmount, txOptions) {
     let depositDataRoot = getDepositDataRoot(depositData);
 
     // Make node deposit
-    if (bondAmount.eq(txOptions.from)) {
-        await rocketNodeDeposit.deposit(bondAmount, minimumNodeFee, depositData.pubkey, depositData.signature, depositDataRoot, salt, minipoolAddress, txOptions);
+    if (bondAmount === txOptions.value) {
+        await rocketNodeDeposit.connect(txOptions.from).deposit(bondAmount, minimumNodeFee, depositData.pubkey, depositData.signature, depositDataRoot, salt, minipoolAddress, txOptions);
     } else {
-        await rocketNodeDeposit.depositWithCredit(bondAmount, minimumNodeFee, depositData.pubkey, depositData.signature, depositDataRoot, salt, minipoolAddress, txOptions);
+        await rocketNodeDeposit.connect(txOptions.from).depositWithCredit(bondAmount, minimumNodeFee, depositData.pubkey, depositData.signature, depositDataRoot, salt, minipoolAddress, txOptions);
     }
 
     // Get updated minipool indexes & created minipool details
@@ -81,21 +79,21 @@ export async function depositV2(minimumNodeFee, bondAmount, txOptions) {
         lastNodeMinipoolAddress,
         minipoolDetails,
     ] = await Promise.all([
-        rocketMinipoolManager.getMinipoolAt.call(minipoolCounts2.network.sub('1'.BN)),
-        rocketMinipoolManager.getNodeMinipoolAt.call(txOptions.from, minipoolCounts2.node.sub('1'.BN)),
+        rocketMinipoolManager.getMinipoolAt(minipoolCounts2.network - 1n),
+        rocketMinipoolManager.getNodeMinipoolAt(txOptions.from, minipoolCounts2.node - 1n),
         getMinipoolDetails(minipoolAddress),
     ]);
 
     // Check minipool indexes
-    assertBN.equal(minipoolCounts2.network, minipoolCounts1.network.add('1'.BN), 'Incorrect updated network minipool count');
+    assertBN.equal(minipoolCounts2.network, minipoolCounts1.network + 1n, 'Incorrect updated network minipool count');
     assert.strictEqual(lastMinipoolAddress.toLowerCase(), minipoolAddress.toLowerCase(), 'Incorrect updated network minipool index');
-    assertBN.equal(minipoolCounts2.node, minipoolCounts1.node.add('1'.BN), 'Incorrect updated node minipool count');
+    assertBN.equal(minipoolCounts2.node, minipoolCounts1.node + 1n, 'Incorrect updated node minipool count');
     assert.strictEqual(lastNodeMinipoolAddress.toLowerCase(), minipoolAddress.toLowerCase(), 'Incorrect updated node minipool index');
 
     // Check minipool details
-    assert.isTrue(minipoolDetails.exists, 'Incorrect created minipool exists status');
-    assert.strictEqual(minipoolDetails.nodeAddress, txOptions.from, 'Incorrect created minipool node address');
-    assertBN.equal(minipoolDetails.nodeDepositBalance, web3.utils.toBN(bondAmount), 'Incorrect created minipool node deposit balance');
+    assert.equal(minipoolDetails.exists, true, 'Incorrect created minipool exists status');
+    assert.strictEqual(minipoolDetails.nodeAddress.toLowerCase(), txOptions.from.address.toLowerCase(), 'Incorrect created minipool node address');
+    assertBN.equal(minipoolDetails.nodeDepositBalance, bondAmount, 'Incorrect created minipool node deposit balance');
 
     return minipoolAddress
 }

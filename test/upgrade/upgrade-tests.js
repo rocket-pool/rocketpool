@@ -1,5 +1,7 @@
+import { before, describe, it } from 'mocha';
 import { printTitle } from '../_utils/formatting';
 import { RocketDAOProtocolSettingsProposals, RocketNodeStaking, RocketStorage } from '../_utils/artifacts';
+import { artifacts } from '../_utils/artifacts';
 import { setDaoNodeTrustedBootstrapUpgrade } from '../dao/scenario-dao-node-trusted-bootstrap';
 import pako from 'pako';
 import { assertBN } from '../_helpers/bn';
@@ -7,97 +9,124 @@ import { nodeStakeRPL, registerNode } from '../_helpers/node';
 import { createMinipool, getMinipoolMinimumRPLStake } from '../_helpers/minipool';
 import { mintRPL } from '../_helpers/tokens';
 import { userDeposit } from '../_helpers/deposit';
-import * as assert from 'assert';
 import { shouldRevert } from '../_utils/testing';
+import { globalSnapShot } from '../_utils/snapshotting';
+import * as assert from 'node:assert';
+
+const helpers = require('@nomicfoundation/hardhat-network-helpers');
+const hre = require('hardhat');
+const ethers = hre.ethers;
 
 export default function() {
-    contract('RocketUpgradeOneDotThreeDotOne', async (accounts) => {
-
-        // Accounts
-        const [
-            owner,
+    describe('RocketUpgradeOneDotThreeDotOne', () => {
+        let owner,
             node1,
             node2,
             node3,
             node4,
-            random,
-        ] = accounts;
+            random;
 
+        let RocketUpgradeOneDotThreeDotOne = artifacts.require('RocketUpgradeOneDotThreeDotOne');
         let rocketUpgradeOneDotThreeDotOne;
 
-        const contracts = {
-            rocketDAOProposal: artifacts.require('RocketDAOProposal.sol'),
-            rocketDAOProtocolProposal: artifacts.require('RocketDAOProtocolProposal.sol'),
-            rocketDAOProtocolVerifier: artifacts.require('RocketDAOProtocolVerifier.sol'),
-            rocketDAOProtocolSettingsProposals: artifacts.require('RocketDAOProtocolSettingsProposals.sol'),
-            rocketDAOProtocolSettingsAuction: artifacts.require('RocketDAOProtocolSettingsAuction.sol'),
-            rocketMinipoolManager: artifacts.require('RocketMinipoolManager.sol'),
-            rocketNodeStaking: artifacts.require('RocketNodeStaking.sol'),
-            rocketMinipoolDelegate: artifacts.require('RocketMinipoolDelegate.sol'),
-            rocketNodeDeposit: artifacts.require('RocketNodeDeposit.sol'),
-            rocketNetworkVoting: artifacts.require('RocketNetworkVoting.sol'),
+        const networkContracts = {
+            rocketDAOProposal: artifacts.require('RocketDAOProposal'),
+            rocketDAOProtocolProposal: artifacts.require('RocketDAOProtocolProposal'),
+            rocketDAOProtocolVerifier: artifacts.require('RocketDAOProtocolVerifier'),
+            rocketDAOProtocolSettingsProposals: artifacts.require('RocketDAOProtocolSettingsProposals'),
+            rocketDAOProtocolSettingsAuction: artifacts.require('RocketDAOProtocolSettingsAuction'),
+            rocketMinipoolManager: artifacts.require('RocketMinipoolManager'),
+            rocketNodeStaking: artifacts.require('RocketNodeStaking'),
+            rocketMinipoolDelegate: artifacts.require('RocketMinipoolDelegate'),
+            rocketNodeDeposit: artifacts.require('RocketNodeDeposit'),
+            rocketNetworkVoting: artifacts.require('RocketNetworkVoting'),
 
-            rocketUpgradeOneDotThreeDotOne: artifacts.require('RocketUpgradeOneDotThreeDotOne.sol'),
+            rocketUpgradeOneDotThreeDotOne: RocketUpgradeOneDotThreeDotOne,
         };
 
         let addresses = {};
 
         before(async () => {
+            await globalSnapShot();
+
+            [
+                owner,
+                node1,
+                node2,
+                node3,
+                node4,
+                random,
+            ] = await ethers.getSigners();
+
             function compressABI(abi) {
                 return Buffer.from(pako.deflate(JSON.stringify(abi))).toString('base64');
             }
 
             const rocketStorageInstance = await RocketStorage.deployed();
 
-            // Deploy other contracts - have to be inside an async loop
-            for (let contract in contracts) {
+            let contracts = {};
+
+            // Deploy other contracts
+            for (let contract in networkContracts) {
                 // Only deploy if it hasn't been deployed already like a precompiled
-                if (!contracts[contract].hasOwnProperty('precompiled')) {
-                    let instance;
+                let instance;
+                const abi = networkContracts[contract].abi;
 
-                    switch (contract) {
-                        // Upgrade contract
-                        case 'rocketUpgradeOneDotThreeDotOne':
-                            instance = await contracts[contract].new(rocketStorageInstance.address);
-                            contracts[contract].setAsDeployed(instance);
-                            const args = [
-                                [
-                                    addresses.rocketDAOProposal,
-                                    addresses.rocketDAOProtocolProposal,
-                                    addresses.rocketDAOProtocolVerifier,
-                                    addresses.rocketDAOProtocolSettingsProposals,
-                                    addresses.rocketDAOProtocolSettingsAuction,
-                                    addresses.rocketMinipoolManager,
-                                    addresses.rocketNodeStaking,
-                                    addresses.rocketMinipoolDelegate,
-                                    addresses.rocketNodeDeposit,
-                                    addresses.rocketNetworkVoting,
-                                ],
-                                [
-                                    compressABI(contracts.rocketDAOProposal.abi),
-                                    compressABI(contracts.rocketDAOProtocolProposal.abi),
-                                    compressABI(contracts.rocketDAOProtocolVerifier.abi),
-                                    compressABI(contracts.rocketDAOProtocolSettingsProposals.abi),
-                                    compressABI(contracts.rocketDAOProtocolSettingsAuction.abi),
-                                    compressABI(contracts.rocketMinipoolManager.abi),
-                                    compressABI(contracts.rocketNodeStaking.abi),
-                                    compressABI(contracts.rocketMinipoolDelegate.abi),
-                                    compressABI(contracts.rocketNodeDeposit.abi),
-                                    compressABI(contracts.rocketNetworkVoting.abi),
-                                ],
-                            ];
-                            await instance.set(...args);
-                            rocketUpgradeOneDotThreeDotOne = instance;
-                            break;
+                switch (contract) {
+                    // Contracts with no constructor args
+                    case 'rocketMinipoolDelegate':
+                        instance = await networkContracts[contract].clone();
+                        addresses[contract] = instance.target;
+                        break;
 
-                        // All other contracts - pass storage address
-                        default:
-                            instance = await contracts[contract].new(rocketStorageInstance.address);
-                            addresses[contract] = instance.address;
-                            break;
-                    }
+                    // Upgrade contract
+                    case 'rocketUpgradeOneDotThreeDotOne':
+                        instance = await networkContracts[contract].new(rocketStorageInstance.target);
+                        const args = [
+                            [
+                                addresses.rocketDAOProposal,
+                                addresses.rocketDAOProtocolProposal,
+                                addresses.rocketDAOProtocolVerifier,
+                                addresses.rocketDAOProtocolSettingsProposals,
+                                addresses.rocketDAOProtocolSettingsAuction,
+                                addresses.rocketMinipoolManager,
+                                addresses.rocketNodeStaking,
+                                addresses.rocketMinipoolDelegate,
+                                addresses.rocketNodeDeposit,
+                                addresses.rocketNetworkVoting,
+                            ],
+                            [
+                                compressABI(networkContracts.rocketDAOProposal.abi),
+                                compressABI(networkContracts.rocketDAOProtocolProposal.abi),
+                                compressABI(networkContracts.rocketDAOProtocolVerifier.abi),
+                                compressABI(networkContracts.rocketDAOProtocolSettingsProposals.abi),
+                                compressABI(networkContracts.rocketDAOProtocolSettingsAuction.abi),
+                                compressABI(networkContracts.rocketMinipoolManager.abi),
+                                compressABI(networkContracts.rocketNodeStaking.abi),
+                                compressABI(networkContracts.rocketMinipoolDelegate.abi),
+                                compressABI(networkContracts.rocketNodeDeposit.abi),
+                                compressABI(networkContracts.rocketNetworkVoting.abi),
+                            ],
+                        ];
+                        await instance.set(...args);
+                        rocketUpgradeOneDotThreeDotOne = instance;
+                        break;
+
+                    // All other contracts - pass storage address
+                    default:
+                        instance = await networkContracts[contract].clone(rocketStorageInstance.target);
+                        addresses[contract] = instance.target;
+                        break;
                 }
+
+                contracts[contract] = {
+                    instance: instance,
+                    address: instance.target,
+                    abi: abi,
+                };
             }
+
+            rocketUpgradeOneDotThreeDotOne = contracts.rocketUpgradeOneDotThreeDotOne.instance;
         });
 
         async function executeUpgrade() {
@@ -105,11 +134,11 @@ export default function() {
 
             // Lock contract and execute upgrade
             await rocketUpgradeOneDotThreeDotOne.lock();
-            await setDaoNodeTrustedBootstrapUpgrade('addContract', 'rocketUpgradeOneDotThreeDotOne', contracts.rocketUpgradeOneDotThreeDotOne.abi, rocketUpgradeOneDotThreeDotOne.address, { from: owner });
-            await rocketUpgradeOneDotThreeDotOne.execute();
+            await setDaoNodeTrustedBootstrapUpgrade('addContract', 'rocketUpgradeOneDotThreeDotOne', RocketUpgradeOneDotThreeDotOne.abi, rocketUpgradeOneDotThreeDotOne.target, { from: owner });
+            await rocketUpgradeOneDotThreeDotOne.connect(owner).execute();
 
             // Confirm version string updated
-            const versionString = await rocketStorage.getString(hre.web3.utils.soliditySha3('protocol.version'));
+            const versionString = await rocketStorage.getString(ethers.solidityPackedKeccak256(['string'], ['protocol.version']));
             assert.equal(versionString, '1.3.1');
         }
 
@@ -124,8 +153,8 @@ export default function() {
             await executeUpgrade();
 
             for (let contract in addresses) {
-                const key = hre.web3.utils.soliditySha3('contract.address', contract);
-                const address = await rocketStorage.getAddress(key);
+                const key = ethers.solidityPackedKeccak256(['string', 'string'], ['contract.address', contract]);
+                const address = await rocketStorage['getAddress(bytes32)'](key);
 
                 assert.equal(address, addresses[contract]);
             }
@@ -140,7 +169,7 @@ export default function() {
             assertBN.equal(proposalQuorum, '0.30'.ether);
         });
 
-        it(printTitle('upgrade', 'applies eth matched corrections'), async () => {
+        it(printTitle('upgrade', 'applies ETH matched corrections'), async () => {
             // Get contracts
             const rocketNodeStaking = await RocketNodeStaking.deployed();
 
@@ -160,19 +189,19 @@ export default function() {
                 await registerNode({ from: node });
 
                 // Deposit and create minipools
-                let count = hre.web3.utils.toBN(i + 1);
-                let rplStake = minipoolRplStake.mul(count);
+                let count = BigInt(i + 1);
+                let rplStake = minipoolRplStake * count;
                 await mintRPL(owner, node, rplStake);
                 await nodeStakeRPL(rplStake, { from: node });
 
-                await userDeposit({ from: random, value: '16'.ether.mul(count) });
+                await userDeposit({ from: random, value: '16'.ether * count });
                 for (let j = 0; j < count; j++) {
                     await createMinipool({ from: node, value: '16'.ether });
                 }
 
-                // Confirm prior eth matched
+                // Confirm prior ETH matched
                 const ethMatchedBefore = await rocketNodeStaking.getNodeETHMatched(node);
-                assertBN.equal(ethMatchedBefore, '16'.ether.mul(count));
+                assertBN.equal(ethMatchedBefore, '16'.ether * count);
 
                 ethMatchedBefores[i] = ethMatchedBefore;
 
@@ -182,7 +211,7 @@ export default function() {
                 // Check correction
                 const correction = await rocketUpgradeOneDotThreeDotOne.corrections(i);
                 assertBN.equal(correction[1], correctionAmounts[i]);
-                assert.equal(correction[0], node);
+                assert.equal(correction[0], node.address);
             }
 
             // Execute upgrade
@@ -193,7 +222,7 @@ export default function() {
                 const node = nodes[i];
 
                 const ethMatchedAfter = await rocketNodeStaking.getNodeETHMatched(node);
-                assertBN.equal(ethMatchedAfter, ethMatchedBefores[i].add(correctionAmounts[i]));
+                assertBN.equal(ethMatchedAfter, ethMatchedBefores[i] + correctionAmounts[i]);
             }
         });
     });

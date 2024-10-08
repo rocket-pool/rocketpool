@@ -2,11 +2,14 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import {
     RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsInflation,
     RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork,
-    RocketDAOProtocolSettingsNode, RocketNetworkBalances, RocketNetworkPrices,
+    RocketDAOProtocolSettingsNode
 } from '../_utils/artifacts';
 
+const hre = require('hardhat');
+const ethers = hre.ethers;
+
 export async function setDefaultParameters() {
-    const [guardian] = await web3.eth.getAccounts();
+    const [guardian] = await ethers.getSigners();
     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.enabled', true, { from: guardian });
     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', true, { from: guardian });
     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.pool.maximum', '1000'.ether, { from: guardian });
