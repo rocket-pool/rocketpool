@@ -4,6 +4,7 @@ import {
     RocketDAONodeTrusted,
     RocketDAONodeTrustedProposals,
     RocketDAOProposal,
+    RocketNodeStaking,
     RocketStorage,
     RocketUpgradeOneDotThreeDotOne,
 } from '../test/_utils/artifacts';
@@ -31,7 +32,7 @@ describe('Fork Mainnet', () => {
     let guardian;
     let odao;
     let rocketStorage;
-    let rocketUpgradeOneDotOneDotThree;
+    let rocketUpgradeOneDotThreeDotOne;
     let rocketDAONodeTrustedProposals;
     let rocketDAOProposal;
 
@@ -104,7 +105,7 @@ describe('Fork Mainnet', () => {
                         ],
                     ];
                     await instance.set(...args);
-                    rocketUpgradeOneDotOneDotThree = instance;
+                    rocketUpgradeOneDotThreeDotOne = instance;
                     break;
 
                 // All other contracts - pass storage address
@@ -145,7 +146,6 @@ describe('Fork Mainnet', () => {
         }
 
         // Deploy the upgrade
-        console.log('Deploying upgrade contract');
         await deployUpgrade(rocketStorageAddress);
 
         // Fetch needed contracts
@@ -161,7 +161,7 @@ describe('Fork Mainnet', () => {
                 'addContract',
                 'rocketUpgradeOneDotOneDotThree',
                 compressABI(RocketUpgradeOneDotThreeDotOne.abi),
-                rocketUpgradeOneDotOneDotThree.target,
+                rocketUpgradeOneDotThreeDotOne.target,
             ],
         );
 
@@ -196,7 +196,7 @@ describe('Fork Mainnet', () => {
     }
 
     async function executeUpgrade() {
-        await rocketUpgradeOneDotOneDotThree.connect(guardian).execute();
+        await rocketUpgradeOneDotThreeDotOne.connect(guardian).execute();
     }
 
     async function voteInAndExecute() {
@@ -206,10 +206,39 @@ describe('Fork Mainnet', () => {
         await executeUpgrade();
     }
 
+    it('Updates incorrect ETH matched values', async () => {
+        const rocketNodeStaking = await getContract(RocketNodeStaking, 'rocketNodeStaking');
+
+        // Apply correction
+        const corrections = {
+            '0x9796dAd6a55c9501F83B0Dc41676bdC6d001dd32': '16000000000000000000'.BN,
+            '0x70D06394f33D56B6310778eC4E61033585038997': '16000000000000000000'.BN,
+            '0x4efc3E587A4c3Ae0899a0F6e20a78393FC9E39C8': '16000000000000000000'.BN,
+        };
+        let ethMatchedBefores = {};
+        for (const node in corrections) {
+            const amount = corrections[node];
+            await rocketUpgradeOneDotThreeDotOne.addCorrection(node, amount);
+            ethMatchedBefores[node] = await rocketNodeStaking.getNodeETHMatched(node);
+        }
+
+        // Perform upgrade
+        await rocketUpgradeOneDotThreeDotOne.lock();
+        await voteInAndExecute();
+
+        // Check results
+        for (const node in corrections) {
+            const before = ethMatchedBefores[node];
+            const after = await rocketNodeStaking.getNodeETHMatched(node);
+            const expected = corrections[node];
+            const actual = after - before;
+            assert.equal(actual, expected);
+        }
+    });
+
     describe('After upgrade', () => {
         before(async () => {
-            await rocketUpgradeOneDotOneDotThree.lock();
-            console.log('Raising proposal and executing upgrade');
+            await rocketUpgradeOneDotThreeDotOne.lock();
             await voteInAndExecute();
         });
 
