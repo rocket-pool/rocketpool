@@ -13,6 +13,7 @@ struct DepositQueueValue {
 interface LinkedListStorageInterface {
     function getLength(bytes32 _namespace) external view returns (uint256);
     function getItem(bytes32 _namespace, uint _index) external view returns (DepositQueueValue memory);
+    function peekItem(bytes32 _namespace) external view returns (DepositQueueValue memory);
     function getIndexOf(bytes32 _namespace, DepositQueueValue memory _value) external view returns (uint256);
     function enqueueItem(bytes32 _namespace, DepositQueueValue memory _value) external;
     function dequeueItem(bytes32 _namespace) external returns (DepositQueueValue memory);

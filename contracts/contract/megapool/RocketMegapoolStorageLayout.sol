@@ -15,7 +15,6 @@ abstract contract RocketMegapoolStorageLayout {
     enum Status {
         InQueue,
         PreStaked,
-        Assigned,
         Staking,
         Exited,
         Dissolved
@@ -28,6 +27,13 @@ abstract contract RocketMegapoolStorageLayout {
         uint32 assignmentTime;
         uint32 totalScrubVotes;
         bytes withdrawalCredential;
+        bytes pubKey;
+    }
+
+    // Extra data temporarily stored for prestake operation
+    struct PrestakeData {
+        bytes _signature;
+        bytes32 _depositDataRoot;
     }
 
     //
@@ -64,4 +70,5 @@ abstract contract RocketMegapoolStorageLayout {
     uint256 internal lastUnstakeRequest;
 
     mapping(uint32 => ValidatorInfo) internal validators;
+    mapping(uint32 => PrestakeData) internal prestakeData;
 }

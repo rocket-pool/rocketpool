@@ -192,6 +192,10 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         setBool(keccak256(abi.encodePacked("node.exists", msg.sender)), true);
         setBool(keccak256(abi.encodePacked("node.voting.enabled", msg.sender)), true);
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
+        setBool(keccak256(abi.encodePacked("node.express.provisioned", msg.sender)), true);
+        // TODO: Parameterise `express_queue_tickets_base_provision`
+        uint256 expressQueueTicketsBaseProvision = 2;
+        setUint(keccak256(abi.encodePacked("node.express.tickets")), expressQueueTicketsBaseProvision);
         // Add node to index
         bytes32 nodeIndexKey = keccak256(abi.encodePacked("nodes.index"));
         addressSetStorage.addItem(nodeIndexKey, msg.sender);
@@ -482,5 +486,36 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
             return contractAddress;
         }
         return address(0);
+    }
+
+    /// @notice Returns the number of express tickets the given node has
+    /// @param _nodeAddress Address of the node operator to query
+    function getExpressTicketCount(address _nodeAddress) external override view returns (uint256) {
+        bool provisioned = getBool(keccak256(abi.encodePacked("node.express.provisioned", _nodeAddress)));
+
+        uint256 expressTickets = 0;
+
+        if (!provisioned) {
+            // Nodes prior to Saturn should receive 2 express tickets (initial value of `express_queue_tickets_base_provision`)
+            expressTickets += 2;
+            // Each node SHALL be provided additional express_queue_tickets equal to (bonded ETH in legacy minipools)/4
+            RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
+            uint256 ethProvided = rocketNodeStaking.getNodeETHProvided(_nodeAddress);
+            expressTickets += ethProvided / 4 ether;
+        }
+
+        expressTickets += getUint(keccak256(abi.encodePacked("node.express.tickets")));
+
+        return expressTickets;
+    }
+
+    /// @notice Consumes an express ticket for the given node operator
+    /// @param _nodeAddress Address of the node operator to consume express ticket for
+    function useExpressTicket(address _nodeAddress) external override {
+        uint256 tickets = getExpressTicketCount(_nodeAddress);
+        require(tickets > 0, "No express tickets");
+        tickets -= 1;
+        setBool(keccak256(abi.encodePacked("node.express.provisioned", _nodeAddress)), true);
+        setUint(keccak256(abi.encodePacked("node.express.tickets")), tickets);
     }
 }

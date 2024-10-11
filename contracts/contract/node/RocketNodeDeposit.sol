@@ -207,7 +207,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
             megapoolAddress = RocketMegapoolInterface(rocketNodeManager.deployMegapool(msg.sender));
         } 
 
-        megapoolAddress.newValidator(_bondAmount, _useExpressTicket);
+        megapoolAddress.newValidator(_bondAmount, _useExpressTicket, _validatorPubkey, _validatorSignature, _depositDataRoot);
 
         // Process node deposit
         _processNodeDeposit(preLaunchValue, _bondAmount);
