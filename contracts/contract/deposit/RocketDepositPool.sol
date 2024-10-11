@@ -304,7 +304,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
         // Use an express ticket if requested
         if (_expressQueue) {
-            RocketNodeManagerInterface rocketNodeManager = RocketNodeStakingInterface(getContractAddress("rocketNodeManager"));
+            RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
             rocketNodeManager.useExpressTicket(nodeAddress);
         }
 

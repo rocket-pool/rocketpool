@@ -115,7 +115,7 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
     }
 
     /// @notice Returns the item from the start of the queue without removing it
-    function peekItem(bytes32 _namespace) public virtual override onlyLatestContract("addressLinkedListStorage", address(this)) onlyLatestNetworkContract returns (DepositQueueValue memory item) {
+    function peekItem(bytes32 _namespace) public virtual override view returns (DepositQueueValue memory item) {
         uint256 data = getUint(keccak256(abi.encodePacked(_namespace, ".data")));
         uint256 length = uint64(data >> lengthOffset);
         require(length > 0, "Queue can't be empty");

@@ -490,7 +490,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
 
     /// @notice Returns the number of express tickets the given node has
     /// @param _nodeAddress Address of the node operator to query
-    function getExpressTicketCount(address _nodeAddress) external override view returns (uint256) {
+    function getExpressTicketCount(address _nodeAddress) public override view returns (uint256) {
         bool provisioned = getBool(keccak256(abi.encodePacked("node.express.provisioned", _nodeAddress)));
 
         uint256 expressTickets = 0;

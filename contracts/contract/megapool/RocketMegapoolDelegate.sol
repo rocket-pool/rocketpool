@@ -217,7 +217,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         require(_data.length == _length, "Invalid bytes length");
     }
 
-    function getWithdrawalCredentials() public pure returns (bytes memory) {
+    function getWithdrawalCredentials() public view returns (bytes memory) {
         return abi.encodePacked(bytes1(0x01), bytes11(0x0), address(this));
     }
 }
