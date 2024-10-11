@@ -1,5 +1,6 @@
-const { RocketNodeManager, RocketMinipoolManager, RocketMinipoolDelegate } = require('../_utils/artifacts');
+const { RocketNodeManager, RocketMinipoolManager, RocketMinipoolDelegate } = require('../../test/_utils/artifacts');
 const { assertBN } = require('./bn');
+const assert = require('assert');
 
 async function checkInvariants() {
     const nodeAddresses = await getNodeAddresses();
@@ -61,15 +62,15 @@ async function checkNodeInvariants(nodeAddress, minipools) {
     const actualActive = minipools.filter(minipool => minipool.finalised !== true).length;
     const actualFinalised = minipools.length - actualActive;
     const actualStaking = stakingMinipools.length;
-    assert.equal(actualActive, expectedActive.toNumber(), 'Active minipool count invariant broken');
-    assert.equal(actualFinalised, expectedFinalised.toNumber(), 'Finalised minipool count invariant broken');
-    assert.equal(actualStaking, expectedStaking.toNumber(), 'Staking minipool count invariant broken');
+    assert.equal(actualActive, Number(expectedActive), 'Active minipool count invariant broken');
+    assert.equal(actualFinalised, Number(expectedFinalised), 'Finalised minipool count invariant broken');
+    assert.equal(actualStaking, Number(expectedStaking), 'Staking minipool count invariant broken');
     // Check deposit size counts
     const countBySize = await Promise.all(depositSizes.map(depositSize => rocketMinipoolManager.getNodeStakingMinipoolCountBySize(nodeAddress, depositSize)));
     for (let i = 0; i < depositSizes.length; i++) {
         const depositSize = depositSizes[i];
-        const actualCount = countBySize[i].toNumber();
-        const expectedCount = stakingMinipools.filter(minipool => minipool.nodeDepositBalance.eq(depositSize)).length;
+        const actualCount = Number(countBySize[i]);
+        const expectedCount = stakingMinipools.filter(minipool => minipool.nodeDepositBalance === depositSize).length;
         assert.equal(actualCount, expectedCount, 'Deposit size specific staking minipool count invariant broken');
     }
     // Check weighted average node fee
@@ -83,17 +84,17 @@ async function checkNodeInvariants(nodeAddress, minipools) {
 
 function weightedAverage(nums, weights) {
     if (nums.length === 0) {
-        return '0'.BN;
+        return 0n;
     }
     const [sum, weightSum] = weights.reduce(
         (acc, w, i) => {
-            acc[0] = acc[0].add(nums[i].mul(w));
-            acc[1] = acc[1].add(w);
+            acc[0] = acc[0] + (nums[i] * w);
+            acc[1] = acc[1] + w;
             return acc;
         },
-        ['0'.BN, '0'.BN],
+        [0n, 0n],
     );
-    return sum.div(weightSum);
+    return sum / weightSum;
 }
 
 module.exports = { checkInvariants };

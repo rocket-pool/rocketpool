@@ -1,10 +1,16 @@
-import { printGasUsage, startGasUsage, endGasUsage } from './_utils/gasusage';
-import { endSnapShot, injectGlobalSnapShot, startSnapShot } from './_utils/snapshotting';
+import { beforeEach, afterEach, before, after } from 'mocha';
+import { endSnapShot, startSnapShot } from './_utils/snapshotting';
 import { deployRocketPool } from './_helpers/deployment';
 import { setDefaultParameters } from './_helpers/defaults';
 import { suppressLog } from './_helpers/console';
-// Import tests
+import { injectBNHelpers } from './_helpers/bn';
+import { checkInvariants } from './_helpers/invariants';
+
 import auctionTests from './auction/auction-tests';
+import daoProtocolTests from './dao/dao-protocol-tests';
+import daoProtocolTreasuryTests from './dao/dao-protocol-treasury-tests';
+import daoNodeTrustedTests from './dao/dao-node-trusted-tests';
+import daoSecurityTests from './dao/dao-security-tests';
 import depositPoolTests from './deposit/deposit-pool-tests';
 import minipoolScrubTests from './minipool/minipool-scrub-tests';
 import minipoolTests from './minipool/minipool-tests';
@@ -19,18 +25,13 @@ import nodeDepositTests from './node/node-deposit-tests';
 import nodeManagerTests from './node/node-manager-tests';
 import nodeStakingTests from './node/node-staking-tests';
 import nodeDistributorTests from './node/node-distributor-tests';
-import daoProtocolTests from './dao/dao-protocol-tests';
-import daoProtocolTreasuryTests from './dao/dao-protocol-treasury-tests';
-import daoNodeTrustedTests from './dao/dao-node-trusted-tests';
-import daoSecurityTests from './dao/dao-security-tests';
 import rethTests from './token/reth-tests';
 import rplTests from './token/rpl-tests';
 import rewardsPoolTests from './rewards/rewards-tests';
-import { injectBNHelpers } from './_helpers/bn';
-import { checkInvariants } from './_helpers/invariants';
 import networkSnapshotsTests from './network/network-snapshots-tests';
 import networkVotingTests from './network/network-voting-tests';
 import utilTests from './util/util-tests';
+import upgradeTests from './upgrade/upgrade-tests';
 
 // Header
 console.log('\n');
@@ -46,27 +47,22 @@ injectBNHelpers();
 
 // State snapshotting and gas usage tracking
 beforeEach(startSnapShot);
-beforeEach(startGasUsage);
 afterEach(checkInvariants);
-afterEach(endGasUsage);
 afterEach(endSnapShot);
-after(printGasUsage);
 
 before(async function() {
   // Deploy Rocket Pool
   await suppressLog(deployRocketPool);
   // Set starting parameters for all tests
   await setDefaultParameters();
-  // Inject a global snapshot before every suite
-  injectGlobalSnapShot(this.test.parent)
 });
 
 // Run tests
+auctionTests();
 daoProtocolTests();
 daoProtocolTreasuryTests();
 daoNodeTrustedTests();
 daoSecurityTests();
-auctionTests();
 depositPoolTests();
 minipoolScrubTests();
 minipoolTests();
@@ -87,3 +83,4 @@ rethTests();
 rplTests();
 rewardsPoolTests();
 utilTests();
+upgradeTests();

@@ -15,6 +15,7 @@ import "../../interface/util/AddressSetStorageInterface.sol";
 import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
 import "../network/RocketNetworkSnapshots.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
+import "../../interface/network/RocketNetworkVotingInterface.sol";
 
 /// @notice Handles node deposits and minipool creation
 contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
@@ -31,6 +32,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     event RPLLocked(address indexed from, uint256 amount, uint256 time);
     event RPLUnlocked(address indexed from, uint256 amount, uint256 time);
     event RPLTransferred(address indexed from, address indexed to, uint256 amount, uint256 time);
+    event RPLBurned(address indexed from, uint256 amount, uint256 time);
 
     modifier onlyRPLWithdrawalAddressOrNode(address _nodeAddress) {
         // Check that the call is coming from RPL withdrawal address (or node if unset)
@@ -45,7 +47,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     }
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 5;
+        version = 6;
 
         // Precompute keys
         totalKey = keccak256(abi.encodePacked("rpl.staked.total.amount"));
@@ -234,10 +236,15 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @param _nodeAddress The address of the node operator to calculate for
     function getNodeETHMatchedLimit(address _nodeAddress) override external view returns (uint256) {
         // Load contracts
-        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
-        // Calculate & return limit
+        // Retrieve minimum stake parameter
         uint256 minimumStakePercent = rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake();
+        // When minimum stake is zero, allow unlimited amount of matched ETH
+        if (minimumStakePercent == 0) {
+            return type(uint256).max;
+        }
+        // Calculate and return limit
+        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         return getNodeRPLStake(_nodeAddress) *rocketNetworkPrices.getRPLPrice() / minimumStakePercent;
     }
 
@@ -311,6 +318,9 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @param _nodeAddress The address to increase the RPL stake of
     /// @param _amount The amount of RPL to stake
     function _stakeRPL(address _nodeAddress, uint256 _amount) internal {
+        // Ensure voting has been initialised for this node
+        RocketNetworkVotingInterface rocketNetworkVoting = RocketNetworkVotingInterface(getContractAddress("rocketNetworkVoting"));
+        rocketNetworkVoting.initialiseVotingFor(_nodeAddress);
         // Load contracts
         address rplTokenAddress = getContractAddress("rocketTokenRPL");
         address rocketVaultAddress = getContractAddress("rocketVault");
@@ -378,6 +388,25 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         increaseNodeRPLStake(_to, _amount);
         // Emit event
         emit RPLTransferred(_from, _to, _amount, block.timestamp);
+    }
+
+    /// @notice Burns an amount of RPL staked by a given node operator
+    /// @param _from The node to burn from
+    /// @param _amount The amount of RPL to burn
+    function burnRPL(address _from, uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyLatestNetworkContract() onlyRegisteredNode(_from) {
+        // Check sender has enough RPL
+        require(getNodeRPLStake(_from) >= _amount, "Node has insufficient RPL");
+        // Decrease the stake amount
+        decreaseTotalRPLStake(_amount);
+        decreaseNodeRPLStake(_from, _amount);
+        // Withdraw the RPL to this contract
+        IERC20Burnable rplToken = IERC20Burnable(getContractAddress("rocketTokenRPL"));
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        rocketVault.withdrawToken(address(this), rplToken, _amount);
+        // Execute the token burn
+        rplToken.burn(_amount);
+        // Emit event
+        emit RPLBurned(_from, _amount, block.timestamp);
     }
 
     /// @notice Withdraw staked RPL back to the node account or withdraw RPL address

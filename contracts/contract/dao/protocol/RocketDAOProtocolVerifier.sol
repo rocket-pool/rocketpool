@@ -38,18 +38,18 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     uint256 constant internal sumOffset = 1;
     uint256 constant internal hashOffset = 2;
 
-    // Burn address
-    address constant internal burnAddress = address(0x0000000000000000000000000000000000000000);
+    // Burn rate
+    uint256 constant internal bondBurnPercent = 0.2 ether;
 
     // Events
-    event RootSubmitted(uint256 indexed proposalId, address indexed proposer, uint32 blockNumber, uint256 index, Types.Node root, Types.Node[] treeNodes, uint256 timestamp);
+    event RootSubmitted(uint256 indexed proposalID, address indexed proposer, uint32 blockNumber, uint256 index, Types.Node root, Types.Node[] treeNodes, uint256 timestamp);
     event ChallengeSubmitted(uint256 indexed proposalID, address indexed challenger, uint256 index, uint256 timestamp);
     event ProposalBondBurned(uint256 indexed proposalID, address indexed proposer, uint256 amount, uint256 timestamp);
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Version
-        version = 1;
+        version = 2;
     }
 
     /// @notice Returns the depth per round
@@ -157,7 +157,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         // Unlock and burn
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
         rocketNodeStaking.unlockRPL(proposer, proposalBond);
-        rocketNodeStaking.transferRPL(proposer, burnAddress, proposalBond);
+        rocketNodeStaking.burnRPL(proposer, proposalBond);
         // Log it
         emit ProposalBondBurned(_proposalID, proposer, proposalBond, block.timestamp);
     }
@@ -241,14 +241,16 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
             RocketDAOProtocolProposalInterface.ProposalState proposalState = daoProposal.getState(_proposalID);
             require(proposalState == RocketDAOProtocolProposalInterface.ProposalState.Pending, "Can not defeat a valid proposal");
         }
+
         // Check the challenge at the given index has not been responded to
         bytes32 challengeKey = keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, _index));
         uint256 data = getUint(challengeKey);
         Types.ChallengeState state = _getChallengeState(data);
         require(state == Types.ChallengeState.Challenged, "Invalid challenge state");
 
-        // Precompute defeat index key
         uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
+
+        // Precompute defeat index key
         bytes32 defeatIndexKey = bytes32(proposalKey+defeatIndexOffset);
         uint256 challengePeriod = getUint(bytes32(proposalKey + challengePeriodOffset));
 
@@ -268,7 +270,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         setUint(defeatIndexKey, _index);
     }
 
-    /// @notice Called by a challenger to claim bonds (both refunded bonds and any rewards paid)
+    /// @notice Called by a challenger to claim bonds (both refunded bonds and any rewards paid minus the 20% bond burn)
     /// @param _proposalID The ID of the proposal
     /// @param _indices An array of indices which the challenger has a claim against
     function claimBondChallenger(uint256 _proposalID, uint256[] calldata _indices) external onlyLatestContract("rocketDAOProtocolVerifier", address(this)) onlyRegisteredNode(msg.sender) {
@@ -328,16 +330,18 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
             uint256 nodeCount = getUint(bytes32(proposalKey + nodeCountOffset));
             uint256 totalDefeatingIndices = getRoundsFromIndex(defeatIndex, nodeCount);
             uint256 totalReward = proposalBond * rewardedIndices / totalDefeatingIndices;
+            uint256 burnAmount = totalReward * bondBurnPercent / calcBase;
             // Unlock the reward amount from the proposer and transfer it to the challenger
             address proposer = getAddress(bytes32(proposalKey + proposerOffset));
             rocketNodeStaking.unlockRPL(proposer, totalReward);
-            rocketNodeStaking.transferRPL(proposer, msg.sender, totalReward);
+            rocketNodeStaking.burnRPL(proposer, burnAmount);
+            rocketNodeStaking.transferRPL(proposer, msg.sender, totalReward - burnAmount);
         }
     }
 
-    /// @notice Called by a proposer to claim bonds (both refunded bond and any rewards paid)
+    /// @notice Called by a proposer to claim bonds (both refunded bond and any rewards paid minus the 20% bond burn)
     /// @param _proposalID The ID of the proposal
-    /// @param _indices An array of indices which the challenger has a claim against
+    /// @param _indices An array of indices which the proposer has a claim against
     function claimBondProposer(uint256 _proposalID, uint256[] calldata _indices) external onlyLatestContract("rocketDAOProtocolVerifier", address(this)) onlyRegisteredNode(msg.sender) {
         uint256 defeatIndex = getUint(bytes32(uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)))+defeatIndexOffset));
 
@@ -367,6 +371,8 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         // Get staking contract
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
 
+        uint256 burnPerChallenge = challengeBond * bondBurnPercent / calcBase;
+
         for (uint256 i = 0; i < _indices.length; ++i) {
             // Check the challenge of the given index was responded to
             bytes32 challengeKey = keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, _indices[i]));
@@ -386,7 +392,8 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
                 // Unlock the challenger bond and pay to proposer
                 address challenger = getChallengeAddress(state);
                 rocketNodeStaking.unlockRPL(challenger, challengeBond);
-                rocketNodeStaking.transferRPL(challenger, proposer, challengeBond);
+                rocketNodeStaking.transferRPL(challenger, proposer, challengeBond - burnPerChallenge);
+                rocketNodeStaking.burnRPL(challenger, burnPerChallenge);
             }
         }
     }
@@ -396,11 +403,15 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @param _index The global index of the node for which the proposer is submitting a new pollard
     /// @param _nodes A list of nodes making up the new pollard
     function submitRoot(uint256 _proposalID, uint256 _index, Types.Node[] calldata _nodes) external onlyLatestContract("rocketDAOProtocolVerifier", address(this)) onlyRegisteredNode(msg.sender) {
+        uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
+
         {  // Scope to prevent stack too deep
             // Check whether the proposal is in the Pending state
             RocketDAOProtocolProposalInterface daoProposal = RocketDAOProtocolProposalInterface(getContractAddress("rocketDAOProtocolProposal"));
             RocketDAOProtocolProposalInterface.ProposalState proposalState = daoProposal.getState(_proposalID);
             require(proposalState == RocketDAOProtocolProposalInterface.ProposalState.Pending, "Can not submit root for a valid proposal");
+            address proposer = getAddress(bytes32(proposalKey + proposerOffset));
+            require(msg.sender == proposer, "Not proposer");
         }
         {  // Scope to prevent stack too deep
             // Get challenge state
@@ -414,9 +425,6 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
             state = setChallengeState(state, Types.ChallengeState.Responded);
             setUint(challengeKey, state);
         }
-        // Load the proposal
-        uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
-
         // Check the proposal hasn't already been defeated
         require(getUint(bytes32(proposalKey + defeatIndexOffset)) == 0, "Proposal already defeated");
 

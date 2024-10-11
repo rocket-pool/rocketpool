@@ -1,15 +1,14 @@
 import {
     RocketDAOProtocolSettingsDeposit,
-    RocketMinipoolQueue,
     RocketDAOProtocolSettingsMinipool,
-    RocketVault,
     RocketDepositPool,
+    RocketMinipoolQueue,
+    RocketVault,
 } from '../_utils/artifacts';
-
+import { assertBN } from '../_helpers/bn';
 
 // Assign deposits to minipools
 export async function assignDeposits(txOptions) {
-
     // Load contracts
     const [
         rocketDepositPool,
@@ -40,13 +39,13 @@ export async function assignDeposits(txOptions) {
 
     // Get queued minipool capacities
     let minipoolCapacities = [];
-    for (let i = 0; i < halfMinipoolQueueLength; ++i)  minipoolCapacities.push(halfDepositUserAmount);
-    for (let i = 0; i < fullMinipoolQueueLength; ++i)  minipoolCapacities.push(fullDepositUserAmount);
+    for (let i = 0; i < halfMinipoolQueueLength; ++i) minipoolCapacities.push(halfDepositUserAmount);
+    for (let i = 0; i < fullMinipoolQueueLength; ++i) minipoolCapacities.push(fullDepositUserAmount);
     for (let i = 0; i < emptyMinipoolQueueLength; ++i) minipoolCapacities.push(emptyDepositUserAmount);
 
     // Get expected deposit assignment parameters
     let expectedDepositAssignments = 0;
-    let expectedEthAssigned = '0'.BN;
+    let expectedEthAssigned = 0n;
     let depositBalanceRemaining = depositPoolBalance;
     let depositAssignmentsRemaining = maxDepositAssignments;
     while (minipoolCapacities.length > 0 && depositBalanceRemaining.gte(minipoolCapacities[0]) && depositAssignmentsRemaining > 0) {
@@ -64,7 +63,7 @@ export async function assignDeposits(txOptions) {
             web3.eth.getBalance(rocketVault.address).then(value => value.BN),
         ]).then(
             ([depositPoolEth, vaultEth]) =>
-            ({depositPoolEth, vaultEth})
+                ({ depositPoolEth, vaultEth }),
         );
     }
 
@@ -75,7 +74,7 @@ export async function assignDeposits(txOptions) {
             rocketMinipoolQueue.getTotalCapacity.call(),
         ]).then(
             ([totalLength, totalCapacity]) =>
-            ({totalLength, totalCapacity})
+                ({ totalLength, totalCapacity }),
         );
     }
 

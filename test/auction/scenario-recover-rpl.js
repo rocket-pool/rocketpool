@@ -1,32 +1,31 @@
 import { RocketAuctionManager } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
-
+import * as assert from 'assert';
 
 // Recover unclaimed RPL from a lot
 export async function recoverUnclaimedRPL(lotIndex, txOptions) {
-
     // Load contracts
     const rocketAuctionManager = await RocketAuctionManager.deployed();
 
     // Get auction contract details
     function getContractDetails() {
         return Promise.all([
-            rocketAuctionManager.getAllottedRPLBalance.call(),
-            rocketAuctionManager.getRemainingRPLBalance.call(),
+            rocketAuctionManager.getAllottedRPLBalance(),
+            rocketAuctionManager.getRemainingRPLBalance(),
         ]).then(
             ([allottedRplBalance, remainingRplBalance]) =>
-            ({allottedRplBalance, remainingRplBalance})
+                ({ allottedRplBalance, remainingRplBalance }),
         );
     }
 
     // Get lot details
     function getLotDetails() {
         return Promise.all([
-            rocketAuctionManager.getLotRPLRecovered.call(lotIndex),
-            rocketAuctionManager.getLotRemainingRPLAmount.call(lotIndex),
+            rocketAuctionManager.getLotRPLRecovered(lotIndex),
+            rocketAuctionManager.getLotRemainingRPLAmount(lotIndex),
         ]).then(
             ([rplRecovered, remainingRplAmount]) =>
-            ({rplRecovered, remainingRplAmount})
+                ({ rplRecovered, remainingRplAmount }),
         );
     }
 
@@ -37,7 +36,7 @@ export async function recoverUnclaimedRPL(lotIndex, txOptions) {
     ]);
 
     // Recover RPL
-    await rocketAuctionManager.recoverUnclaimedRPL(lotIndex, txOptions);
+    await rocketAuctionManager.connect(txOptions.from).recoverUnclaimedRPL(lotIndex, txOptions);
 
     // Get updated details
     let [details2, lot2] = await Promise.all([
@@ -46,8 +45,8 @@ export async function recoverUnclaimedRPL(lotIndex, txOptions) {
     ]);
 
     // Check details
-    assertBN.equal(details2.allottedRplBalance, details1.allottedRplBalance.sub(lot1.remainingRplAmount), 'Incorrect updated contract allotted RPL balance');
-    assertBN.equal(details2.remainingRplBalance, details1.remainingRplBalance.add(lot1.remainingRplAmount), 'Incorrect updated contract remaining RPL balance');
-    assert.isTrue(lot2.rplRecovered, 'Incorrect updated lot RPL recovered status');
+    assertBN.equal(details2.allottedRplBalance, details1.allottedRplBalance - lot1.remainingRplAmount, 'Incorrect updated contract allotted RPL balance');
+    assertBN.equal(details2.remainingRplBalance, details1.remainingRplBalance + lot1.remainingRplAmount, 'Incorrect updated contract remaining RPL balance');
+    assert.equal(lot2.rplRecovered, true, 'Incorrect updated lot RPL recovered status');
 }
 

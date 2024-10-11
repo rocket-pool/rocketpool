@@ -7,7 +7,10 @@
   "scripts": {
     "compile": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.js",
-    "test": "hardhat test test/rocket-pool-tests.js --bail",
+    "test": "hardhat test --bail",
+    "test-gas": "REPORT_GAS=1 hardhat test --bail",
+    "test-fork": "hardhat test --config hardhat-fork.config.js --bail",
+    "coverage": "SOLIDITY_COVERAGE=true hardhat coverage",
     "slither": "slither --filter-paths node_modules,old --exclude conformance-to-solidity-naming-conventions ."
   },
   "devDependencies": {
@@ -17,21 +20,17 @@
     "@babel/runtime": "^7.20.1",
     "@chainsafe/lodestar-types": "^0.5.0",
     "@chainsafe/ssz": "^0.6.1",
-    "@nomiclabs/hardhat-truffle5": "^2.0.7",
-    "@nomiclabs/hardhat-web3": "^2.0.0",
+    "@nomicfoundation/hardhat-ethers": "^3.0.8",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.12",
     "@openzeppelin/contracts": "^3.4.0",
     "@openzeppelin4/contracts": "npm:@openzeppelin/contracts@^4.9.2",
-    "axios": "^0.21.1",
+    "axios": "1.7.7",
     "dotenv": "^16.0.3",
-    "ethereumjs-util": "^6.2.0",
-    "glob": "^7.1.7",
-    "hardhat": "^2.16.0",
+    "ethers": "^6.13.3",
+    "hardhat": "2.22.12",
+    "hardhat-gas-reporter": "^2.2.1",
     "mocha": "^10.1.0",
     "pako": "^1.0.6",
-    "query-string": "^7.0.1",
-    "web3": "^1.2.8"
-  },
-  "dependencies": {
-    "bn-sqrt": "^1.0.0"
+    "solidity-coverage": "^0.8.13"
   }
 }

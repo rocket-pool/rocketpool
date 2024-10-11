@@ -1,6 +1,5 @@
-import { RocketTokenRETH } from '../_utils/artifacts';
+import { RocketTokenRETH } from '../../test/_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
-
 
 // Burn rETH for ETH
 export async function burnReth(amount, txOptions) {
@@ -10,12 +9,12 @@ export async function burnReth(amount, txOptions) {
     // Get balances
     function getBalances() {
         return Promise.all([
-            rocketTokenRETH.totalSupply.call(),
-            rocketTokenRETH.balanceOf.call(txOptions.from),
-            web3.eth.getBalance(txOptions.from).then(value => web3.utils.toBN(value)),
+            rocketTokenRETH.totalSupply(),
+            rocketTokenRETH.balanceOf(txOptions.from),
+            ethers.provider.getBalance(txOptions.from),
         ]).then(
             ([tokenSupply, userTokenBalance, userEthBalance]) =>
-            ({tokenSupply, userTokenBalance, userEthBalance})
+                ({ tokenSupply, userTokenBalance, userEthBalance }),
         );
     }
 
@@ -27,18 +26,19 @@ export async function burnReth(amount, txOptions) {
     txOptions.gasPrice = gasPrice;
 
     // Burn tokens & get tx fee
-    let txReceipt = await rocketTokenRETH.burn(amount, txOptions);
-    let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
+    let tx = await rocketTokenRETH.connect(txOptions.from).burn(amount, txOptions);
+    const txReceipt = await tx.wait();
+    let txFee = gasPrice * txReceipt.gasUsed;
 
     // Get updated balances
     let balances2 = await getBalances();
 
     // Calculate values
-    let burnAmount = web3.utils.toBN(amount);
+    let burnAmount = amount;
     let expectedEthTransferred = await rocketTokenRETH.getEthValue(burnAmount);
 
     // Check balances
-    assertBN.equal(balances2.tokenSupply, balances1.tokenSupply.sub(burnAmount), 'Incorrect updated token supply');
-    assertBN.equal(balances2.userTokenBalance, balances1.userTokenBalance.sub(burnAmount), 'Incorrect updated user token balance');
-    assertBN.equal(balances2.userEthBalance, balances1.userEthBalance.add(expectedEthTransferred).sub(txFee), 'Incorrect updated user ETH balance');
+    assertBN.equal(balances2.tokenSupply, balances1.tokenSupply - burnAmount, 'Incorrect updated token supply');
+    assertBN.equal(balances2.userTokenBalance, balances1.userTokenBalance - burnAmount, 'Incorrect updated user token balance');
+    assertBN.equal(balances2.userEthBalance, balances1.userEthBalance + expectedEthTransferred - txFee, 'Incorrect updated user ETH balance');
 }

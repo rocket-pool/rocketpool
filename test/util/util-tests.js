@@ -1,25 +1,30 @@
+import { before, describe, it } from 'mocha';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import {
     LinkedListStorage
 } from '../_utils/artifacts';
-import { assert } from 'hardhat';
+import { globalSnapShot } from '../_utils/snapshotting';
+import * as assert from 'node:assert';
+
+const helpers = require('@nomicfoundation/hardhat-network-helpers');
+const hre = require('hardhat');
+const ethers = hre.ethers;
 
 export default function() {
-    contract('LinkedListStorage', async (accounts) => {
+    describe('LinkedListStorage', () => {
+        let random;
 
-
-        // Accounts
-        const [
-            random,
-        ] = accounts;
-
-        const regularQueue = web3.utils.soliditySha3('regular')
-        const expressQueue = web3.utils.soliditySha3('express')
+        const regularQueue = ethers.solidityPackedKeccak256(['string'], ['regular'])
+        const expressQueue = ethers.solidityPackedKeccak256(['string'], ['express'])
 
         // Setup
         before(async () => {
+            await globalSnapShot();
 
+            [
+                random,
+            ] = await ethers.getSigners();
         });
 
         it(printTitle('random', 'pack/unpack shouldnt change values'), async () => {

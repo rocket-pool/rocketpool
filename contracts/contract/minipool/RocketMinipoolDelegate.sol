@@ -28,8 +28,9 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
 
     // Constants
     uint8 public constant override version = 3;                   // Used to identify which delegate contract each minipool is using
-    uint256 constant calcBase = 1 ether;                          // Fixed point arithmetic uses this for value for precision
-    uint256 constant legacyPrelaunchAmount = 16 ether;            // The amount of ETH initially deposited when minipool is created (for legacy minipools)
+    uint256 internal constant calcBase = 1 ether;                 // Fixed point arithmetic uses this for value for precision
+    uint256 internal constant legacyPrelaunchAmount = 16 ether;   // The amount of ETH initially deposited when minipool is created (for legacy minipools)
+    uint256 internal constant scrubPenalty = 2.4 ether;           // Amount of ETH penalised during a successful scrub
 
     // Libs
     using SafeMath for uint;
@@ -575,7 +576,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Check if minipool is timed out
         require(block.timestamp.sub(statusTime) >= rocketDAOProtocolSettingsMinipool.getLaunchTimeout(), "The minipool can only be dissolved once it has timed out");
         // Perform the dissolution
-        _dissolve();
+        _dissolve(0);
     }
 
     /// @notice Withdraw node balances from the minipool and close it. Only accepts calls from the owner
@@ -613,23 +614,11 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Check if required quorum has voted
         uint256 quorum = rocketDAONode.getMemberCount().mul(rocketDAONodeTrustedSettingsMinipool.getScrubQuorum()).div(calcBase);
         if (totalScrubVotes.add(1) > quorum) {
-            // Slash RPL equal to minimum stake amount (if enabled)
             if (!vacant && rocketDAONodeTrustedSettingsMinipool.getScrubPenaltyEnabled()){
-                RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
-                RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
-                RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-                uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
-                // Slash amount is minRplStake * userCapital
-                // In prelaunch userDepositBalance hasn't been set so we calculate it as 32 ETH - bond amount
-                rocketNodeStaking.slashRPL(
-                    nodeAddress,
-                        launchAmount.sub(nodeDepositBalance)
-                        .mul(rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake())
-                        .div(calcBase)
-                );
+                _dissolve(scrubPenalty);
+            } else {
+                _dissolve(0);
             }
-            // Dissolve this minipool, recycling ETH back to deposit pool
-            _dissolve();
             // Emit event
             emit MinipoolScrubbed(block.timestamp);
         } else {
@@ -718,7 +707,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     }
 
     /// @dev Dissolve this minipool
-    function _dissolve() private {
+    /// @param _penalty An additional amount of ETH to send back to the deposit pool (unused for vacant minipools)
+    function _dissolve(uint256 _penalty) private {
         // Get contracts
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
@@ -733,11 +723,11 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
                 // Handle legacy Full type minipool
                 rocketMinipoolQueue.removeMinipool(MinipoolDeposit.Full);
             } else {
-                // Transfer user balance to deposit pool
+                // Transfer user balance (and penalty) to deposit pool
                 uint256 userCapital = getUserDepositBalance();
-                rocketDepositPool.recycleDissolvedDeposit{value : userCapital}();
+                rocketDepositPool.recycleDissolvedDeposit{value : userCapital + _penalty}();
                 // Emit ether withdrawn event
-                emit EtherWithdrawn(address(rocketDepositPool), userCapital, block.timestamp);
+                emit EtherWithdrawn(address(rocketDepositPool), userCapital + _penalty, block.timestamp);
             }
         }
     }

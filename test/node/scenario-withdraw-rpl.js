@@ -1,22 +1,20 @@
 import {
-    RocketMinipoolManager,
     RocketDAOProtocolSettingsMinipool,
-    RocketNetworkPrices,
     RocketDAOProtocolSettingsNode,
+    RocketMinipoolManager,
+    RocketNetworkPrices,
+    RocketNodeManager,
     RocketNodeStaking,
     RocketTokenRPL,
     RocketVault,
-    RocketNodeManager,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
-
 
 // Withdraw RPL staked against the node
 export async function withdrawRpl(amount, txOptions) {
     // Load contracts
     const [
         rocketMinipoolManager,
-        rocketDAOProtocolSettingsMinipool,
         rocketNetworkPrices,
         rocketDAOProtocolSettingsNode,
         rocketNodeManager,
@@ -25,7 +23,6 @@ export async function withdrawRpl(amount, txOptions) {
         rocketVault,
     ] = await Promise.all([
         RocketMinipoolManager.deployed(),
-        RocketDAOProtocolSettingsMinipool.deployed(),
         RocketNetworkPrices.deployed(),
         RocketDAOProtocolSettingsNode.deployed(),
         RocketNodeManager.deployed(),
@@ -36,53 +33,51 @@ export async function withdrawRpl(amount, txOptions) {
 
     // Get parameters
     const [
-        depositUserAmount,
         minPerMinipoolStake,
         maxPerMinipoolStake,
         rplPrice,
-        rplWithdrawalAddress
+        rplWithdrawalAddress,
     ] = await Promise.all([
-        rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount.call(),
-        rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake.call(),
-        rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake.call(),
-        rocketNetworkPrices.getRPLPrice.call(),
-        rocketNodeManager.getNodeRPLWithdrawalAddress(txOptions.from),
+        rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake(),
+        rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake(),
+        rocketNetworkPrices.getRPLPrice(),
+        rocketNodeManager.getNodeRPLWithdrawalAddress(txOptions.from.address),
     ]);
 
     // Get token balances
     function getTokenBalances(nodeAddress) {
         return Promise.all([
-            rocketTokenRPL.balanceOf.call(nodeAddress),
-            rocketTokenRPL.balanceOf.call(rocketVault.address),
-            rocketVault.balanceOfToken.call('rocketNodeStaking', rocketTokenRPL.address),
+            rocketTokenRPL.balanceOf(nodeAddress),
+            rocketTokenRPL.balanceOf(rocketVault.target),
+            rocketVault.balanceOfToken('rocketNodeStaking', rocketTokenRPL.target),
         ]).then(
             ([nodeRpl, vaultRpl, stakingRpl]) =>
-            ({nodeRpl, vaultRpl, stakingRpl})
+                ({ nodeRpl, vaultRpl, stakingRpl }),
         );
     }
 
     // Get staking details
     function getStakingDetails(nodeAddress) {
         return Promise.all([
-            rocketNodeStaking.getTotalRPLStake.call(),
-            rocketNodeStaking.getNodeRPLStake.call(nodeAddress),
-            rocketNodeStaking.getNodeEffectiveRPLStake.call(nodeAddress),
-            rocketNodeStaking.getNodeETHMatched.call(nodeAddress),
-            rocketNodeStaking.getNodeETHMatchedLimit.call(nodeAddress),
+            rocketNodeStaking.getTotalRPLStake(),
+            rocketNodeStaking.getNodeRPLStake(nodeAddress),
+            rocketNodeStaking.getNodeEffectiveRPLStake(nodeAddress),
+            rocketNodeStaking.getNodeETHMatched(nodeAddress),
+            rocketNodeStaking.getNodeETHMatchedLimit(nodeAddress),
         ]).then(
             ([totalStake, nodeStake, nodeEffectiveStake, nodeEthMatched, nodeEthMatchedLimit]) =>
-            ({totalStake, nodeStake, nodeEffectiveStake, nodeEthMatched, nodeEthMatchedLimit})
+                ({ totalStake, nodeStake, nodeEffectiveStake, nodeEthMatched, nodeEthMatchedLimit }),
         );
     }
 
     // Get minipool counts
     function getMinipoolCounts(nodeAddress) {
         return Promise.all([
-            rocketMinipoolManager.getMinipoolCount.call(),
-            rocketMinipoolManager.getNodeMinipoolCount.call(nodeAddress),
+            rocketMinipoolManager.getMinipoolCount(),
+            rocketMinipoolManager.getNodeMinipoolCount(nodeAddress),
         ]).then(
             ([total, node]) =>
-            ({total, node})
+                ({ total, node }),
         );
     }
 
@@ -93,7 +88,7 @@ export async function withdrawRpl(amount, txOptions) {
     ]);
 
     // Withdraw RPL
-    await rocketNodeStaking.methods['withdrawRPL(uint256)'](amount, txOptions);
+    await rocketNodeStaking.connect(txOptions.from)['withdrawRPL(uint256)'](amount, txOptions);
 
     // Get updated token balances, staking details & minipool counts
     let [balances2, details2, minipoolCounts] = await Promise.all([
@@ -103,18 +98,18 @@ export async function withdrawRpl(amount, txOptions) {
     ]);
 
     // Calculate expected effective stakes & node minipool limit
-    const maxNodeEffectiveStake = details2.nodeEthMatched.mul(maxPerMinipoolStake).div(rplPrice);
-    const expectedNodeEffectiveStake = (details2.nodeStake.lt(maxNodeEffectiveStake)? details2.nodeStake : maxNodeEffectiveStake);
-    const expectedNodeEthMatchedLimit = details2.nodeStake.mul(rplPrice).div(minPerMinipoolStake);
+    const maxNodeEffectiveStake = details2.nodeEthMatched * maxPerMinipoolStake / rplPrice;
+    const expectedNodeEffectiveStake = (details2.nodeStake < maxNodeEffectiveStake) ? details2.nodeStake : maxNodeEffectiveStake;
+    const expectedNodeEthMatchedLimit = details2.nodeStake * rplPrice / minPerMinipoolStake;
 
     // Check token balances
-    assertBN.equal(balances2.nodeRpl, balances1.nodeRpl.add(web3.utils.toBN(amount)), 'Incorrect updated node RPL balance');
-    assertBN.equal(balances2.vaultRpl, balances1.vaultRpl.sub(web3.utils.toBN(amount)), 'Incorrect updated vault RPL balance');
-    assertBN.equal(balances2.stakingRpl, balances1.stakingRpl.sub(web3.utils.toBN(amount)), 'Incorrect updated RocketNodeStaking contract RPL vault balance');
+    assertBN.equal(balances2.nodeRpl, balances1.nodeRpl + amount, 'Incorrect updated node RPL balance');
+    assertBN.equal(balances2.vaultRpl, balances1.vaultRpl - amount, 'Incorrect updated vault RPL balance');
+    assertBN.equal(balances2.stakingRpl, balances1.stakingRpl - amount, 'Incorrect updated RocketNodeStaking contract RPL vault balance');
 
     // Check staking details
-    assertBN.equal(details2.totalStake, details1.totalStake.sub(web3.utils.toBN(amount)), 'Incorrect updated total RPL stake');
-    assertBN.equal(details2.nodeStake, details1.nodeStake.sub(web3.utils.toBN(amount)), 'Incorrect updated node RPL stake');
+    assertBN.equal(details2.totalStake, details1.totalStake - amount, 'Incorrect updated total RPL stake');
+    assertBN.equal(details2.nodeStake, details1.nodeStake - amount, 'Incorrect updated node RPL stake');
     assertBN.equal(details2.nodeEffectiveStake, expectedNodeEffectiveStake, 'Incorrect updated effective node RPL stake');
     assertBN.equal(details2.nodeEthMatchedLimit, expectedNodeEthMatchedLimit, 'Incorrect updated node minipool limit');
 }

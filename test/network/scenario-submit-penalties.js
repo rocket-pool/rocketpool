@@ -1,12 +1,16 @@
 import {
-    RocketDAONodeTrusted, RocketDAOProtocolSettingsNetwork,
+    RocketDAONodeTrusted,
+    RocketDAOProtocolSettingsNetwork,
     RocketMinipoolPenalty,
     RocketNetworkPenalties,
-    RocketStorage
+    RocketStorage,
 } from '../_utils/artifacts';
 import { shouldRevert } from '../_utils/testing';
 import { assertBN } from '../_helpers/bn';
+import * as assert from 'assert';
 
+const hre = require('hardhat');
+const ethers = hre.ethers;
 
 // Submit network penalties
 export async function submitPenalty(minipoolAddress, block, txOptions) {
@@ -17,89 +21,89 @@ export async function submitPenalty(minipoolAddress, block, txOptions) {
         rocketNetworkPenalties,
         rocketMinipoolPenalty,
         rocketStorage,
-        rocketDAOProtocolSettingsNetwork
+        rocketDAOProtocolSettingsNetwork,
     ] = await Promise.all([
         RocketDAONodeTrusted.deployed(),
         RocketNetworkPenalties.deployed(),
         RocketMinipoolPenalty.deployed(),
         RocketStorage.deployed(),
-        RocketDAOProtocolSettingsNetwork.deployed()
+        RocketDAOProtocolSettingsNetwork.deployed(),
     ]);
 
     // Get parameters
-    let trustedNodeCount = await rocketDAONodeTrusted.getMemberCount.call();
+    let trustedNodeCount = await rocketDAONodeTrusted.getMemberCount();
 
     // Get submission keys
-    let penaltyKey = web3.utils.soliditySha3('network.penalties.penalty', minipoolAddress)
-    let nodeSubmissionKey = web3.utils.soliditySha3('network.penalties.submitted.node', txOptions.from, minipoolAddress, block);
-    let submissionCountKey = web3.utils.soliditySha3('network.penalties.submitted.count', minipoolAddress, block);
-    let executionKey = web3.utils.soliditySha3('network.penalties.executed', minipoolAddress, block);
+    let penaltyKey = ethers.solidityPackedKeccak256(['string', 'address'], ['network.penalties.penalty', minipoolAddress]);
+    let nodeSubmissionKey = ethers.solidityPackedKeccak256(['string', 'address', 'address', 'uint256'], ['network.penalties.submitted.node', txOptions.from.address, minipoolAddress, block]);
+    let submissionCountKey = ethers.solidityPackedKeccak256(['string', 'address', 'uint256'], ['network.penalties.submitted.count', minipoolAddress, block]);
+    let executionKey = ethers.solidityPackedKeccak256(['string', 'address', 'uint256'], ['network.penalties.executed', minipoolAddress, block]);
 
-    let maxPenaltyRate = await rocketMinipoolPenalty.getMaxPenaltyRate.call();
-    let penaltyThreshold = await rocketDAOProtocolSettingsNetwork.getNodePenaltyThreshold.call();
+    let maxPenaltyRate = await rocketMinipoolPenalty.getMaxPenaltyRate();
+    let penaltyThreshold = await rocketDAOProtocolSettingsNetwork.getNodePenaltyThreshold();
 
     // Get submission details
     function getSubmissionDetails() {
         return Promise.all([
-            rocketStorage.getBool.call(nodeSubmissionKey),
-            rocketStorage.getUint.call(submissionCountKey),
-            rocketStorage.getBool.call(executionKey),
+            rocketStorage.getBool(nodeSubmissionKey),
+            rocketStorage.getUint(submissionCountKey),
+            rocketStorage.getBool(executionKey),
         ]).then(
             ([nodeSubmitted, count, executed]) =>
-            ({nodeSubmitted, count, executed})
+                ({ nodeSubmitted, count, executed }),
         );
     }
 
     function getPenalty() {
         return Promise.all([
-            rocketMinipoolPenalty.getPenaltyRate.call(minipoolAddress),
-            rocketStorage.getUint.call(penaltyKey)
+            rocketMinipoolPenalty.getPenaltyRate(minipoolAddress),
+            rocketStorage.getUint(penaltyKey),
         ]).then(
-          ([penaltyRate, penaltyCount]) =>
-          ({penaltyRate, penaltyCount})
-        )
+            ([penaltyRate, penaltyCount]) =>
+                ({ penaltyRate, penaltyCount }),
+        );
     }
 
     // Get initial submission details
-    let [ submission1, penalty1 ] = await Promise.all([
-      getSubmissionDetails(),
-      getPenalty()
+    let [submission1, penalty1] = await Promise.all([
+        getSubmissionDetails(),
+        getPenalty(),
     ]);
 
     // Submit penalties
     if (submission1.executed) {
-        await shouldRevert(rocketNetworkPenalties.submitPenalty(minipoolAddress, block, txOptions), "Did not revert on already executed penalty", "Penalty already applied for this block");
+        await shouldRevert(rocketNetworkPenalties.connect(txOptions.from).submitPenalty(minipoolAddress, block, txOptions), 'Did not revert on already executed penalty', 'Penalty already applied for this block');
     } else {
-        await rocketNetworkPenalties.submitPenalty(minipoolAddress, block, txOptions);
+        await rocketNetworkPenalties.connect(txOptions.from).submitPenalty(minipoolAddress, block, txOptions);
     }
 
     // Get updated submission details & penalties
-    let [ submission2, penalty2 ] = await Promise.all([
+    let [submission2, penalty2] = await Promise.all([
         getSubmissionDetails(),
-        getPenalty()
+        getPenalty(),
     ]);
 
     // Check if penalties should be updated
-    let expectedUpdatedPenalty = '1'.ether.mul(submission2.count).div(trustedNodeCount).gte(penaltyThreshold);
+    let expectedUpdatedPenalty = ('1'.ether * submission2.count / trustedNodeCount) >= penaltyThreshold;
 
     // Check submission details
-    assert.isFalse(submission1.nodeSubmitted, 'Incorrect initial node submitted status');
+    assert.equal(submission1.nodeSubmitted, false, 'Incorrect initial node submitted status');
 
     if (!submission1.executed) {
-        assert.isTrue(submission2.nodeSubmitted, 'Incorrect updated node submitted status');
-        assertBN.equal(submission2.count, submission1.count.add('1'.BN), 'Incorrect updated submission count');
+        assert.equal(submission2.nodeSubmitted, true, 'Incorrect updated node submitted status');
+        assertBN.equal(submission2.count, submission1.count + 1n, 'Incorrect updated submission count');
     }
 
     // Check penalty
     if (!submission1.executed && expectedUpdatedPenalty) {
-        assert.isTrue(submission2.executed, 'Penalty not executed');
-        assert.strictEqual(penalty2.penaltyCount.toString(), penalty1.penaltyCount.add('1'.BN).toString(), 'Penalty count not updated')
+        assert.equal(submission2.executed, true, 'Penalty not executed');
+        assertBN.equal(penalty2.penaltyCount, penalty1.penaltyCount + 1n, 'Penalty count not updated');
 
         // Unless we hit max penalty, expect to see an increase in the penalty rate
-        if (penalty1.penaltyRate.lt(maxPenaltyRate) && penalty2.penaltyCount.gte('3'.BN)){
-            assert.isTrue(penalty2.penaltyRate.gt(penalty1.penaltyRate), 'Penalty rate did not increase')
+        if (penalty1.penaltyRate < maxPenaltyRate && penalty2.penaltyCount >= 3n) {
+            assertBN.isAbove(penalty2.penaltyRate, penalty1.penaltyRate, 'Penalty rate did not increase');
         }
-    } else if(!expectedUpdatedPenalty) {
-        assert.isFalse(submission2.executed, 'Penalty executed');
+    } else if (!expectedUpdatedPenalty) {
+        assert.equal(submission2.executed, false, 'Penalty executed');
     }
 }

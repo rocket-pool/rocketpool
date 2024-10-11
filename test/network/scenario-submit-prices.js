@@ -1,6 +1,9 @@
 import { RocketDAONodeTrusted, RocketNetworkPrices, RocketStorage } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
+import * as assert from 'assert';
 
+const hre = require('hardhat');
+const ethers = hre.ethers;
 
 // Submit network prices
 export async function submitPrices(block, slotTimestamp, rplPrice, txOptions) {
@@ -16,31 +19,37 @@ export async function submitPrices(block, slotTimestamp, rplPrice, txOptions) {
     ]);
 
     // Get parameters
-    let trustedNodeCount = await rocketDAONodeTrusted.getMemberCount.call();
+    let trustedNodeCount = await rocketDAONodeTrusted.getMemberCount();
 
     // Get submission keys
-    let nodeSubmissionKey = web3.utils.soliditySha3('network.prices.submitted.node.key', txOptions.from, block, slotTimestamp, rplPrice);
-    let submissionCountKey = web3.utils.soliditySha3('network.prices.submitted.count', block, slotTimestamp, rplPrice);
+    let nodeSubmissionKey = ethers.solidityPackedKeccak256(
+        ['string', 'address', 'uint256', 'uint256', 'uint256'],
+        ['network.prices.submitted.node.key', txOptions.from.address, block, slotTimestamp, rplPrice],
+    );
+    let submissionCountKey = ethers.solidityPackedKeccak256(
+        ['string', 'uint256', 'uint256', 'uint256'],
+        ['network.prices.submitted.count', block, slotTimestamp, rplPrice],
+    );
 
     // Get submission details
     function getSubmissionDetails() {
         return Promise.all([
-            rocketStorage.getBool.call(nodeSubmissionKey),
-            rocketStorage.getUint.call(submissionCountKey),
+            rocketStorage.getBool(nodeSubmissionKey),
+            rocketStorage.getUint(submissionCountKey),
         ]).then(
             ([nodeSubmitted, count]) =>
-            ({nodeSubmitted, count})
+                ({ nodeSubmitted, count }),
         );
     }
 
     // Get prices
     function getPrices() {
         return Promise.all([
-            rocketNetworkPrices.getPricesBlock.call(),
-            rocketNetworkPrices.getRPLPrice.call(),
+            rocketNetworkPrices.getPricesBlock(),
+            rocketNetworkPrices.getRPLPrice(),
         ]).then(
             ([block, rplPrice]) =>
-            ({block, rplPrice})
+                ({ block, rplPrice }),
         );
     }
 
@@ -48,7 +57,7 @@ export async function submitPrices(block, slotTimestamp, rplPrice, txOptions) {
     let submission1 = await getSubmissionDetails();
 
     // Submit prices
-    await rocketNetworkPrices.submitPrices(block, slotTimestamp, rplPrice, txOptions);
+    await rocketNetworkPrices.connect(txOptions.from).submitPrices(block, slotTimestamp, rplPrice, txOptions);
 
     // Get updated submission details & prices
     let [submission2, prices] = await Promise.all([
@@ -57,12 +66,12 @@ export async function submitPrices(block, slotTimestamp, rplPrice, txOptions) {
     ]);
 
     // Check if prices should be updated
-    let expectUpdatedPrices = submission2.count.mul('2'.BN).gt(trustedNodeCount);
+    let expectUpdatedPrices = (submission2.count * 2n) > trustedNodeCount;
 
     // Check submission details
-    assert.isFalse(submission1.nodeSubmitted, 'Incorrect initial node submitted status');
-    assert.isTrue(submission2.nodeSubmitted, 'Incorrect updated node submitted status');
-    assertBN.equal(submission2.count, submission1.count.add('1'.BN), 'Incorrect updated submission count');
+    assert.equal(submission1.nodeSubmitted, false, 'Incorrect initial node submitted status');
+    assert.equal(submission2.nodeSubmitted, true, 'Incorrect updated node submitted status');
+    assertBN.equal(submission2.count, submission1.count + 1n, 'Incorrect updated submission count');
 
     // Check prices
     if (expectUpdatedPrices) {
@@ -74,7 +83,6 @@ export async function submitPrices(block, slotTimestamp, rplPrice, txOptions) {
     }
 }
 
-
 // Execute price update
 export async function executeUpdatePrices(block, slotTimestamp, rplPrice, txOptions) {
     // Load contracts
@@ -83,16 +91,16 @@ export async function executeUpdatePrices(block, slotTimestamp, rplPrice, txOpti
     // Get prices
     function getPrices() {
         return Promise.all([
-            rocketNetworkPrices.getPricesBlock.call(),
-            rocketNetworkPrices.getRPLPrice.call(),
+            rocketNetworkPrices.getPricesBlock(),
+            rocketNetworkPrices.getRPLPrice(),
         ]).then(
-          ([block, rplPrice]) =>
-            ({block, rplPrice})
+            ([block, rplPrice]) =>
+                ({ block, rplPrice }),
         );
     }
 
     // Submit prices
-    await rocketNetworkPrices.executeUpdatePrices(block, slotTimestamp, rplPrice, txOptions);
+    await rocketNetworkPrices.connect(txOptions.from).executeUpdatePrices(block, slotTimestamp, rplPrice, txOptions);
 
     // Get updated submission details & prices
     let prices = await getPrices();

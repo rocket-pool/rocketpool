@@ -16,15 +16,15 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
     event ProposalAdded(address indexed proposer, uint256 indexed proposalID, bytes payload, uint256 time);
     event ProposalVoted(uint256 indexed proposalID, address indexed voter, VoteDirection direction, uint256 votingPower, uint256 time);
     event ProposalVoteOverridden(uint256 indexed proposalID, address indexed delegate, address indexed voter, uint256 votingPower, uint256 time);
-    event ProposalExecuted(uint256 indexed proposalID, address indexed executer, uint256 time);
-    event ProposalFinalised(uint256 indexed proposalID, address indexed executer, uint256 time);
+    event ProposalExecuted(uint256 indexed proposalID, address indexed executor, uint256 time);
+    event ProposalFinalised(uint256 indexed proposalID, address indexed executor, uint256 time);
     event ProposalDestroyed(uint256 indexed proposalID, uint256 time);
 
     // The namespace for any data stored in the protocol DAO (do not change)
     string constant internal daoProposalNameSpace = "dao.protocol.proposal.";
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 1;
+        version = 2;
     }
 
     /*** Proposals **********************/
@@ -419,6 +419,8 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
 
     /// @dev Internal method to override the vote of a delegate
     function _overrideVote(address _delegate, address _voter, uint256 _proposalID, uint256 _votes, VoteDirection _voteDirection) internal {
+        // Check for non-zero voting power
+        require(_votes > 0, "Cannot vote with 0 voting power");
         // Remove votes from proposal
         if (_voteDirection == VoteDirection.For) {
             subUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.for", _proposalID)), _votes);
@@ -438,6 +440,8 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
 
     /// @dev Internal method to apply voting power against a proposal
     function _vote(address _nodeOperator, uint256 _votes, uint256 _proposalID, VoteDirection _voteDirection, bool _phase1) internal {
+        // Check for non-zero voting power
+        require(_votes > 0, "Cannot vote with 0 voting power");
         // Has this node already voted on this proposal?
         require(!getReceiptHasVoted(_proposalID, _nodeOperator), "Node operator has already voted on proposal");
         // Add votes to proposal

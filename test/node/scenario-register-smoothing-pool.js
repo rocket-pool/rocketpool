@@ -1,5 +1,5 @@
 import { RocketNodeManager } from '../_utils/artifacts';
-
+import * as assert from 'assert';
 
 // Register a node
 export async function setSmoothingPoolRegistrationState(state, txOptions) {
@@ -7,9 +7,9 @@ export async function setSmoothingPoolRegistrationState(state, txOptions) {
     const rocketNodeManager = await RocketNodeManager.deployed();
 
     // Register
-    await rocketNodeManager.setSmoothingPoolRegistrationState(state, txOptions);
+    await rocketNodeManager.connect(txOptions.from).setSmoothingPoolRegistrationState(state, txOptions);
 
     // Check details
-    const newState = await rocketNodeManager.getSmoothingPoolRegistrationState(txOptions.from);
+    const newState = await rocketNodeManager.getSmoothingPoolRegistrationState(txOptions.from.address);
     assert.strictEqual(newState, state, 'Incorrect smoothing pool registration state');
 }
