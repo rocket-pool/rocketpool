@@ -23,6 +23,8 @@ import "../network/RocketNetworkSnapshots.sol";
 import "../../interface/RocketVaultWithdrawerInterface.sol";
 import "../../interface/network/RocketNetworkVotingInterface.sol";
 
+import "hardhat/console.sol";
+
 /// @notice
 contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
 
@@ -187,53 +189,29 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         require(isValidDepositAmount(_bondAmount), "Invalid deposit amount");
         // Get launch constants
         uint256 launchAmount;
-        uint256 preLaunchValue;
         {
             RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
             launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
-            preLaunchValue = rocketDAOProtocolSettingsMinipool.getPreLaunchValue();
-        }
-        // Check that pre deposit won't fail
-        if (msg.value < preLaunchValue) {
-            RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-            require(preLaunchValue - msg.value <= rocketDepositPool.getBalance(), "Deposit pool balance is insufficient for pre deposit");
         }
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, block.timestamp);
         // Increase ETH matched (used to calculate RPL collateral requirements)
-        _increaseEthMatched(msg.sender, launchAmount- _bondAmount);
-        
-        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-        
-        RocketMegapoolInterface megapoolAddress = RocketMegapoolInterface(rocketNodeManager.getMegapoolAddress(msg.sender));
-        if (address(megapoolAddress) == address(0)) {
-            megapoolAddress = RocketMegapoolInterface(rocketNodeManager.deployMegapool(msg.sender));
-        } 
-
-        megapoolAddress.newValidator(_bondAmount, _useExpressTicket, _validatorPubkey, _validatorSignature, _depositDataRoot);
-
-        // Process node deposit
-        _processNodeDeposit(preLaunchValue, _bondAmount);
-        
-        // Assign deposits if enabled
-        assignDeposits();
-    }
-
-    /// @dev Processes a node deposit with the deposit pool
-    /// @param _preLaunchValue The prelaunch value (result of call to `RocketDAOProtocolSettingsMinipool.getPreLaunchValue()`
-    /// @param _bondAmount The bond amount for this deposit
-    function _processNodeDeposit(uint256 _preLaunchValue, uint256 _bondAmount) private {
-        // Get contracts
-        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-        // Retrieve ETH from deposit pool if required
-        uint256 shortFall = 0;
-        if (msg.value < _preLaunchValue) {
-            shortFall = _preLaunchValue- msg.value;
-            rocketDepositPool.nodeCreditWithdrawal(shortFall);
+        _increaseEthMatched(msg.sender, launchAmount - _bondAmount);
+        {
+            // Deploy megapool on first deposit for old node operators
+            RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+            RocketMegapoolInterface megapoolAddress = RocketMegapoolInterface(rocketNodeManager.getMegapoolAddress(msg.sender));
+            if (address(megapoolAddress) == address(0)) {
+                megapoolAddress = RocketMegapoolInterface(rocketNodeManager.deployMegapool(msg.sender));
+            }
+            // Request a new validator from the megapool
+            megapoolAddress.newValidator(_bondAmount, _useExpressTicket, _validatorPubkey, _validatorSignature, _depositDataRoot);
         }
-        uint256 remaining = msg.value + shortFall - _preLaunchValue;
-        // Deposit the left over value into the deposit pool
-        rocketDepositPool.nodeDeposit{value: remaining}(_bondAmount - _preLaunchValue);
+        {
+            // Send node operator's bond to the deposit pool
+            RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+            rocketDepositPool.nodeDeposit{value: msg.value}(msg.value);
+        }
     }
 
     /// @notice Called by minipools during bond reduction to increase the amount of ETH the node operator has
@@ -312,11 +290,5 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         // Check node settings
         require(rocketDAOProtocolSettingsNode.getDepositEnabled(), "Node deposits are currently disabled");
-    }
-
-    /// @dev Executes an assignDeposits call on the deposit pool
-    function assignDeposits() private {
-        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-        rocketDepositPool.maybeAssignDeposits();
     }
 }

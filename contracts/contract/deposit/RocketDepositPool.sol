@@ -18,6 +18,8 @@ import "../../types/MinipoolDeposit.sol";
 import "../RocketBase.sol";
 import {RocketNodeStakingInterface} from "../../interface/node/RocketNodeStakingInterface.sol";
 
+import "hardhat/console.sol";
+
 /// @notice Accepts user deposits and mints rETH; handles assignment of deposited ETH to minipools
 contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaultWithdrawerInterface {
 
@@ -160,6 +162,8 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         }
         // Increase recorded node balance
         addUint("deposit.pool.node.balance", _totalAmount);
+        // Maybe perform 1 assignment
+        assignMegapools(1);
     }
 
     /// @dev Withdraws ETH from the deposit pool to RocketNodeDeposit contract to be used for a new minipool
@@ -236,7 +240,8 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             return _assignDepositsLegacy(rocketMinipoolQueue, _rocketDAOProtocolSettingsDeposit);
         }
         // Assign megapools
-        assignMegapools(msg.value / 32 ether);
+//        assignMegapools(msg.value / 32 ether);
+        assignMegapools(1);
         return true;
     }
 
@@ -335,8 +340,13 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     /// @notice Assigns funds to megapools at the front of the queue if enough ETH is available
     /// @param _count The maximum number of megapools to assign in this call
     function assignMegapools(uint256 _count) public {
-        require(_count != 0, "Invalid count");
+        console.log("Assigning %d megapools", _count);
+        if (_count == 0) {
+            // Nothing to do
+            return;
+        }
         LinkedListStorageInterface linkedListStorage = LinkedListStorageInterface(getContractAddress("linkedListStorage"));
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
 
         uint256 expressQueueLength = linkedListStorage.getLength(expressQueueNamespace);
         uint256 standardQueueLength = linkedListStorage.getLength(standardQueueNamespace);
@@ -366,10 +376,13 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             DepositQueueValue memory head = linkedListStorage.peekItem(namespace);
             uint256 ethRequired = (head.suppliedValue + head.requestedValue) * milliToWei;
 
-            if (address(this).balance < ethRequired) {
+            if (rocketVault.balanceOf("rocketDepositPool") < ethRequired) {
                 // Not enough ETH to service next in line
+                console.log("Not enough eth %n %n", rocketVault.balanceOf("rocketDepositPool"), ethRequired);
                 break;
             }
+
+            rocketVault.withdrawEther(ethRequired);
 
             // Assign funds and dequeue megapool
             RocketMegapoolInterface(head.receiver).assignFunds{value: ethRequired}(head.validatorId);

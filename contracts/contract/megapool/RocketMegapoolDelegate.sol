@@ -14,6 +14,8 @@ import "../../interface/token/RocketTokenRETHInterface.sol";
 import {RocketMegapoolProxy} from "./RocketMegapoolProxy.sol";
 import "./RocketMegapoolDelegateBase.sol";
 
+import "hardhat/console.sol";
+
 /// @title RocketMegapool
 /// @notice This contract manages multiple validators. It serves as the target of Beacon Chain withdrawal credentials.
 contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDelegateInterface {
@@ -49,9 +51,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     /// @notice Creates a new validator as part of a megapool
     /// @param _bondAmount The amount being bonded by the Node Operator for the new validator
     /// @param _useExpressTicket If an express ticket should be used
-    function newValidator(uint256 _bondAmount, bool _useExpressTicket, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external payable onlyLatestContract("rocketNodeDeposit", msg.sender) {
-        // Check for value prestake amount in transaction
-        require(msg.value == _bondAmount, "Invalid value");
+    function newValidator(uint256 _bondAmount, bool _useExpressTicket, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external onlyLatestContract("rocketNodeDeposit", msg.sender) {
         // Validate arguments
         validateBytes(_validatorPubkey, pubKeyLength);
         validateBytes(_validatorSignature, signatureLength);
@@ -67,7 +67,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         prestakeData[validatorId]._signature = _validatorSignature;
         // TODO: We might want to store the "amount requested" here in case in future we want to support greater deposit amounts (with Max EB changes coming)
         // Request full deposit amount from deposit pool
-        rocketDepositPool.requestFunds{value: msg.value}(validatorId, fullDepositValue, _useExpressTicket);
+        rocketDepositPool.requestFunds(validatorId, fullDepositValue, _useExpressTicket);
         // Emit event
         emit MegapoolValidatorEnqueued(address(this), validatorId, block.timestamp);
     }
@@ -102,6 +102,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         PrestakeData memory validatorPrestakeData = prestakeData[_validatorId];
         DepositInterface casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
         casperDeposit.deposit{value: prestakeValue}(validator.pubKey, getWithdrawalCredentials(), validatorPrestakeData._signature, validatorPrestakeData._depositDataRoot);
+        console.log("Prestake deposit made");
         // Update storage
         delete prestakeData[_validatorId];
         validators[_validatorId] = validator;

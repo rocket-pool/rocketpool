@@ -98,6 +98,10 @@ const networkContracts = {
     rocketDAOSecurityProposals: artifacts.require('RocketDAOSecurityProposals'),
     rocketDAOProtocolSettingsSecurity: artifacts.require('RocketDAOProtocolSettingsSecurity'),
     rocketDAOProtocolProposal: artifacts.require('RocketDAOProtocolProposal'),
+    // v1.4
+    rocketMegapoolFactory: artifacts.require('RocketMegapoolFactory'),
+    rocketMegapoolProxy: artifacts.require('RocketMegapoolProxy'),
+    rocketMegapoolDelegate: artifacts.require('RocketMegapoolDelegate'),
     // Utils
     addressQueueStorage: artifacts.require('AddressQueueStorage'),
     addressSetStorage: artifacts.require('AddressSetStorage'),

@@ -91,6 +91,7 @@ export const RocketVault = artifacts.require('RocketVault');
 export const RevertOnTransfer = artifacts.require('RevertOnTransfer');
 export const PenaltyTest = artifacts.require('PenaltyTest');
 export const SnapshotTest = artifacts.require('SnapshotTest');
+export const RocketMegapoolFactory = artifacts.require('RocketMegapoolFactory');
 export const RocketMinipoolFactory = artifacts.require('RocketMinipoolFactory');
 export const RocketMinipoolBase = artifacts.require('RocketMinipoolBase');
 export const RocketMinipoolQueue = artifacts.require('RocketMinipoolQueue');

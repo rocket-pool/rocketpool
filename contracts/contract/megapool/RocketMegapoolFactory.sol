@@ -21,25 +21,27 @@ contract RocketMegapoolFactory is RocketBase, RocketMegapoolFactoryInterface {
     /// @notice Returns the expected megapool address for a node operator
     function getExpectedAddress(address _nodeOperator) external override view returns (address) {
         // Ensure rocketMegapoolBase is setAddress
-        address rocketMegapoolBase = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", "rocketMegapoolBase")));
+        address rocketMegapoolProxy = getContractAddress("rocketMegapoolProxy");
         // Calculate node specific salt value
         bytes32 salt = keccak256(abi.encodePacked(_nodeOperator));
         // Return expected address
-        return rocketMegapoolBase.predictDeterministicAddress(salt, address(this));
+        return rocketMegapoolProxy.predictDeterministicAddress(salt, address(this));
     }
 
     /// @notice Performs a CREATE2 deployment of a megapool contract
     /// @param _nodeAddress Owning node operator's address
     function deployContract(address _nodeAddress) override external onlyLatestContract("rocketMegapoolFactory", address(this)) onlyLatestNetworkContract() returns (address) {
         // Ensure rocketMegapoolBase is setAddress
-        address rocketMegapoolBase = getAddress("rocketMegapoolBase");
-        require(rocketMegapoolBase != address(0));
+        address rocketMegapoolProxy = getContractAddress("rocketMegapoolProxy");
+        require(rocketMegapoolProxy != address(0));
         // Construct final salt
         bytes32 salt = keccak256(abi.encodePacked(_nodeAddress));
         // Deploy the megapool
-        address proxy = rocketMegapoolBase.cloneDeterministic(salt);
+        address proxy = rocketMegapoolProxy.cloneDeterministic(salt);
         // Initialise the megapool storage
         RocketMegapoolProxyInterface(proxy).initialise(_nodeAddress);
+        // Mark as valid megapool address
+        setBool(keccak256(abi.encodePacked("megapool.exists", proxy)), true);
         // Return address
         return proxy;
     }
