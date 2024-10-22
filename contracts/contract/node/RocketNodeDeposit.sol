@@ -31,7 +31,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     event Withdrawal(address indexed nodeAddress, address indexed to, uint256 amount, uint256 time);
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 3;
+        version = 5;
     }
 
     /// @dev Accept incoming ETH from the deposit pool

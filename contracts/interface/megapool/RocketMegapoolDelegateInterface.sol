@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >0.5.0 <0.9.0;
 
+import "../util/BeaconStateVerifierInterface.sol";
 import {RocketMegapoolDelegateBaseInterface} from "./RocketMegapoolDelegateBaseInterface.sol";
 import {RocketMegapoolStorageLayout} from "../../contract/megapool/RocketMegapoolStorageLayout.sol";
 
@@ -12,7 +13,7 @@ interface RocketMegapoolDelegateInterface is RocketMegapoolDelegateBaseInterface
     function newValidator(uint256 _bondAmount, bool _useExpressTicket, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external;
     function dequeue(uint32 _validatorId) external;
     function assignFunds(uint32 _validatorId) external payable;
-    function stake(uint32 _validatorId, bytes calldata _pubKey, bytes calldata _signature, bytes32 _depositDataRoot, StateProof calldata _withdrawalCredentialStateProof) external;
+    function stake(uint32 _validatorId, bytes calldata _signature, bytes32 _depositDataRoot, ValidatorProof calldata _proof) external;
     function dissolveValidator(uint32 _validatorId) external;
     function getNodeAddress() external returns (address);
 
@@ -26,5 +27,5 @@ interface RocketMegapoolDelegateInterface is RocketMegapoolDelegateBaseInterface
     function getUserCapital() external view returns (uint256);
     function getPendingRewards() external view returns (uint256);
 
-    function getWithdrawalCredentials() external view returns (bytes memory);
+    function getWithdrawalCredentials() external view returns (bytes32);
 }

@@ -23,7 +23,7 @@ const hre = require('hardhat');
 const ethers = hre.ethers;
 
 export default function() {
-    describe('RocketDepositPool', () => {
+    describe('Deposit Pool', () => {
         let owner,
             node,
             trustedNode,

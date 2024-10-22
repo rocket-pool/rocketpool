@@ -107,6 +107,7 @@ const networkContracts = {
     addressSetStorage: artifacts.require('AddressSetStorage'),
     beaconStateVerifier: artifacts.require('BeaconStateVerifier'),
     blockRoots: artifacts.require('BlockRootsMock'),
+    linkedListStorage: artifacts.require('LinkedListStorage'),
 };
 
 // Development helper contracts
@@ -116,8 +117,7 @@ if (network.name !== 'live' && network.name !== 'goerli') {
     // Unit test helper contracts
     networkContracts.linkedListStorage = artifacts.require('LinkedListStorageHelper');
     networkContracts.megapoolUpgradeHelper = artifacts.require('MegapoolUpgradeHelper');
-} else {
-    networkContracts.linkedListStorage = artifacts.require('LinkedListStorage');
+    networkContracts.beaconStateVerifier = artifacts.require('BeaconStateVerifierMock');
 }
 
 // Contract details to store into RocketStorage

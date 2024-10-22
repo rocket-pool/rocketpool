@@ -21,7 +21,7 @@ import {RocketNodeStakingInterface} from "../../interface/node/RocketNodeStaking
 import "hardhat/console.sol";
 import {RocketMegapoolFactoryInterface} from "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
 
-/// @notice Accepts user deposits and mints rETH; handles assignment of deposited ETH to minipools
+/// @notice Accepts user deposits and mints rETH; handles assignment of deposited ETH to megapools
 contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaultWithdrawerInterface {
 
     // Constants
@@ -54,13 +54,10 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     }
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 3;
-
+        version = 4;
         // Pre-retrieve non-upgradable contract addresses to save gas
         rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         rocketTokenRETH = RocketTokenRETHInterface(getContractAddress("rocketTokenRETH"));
-
-        // Precompute common keys
     }
 
     /// @notice Returns the current deposit pool balance
@@ -175,7 +172,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         require(success, "Failed to send ETH");
     }
 
-    /// @dev Recycle a deposit from a dissolved minipool
+    /// @dev Recycle a deposit from a dissolved validator
     function recycleDissolvedDeposit() override external payable onlyThisLatestContract onlyRegisteredMinipoolOrMegapool(msg.sender) {
         // Load contracts
         RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
@@ -236,7 +233,8 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
         if (addressQueueStorage.getLength(queueKeyVariable) > 0) {
             RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
-            return _assignDepositsLegacy(rocketMinipoolQueue, _rocketDAOProtocolSettingsDeposit);
+            _assignDepositsLegacy(rocketMinipoolQueue, _rocketDAOProtocolSettingsDeposit);
+            return true;
         }
         // Assign megapools
         assignMegapools(msg.value / 32 ether);
@@ -244,7 +242,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     }
 
     /// @dev Assigns deposits using the legacy minipool queue
-    function _assignDepositsLegacy(RocketMinipoolQueueInterface _rocketMinipoolQueue, RocketDAOProtocolSettingsDepositInterface _rocketDAOProtocolSettingsDeposit) private returns (bool) {
+    function _assignDepositsLegacy(RocketMinipoolQueueInterface _rocketMinipoolQueue, RocketDAOProtocolSettingsDepositInterface _rocketDAOProtocolSettingsDeposit) private {
         // Load contracts
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         // Calculate the number of minipools to assign
@@ -277,7 +275,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             // Decrease node balance
             subUint("deposit.pool.node.balance", nodeBalanceUsed);
         }
-        return true;
     }
 
     /// @dev Withdraw excess deposit pool balance for rETH collateral

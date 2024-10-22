@@ -105,7 +105,15 @@ export default function() {
             const pubkey = '0xac40921dc9996570db336ef7d6a8cece00a0363c67d13bbdcb0f995c8d50c9b733a5c568f8fcfdc768137d1041ab0f23';
             const withdrawalCredentials = '0x010000000000000000000000a328075616c6351790a9ac1391c4b7b2c1dbf728';
 
-            const result = await beaconStateVerifier.verifyValidator(405782, pubkey, withdrawalCredentials, slot, proof);
+            const proofData = {
+                validatorIndex: 405782,
+                pubkey: pubkey,
+                withdrawalCredentials: withdrawalCredentials,
+                slot: slot,
+                witnesses: proof,
+            };
+
+            const result = await beaconStateVerifier.verifyValidator(proofData);
             assert.equal(result, true, 'Verification failed');
         });
 

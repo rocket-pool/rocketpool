@@ -6,6 +6,7 @@ import { userDeposit } from '../_helpers/deposit';
 import { deployMegapool, getMegapoolForNode, nodeDeposit } from '../_helpers/megapool';
 import { shouldRevert } from '../_utils/testing';
 import {
+    BeaconStateVerifier,
     MegapoolUpgradeHelper,
     RocketDAONodeTrustedSettingsMinipool,
     RocketMegapoolDelegate,
@@ -43,6 +44,10 @@ export default function() {
             await setNodeWithdrawalAddress(node, nodeWithdrawalAddress, { from: node });
 
             megapool = await getMegapoolForNode(node);
+
+            // Disable proof verification
+            const beaconStateVerifier = await BeaconStateVerifier.deployed();
+            await beaconStateVerifier.setDisabled(true);
         });
 
         //

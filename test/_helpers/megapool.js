@@ -126,7 +126,7 @@ export async function nodeDeposit(useExpressTicket, useCredit, txOptions) {
     if (expectAssignment) {
         assert.equal(validatorInfo.inQueue, false, "Incorrect validator status");
         assert.equal(validatorInfo.inPrestake, true, "Incorrect validator status");
-        assertBN.equal(nodeCapitalDelta, '1'.ether, "Incorrect node capital");
+        assertBN.equal(nodeCapitalDelta, 0n, "Incorrect node capital");
         assertBN.equal(userCapitalDelta, 0n, "Incorrect user capital");
         assertBN.equal(assignedValueDelta, '31'.ether, "Incorrect assigned value");
     } else {

@@ -5,15 +5,9 @@ import {RocketBase} from "../RocketBase.sol";
 import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 import {SSZ} from "./SSZ.sol";
 import {BlockRootsInterface} from "../../interface/util/BlockRootsInterface.sol";
+import "../../interface/util/BeaconStateVerifierInterface.sol";
 
-struct Withdrawal {
-    uint256 index;
-    uint256 validatorIndex;
-    bytes32 withdrawalCredentials;
-    uint256 amountInGwei;
-}
-
-contract BeaconStateVerifier is RocketBase {
+contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
     // TODO: Decide how to supply these required beacon chain constants
     uint256 internal constant SLOTS_PER_HISTORICAL_ROOT = 8192;
 
@@ -21,23 +15,23 @@ contract BeaconStateVerifier is RocketBase {
         version = 1;
     }
 
-    function verifyValidator(uint256 _validatorIndex, bytes calldata _pubkey, bytes32 _withdrawalCredentials, uint64 _slot, bytes32[] calldata _proof) external view returns(bool) {
+    function verifyValidator(ValidatorProof calldata _proof) override external view returns(bool) {
         // TODO: Extract this out into a parameterised system for updating the gindices alongside hardforks
         SSZ.Path memory path = SSZ.from(3, 3); // 0b011 (BeaconBlockHeader -> state_root)
         path = SSZ.concat(path, SSZ.from(11, 5)); // 0b01011 (BeaconState -> validators)
-        path = SSZ.concat(path, SSZ.intoVector(_validatorIndex, 40)); // validators -> validators[n]
+        path = SSZ.concat(path, SSZ.intoVector(_proof.validatorIndex, 40)); // validators -> validators[n]
         path = SSZ.concat(path, SSZ.from(0, 2)); // 0b00 (Validator -> pubkey/withdrawal_credentials)
         // Compute the withdrawal credential / pubkey branch root
-        bytes32 pubkeyRoot = SSZ.merkleisePubkey(_pubkey);
-        bytes32 pubkeyWithdrawalCredentialsRoot = SSZ.efficientSha256(pubkeyRoot, _withdrawalCredentials);
+        bytes32 pubkeyRoot = SSZ.merkleisePubkey(_proof.pubkey);
+        bytes32 pubkeyWithdrawalCredentialsRoot = SSZ.efficientSha256(pubkeyRoot, _proof.withdrawalCredentials);
         // Restore the block root for the supplied slot
-        bytes32 computedRoot = SSZ.restoreMerkleRoot(pubkeyWithdrawalCredentialsRoot, SSZ.toIndex(path), _proof);
+        bytes32 computedRoot = SSZ.restoreMerkleRoot(pubkeyWithdrawalCredentialsRoot, SSZ.toIndex(path), _proof.witnesses);
         // Retrieve and compare the root with what we determined it should be from the given proof
-        bytes32 root = getBlockRoot(_slot);
+        bytes32 root = getBlockRoot(_proof.slot);
         return computedRoot == root;
     }
 
-    function verifyExit(uint256 _validatorIndex, uint256 _withdrawableEpoch, uint64 _slot, bytes32[] calldata _proof) external view returns(bool) {
+    function verifyExit(uint256 _validatorIndex, uint256 _withdrawableEpoch, uint64 _slot, bytes32[] calldata _proof) override external view returns(bool) {
         // TODO: Extract this out into a parameterised system for updating the gindices alongside hardforks
         SSZ.Path memory path = SSZ.from(3, 3); // 0b011 (BeaconBlockHeader -> state_root)
         path = SSZ.concat(path, SSZ.from(11, 5)); // 0b01011 (BeaconState -> validators)
@@ -52,7 +46,7 @@ contract BeaconStateVerifier is RocketBase {
         return computedRoot == root;
     }
 
-    function verifyWithdrawal(uint256 _validatorIndex, uint64 _withdrawalSlot, uint256 _withdrawalNum, Withdrawal calldata _withdrawal, uint64 _slot, bytes32[] calldata _proof) external view returns(bool) {
+    function verifyWithdrawal(uint256 _validatorIndex, uint64 _withdrawalSlot, uint256 _withdrawalNum, Withdrawal calldata _withdrawal, uint64 _slot, bytes32[] calldata _proof) override external view returns(bool) {
         bool isHistorical = isHistoricalProof(_slot, _withdrawalSlot);
         // TODO: Extract this out into a parameterised system for updating the gindices alongside hardforks
         SSZ.Path memory path = SSZ.from(3, 3); // 0b011 (BeaconBlockHeader -> state_root)
@@ -77,7 +71,7 @@ contract BeaconStateVerifier is RocketBase {
         return computedRoot == root;
     }
 
-    function getBlockRoot(uint64 _slot) public view returns (bytes32) {
+    function getBlockRoot(uint64 _slot) internal view returns (bytes32) {
         BlockRootsInterface blockRoots = BlockRootsInterface(getContractAddress("blockRoots"));
         return blockRoots.getBlockRoot(_slot);
     }
