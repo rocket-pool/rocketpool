@@ -20,6 +20,7 @@ contract RocketDAONodeTrustedSettingsMinipool is RocketDAONodeTrustedSettings, R
         // If deployed during initial deployment, initialise now (otherwise must be called after upgrade)
         if (!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Init settings
+            setSettingUint("megapool.dissolve.period", 12 hours);
             setSettingUint("minipool.scrub.period", 12 hours);
             setSettingUint("minipool.promotion.scrub.period", 3 days);
             setSettingUint("minipool.scrub.quorum", 0.51 ether);
@@ -52,6 +53,11 @@ contract RocketDAONodeTrustedSettingsMinipool is RocketDAONodeTrustedSettings, R
     /// @notice How long minipools must wait before moving to staking status (can be scrubbed by ODAO before then)
     function getScrubPeriod() override external view returns (uint256) {
         return getSettingUint("minipool.scrub.period");
+    }
+
+    /// @notice How long after assignment before a validator can be dissolved
+    function getDissolvePeriod() override external view returns (uint256) {
+        return getSettingUint("megapool.dissolve.period");
     }
 
     /// @notice How long minipools must wait before promoting a vacant minipool to staking status (can be scrubbed by ODAO before then)

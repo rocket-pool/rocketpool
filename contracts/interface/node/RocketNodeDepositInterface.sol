@@ -5,6 +5,9 @@ pragma solidity >0.5.0 <0.9.0;
 import "../../types/MinipoolDeposit.sol";
 
 interface RocketNodeDepositInterface {
+    function getBaseBondArray() external pure returns (uint256[] memory);
+    function getReducedBond() external pure returns (uint256);
+    function getBondRequirement(uint256 _numValidators) external view returns (uint256);
     function getNodeDepositCredit(address _nodeAddress) external view returns (uint256);
     function getNodeEthBalance(address _nodeAddress) external view returns (uint256);
     function getNodeCreditAndBalance(address _nodeAddress) external view returns (uint256);
@@ -15,7 +18,5 @@ interface RocketNodeDepositInterface {
     function withdrawEth(address _nodeAddress, uint256 _amount) external;
     function deposit(uint256 _depositAmount, bool _useExpressTicket, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external payable;
     function depositWithCredit(uint256 _depositAmount, bool _useExpressTicket, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external payable;
-    function isValidDepositAmount(uint256 _amount) external pure returns (bool);
-    function getDepositAmounts() external pure returns (uint256[] memory);
     function increaseEthMatched(address _nodeAddress, uint256 _amount) external;
 }

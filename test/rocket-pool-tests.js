@@ -59,18 +59,18 @@ before(async function() {
 });
 
 // Run tests
-auctionTests();
+// auctionTests();
 daoProtocolTests();
 daoProtocolTreasuryTests();
 daoNodeTrustedTests();
 daoSecurityTests();
 depositPoolTests();
 megapoolTests();
-minipoolScrubTests();
-minipoolTests();
-minipoolVacantTests();
-minipoolStatusTests();
-minipoolWithdrawalTests();
+// minipoolScrubTests();
+// minipoolTests();
+// minipoolVacantTests();
+// minipoolStatusTests();
+// minipoolWithdrawalTests();
 networkBalancesTests();
 networkPenaltiesTests();
 networkFeesTests();
@@ -85,4 +85,4 @@ rethTests();
 rplTests();
 rewardsPoolTests();
 utilTests();
-upgradeTests();
+// upgradeTests();

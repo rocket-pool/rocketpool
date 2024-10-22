@@ -4,6 +4,7 @@ pragma solidity >0.5.0 <0.9.0;
 
 interface RocketDAONodeTrustedSettingsMinipoolInterface {
     function getScrubPeriod() external view returns(uint256);
+    function getDissolvePeriod() external view returns(uint256);
     function getPromotionScrubPeriod() external view returns(uint256);
     function getScrubQuorum() external view returns(uint256);
     function getCancelBondReductionQuorum() external view returns(uint256);

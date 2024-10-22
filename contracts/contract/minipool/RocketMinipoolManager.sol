@@ -179,7 +179,9 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     function getNodeStakingMinipoolCount(address _nodeAddress) override public view returns (uint256) {
         RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
         // Get valid deposit amounts
-        uint256[] memory depositSizes = rocketNodeDeposit.getDepositAmounts();
+        uint256[2] memory depositSizes;
+        depositSizes[0] = 16 ether;
+        depositSizes[1] = 8 ether;
         uint256 total;
         for (uint256 i = 0; i < depositSizes.length; ++i){
             total = total + getNodeStakingMinipoolCountBySize(_nodeAddress, depositSizes[i]);

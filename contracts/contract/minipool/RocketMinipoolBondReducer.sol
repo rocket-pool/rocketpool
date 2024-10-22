@@ -34,31 +34,32 @@ contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInter
     /// @param _minipoolAddress Address of the minipool
     /// @param _newBondAmount The new bond amount
     function beginReduceBondAmount(address _minipoolAddress, uint256 _newBondAmount) override external onlyLatestContract("rocketMinipoolBondReducer", address(this)) {
-        // Only minipool owner can call
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
-        require(msg.sender == minipool.getNodeAddress(), "Only minipool owner");
-        // Get contracts
-        RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
-        RocketDAOProtocolSettingsRewardsInterface daoSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
-        RocketDAOProtocolSettingsMinipoolInterface daoSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        // Check if enabled
-        require(daoSettingsMinipool.getBondReductionEnabled(), "Bond reduction currently disabled");
-        // Check if has been previously cancelled
-        bool reductionCancelled = getBool(keccak256(abi.encodePacked("minipool.bond.reduction.cancelled", address(minipool))));
-        require(!reductionCancelled, "This minipool is not allowed to reduce bond");
-        require(minipool.getStatus() == MinipoolStatus.Staking, "Minipool must be staking");
-        // Check if new bond amount is valid
-        require(rocketNodeDeposit.isValidDepositAmount(_newBondAmount), "Invalid bond amount");
-        uint256 existing = minipool.getNodeDepositBalance();
-        require(_newBondAmount < existing, "Bond must be lower than current amount");
-        // Check if enough time has elapsed since last reduction
-        uint256 lastReduction = getUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.time", _minipoolAddress)));
-        uint256 rewardInterval = daoSettingsRewards.getRewardsClaimIntervalTime();
-        require(block.timestamp >= lastReduction.add(rewardInterval), "Not enough time has passed since last bond reduction");
-        // Store time and new bond amount
-        setUint(keccak256(abi.encodePacked("minipool.bond.reduction.time", _minipoolAddress)), block.timestamp);
-        setUint(keccak256(abi.encodePacked("minipool.bond.reduction.value", _minipoolAddress)), _newBondAmount);
-        emit BeginBondReduction(_minipoolAddress, _newBondAmount, block.timestamp);
+        revert("Not implemented");
+//        // Only minipool owner can call
+//        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
+//        require(msg.sender == minipool.getNodeAddress(), "Only minipool owner");
+//        // Get contracts
+//        RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
+//        RocketDAOProtocolSettingsRewardsInterface daoSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
+//        RocketDAOProtocolSettingsMinipoolInterface daoSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+//        // Check if enabled
+//        require(daoSettingsMinipool.getBondReductionEnabled(), "Bond reduction currently disabled");
+//        // Check if has been previously cancelled
+//        bool reductionCancelled = getBool(keccak256(abi.encodePacked("minipool.bond.reduction.cancelled", address(minipool))));
+//        require(!reductionCancelled, "This minipool is not allowed to reduce bond");
+//        require(minipool.getStatus() == MinipoolStatus.Staking, "Minipool must be staking");
+//        // Check if new bond amount is valid
+//        require(rocketNodeDeposit.isValidDepositAmount(_newBondAmount), "Invalid bond amount");
+//        uint256 existing = minipool.getNodeDepositBalance();
+//        require(_newBondAmount < existing, "Bond must be lower than current amount");
+//        // Check if enough time has elapsed since last reduction
+//        uint256 lastReduction = getUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.time", _minipoolAddress)));
+//        uint256 rewardInterval = daoSettingsRewards.getRewardsClaimIntervalTime();
+//        require(block.timestamp >= lastReduction.add(rewardInterval), "Not enough time has passed since last bond reduction");
+//        // Store time and new bond amount
+//        setUint(keccak256(abi.encodePacked("minipool.bond.reduction.time", _minipoolAddress)), block.timestamp);
+//        setUint(keccak256(abi.encodePacked("minipool.bond.reduction.value", _minipoolAddress)), _newBondAmount);
+//        emit BeginBondReduction(_minipoolAddress, _newBondAmount, block.timestamp);
     }
 
     /// @notice Returns the timestamp of when a given minipool began their bond reduction waiting period
@@ -120,39 +121,40 @@ contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInter
 
     /// @notice Called by minipools when they are reducing bond to handle state changes outside the minipool
     function reduceBondAmount() override external onlyRegisteredMinipool(msg.sender) onlyLatestContract("rocketMinipoolBondReducer", address(this)) returns (uint256) {
-        // Get contracts
-        RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
-        RocketDAOProtocolSettingsMinipoolInterface daoSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        // Check if enabled
-        require(daoSettingsMinipool.getBondReductionEnabled(), "Bond reduction currently disabled");
-        // Check if has been cancelled
-        bool reductionCancelled = getBool(keccak256(abi.encodePacked("minipool.bond.reduction.cancelled", address(msg.sender))));
-        require(!reductionCancelled, "This minipool is not allowed to reduce bond");
-        // Check wait period is satisfied
-        require(canReduceBondAmount(msg.sender), "Wait period not satisfied");
-        // Get desired to amount
-        uint256 newBondAmount = getUint(keccak256(abi.encodePacked("minipool.bond.reduction.value", msg.sender)));
-        require(rocketNodeDeposit.isValidDepositAmount(newBondAmount), "Invalid bond amount");
-        // Calculate difference
-        uint256 existingBondAmount = minipool.getNodeDepositBalance();
-        uint256 existingNodeFee = minipool.getNodeFee();
-        uint256 delta = existingBondAmount.sub(newBondAmount);
-        // Get node address
-        address nodeAddress = minipool.getNodeAddress();
-        // Increase ETH matched or revert if exceeds limit based on current RPL stake
-        rocketNodeDeposit.increaseEthMatched(nodeAddress, delta);
-        // Increase node operator's deposit credit
-        rocketNodeDeposit.increaseDepositCreditBalance(nodeAddress, delta);
-        // Clean up state
-        deleteUint(keccak256(abi.encodePacked("minipool.bond.reduction.time", msg.sender)));
-        deleteUint(keccak256(abi.encodePacked("minipool.bond.reduction.value", msg.sender)));
-        // Store last bond reduction time and previous bond amount
-        setUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.time", msg.sender)), block.timestamp);
-        setUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.prev.value", msg.sender)), existingBondAmount);
-        setUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.prev.fee", msg.sender)), existingNodeFee);
-        // Return
-        return newBondAmount;
+        revert("Not implemented");
+//        // Get contracts
+//        RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
+//        RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
+//        RocketDAOProtocolSettingsMinipoolInterface daoSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+//        // Check if enabled
+//        require(daoSettingsMinipool.getBondReductionEnabled(), "Bond reduction currently disabled");
+//        // Check if has been cancelled
+//        bool reductionCancelled = getBool(keccak256(abi.encodePacked("minipool.bond.reduction.cancelled", address(msg.sender))));
+//        require(!reductionCancelled, "This minipool is not allowed to reduce bond");
+//        // Check wait period is satisfied
+//        require(canReduceBondAmount(msg.sender), "Wait period not satisfied");
+//        // Get desired to amount
+//        uint256 newBondAmount = getUint(keccak256(abi.encodePacked("minipool.bond.reduction.value", msg.sender)));
+//        require(rocketNodeDeposit.isValidDepositAmount(newBondAmount), "Invalid bond amount");
+//        // Calculate difference
+//        uint256 existingBondAmount = minipool.getNodeDepositBalance();
+//        uint256 existingNodeFee = minipool.getNodeFee();
+//        uint256 delta = existingBondAmount.sub(newBondAmount);
+//        // Get node address
+//        address nodeAddress = minipool.getNodeAddress();
+//        // Increase ETH matched or revert if exceeds limit based on current RPL stake
+//        rocketNodeDeposit.increaseEthMatched(nodeAddress, delta);
+//        // Increase node operator's deposit credit
+//        rocketNodeDeposit.increaseDepositCreditBalance(nodeAddress, delta);
+//        // Clean up state
+//        deleteUint(keccak256(abi.encodePacked("minipool.bond.reduction.time", msg.sender)));
+//        deleteUint(keccak256(abi.encodePacked("minipool.bond.reduction.value", msg.sender)));
+//        // Store last bond reduction time and previous bond amount
+//        setUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.time", msg.sender)), block.timestamp);
+//        setUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.prev.value", msg.sender)), existingBondAmount);
+//        setUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.prev.fee", msg.sender)), existingNodeFee);
+//        // Return
+//        return newBondAmount;
     }
 
     /// @notice Returns a timestamp of when the given minipool last performed a bond reduction

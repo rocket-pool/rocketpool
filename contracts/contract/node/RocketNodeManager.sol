@@ -1,25 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
-pragma abicoder v2;
 
-import "../RocketBase.sol";
 import "../../types/MinipoolStatus.sol";
-import "../../types/NodeDetails.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
-import "../../interface/util/AddressSetStorageInterface.sol";
-import "../../interface/node/RocketNodeDistributorFactoryInterface.sol";
-import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
-import "../../interface/node/RocketNodeDistributorInterface.sol";
-import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsRewardsInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
-import "../../interface/node/RocketNodeStakingInterface.sol";
-import "../../interface/node/RocketNodeDepositInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
-import "../../interface/util/IERC20.sol";
-import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
-import "../../interface/megapool/RocketMegapoolInterface.sol";
-import "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
+import {AddressSetStorageInterface} from "../../interface/util/AddressSetStorageInterface.sol";
+import {IERC20} from "../../interface/util/IERC20.sol";
+import {NodeDetails} from "../../types/NodeDetails.sol";
+import {RocketBase} from "../RocketBase.sol";
+import {RocketDAONodeTrustedSettingsRewardsInterface} from "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsRewardsInterface.sol";
+import {RocketDAOProtocolSettingsMinipoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import {RocketDAOProtocolSettingsNodeInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
+import {RocketDAOProtocolSettingsRewardsInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
+import {RocketMegapoolFactoryInterface} from "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
+import {RocketMinipoolInterface} from "../../interface/minipool/RocketMinipoolInterface.sol";
+import {RocketMinipoolManagerInterface} from "../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import {RocketNetworkSnapshotsInterface} from "../../interface/network/RocketNetworkSnapshotsInterface.sol";
+import {RocketNodeDepositInterface} from "../../interface/node/RocketNodeDepositInterface.sol";
+import {RocketNodeDistributorFactoryInterface} from "../../interface/node/RocketNodeDistributorFactoryInterface.sol";
+import {RocketNodeDistributorInterface} from "../../interface/node/RocketNodeDistributorInterface.sol";
+import {RocketNodeManagerInterface} from "../../interface/node/RocketNodeManagerInterface.sol";
+import {RocketNodeStakingInterface} from "../../interface/node/RocketNodeStakingInterface.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
+pragma abicoder v2;
 
 /// @notice Node registration and management
 contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
@@ -51,7 +52,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Calculate range
         uint256 totalNodes = addressSetStorage.getCount(nodeKey);
         uint256 max = _offset + _limit;
-        if (max > totalNodes || _limit == 0) { max = totalNodes; }
+        if (max > totalNodes || _limit == 0) {max = totalNodes;}
         // Create an array with as many elements as there are potential values to return
         TimezoneCount[] memory counts = new TimezoneCount[](max - _offset);
         uint256 uniqueTimezoneCount = 0;
@@ -121,7 +122,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
 
     /// @notice Returns true if a node has set an RPL withdrawal address
     function getNodeRPLWithdrawalAddressIsSet(address _nodeAddress) override external view returns (bool) {
-        return(getAddress(keccak256(abi.encodePacked("node.rpl.withdrawal.address", _nodeAddress))) != address(0));
+        return (getAddress(keccak256(abi.encodePacked("node.rpl.withdrawal.address", _nodeAddress))) != address(0));
     }
 
     /// @notice Unsets a node operator's RPL withdrawal address returning it to the default
@@ -149,7 +150,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
             // Perform the update
             updateRPLWithdrawalAddress(_nodeAddress, _newRPLWithdrawalAddress);
         }
-        // Set pending withdrawal address if not confirmed
+            // Set pending withdrawal address if not confirmed
         else {
             setAddress(keccak256(abi.encodePacked("node.pending.rpl.withdrawal.address", _nodeAddress)), _newRPLWithdrawalAddress);
         }
@@ -199,8 +200,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Add node to index
         bytes32 nodeIndexKey = keccak256(abi.encodePacked("nodes.index"));
         addressSetStorage.addItem(nodeIndexKey, msg.sender);
-        // Initialise fee distributor for this node
-        _initialiseFeeDistributor(msg.sender);
         // Set node registration time (uses old storage key name for backwards compatibility)
         setUint(keccak256(abi.encodePacked("rewards.pool.claim.contract.registered.time", "rocketClaimNode", msg.sender)), block.timestamp);
         // Update count
@@ -240,37 +239,37 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         return codeSize > 0;
     }
 
-    /// @notice Node operators created before the distributor was implemented must call this to setup their distributor contract
-    function initialiseFeeDistributor() override external onlyLatestContract("rocketNodeManager", address(this)) onlyRegisteredNode(msg.sender) {
-        // Prevent multiple calls
-        require(!getFeeDistributorInitialised(msg.sender), "Already initialised");
-        // Load contracts
-        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        // Calculate and set current average fee numerator
-        uint256 count = rocketMinipoolManager.getNodeMinipoolCount(msg.sender);
-        if (count > 0){
-            uint256 numerator = 0;
-            // Note: this loop is safe as long as all current node operators at the time of upgrade have few enough minipools
-            for (uint256 i = 0; i < count; ++i) {
-                RocketMinipoolInterface minipool = RocketMinipoolInterface(rocketMinipoolManager.getNodeMinipoolAt(msg.sender, i));
-                if (minipool.getStatus() == MinipoolStatus.Staking){
-                    numerator = numerator + minipool.getNodeFee();
-                }
-            }
-            setUint(keccak256(abi.encodePacked("node.average.fee.numerator", msg.sender)), numerator);
-        }
-        // Create the distributor contract
-        _initialiseFeeDistributor(msg.sender);
-    }
-
-    /// @notice Deploys the fee distributor contract for a given node
-    function _initialiseFeeDistributor(address _nodeAddress) internal {
-        // Load contracts
-        RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory = RocketNodeDistributorFactoryInterface(getContractAddress("rocketNodeDistributorFactory"));
-        // Create the distributor proxy
-        rocketNodeDistributorFactory.createProxy(_nodeAddress);
-    }
-
+//    /// @notice Node operators created before the distributor was implemented must call this to setup their distributor contract
+//    function initialiseFeeDistributor() override external onlyLatestContract("rocketNodeManager", address(this)) onlyRegisteredNode(msg.sender) {
+//        // Prevent multiple calls
+//        require(!getFeeDistributorInitialised(msg.sender), "Already initialised");
+//        // Load contracts
+//        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+//        // Calculate and set current average fee numerator
+//        uint256 count = rocketMinipoolManager.getNodeMinipoolCount(msg.sender);
+//        if (count > 0) {
+//            uint256 numerator = 0;
+//            // Note: this loop is safe as long as all current node operators at the time of upgrade have few enough minipools
+//            for (uint256 i = 0; i < count; ++i) {
+//                RocketMinipoolInterface minipool = RocketMinipoolInterface(rocketMinipoolManager.getNodeMinipoolAt(msg.sender, i));
+//                if (minipool.getStatus() == MinipoolStatus.Staking) {
+//                    numerator = numerator + minipool.getNodeFee();
+//                }
+//            }
+//            setUint(keccak256(abi.encodePacked("node.average.fee.numerator", msg.sender)), numerator);
+//        }
+//        // Create the distributor contract
+//        _initialiseFeeDistributor(msg.sender);
+//    }
+//
+//    /// @notice Deploys the fee distributor contract for a given node
+//    function _initialiseFeeDistributor(address _nodeAddress) internal {
+//        // Load contracts
+//        RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory = RocketNodeDistributorFactoryInterface(getContractAddress("rocketNodeDistributorFactory"));
+//        // Create the distributor proxy
+//        rocketNodeDistributorFactory.createProxy(_nodeAddress);
+//    }
+//
     /// @notice Calculates a nodes average node fee
     function getAverageNodeFee(address _nodeAddress) override external view returns (uint256) {
         // Load contracts
@@ -278,7 +277,9 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         // Get valid deposit amounts
-        uint256[] memory depositSizes = rocketNodeDeposit.getDepositAmounts();
+        uint256[2] memory depositSizes;
+        depositSizes[0] = 16 ether;
+        depositSizes[1] = 8 ether;
         // Setup memory for calculations
         uint256[] memory depositWeights = new uint256[](depositSizes.length);
         uint256[] memory depositCounts = new uint256[](depositSizes.length);
@@ -379,7 +380,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Iterate over the requested minipool range
         uint256 totalNodes = getNodeCount();
         uint256 max = _offset + _limit;
-        if (max > totalNodes || _limit == 0) { max = totalNodes; }
+        if (max > totalNodes || _limit == 0) {max = totalNodes;}
         uint256 count = 0;
         for (uint256 i = _offset; i < max; ++i) {
             address nodeAddress = addressSetStorage.getItem(nodeKey, i);
@@ -446,7 +447,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Iterate over the requested minipool range
         uint256 totalNodes = getNodeCount();
         uint256 max = _offset + _limit;
-        if (max > totalNodes || _limit == 0) { max = totalNodes; }
+        if (max > totalNodes || _limit == 0) {max = totalNodes;}
         // Create array big enough for every minipool
         address[] memory nodes = new address[](max - _offset);
         uint256 total = 0;
@@ -461,40 +462,18 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         return nodes;
     }
 
-    /// @notice Deploys a single Megapool contract
-    /// @param _nodeAddress address of the node associated to the megapool
-    function deployMegapool(address _nodeAddress) override external returns (address) {
-        require(getMegapoolAddress(_nodeAddress) == address(0), "Megapool already deployed for this node");
-
+    /// @notice Deploys a single Megapool contract for the calling node operator
+    function deployMegapool() override external onlyRegisteredNode(msg.sender) returns (address) {
         RocketMegapoolFactoryInterface rocketMegapool = RocketMegapoolFactoryInterface(getContractAddress("rocketMegapoolFactory"));
-        return rocketMegapool.deployContract(_nodeAddress);
-    }
-
-    /// @notice Returns true if node has deployed their Megapool contract
-    /// @param _nodeAddress address of the node associated to the megapool
-    function getMegapoolAddress(address _nodeAddress) override public view returns (address) {
-        // Load contracts
-        RocketMegapoolFactoryInterface rocketMegapoolFactory = RocketMegapoolFactoryInterface(getContractAddress("rocketMegapoolFactory"));
-        // Get Megapool address
-        address contractAddress = rocketMegapoolFactory.getExpectedAddress(_nodeAddress);
-        // Check if contract exists at that address
-        uint32 codeSize;
-        assembly {
-            codeSize := extcodesize(contractAddress)
-        }
-        if (codeSize > 0) {
-            return contractAddress;
-        }
-        return address(0);
+        require (!rocketMegapool.getMegapoolDeployed(msg.sender), "Megapool already deployed for this node");
+        return rocketMegapool.deployContract(msg.sender);
     }
 
     /// @notice Returns the number of express tickets the given node has
     /// @param _nodeAddress Address of the node operator to query
     function getExpressTicketCount(address _nodeAddress) public override view returns (uint256) {
         bool provisioned = getBool(keccak256(abi.encodePacked("node.express.provisioned", _nodeAddress)));
-
         uint256 expressTickets = 0;
-
         if (!provisioned) {
             // Nodes prior to Saturn should receive 2 express tickets (initial value of `express_queue_tickets_base_provision`)
             expressTickets += 2;
@@ -503,9 +482,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
             uint256 ethProvided = rocketNodeStaking.getNodeETHProvided(_nodeAddress);
             expressTickets += ethProvided / 4 ether;
         }
-
         expressTickets += getUint(keccak256(abi.encodePacked("node.express.tickets")));
-
         return expressTickets;
     }
 

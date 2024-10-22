@@ -195,7 +195,7 @@ export async function nodeDeposit(txOptions) {
     ]);
 
     const salt = minipoolSalt++;
-    const minipoolAddress = (await rocketMinipoolFactory.getExpectedAddress(txOptions.from, salt)).substr(2);
+    const minipoolAddress = (await rocketMinipoolFactory.getExpectedAddress(txOptions.from.address, salt)).substr(2);
     let withdrawalCredentials = '0x010000000000000000000000' + minipoolAddress;
 
     // Get validator deposit data

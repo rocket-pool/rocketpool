@@ -131,9 +131,20 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         }
     }
 
-    /// @notice Returns a node's provided ETH amount (amount supplied to create minipools)
-    /// @param _nodeAddress The address of the node operator to query
     function getNodeETHProvided(address _nodeAddress) override public view returns (uint256) {
+        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
+        bytes32 key = keccak256(abi.encodePacked("eth.provided.node.amount", _nodeAddress));
+        (bool exists, , uint224 value) = rocketNetworkSnapshots.latest(key);
+        if (exists) {
+            // Value was previously set in a snapshot so return that
+            return value;
+        } else {
+            return getNodeETHProvidedLegacy(_nodeAddress);
+        }
+    }
+
+    /// @dev Returns the legacy calculation for ETH provided
+    function getNodeETHProvidedLegacy(address _nodeAddress) internal view returns (uint256) {
         // Get contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         uint256 activeMinipoolCount = rocketMinipoolManager.getNodeActiveMinipoolCount(_nodeAddress);

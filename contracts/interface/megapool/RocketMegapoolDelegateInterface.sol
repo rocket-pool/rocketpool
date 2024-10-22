@@ -2,15 +2,29 @@
 pragma solidity >0.5.0 <0.9.0;
 
 import {RocketMegapoolDelegateBaseInterface} from "./RocketMegapoolDelegateBaseInterface.sol";
+import {RocketMegapoolStorageLayout} from "../../contract/megapool/RocketMegapoolStorageLayout.sol";
 
 interface RocketMegapoolDelegateInterface is RocketMegapoolDelegateBaseInterface {
     struct StateProof {
         bytes data;
     }
 
-    function newValidator(uint256 bondAmount, bool useExpressTicket, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external;
-    function dequeue(uint32 validatorId) external;
-    function assignFunds(uint32 validatorId) external payable;
-    function stake(uint32 validatorId, bytes calldata pubKey, bytes calldata signature, bytes32 depositDataRoot, StateProof calldata withdrawalCredentialStateProof) external;
+    function newValidator(uint256 _bondAmount, bool _useExpressTicket, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external;
+    function dequeue(uint32 _validatorId) external;
+    function assignFunds(uint32 _validatorId) external payable;
+    function stake(uint32 _validatorId, bytes calldata _pubKey, bytes calldata _signature, bytes32 _depositDataRoot, StateProof calldata _withdrawalCredentialStateProof) external;
+    function dissolveValidator(uint32 _validatorId) external;
     function getNodeAddress() external returns (address);
+
+    function getValidatorCount() external view returns (uint256);
+    function getValidatorInfo(uint32 _validatorId) external view returns (RocketMegapoolStorageLayout.ValidatorInfo memory);
+    function getAssignedValue() external view returns (uint256);
+    function getDebt() external view returns (uint256);
+    function getRefundValue() external view returns (uint256);
+    function getNodeCapital() external view returns (uint256);
+    function getNodeBond() external view returns (uint256);
+    function getUserCapital() external view returns (uint256);
+    function getPendingRewards() external view returns (uint256);
+
+    function getWithdrawalCredentials() external view returns (bytes memory);
 }

@@ -20,10 +20,10 @@ import "hardhat/console.sol";
 /// @notice This contract manages multiple validators. It serves as the target of Beacon Chain withdrawal credentials.
 contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDelegateInterface {
     // Constants
-    uint256 constant internal pubKeyLength = 48;
-    uint256 constant internal signatureLength = 96;
     uint256 constant internal prestakeValue = 1 ether;
     uint256 constant internal fullDepositValue = 32 ether;
+    uint256 constant internal milliToWei = 10**15;
+    uint256 constant internal calcBase = 1 ether;
 
     // Events
     event MegapoolValidatorEnqueued(address indexed megapool, uint256 indexed validatorId, uint256 time);
@@ -49,38 +49,50 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     }
 
     /// @notice Creates a new validator as part of a megapool
-    /// @param _bondAmount The amount being bonded by the Node Operator for the new validator
     /// @param _useExpressTicket If an express ticket should be used
     function newValidator(uint256 _bondAmount, bool _useExpressTicket, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external onlyLatestContract("rocketNodeDeposit", msg.sender) {
-        // Validate arguments
-        validateBytes(_validatorPubkey, pubKeyLength);
-        validateBytes(_validatorSignature, signatureLength);
         // Setup new validator
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         uint32 validatorId = uint32(numValidators);
         numValidators++;
-        validators[validatorId].status = Status.InQueue;
-        validators[validatorId].express = _useExpressTicket;
-        validators[validatorId].pubKey = _validatorPubkey;
+        {
+            ValidatorInfo memory validator;
+            validator.inQueue = true;
+            validator.lastRequestedBond = uint32(_bondAmount / milliToWei);
+            validator.lastRequestedValue = uint32(fullDepositValue / milliToWei);
+            validator.expressUsed = _useExpressTicket;
+            validator.pubKey = _validatorPubkey;
+            validator.lastAssignmentTime = 0;
+            validators[validatorId] = validator;
+        }
         // Store prestake data
-        prestakeData[validatorId]._depositDataRoot = _depositDataRoot;
-        prestakeData[validatorId]._signature = _validatorSignature;
-        // TODO: We might want to store the "amount requested" here in case in future we want to support greater deposit amounts (with Max EB changes coming)
+        {
+            PrestakeData memory prestake;
+            prestake._depositDataRoot = _depositDataRoot;
+            prestake._signature = _validatorSignature;
+            prestakeData[validatorId] = prestake;
+        }
+        // Increase bond
+        nodeBond += _bondAmount;
         // Request full deposit amount from deposit pool
-        rocketDepositPool.requestFunds(validatorId, fullDepositValue, _useExpressTicket);
+        rocketDepositPool.requestFunds(_bondAmount, validatorId, fullDepositValue, _useExpressTicket);
         // Emit event
         emit MegapoolValidatorEnqueued(address(this), validatorId, block.timestamp);
     }
 
     /// @notice Removes a validator from the deposit queue
     /// @param _validatorId the validator ID
-    function dequeue(uint32 _validatorId) external onlyMegapoolOwner() {
+    function dequeue(uint32 _validatorId) external onlyLatestContract("rocketNodeDeposit", msg.sender) {
         // Validate validator status
-        require(validators[_validatorId].status == Status.InQueue, "Validator must be in queue");
+        require(validators[_validatorId].inQueue, "Validator must be in queue");
         // Dequeue validator from the deposit pool
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-        rocketDepositPool.exitQueue(_validatorId, validators[_validatorId].express);
-        validators[_validatorId].status = Status.Exited;
+        rocketDepositPool.exitQueue(_validatorId, validators[_validatorId].expressUsed);
+        ValidatorInfo memory validator = validators[_validatorId];
+        validator.inQueue = false;
+        validator.lastRequestedBond = 0;
+        validator.lastRequestedValue = 0;
+        validators[_validatorId] = validator;
         // TODO: Apply an ETH credit
         // Emit event
         emit MegapoolValidatorDequeued(address(this), _validatorId, block.timestamp);
@@ -91,86 +103,100 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     function assignFunds(uint32 _validatorId) external payable onlyLatestContract("rocketDepositPool", msg.sender) {
         // Fetch validator data from storage
         ValidatorInfo memory validator = validators[_validatorId];
-        // Validate validator status
-        require(validator.status == Status.InQueue, "Validator must be in queue");
         // Update validator status
-        validator.status = Status.PreStaked;
-        validator.assignmentTime = uint32(block.timestamp);
+        validator.inQueue = false;
+        validator.inPrestake = true;
+        validator.lastAssignmentTime = uint32(block.timestamp);
+        validators[_validatorId] = validator;
         // Record value assigned from deposit pool (subtract prestakeValue as it is going to deposit contract now)
-        assignedValue += (msg.value - prestakeValue);
+        assignedValue += msg.value - prestakeValue;
+        nodeCapital += prestakeValue;
         // Execute prestake operation
         PrestakeData memory validatorPrestakeData = prestakeData[_validatorId];
         DepositInterface casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
         casperDeposit.deposit{value: prestakeValue}(validator.pubKey, getWithdrawalCredentials(), validatorPrestakeData._signature, validatorPrestakeData._depositDataRoot);
-        console.log("Prestake deposit made");
-        // Update storage
+        // Clean up prestake data
         delete prestakeData[_validatorId];
-        validators[_validatorId] = validator;
         // Emit event
         emit MegapoolValidatorAssigned(address(this), _validatorId, block.timestamp);
     }
 
-    /// @notice performs the remaining ETH deposit on the Beacon Chain
-    /// @param _validatorId the validator ID
-    /// @param _pubKey '
-    /// @param _signature '
-    /// @param _withdrawalCredentialStateProof '
+    /// @notice Performs the remaining ETH deposit on the Beacon Chain
+    /// @param _validatorId The validator ID
+    /// @param _pubKey The valdiator pubkey
+    /// @param _signature The signature over the deposit data
+    /// @param _withdrawalCredentialStateProof Merkle proof of the beacon state object proving withdrawal credentials
     function stake(uint32 _validatorId, bytes calldata _pubKey, bytes calldata _signature, bytes32 _depositDataRoot, StateProof calldata _withdrawalCredentialStateProof) external onlyMegapoolOwner() {
         // Retrieve validator from storage
         ValidatorInfo memory validator = validators[_validatorId];
         // Validate validator status
-        require(validator.status == Status.PreStaked, "Validator must be pre-staked");
-        // Validate arguments
-        validateBytes(_pubKey, pubKeyLength);
-        validateBytes(_signature, signatureLength);
-        // Update validator status
-        validators[_validatorId].status = Status.Staking;
+        require(validator.inPrestake, "Validator must be pre-staked");
+        // Store last requested value for later
+        uint32 lastRequestedValue = validator.lastRequestedValue;
         // Account for assigned value
-        assignedValue -= fullDepositValue - prestakeValue;
+        assignedValue -= lastRequestedValue - prestakeValue;
+        userCapital += uint256(lastRequestedValue - validator.lastRequestedBond) * milliToWei;
+        nodeCapital += uint256(validator.lastRequestedBond) * milliToWei - prestakeValue;
+        // Update validator status
+        validator.active = true;
+        validator.inPrestake = false;
+        validator.lastAssignmentTime = 0;
+        validator.lastRequestedBond = 0;
+        validator.lastRequestedValue = 0;
+        validators[_validatorId] = validator;
         // Verify withdrawal credentials state proof
-        bytes memory withdrawalCredentials = validator.withdrawalCredential;
+        bytes memory withdrawalCredentials = getWithdrawalCredentials();
         // TODO: Verify state proof to ensure validator has correct withdrawal credentials
         // Perform remaining 31 ETH stake onto beaconchain
         DepositInterface casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
-        // TODO: If we do support support >32 ETH deposits we'll need to update this `fullDepositValue - prestakeValue` to use the stored "amount requested"
-        casperDeposit.deposit{value: fullDepositValue - prestakeValue}(_pubKey, withdrawalCredentials, _signature, _depositDataRoot);
+        casperDeposit.deposit{value: lastRequestedValue}(_pubKey, withdrawalCredentials, _signature, _depositDataRoot);
     }
 
-    /// @notice Dissolves a validator  
-    /// @param _validatorId the validator ID
-    function dissolveValidator(uint32 _validatorId) external {
+    /// @notice Dissolves a validator that has not staked within the required period
+    /// @param _validatorId the validator ID to dissolve
+    function dissolveValidator(uint32 _validatorId) override external {
         // Retrieve validator from storage
         ValidatorInfo memory validator = validators[_validatorId];
         // Check current status
-        require(validator.status == Status.PreStaked, "The validator can only be dissolved while in PreStaked status");
+        require(validator.inPrestake, "The validator can only be dissolved while in PreStaked status");
         // Ensure scrub period has passed before allowing dissolution
         RocketDAONodeTrustedSettingsMinipoolInterface rocketDAONodeTrustedSettingsMinipool = RocketDAONodeTrustedSettingsMinipoolInterface(getContractAddress("rocketDAONodeTrustedSettingsMinipool"));
-        uint256 scrubPeriod = rocketDAONodeTrustedSettingsMinipool.getScrubPeriod();
-        require(block.timestamp > validator.assignmentTime + scrubPeriod, "Not past the scrub period");
-        // Exit the validator from the queue
+        uint256 scrubPeriod = rocketDAONodeTrustedSettingsMinipool.getDissolvePeriod();
+        require(block.timestamp > validator.lastAssignmentTime + scrubPeriod, "Not past the dissolve period");
+        // Update validator info
+        validator.inPrestake = false;
+        validator.dissolved = true;
+        validators[_validatorId] = validator;
+        // Assigned value and refund accounting
+        assignedValue -= uint256(validator.lastRequestedValue) * milliToWei - prestakeValue;
+        refundValue += uint256(validator.lastRequestedBond) * milliToWei - prestakeValue;
+        // Recycle the ETH
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-        rocketDepositPool.exitQueue(_validatorId, validator.express);
-        // Update the status to dissolved
-        validators[_validatorId].status = Status.Dissolved;
-        // TODO: Perform the dissolution
+        rocketDepositPool.recycleDissolvedDeposit{value : validator.lastRequestedValue - validator.lastRequestedBond}();
+        // TODO: Handle recovery of prestakeValue as part of capital distribution process
     }
 
-    /// @notice Receives ETH, which is sent to the rETH contract, to repay a Megapool debt
+    /// @notice Receives ETH, which is sent to the rETH contract, to repay a megapool debt
     function repayDebt() external payable {
         require(msg.value > 0, "Invalid value received");
-        require(debt >= msg.value, "Not enough debt");
+        _repayDebt(msg.value);
+    }
+
+    function _repayDebt(uint256 _amount) internal {
+        require(debt >= _amount, "Not enough debt");
         // Send debt payment to rETH contract
-        (bool success,) = rocketTokenRETH.call{value: msg.value}("");
+        (bool success,) = rocketTokenRETH.call{value: _amount}("");
         require(success, "Failed to send ETH to the rETH contract");
-        // Will not underflow as debt >= msg.value
+        // Will not underflow as debt >= _amount
         unchecked {
-            debt -= msg.value;
+            debt -= _amount;
         }
     }
 
-    /// @notice stakes RPL on the megapool
+    /// @notice Stakes RPL on the megapool
     /// @param _amount the RPL amount to be staked on this megapool
     function stakeRPL(uint256 _amount) external {
+        revert("Not implemented");
         require(_amount > 0, "Invalid amount");
         // Transfer RPL tokens
         address rplTokenAddress = rocketStorage.getAddress(rocketTokenRPLKey);
@@ -179,9 +205,10 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         stakedRPL += _amount;
     }
 
-    /// @notice requests RPL previously staked on this megapool to be unstaked
+    /// @notice Requests RPL previously staked on this megapool to be unstaked
     // @param _amount the RPL amount to be unstaked 
     function requestUnstakeRPL(uint256 _amount) external onlyRPLWithdrawalAddressOrNode() {
+        revert("Not implemented");
         require(_amount > 0 && _amount >= stakedRPL, "Invalid amount");
         stakedRPL -= _amount;
         unstakedRPL += _amount;
@@ -190,6 +217,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
 
     /// @notice Unstakes RPL after waiting the 'unstaking period' after the last unstake request
     function unstakeRPL() external onlyRPLWithdrawalAddressOrNode() {
+        revert("Not implemented");
         RocketDAOProtocolSettingsMegapoolInterface protocolSettingsMegapool = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
         uint256 unstakingPeriod = protocolSettingsMegapool.getUnstakingPeriod();
         require(lastUnstakeRequest + unstakingPeriod >= block.timestamp, "Not enough time passed since last unstake RPL request");
@@ -211,14 +239,109 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         rocketVault.withdrawToken(rplWithdrawalAddress, IERC20(rplAddress), unstakedAmount);
     }
 
-    /// @notice validates that a byte array has the expected length
-    /// @param _data the byte array being validated
-    /// @param _length the expected length
-    function validateBytes(bytes memory _data, uint256 _length) pure internal {
-        require(_data.length == _length, "Invalid bytes length");
+    function distribute() external {
+        revert("Not implemented");
+        // Calculate split of rewards
+        uint256 rewards = getPendingRewards();
+        uint256 nodeShare = _getNodeRewards(rewards);
+        uint256 userShare = rewards - nodeShare;
+        // Maybe repay debt from node share
+        if (debt > 0) {
+            uint256 amountToRepay = nodeShare;
+            if (amountToRepay > debt) {
+                amountToRepay = debt;
+            }
+            nodeShare -= amountToRepay;
+            _repayDebt(amountToRepay);
+        }
+        // Send user share to rETH
+        (bool success,) = rocketTokenRETH.call{value: userShare}("");
+        require(success, "Failed to send ETH to the rETH contract");
+        // Increase node rewards value
+        nodeRewards += nodeShare;
+        // If owner is calling, claim immediately
+        // TODO: Should this also check withdrawal address?
+        if (msg.sender == nodeAddress) {
+            claim();
+        }
     }
 
-    function getWithdrawalCredentials() public view returns (bytes memory) {
+    function claim() public onlyMegapoolOwner() {
+        revert("Not implemented");
+        uint256 amountToSend = nodeRewards;
+        nodeRewards = 0;
+        // Send user share to rETH
+        // TODO: Send to withdrawal address
+        (bool success,) = nodeAddress.call{value: amountToSend}("");
+        require(success, "Failed to send ETH to the node operator");
+    }
+
+    /// @notice Returns the number of validators created for this megapool
+    function getValidatorCount() override external view returns (uint256) {
+        return numValidators;
+    }
+
+    /// @notice Returns information about a given validator
+    function getValidatorInfo(uint32 _validatorId) override external view returns (RocketMegapoolStorageLayout.ValidatorInfo memory) {
+        return validators[_validatorId];
+    }
+
+    function getAssignedValue() override external view returns (uint256) {
+        return assignedValue;
+    }
+
+    function getDebt() override external view returns (uint256) {
+        return debt;
+    }
+
+    function getRefundValue() override external view returns (uint256) {
+        return refundValue;
+    }
+
+    function getNodeCapital() override external view returns (uint256) {
+        return nodeCapital;
+    }
+
+    function getNodeBond() override external view returns (uint256) {
+        return nodeBond;
+    }
+
+    function getUserCapital() override external view returns (uint256) {
+        return userCapital;
+    }
+
+    function getNodeRewards() external returns (uint256) {
+        return _getNodeRewards(getPendingRewards());
+    }
+
+    function _getNodeRewards(uint256 _rewards) internal returns (uint256) {
+        uint256 userShare = _getUserRewards(_rewards);
+        return _rewards - userShare;
+    }
+
+    function _getUserRewards(uint256 _rewards) internal returns (uint256) {
+        uint256 borrowedPortion = userCapital * calcBase / (nodeCapital + userCapital);
+        return _rewards * borrowedPortion / calcBase;
+    }
+
+    function getPendingRewards() override public view returns (uint256) {
+        return
+            address(this).balance
+            - refundValue
+            - assignedValue;
+    }
+
+    /// @notice Returns the expected withdrawal credentials for any validator within this megapool
+    function getWithdrawalCredentials() override public view returns (bytes memory) {
         return abi.encodePacked(bytes1(0x01), bytes11(0x0), address(this));
+    }
+
+    //
+    // TODO: Remove these functions once proper functionality is in place
+    //
+
+    function setDebt(uint256 _debt) external {
+        require(msg.sender == rocketStorage.getGuardian(), "Not guardian");
+        debt = _debt;
     }
 }

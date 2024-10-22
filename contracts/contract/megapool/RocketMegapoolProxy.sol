@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import "./RocketMegapoolStorageLayout.sol";
-import "../../interface/RocketStorageInterface.sol";
-import "../../interface/megapool/RocketMegapoolDelegateBaseInterface.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
+import {RocketMegapoolDelegateBaseInterface} from "../../interface/megapool/RocketMegapoolDelegateBaseInterface.sol";
 import {RocketMegapoolProxyInterface} from "../../interface/megapool/RocketMegapoolProxyInterface.sol";
+import {RocketMegapoolStorageLayout} from "./RocketMegapoolStorageLayout.sol";
 
 /// @notice Contains the initialisation and delegate upgrade logic for megapools.
 ///         All other calls are delegated to the node operator's current delegate or optionally the latest.
@@ -66,11 +66,8 @@ contract RocketMegapoolProxy is RocketMegapoolProxyInterface, RocketMegapoolStor
         if (useLatestDelegate) {
             delegateContract = getContractAddress("rocketMegapoolDelegate");
         } else {
+            require(!getDelegateExpired(), "Delegate has expired");
             delegateContract = rocketMegapoolDelegate;
-            // Check expiry of node operator's specified delegate
-            RocketMegapoolDelegateBaseInterface megapoolDelegate = RocketMegapoolDelegateBaseInterface(delegateContract);
-            uint256 expiry = megapoolDelegate.getExpiryBlock();
-            require(expiry == 0 || block.number < expiry, "Delegate has expired");
         }
         // Check for contract existence
         require(contractExists(delegateContract), "Delegate contract does not exist");
@@ -83,11 +80,17 @@ contract RocketMegapoolProxy is RocketMegapoolProxyInterface, RocketMegapoolStor
     }
 
     /// @notice Upgrade this megapool to the latest network delegate contract
-    function delegateUpgrade() external override onlyMegapoolOwner notSelf {
+    function delegateUpgrade() public override notSelf {
+        // Only owner can upgrade if delegate hasn't expired
+        if (!getDelegateExpired()) {
+            address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
+            require(msg.sender == nodeAddress || msg.sender == withdrawalAddress, "Only the node operator can access this method");
+        }
         // Store old address for event
         address oldDelegate = rocketMegapoolDelegate;
         // Set new delegate
         rocketMegapoolDelegate = getContractAddress("rocketMegapoolDelegate");
+        require(oldDelegate != rocketMegapoolDelegate, "Already using latest");
         // Log event
         emit DelegateUpgraded(oldDelegate, rocketMegapoolDelegate, block.timestamp);
     }
@@ -97,6 +100,13 @@ contract RocketMegapoolProxy is RocketMegapoolProxyInterface, RocketMegapoolStor
     function setUseLatestDelegate(bool _state) external override onlyMegapoolOwner notSelf {
         useLatestDelegate = _state;
         emit UseLatestUpdated(_state, block.timestamp);
+        if (!_state) {
+            // Upon disabling use latest, set their current delegate to the latest
+            address newDelegate = getContractAddress("rocketMegapoolDelegate");
+            if (newDelegate != rocketMegapoolDelegate) {
+                delegateUpgrade();
+            }
+        }
     }
 
     /// @notice Returns true if this megapool always uses the latest delegate contract
@@ -112,6 +122,13 @@ contract RocketMegapoolProxy is RocketMegapoolProxyInterface, RocketMegapoolStor
     /// @notice Returns the delegate which will be used when calling this megapool taking into account useLatestDelegate setting
     function getEffectiveDelegate() external override view returns (address) {
         return useLatestDelegate ? getContractAddress("rocketMegapoolDelegate") : rocketMegapoolDelegate;
+    }
+
+    /// @notice Returns true if the megapools current delegate has expired
+    function getDelegateExpired() public view returns (bool) {
+        RocketMegapoolDelegateBaseInterface megapoolDelegate = RocketMegapoolDelegateBaseInterface(rocketMegapoolDelegate);
+        uint256 expiry = megapoolDelegate.getExpirationBlock();
+        return expiry != 0 && block.number > expiry;
     }
 
     /// @dev Get the address of a Rocket Pool network contract
@@ -140,4 +157,5 @@ contract RocketMegapoolProxy is RocketMegapoolProxyInterface, RocketMegapoolStor
         }
         return codeSize > 0;
     }
+
 }

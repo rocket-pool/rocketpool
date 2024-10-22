@@ -19,6 +19,7 @@ import "../RocketBase.sol";
 import {RocketNodeStakingInterface} from "../../interface/node/RocketNodeStakingInterface.sol";
 
 import "hardhat/console.sol";
+import {RocketMegapoolFactoryInterface} from "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
 
 /// @notice Accepts user deposits and mints rETH; handles assignment of deposited ETH to minipools
 contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaultWithdrawerInterface {
@@ -162,8 +163,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         }
         // Increase recorded node balance
         addUint("deposit.pool.node.balance", _totalAmount);
-        // Maybe perform 1 assignment
-        assignMegapools(1);
     }
 
     /// @dev Withdraws ETH from the deposit pool to RocketNodeDeposit contract to be used for a new minipool
@@ -177,7 +176,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     }
 
     /// @dev Recycle a deposit from a dissolved minipool
-    function recycleDissolvedDeposit() override external payable onlyThisLatestContract onlyRegisteredMinipool(msg.sender) {
+    function recycleDissolvedDeposit() override external payable onlyThisLatestContract onlyRegisteredMinipoolOrMegapool(msg.sender) {
         // Load contracts
         RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
         // Recycle ETH
@@ -240,8 +239,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             return _assignDepositsLegacy(rocketMinipoolQueue, _rocketDAOProtocolSettingsDeposit);
         }
         // Assign megapools
-//        assignMegapools(msg.value / 32 ether);
-        assignMegapools(1);
+        assignMegapools(msg.value / 32 ether);
         return true;
     }
 
@@ -295,31 +293,27 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         emit ExcessWithdrawn(msg.sender, _amount, block.timestamp);
     }
 
-    /// @notice Requests 
-    function requestFunds(uint256 validatorId, uint256 amount, bool _expressQueue) external payable onlyRegisteredMegapool(msg.sender) {
+    /// @notice Requests funds from the deposit queue by a megapool, places the request in the relevant queue
+    /// @param _validatorId The megapool-managed ID of the validator requesting funds
+    /// @param _amount The amount of ETH requested by the node operator
+    /// @param _expressQueue Whether to consume an express ticket to be placed in the express queue
+    function requestFunds(uint256 _bondAmount, uint256 _validatorId, uint256 _amount, bool _expressQueue) external payable onlyRegisteredMegapool(msg.sender) {
         // Validate arguments
-        require(msg.value % milliToWei == 0, "Invalid supplied amount");
-        require(amount % milliToWei == 0, "Invalid requested amount");
-
-        address nodeAddress = RocketMegapoolInterface(msg.sender).getNodeAddress();
-        //uint256 ethSupplied = RocketNodeManagerInterface.getEthSupplied(nodeAddress) + msg.value;
-        //uint256 ethMatched = RocketNodeManagerInterface.getEthMatched(nodeAddress) + amount;
-
-        // TODO: Check that the ratio of ethSupplied and ethMatched meets minimum requirement
-
+        require(_bondAmount % milliToWei == 0, "Invalid supplied amount");
+        require(_amount % milliToWei == 0, "Invalid requested amount");
         // Use an express ticket if requested
+        address nodeAddress = RocketMegapoolInterface(msg.sender).getNodeAddress();
         if (_expressQueue) {
             RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
             rocketNodeManager.useExpressTicket(nodeAddress);
         }
-
         // Enqueue megapool
         bytes32 namespace = getQueueNamespace(_expressQueue);
         DepositQueueValue memory value = DepositQueueValue({
-            receiver: msg.sender, 			                // Megapool address
-            validatorId: uint32(validatorId),               // Incrementing id per validator in a megapool
-            suppliedValue: uint32(msg.value / milliToWei),  // NO bond amount
-            requestedValue: uint32(amount	 / milliToWei)  // Amount being requested
+            receiver: msg.sender, 			                 // Megapool address
+            validatorId: uint32(_validatorId),               // Incrementing id per validator in a megapool
+            suppliedValue: uint32(_bondAmount / milliToWei),   // NO bond amount
+            requestedValue: uint32(_amount / milliToWei)     // Amount being requested
         });
         LinkedListStorageInterface linkedListStorage = LinkedListStorageInterface(getContractAddress("linkedListStorage"));
         linkedListStorage.enqueueItem(namespace, value);
@@ -339,8 +333,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
     /// @notice Assigns funds to megapools at the front of the queue if enough ETH is available
     /// @param _count The maximum number of megapools to assign in this call
-    function assignMegapools(uint256 _count) public {
-        console.log("Assigning %d megapools", _count);
+    function assignMegapools(uint256 _count) override public {
         if (_count == 0) {
             // Nothing to do
             return;
@@ -374,11 +367,10 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
             bytes32 namespace = getQueueNamespace(express);
             DepositQueueValue memory head = linkedListStorage.peekItem(namespace);
-            uint256 ethRequired = (head.suppliedValue + head.requestedValue) * milliToWei;
+            uint256 ethRequired = head.requestedValue * milliToWei;
 
             if (rocketVault.balanceOf("rocketDepositPool") < ethRequired) {
                 // Not enough ETH to service next in line
-                console.log("Not enough eth %n %n", rocketVault.balanceOf("rocketDepositPool"), ethRequired);
                 break;
             }
 

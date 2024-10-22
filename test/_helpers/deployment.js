@@ -1,5 +1,5 @@
 /*** Dependencies ********************/
-import { artifacts } from '../_utils/artifacts';
+import { artifacts, RocketMegapoolFactory } from '../_utils/artifacts';
 
 const hre = require('hardhat');
 const pako = require('pako');
@@ -111,20 +111,15 @@ const networkContracts = {
 const revertOnTransfer = artifacts.require('RevertOnTransfer');
 
 if (network.name !== 'live' && network.name !== 'goerli') {
-    // the linked list storage helper needs to be added as a network contract
+    // Unit test helper contracts
     networkContracts.linkedListStorage = artifacts.require('LinkedListStorageHelper');
+    networkContracts.megapoolUpgradeHelper = artifacts.require('MegapoolUpgradeHelper');
 } else {
     networkContracts.linkedListStorage = artifacts.require('LinkedListStorage');
 }
 
 // Contract details to store into RocketStorage
 const contracts = {};
-
-// Instance contract ABIs
-const abis = {
-    // Minipool
-    rocketMinipool: [artifacts.require('RocketMinipoolDelegate'), artifacts.require('RocketMinipoolBase')],
-};
 
 // Construct ABI for rocketMinipool
 const rocketMinipoolAbi = []
@@ -134,6 +129,17 @@ const rocketMinipoolAbi = []
 
 rocketMinipoolAbi.push({ stateMutability: 'payable', type: 'fallback' });
 rocketMinipoolAbi.push({ stateMutability: 'payable', type: 'receive' });
+
+// Megapool ABI
+const delegateAbi = artifacts.require('RocketMegapoolDelegate').abi;
+const proxyAbi = artifacts.require('RocketMegapoolProxy').abi;
+const rocketMegapoolAbi = [...delegateAbi, ...proxyAbi].filter(fragment => fragment.type !== 'constructor');
+
+// Instance contract ABIs
+const abis = {
+    rocketMinipool: rocketMinipoolAbi,
+    rocketMegapool: rocketMegapoolAbi,
+};
 
 /*** Deployment **********************/
 
@@ -342,6 +348,10 @@ export async function deployRocketPool() {
         ethers.solidityPackedKeccak256(['string'], ['protocol.version']),
         protocolVersion,
     );
+
+    // Initialise rocketMegapoolFactory
+    const rocketMegapoolFactory = await RocketMegapoolFactory.deployed();
+    await rocketMegapoolFactory.initialise();
 
     // Disable direct access to storage now
     await rocketStorageInstance.setDeployedStatus();

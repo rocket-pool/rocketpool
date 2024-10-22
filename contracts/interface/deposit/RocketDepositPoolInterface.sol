@@ -17,6 +17,7 @@ interface RocketDepositPoolInterface {
     function assignDeposits() external;
     function maybeAssignDeposits() external returns (bool);
     function withdrawExcessBalance(uint256 _amount) external;
-    function requestFunds(uint256 validatorIndex, uint256 amount, bool useExpressTicket) external payable;
+    function requestFunds(uint256 _bondAmount, uint256 _validatorIndex, uint256 _amount, bool _useExpressTicket) external payable;
     function exitQueue(uint256 validatorIndex, bool expressQueue) external;
+    function assignMegapools(uint256 _count) external;
 }

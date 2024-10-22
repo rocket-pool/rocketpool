@@ -15,23 +15,26 @@ contract RocketMegapoolDelegateBase is RocketMegapoolStorageLayout, RocketMegapo
     RocketStorageInterface immutable internal rocketStorage;
     uint256 immutable public version;
 
-    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress, uint256 _version) {
         version = _version;
         rocketStorage = _rocketStorageAddress;
     }
 
     /// @notice Called by an upgrade to begin the expiry countdown for this delegate
-    function deprecate() external override onlyLatestContract("rocketMegapoolFactory", msg.sender) {
+    function deprecate() external override onlyLatestNetworkContract {
         // Expiry is only used on the delegate contract itself
         require(!storageState);
-        expiry = block.number + upgradeBuffer;
+        expirationBlock = block.number + upgradeBuffer;
     }
 
     /// @notice Returns the block at which this delegate expires (or 0 if not yet deprecated)
-    function getExpiryBlock() external override view returns (uint256) {
-        return expiry;
+    function getExpirationBlock() external override view returns (uint256) {
+        return expirationBlock;
     }
+
+    //
+    // Internals
+    //
 
     /// @dev Get the address of a Rocket Pool network contract
     /// @param _contractName The internal name of the contract to retrieve the address for
@@ -41,6 +44,11 @@ contract RocketMegapoolDelegateBase is RocketMegapoolStorageLayout, RocketMegapo
         return contractAddress;
     }
 
+    //
+    // Modifiers
+    //
+
+    /// @dev Throws if caller is not the owner of the megapool
     modifier onlyMegapoolOwner() {
         address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
         require(msg.sender == nodeAddress || msg.sender == withdrawalAddress, "Only the node operator can access this method");
@@ -50,6 +58,12 @@ contract RocketMegapoolDelegateBase is RocketMegapoolStorageLayout, RocketMegapo
     /// @dev Throws if called by any sender that doesn't match one of the supplied contract or is the latest version of that contract
     modifier onlyLatestContract(string memory _contractName, address _contractAddress) {
         require(_contractAddress == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", _contractName))), "Invalid or outdated contract");
+        _;
+    }
+
+    /// @dev Throws if not called by a valid network contract
+    modifier onlyLatestNetworkContract() {
+        require(rocketStorage.getBool(keccak256(abi.encodePacked("contract.exists", msg.sender))), "Invalid or outdated network contract");
         _;
     }
 

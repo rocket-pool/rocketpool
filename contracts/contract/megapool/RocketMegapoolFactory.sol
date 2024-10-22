@@ -1,39 +1,65 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import "@openzeppelin4/contracts/proxy/Clones.sol";
-
-import "../RocketBase.sol";
-import "../../interface/megapool/RocketMegapoolProxyInterface.sol";
-import "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
-import "../../interface/megapool/RocketMegapoolDelegateBaseInterface.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
+import {RocketMegapoolDelegateBaseInterface} from "../../interface/megapool/RocketMegapoolDelegateBaseInterface.sol";
+import {RocketMegapoolFactoryInterface} from "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
+import {RocketMegapoolProxyInterface} from "../../interface/megapool/RocketMegapoolProxyInterface.sol";
+import {RocketBase} from "../RocketBase.sol";
+import {Clones} from "@openzeppelin4/contracts/proxy/Clones.sol";
 
 /// @notice Performs CREATE2 deployment of megapool contracts
 contract RocketMegapoolFactory is RocketBase, RocketMegapoolFactoryInterface {
+
+    // Immutables
+    uint256 private immutable setKey;
 
     // Libs
     using Clones for address;
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
+        // Initialise immutables
+        setKey = uint256(keccak256(abi.encodePacked("megapool.delegate.set")));
+    }
+
+    /// @notice Used following an upgrade or new deployment to initialise the delegate list
+    function initialise() override public {
+        // On new deploy, allow guardian to initialise, otherwise, only a network contract
+        if (rocketStorage.getDeployedStatus()) {
+            require(getBool(keccak256(abi.encodePacked("contract.exists", msg.sender))), "Invalid or outdated network contract");
+        } else {
+            require(msg.sender == rocketStorage.getGuardian(), "Not guardian");
+        }
+        // Initialise the delegate list
+        bytes32 metaKey = bytes32(setKey);
+        uint256 meta = getUint(metaKey);
+        require(meta == 0, "Already initialised");
+        _upgradeDelegate(getContractAddress("rocketMegapoolDelegate"));
     }
 
     /// @notice Returns the expected megapool address for a node operator
-    function getExpectedAddress(address _nodeOperator) external override view returns (address) {
+    function getExpectedAddress(address _nodeAddress) override public view returns (address) {
         // Ensure rocketMegapoolBase is setAddress
         address rocketMegapoolProxy = getContractAddress("rocketMegapoolProxy");
         // Calculate node specific salt value
-        bytes32 salt = keccak256(abi.encodePacked(_nodeOperator));
+        bytes32 salt = keccak256(abi.encodePacked(_nodeAddress));
         // Return expected address
         return rocketMegapoolProxy.predictDeterministicAddress(salt, address(this));
     }
 
-    /// @notice Performs a CREATE2 deployment of a megapool contract
+    /// @notice Returns true if the given node operator has deployed their megapool
+    function getMegapoolDeployed(address _nodeAddress) override external view returns (bool) {
+        address contractAddress = getExpectedAddress(_nodeAddress);
+        return getBool(keccak256(abi.encodePacked("megapool.exists", contractAddress)));
+    }
+
+    /// @notice Deploys a megapool for the given node operator (only callable by other network contracts)
     /// @param _nodeAddress Owning node operator's address
-    function deployContract(address _nodeAddress) override external onlyLatestContract("rocketMegapoolFactory", address(this)) onlyLatestNetworkContract() returns (address) {
+    function deployContract(address _nodeAddress) override public onlyLatestNetworkContract onlyLatestContract("rocketMegapoolFactory", address(this)) returns (address) {
         // Ensure rocketMegapoolBase is setAddress
         address rocketMegapoolProxy = getContractAddress("rocketMegapoolProxy");
-        require(rocketMegapoolProxy != address(0));
+        require(rocketMegapoolProxy != address(0), "Invalid proxy");
         // Construct final salt
         bytes32 salt = keccak256(abi.encodePacked(_nodeAddress));
         // Deploy the megapool
@@ -46,8 +72,27 @@ contract RocketMegapoolFactory is RocketBase, RocketMegapoolFactoryInterface {
         return proxy;
     }
 
+    /// @notice Returns megapool address for given node, deploys if it doesn't exist yet
+    /// @param _nodeAddress Owning node operator's address
+    function getOrDeployContract(address _nodeAddress) override external onlyLatestNetworkContract onlyLatestContract("rocketMegapoolFactory", address(this)) returns (address) {
+        address contractAddress = getExpectedAddress(_nodeAddress);
+        if (getBool(keccak256(abi.encodePacked("megapool.exists", contractAddress)))) {
+            return contractAddress;
+        }
+        return deployContract(_nodeAddress);
+    }
+
+    function getDelegateExpiry(address _delegateAddress) override external view returns (uint256) {
+        RocketMegapoolDelegateBaseInterface deprecatedDelegate = RocketMegapoolDelegateBaseInterface(_delegateAddress);
+        return deprecatedDelegate.getExpirationBlock();
+    }
+
     /// @notice Called during an upgrade to publish a new delegate and deprecate any in-use ones
-    function upgradeDelegate(address _newDelegateAddress) external onlyLatestContract("rocketMegapoolFactory", address(this)) onlyLatestNetworkContract() {
+    function upgradeDelegate(address _newDelegateAddress) override public onlyLatestContract("rocketMegapoolFactory", address(this)) onlyLatestNetworkContract() {
+        _upgradeDelegate(_newDelegateAddress);
+    }
+
+    function _upgradeDelegate(address _newDelegateAddress) internal {
         /*
             A set of all past delegates is stored in RocketStorage as a dequeue with the following layout:
 
@@ -60,21 +105,20 @@ contract RocketMegapoolFactory is RocketBase, RocketMegapoolFactoryInterface {
                              "                  + 3: delegate 3 <-- tail (latest delegate)
         */
         // Compute storage keys
-        uint256 setKey = uint256(keccak256(abi.encodePacked("megapool.delegate.set")));
         bytes32 metaKey = bytes32(setKey);
         // Retrieve set metadata
         uint256 meta = getUint(metaKey);
         uint128 head = uint128(meta);
         uint128 tail = uint128(meta >> 128);
-        // Expiries should be sequential, but just in case we'll only advance the head if none before it have expired
+        // Expiry blocks should be sequential, but just in case we'll only advance the head if none before it have expired
         bool deprecatedOne = false;
         // Iterate over "in-use" delegates and deprecate them if they are yet to expire
         for (uint256 i = head; i < tail; i++) {
-            RocketMegapoolDelegateBaseInterface deprecatedDelegate = RocketMegapoolDelegateBaseInterface(getAddress(bytes32(setKey + i)));
-            uint256 expiry = deprecatedDelegate.getExpiryBlock();
+            RocketMegapoolDelegateBaseInterface delegate = RocketMegapoolDelegateBaseInterface(getAddress(bytes32(setKey + i)));
+            uint256 expiry = delegate.getExpirationBlock();
             if (expiry == 0 || block.number < expiry) {
                 // This delegate is still "in-use" so set the expiry block into the future
-                deprecatedDelegate.deprecate();
+                delegate.deprecate();
                 deprecatedOne = true;
             } else if (!deprecatedOne) {
                 // This delegate has already expired so no longer considered "in-use", advance the head

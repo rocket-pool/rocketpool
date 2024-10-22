@@ -1,32 +1,29 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import "../RocketBase.sol";
-import "../../interface/deposit/RocketDepositPoolInterface.sol";
-import "../../interface/minipool/RocketMinipoolInterface.sol";
-import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
-import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
-import "../../interface/network/RocketNetworkFeesInterface.sol";
-import "../../interface/node/RocketNodeDepositInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
-import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
-import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMembersInterface.sol";
-import "../../types/MinipoolDeposit.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
-import "../../interface/RocketVaultInterface.sol";
-import "../../interface/node/RocketNodeStakingInterface.sol";
-import "../../interface/megapool/RocketMegapoolInterface.sol";
-import "../network/RocketNetworkSnapshots.sol";
-import "../../interface/RocketVaultWithdrawerInterface.sol";
-import "../../interface/network/RocketNetworkVotingInterface.sol";
-
-import "hardhat/console.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
+import {RocketVaultInterface} from "../../interface/RocketVaultInterface.sol";
+import {RocketDAOProtocolSettingsMinipoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import {RocketDAOProtocolSettingsNodeInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
+import {RocketDepositPoolInterface} from "../../interface/deposit/RocketDepositPoolInterface.sol";
+import {RocketMegapoolFactoryInterface} from "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
+import {RocketMegapoolInterface} from "../../interface/megapool/RocketMegapoolInterface.sol";
+import {RocketMinipoolInterface} from "../../interface/minipool/RocketMinipoolInterface.sol";
+import {RocketMinipoolManagerInterface} from "../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import {RocketMinipoolQueueInterface} from "../../interface/minipool/RocketMinipoolQueueInterface.sol";
+import {RocketNetworkFeesInterface} from "../../interface/network/RocketNetworkFeesInterface.sol";
+import {RocketNetworkVotingInterface} from "../../interface/network/RocketNetworkVotingInterface.sol";
+import {RocketNodeDepositInterface} from "../../interface/node/RocketNodeDepositInterface.sol";
+import {RocketNodeManagerInterface} from "../../interface/node/RocketNodeManagerInterface.sol";
+import {RocketNodeStakingInterface} from "../../interface/node/RocketNodeStakingInterface.sol";
+import {RocketBase} from "../RocketBase.sol";
+import {RocketNetworkSnapshots} from "../network/RocketNetworkSnapshots.sol";
 
 /// @notice
 contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
+    // Constants
+    uint256 constant internal pubKeyLength = 48;
+    uint256 constant internal signatureLength = 96;
 
     // Events
     event DepositReceived(address indexed from, uint256 amount, uint256 time);
@@ -40,6 +37,28 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     /// @dev Accept incoming ETH from the deposit pool
     receive() external payable onlyLatestContract("rocketDepositPool", msg.sender) {}
 
+    /// @notice Returns the `base_bond_array` cumulative array of bond requirements for number of validators
+    function getBaseBondArray() override public pure returns (uint256[] memory) {
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 4 ether;
+        amounts[1] = 8 ether;
+        return amounts;
+    }
+
+    /// @notice Returns the `reduced_bond` parameter
+    function getReducedBond() override public pure returns (uint256) {
+        // TODO: Parameterise this value
+        return 4 ether;
+    }
+
+    /// @notice Returns the bond requirement for the given number of validators
+    function getBondRequirement(uint256 _numValidators) override public view returns (uint256) {
+        uint256[] memory baseBondArray = getBaseBondArray();
+        if (_numValidators < baseBondArray.length) {
+            return baseBondArray[_numValidators];
+        }
+        return baseBondArray[baseBondArray.length - 1] + (1 + _numValidators - baseBondArray.length) * getReducedBond();
+    }
 
     /// @notice Returns a node operator's credit balance in wei
     function getNodeDepositCredit(address _nodeOperator) override public view returns (uint256) {
@@ -110,12 +129,11 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         rocketVault.withdrawEther(_amount);
         // Send funds to withdrawalAddress
-        (bool success, ) = withdrawalAddress.call{value: _amount}("");
+        (bool success,) = withdrawalAddress.call{value: _amount}("");
         require(success, "Failed to withdraw ETH");
         // Log it
         emit DepositFor(_nodeAddress, withdrawalAddress, _amount, block.timestamp);
     }
-
 
     /// @notice Accept a node deposit and create a new minipool under the node. Only accepts calls from registered nodes
     /// @param _bondAmount The amount of capital the node operator wants to put up as his bond
@@ -137,6 +155,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     /// @param _validatorSignature Signature from the validator over the deposit data
     /// @param _depositDataRoot The hash tree root of the deposit data (passed onto the deposit contract on pre stake)
     function depositWithCredit(uint256 _bondAmount, bool _useExpressTicket, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(msg.sender) {
+        revert("Not implemented");
         {
             uint256 balanceToUse = 0;
             uint256 creditToUse = 0;
@@ -144,7 +163,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
             uint256 credit = getNodeUsableCredit(msg.sender);
             uint256 balance = getNodeEthBalance(msg.sender);
             // Check credit
-            require (credit + balance >= shortFall, "Insufficient credit");
+            require(credit + balance >= shortFall, "Insufficient credit");
             // Calculate amounts to use
             creditToUse = shortFall;
             if (credit < shortFall) {
@@ -166,52 +185,29 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         _deposit(_bondAmount, _useExpressTicket, _validatorPubkey, _validatorSignature, _depositDataRoot);
     }
 
-    /// @notice Returns true if the given amount is a valid deposit amount
-    function isValidDepositAmount(uint256 _amount) override public pure returns (bool) {
-        return _amount == 16 ether || _amount == 8 ether || _amount == 4 ether;
-    }
-
-    /// @notice Returns an array of valid deposit amounts
-    function getDepositAmounts() override external pure returns (uint256[] memory) {
-        uint256[] memory amounts = new uint256[](3);
-        amounts[0] = 16 ether;
-        amounts[1] = 8 ether;
-        amounts[2] = 4 ether;
-        return amounts;
-    }
-
     /// @dev Internal logic to process a deposit
     function _deposit(uint256 _bondAmount, bool _useExpressTicket, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) private {
+        // Validate arguments
+        validateBytes(_validatorPubkey, pubKeyLength);
+        validateBytes(_validatorSignature, signatureLength);
         // Check pre-conditions
         checkVotingInitialised();
         checkDepositsEnabled();
-        checkDistributorInitialised();
-        require(isValidDepositAmount(_bondAmount), "Invalid deposit amount");
-        // Get launch constants
-        uint256 launchAmount;
-        {
-            RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-            launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
-        }
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, block.timestamp);
-        // Increase ETH matched (used to calculate RPL collateral requirements)
-        _increaseEthMatched(msg.sender, launchAmount - _bondAmount);
-        {
-            // Deploy megapool on first deposit for old node operators
-            RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-            RocketMegapoolInterface megapoolAddress = RocketMegapoolInterface(rocketNodeManager.getMegapoolAddress(msg.sender));
-            if (address(megapoolAddress) == address(0)) {
-                megapoolAddress = RocketMegapoolInterface(rocketNodeManager.deployMegapool(msg.sender));
-            }
-            // Request a new validator from the megapool
-            megapoolAddress.newValidator(_bondAmount, _useExpressTicket, _validatorPubkey, _validatorSignature, _depositDataRoot);
-        }
-        {
-            // Send node operator's bond to the deposit pool
-            RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-            rocketDepositPool.nodeDeposit{value: msg.value}(msg.value);
-        }
+        // Get or deploy a megapool for the caller
+        RocketMegapoolFactoryInterface rocketMegapoolFactory = RocketMegapoolFactoryInterface(getContractAddress("rocketMegapoolFactory"));
+        RocketMegapoolInterface megapool = RocketMegapoolInterface(rocketMegapoolFactory.getOrDeployContract(msg.sender));
+        // Check bond requirements
+        checkBondRequirement(megapool, _bondAmount);
+        checkDebtRequirement(megapool);
+        // Request a new validator from the megapool
+        megapool.newValidator(_bondAmount, _useExpressTicket, _validatorPubkey, _validatorSignature, _depositDataRoot);
+        // Send node operator's bond to the deposit pool
+        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+        rocketDepositPool.nodeDeposit{value: msg.value}(_bondAmount);
+        // Attempt to assign 1 megapool
+        rocketDepositPool.assignMegapools(1);
     }
 
     /// @notice Called by minipools during bond reduction to increase the amount of ETH the node operator has
@@ -238,10 +234,32 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         rocketNetworkSnapshots.push(key, uint224(ethMatched));
     }
 
+    /// @dev Increases the amount of ETH supplied by a node operator as bond
+    function _increaseEthProvided(address _nodeAddress, uint256 _amount) private {
+        RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
+        RocketNetworkSnapshots rocketNetworkSnapshots = RocketNetworkSnapshots(getContractAddress("rocketNetworkSnapshots"));
+        uint256 ethProvided = rocketNodeStaking.getNodeETHProvided(_nodeAddress) + _amount;
+        bytes32 key = keccak256(abi.encodePacked("eth.provided.node.amount", _nodeAddress));
+        rocketNetworkSnapshots.push(key, uint224(ethProvided));
+    }
+
     /// @dev Adds a minipool to the queue
     function enqueueMinipool(address _minipoolAddress) private {
         // Add minipool to queue
         RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue")).enqueueMinipool(_minipoolAddress);
+    }
+
+    /// @dev Checks the bond requirements for a node deposit
+    function checkBondRequirement(RocketMegapoolInterface _megapool, uint256 _bondAmount) internal {
+        uint256 totalBondRequired = getBondRequirement(_megapool.getValidatorCount());
+        uint256 currentBond = _megapool.getNodeBond();
+        uint256 requiredBond = totalBondRequired - currentBond;
+        require(_bondAmount == requiredBond, "Bond requirement not met");
+    }
+
+    /// @dev Checks the debt requirements for a node deposit
+    function checkDebtRequirement(RocketMegapoolInterface _megapool) internal {
+        require(_megapool.getDebt() == 0, "Cannot create validator while debt exists");
     }
 
     /// @dev Initialises node's voting power if not already done
@@ -291,4 +309,12 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         // Check node settings
         require(rocketDAOProtocolSettingsNode.getDepositEnabled(), "Node deposits are currently disabled");
     }
+
+    /// @notice Validates that a byte array has the expected length
+    /// @param _data the byte array being validated
+    /// @param _length the expected length
+    function validateBytes(bytes memory _data, uint256 _length) pure internal {
+        require(_data.length == _length, "Invalid bytes length");
+    }
+
 }

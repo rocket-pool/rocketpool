@@ -14,6 +14,7 @@
     "slither": "slither --filter-paths node_modules,old --exclude conformance-to-solidity-naming-conventions ."
   },
   "devDependencies": {
+    "@babel/core": "^7.25.8",
     "@babel/polyfill": "^7.12.1",
     "@babel/preset-env": "^7.20.2",
     "@babel/register": "^7.18.9",

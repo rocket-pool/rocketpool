@@ -31,7 +31,6 @@ interface RocketNodeManagerInterface {
     function setRewardNetwork(address _nodeAddress, uint256 network) external;
     function getRewardNetwork(address _nodeAddress) external view returns (uint256);
     function getFeeDistributorInitialised(address _nodeAddress) external view returns (bool);
-    function initialiseFeeDistributor() external;
     function getAverageNodeFee(address _nodeAddress) external view returns (uint256);
     function setSmoothingPoolRegistrationState(bool _state) external;
     function getSmoothingPoolRegistrationState(address _nodeAddress) external returns (bool);
@@ -39,8 +38,7 @@ interface RocketNodeManagerInterface {
     function getSmoothingPoolRegisteredNodeCount(uint256 _offset, uint256 _limit) external view returns (uint256);
     function getNodeDetails(address _nodeAddress) external view returns (NodeDetails memory);
     function getNodeAddresses(uint256 _offset, uint256 _limit) external view returns (address[] memory);
-    function deployMegapool(address _nodeAddress) external returns (address);
-    function getMegapoolAddress(address _nodeAddress) external view returns (address);
+    function deployMegapool() external returns (address);
     function getExpressTicketCount(address _nodeAddress) external view returns (uint256);
     function useExpressTicket(address _nodeAddress) external;
 }

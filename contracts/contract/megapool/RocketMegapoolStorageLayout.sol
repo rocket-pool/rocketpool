@@ -22,12 +22,18 @@ abstract contract RocketMegapoolStorageLayout {
 
     // Information about individual validators
     struct ValidatorInfo {
-        Status status;
-        bool express;
-        uint32 assignmentTime;
-        uint32 totalScrubVotes;
-        bytes withdrawalCredential;
-        bytes pubKey;
+        bytes pubKey;   // Pubkey of this validator
+
+        uint32 lastAssignmentTime;  // Timestamp of when the last fund assignment took place
+        uint32 lastRequestedValue;  // Value in milliether last requested
+        uint32 lastRequestedBond;   // Value in milliether of the bond supplied for last request for funds
+
+        bool active;        // Whether the validator is actively validating on the beacon chain
+        bool exited;        // Whether the validator has exited the beacon chain
+        bool inQueue;       // Whether the validator is currently awaiting funds from the deposit pool
+        bool inPrestake;    // Whether the validator is currently awaiting the stake operation
+        bool expressUsed;   // Whether the last request for funds consumed an express ticket
+        bool dissolved;     // Whether the validator failed to prestake their initial deposit in time
     }
 
     // Extra data temporarily stored for prestake operation
@@ -40,31 +46,34 @@ abstract contract RocketMegapoolStorageLayout {
     // Delegate state
     //
 
-    // Used to prevent direct calls to the delegate contract
-    bool internal storageState;
-
-    // Used to store the expiry block of this delegate
-    uint256 internal expiry;
+    bool internal storageState;           // Used to prevent direct calls to the delegate contract
+    uint256 internal expirationBlock;     // Used to store the expiry block of this delegate (0 meaning not expiring)
 
     //
     // Proxy state
     //
 
-    // The current delegate contract address
-    address internal rocketMegapoolDelegate;
-
-    // Whether this proxy always uses the latest delegate
-    bool internal useLatestDelegate;
+    address internal rocketMegapoolDelegate;  // The current delegate contract address
+    bool internal useLatestDelegate;          // Whether this proxy always uses the latest delegate
 
     //
     // Megapool state
     //
 
-    address internal nodeAddress;
+    address internal nodeAddress;     // Megapool owner
+    uint256 internal numValidators;   // Number of individual validators handled by this megapool
 
-    uint256 internal numValidators;
-    uint256 internal assignedValue;
-    uint256 internal debt;
+    uint256 internal assignedValue;   // ETH assigned from DP pending prestake/stake
+    uint256 internal refundValue;     // ETH refunded to the owner after a dissolution
+    uint256 internal nodeRewards;     // Unclaimed ETH rewards for the owner
+
+    uint256 internal nodeBond;        // Total value of bond supplied by node operator
+    uint256 internal nodeCapital;     // Value of capital on the beacon chain supplied by the owner
+    uint256 internal userCapital;     // Value of capital on the beacon chain supplied by the DP
+
+    uint256 internal debt;            // Amount the owner owes the DP
+
+    // TODO: Move this to rocketNodeStaking
     uint256 internal stakedRPL;
     uint256 internal unstakedRPL;
     uint256 internal lastUnstakeRequest;

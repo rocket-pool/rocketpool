@@ -68,7 +68,17 @@ abstract contract RocketBase {
         require(getBool(keccak256(abi.encodePacked("megapool.exists", _megapoolAddress))), "Invalid megapool");
         _;
     }
-    
+
+    /**
+    * @dev Throws if called by any sender that isn't a registered minipool or megapool
+    */
+    modifier onlyRegisteredMinipoolOrMegapool(address _caller) {
+        require(
+            getBool(keccak256(abi.encodePacked("megapool.exists", _caller))) ||
+            getBool(keccak256(abi.encodePacked("minipool.exists", _caller)))
+        , "Invalid caller");
+        _;
+    }
 
     /**
     * @dev Throws if called by any account other than a guardian account (temporary account allowed access to settings before DAO is fully enabled)
