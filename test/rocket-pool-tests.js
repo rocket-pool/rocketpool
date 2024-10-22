@@ -32,7 +32,6 @@ import megapoolTests from './megapool/megapool-tests';
 import networkSnapshotsTests from './network/network-snapshots-tests';
 import networkVotingTests from './network/network-voting-tests';
 import utilTests from './util/util-tests';
-import upgradeTests from './upgrade/upgrade-tests';
 import verifierTests from './util/verifier-tests';
 
 // Header
@@ -86,5 +85,4 @@ rethTests();
 rplTests();
 rewardsPoolTests();
 utilTests();
-// upgradeTests();
 verifierTests();
