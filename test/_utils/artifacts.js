@@ -101,4 +101,3 @@ export const RocketDepositPool = artifacts.require('RocketDepositPool');
 export const RocketMinipoolBondReducer = artifacts.require('RocketMinipoolBondReducer');
 export const RocketNetworkSnapshots = artifacts.require('RocketNetworkSnapshots');
 export const RocketNetworkVoting = artifacts.require('RocketNetworkVoting');
-export const RocketUpgradeOneDotThreeDotOne = artifacts.require('RocketUpgradeOneDotThreeDotOne');

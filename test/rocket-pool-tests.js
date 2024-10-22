@@ -30,7 +30,6 @@ import nodeDistributorTests from './node/node-distributor-tests';
 import rethTests from './token/reth-tests';
 import rplTests from './token/rpl-tests';
 import rewardsPoolTests from './rewards/rewards-tests';
-import upgradeTests from './upgrade/upgrade-tests';
 
 // Header
 console.log('\n');
@@ -81,4 +80,3 @@ nodeDistributorTests();
 rethTests();
 rplTests();
 rewardsPoolTests();
-upgradeTests();

@@ -326,7 +326,7 @@ export async function deployRocketPool() {
     );
 
     // Set protocol version
-    const protocolVersion = '1.3.0';
+    const protocolVersion = '1.3.1';
     console.log('Setting `protocol.version` to ' + protocolVersion);
     await rocketStorageInstance.setString(
         ethers.solidityPackedKeccak256(['string'], ['protocol.version']),
