@@ -105,6 +105,8 @@ const networkContracts = {
     // Utils
     addressQueueStorage: artifacts.require('AddressQueueStorage'),
     addressSetStorage: artifacts.require('AddressSetStorage'),
+    beaconStateVerifier: artifacts.require('BeaconStateVerifier'),
+    blockRoots: artifacts.require('BlockRootsMock'),
 };
 
 // Development helper contracts
@@ -223,6 +225,7 @@ export async function deployRocketPool() {
             case 'rocketMinipoolDelegate':
             case 'rocketNodeDistributorDelegate':
             case 'rocketMinipoolBase':
+            case 'blockRoots':
                 instance = await networkContracts[contract].new();
                 break;
 

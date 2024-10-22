@@ -107,3 +107,5 @@ export const RocketNetworkSnapshots = artifacts.require('RocketNetworkSnapshots'
 export const RocketNetworkVoting = artifacts.require('RocketNetworkVoting');
 export const RocketUpgradeOneDotThreeDotOne = artifacts.require('RocketUpgradeOneDotThreeDotOne');
 export const MegapoolUpgradeHelper = artifacts.require('MegapoolUpgradeHelper');
+export const BeaconStateVerifier = artifacts.require('BeaconStateVerifier');
+export const BlockRootsMock = artifacts.require('BlockRootsMock');
