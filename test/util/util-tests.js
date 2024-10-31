@@ -30,7 +30,7 @@ export default function() {
         it(printTitle('random', 'pack/unpack shouldnt change values'), async () => {
             const linkedListStorage = await LinkedListStorage.deployed();            
             let item = {
-                receiver: random,
+                receiver: random.address,
                 validatorId: 1,
                 suppliedValue: 8000,
                 requestedValue: 32000,
@@ -46,7 +46,7 @@ export default function() {
         it(printTitle('random', 'can enqueue/dequeue items'), async () => {
             const linkedListStorage = await LinkedListStorage.deployed();
             let itemIn = {
-                receiver: random,
+                receiver: random.address,
                 validatorId: 1,
                 suppliedValue: 8000,
                 requestedValue: 32000,
@@ -72,22 +72,22 @@ export default function() {
             // remove the second item
             await linkedListStorage.removeItem(regularQueue, itemIn)
 
-            let first = await linkedListStorage.getItem.call(regularQueue, 1);
+            let first = await linkedListStorage.getItem(regularQueue, 1);
             assert.equal(first.validatorId, 1)
-            let last = await linkedListStorage.getItem.call(regularQueue, 3);
+            let last = await linkedListStorage.getItem(regularQueue, 3);
             assert.equal(last.validatorId, 3)
             await linkedListStorage.dequeueItem(regularQueue)
-            listLength = await linkedListStorage.getLength.call(regularQueue);
+            listLength = await linkedListStorage.getLength(regularQueue);
             assert.equal(listLength, 1)
             await linkedListStorage.dequeueItem(regularQueue)
-            listLength = await linkedListStorage.getLength.call(regularQueue);
+            listLength = await linkedListStorage.getLength(regularQueue);
             assert.equal(listLength, 0)
         });
 
         it(printTitle('random', 'can remove the only queue item'), async () => {
             const linkedListStorage = await LinkedListStorage.deployed();
             let itemIn = {
-                receiver: random,
+                receiver: random.address,
                 validatorId: 1,
                 suppliedValue: 8000,
                 requestedValue: 32000,
@@ -101,7 +101,7 @@ export default function() {
         it(printTitle('random', 'cannot add the same item twice'), async () => {
             const linkedListStorage = await LinkedListStorage.deployed();
             let itemIn = {
-                receiver: random,
+                receiver: random.address,
                 validatorId: 1,
                 suppliedValue: 8000,
                 requestedValue: 32000,
@@ -115,7 +115,7 @@ export default function() {
         it(printTitle('random', 'indexOf for non existing item returns 0'), async () => {
             const linkedListStorage = await LinkedListStorage.deployed();
             let itemIn = {
-                receiver: random,
+                receiver: random.address,
                 validatorId: 1,
                 suppliedValue: 8000,
                 requestedValue: 32000,
@@ -127,7 +127,7 @@ export default function() {
         it(printTitle('random', 'reverts when trying to remove non existent item'), async () => {
             const linkedListStorage = await LinkedListStorage.deployed();
             let itemIn = {
-                receiver: random,
+                receiver: random.address,
                 validatorId: 1,
                 suppliedValue: 8000,
                 requestedValue: 32000,

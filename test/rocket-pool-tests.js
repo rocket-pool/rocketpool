@@ -59,13 +59,14 @@ before(async function() {
 });
 
 // Run tests
-// auctionTests();
+auctionTests();
 daoProtocolTests();
 daoProtocolTreasuryTests();
 daoNodeTrustedTests();
 daoSecurityTests();
 depositPoolTests();
 megapoolTests();
+// TODO: Move minipool tests into upgrade test suite and strip them back to just the available Saturn functionality
 // minipoolScrubTests();
 // minipoolTests();
 // minipoolVacantTests();

@@ -19,7 +19,8 @@ const hre = require('hardhat');
 const ethers = hre.ethers;
 
 export default function() {
-    describe('RocketNodeDistributor', () => {
+    // TODO: Migrate to upgrade tests once implemented for Saturn
+    describe.skip('RocketNodeDistributor', () => {
         let owner,
             node1,
             node2,

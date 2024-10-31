@@ -10,6 +10,7 @@
     "test": "hardhat test --bail",
     "test-gas": "REPORT_GAS=1 hardhat test --bail",
     "test-fork": "hardhat test --config hardhat-fork.config.js --bail",
+    "test-upgrade": "./scripts/upgrade-test.sh",
     "coverage": "SOLIDITY_COVERAGE=true hardhat coverage",
     "slither": "slither --filter-paths node_modules,old --exclude conformance-to-solidity-naming-conventions ."
   },

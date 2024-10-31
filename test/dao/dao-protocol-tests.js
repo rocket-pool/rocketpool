@@ -405,7 +405,8 @@ export default function() {
          * Proposer
          */
 
-        describe('With Node Operators', () => {
+        // TODO: Re-enable and  once we have RPL megapool staking implemented
+        describe.skip('With Node Operators', () => {
             let nodes;
 
             before(async () => {

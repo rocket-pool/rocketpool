@@ -1,25 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
-import {RocketVaultInterface} from "../../interface/RocketVaultInterface.sol";
-import {RocketDAOProtocolSettingsMinipoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
-import {RocketDAOProtocolSettingsNodeInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
-import {RocketDepositPoolInterface} from "../../interface/deposit/RocketDepositPoolInterface.sol";
-import {RocketMegapoolFactoryInterface} from "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
-import {RocketMegapoolInterface} from "../../interface/megapool/RocketMegapoolInterface.sol";
-import {RocketMinipoolInterface} from "../../interface/minipool/RocketMinipoolInterface.sol";
-import {RocketMinipoolManagerInterface} from "../../interface/minipool/RocketMinipoolManagerInterface.sol";
-import {RocketMinipoolQueueInterface} from "../../interface/minipool/RocketMinipoolQueueInterface.sol";
-import {RocketNetworkFeesInterface} from "../../interface/network/RocketNetworkFeesInterface.sol";
-import {RocketNetworkVotingInterface} from "../../interface/network/RocketNetworkVotingInterface.sol";
-import {RocketNodeDepositInterface} from "../../interface/node/RocketNodeDepositInterface.sol";
-import {RocketNodeManagerInterface} from "../../interface/node/RocketNodeManagerInterface.sol";
-import {RocketNodeStakingInterface} from "../../interface/node/RocketNodeStakingInterface.sol";
-import {RocketBase} from "../RocketBase.sol";
-import {RocketNetworkSnapshots} from "../network/RocketNetworkSnapshots.sol";
+import "../../interface/RocketStorageInterface.sol";
+import "../../interface/RocketVaultInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
+import "../../interface/deposit/RocketDepositPoolInterface.sol";
+import "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
+import "../../interface/megapool/RocketMegapoolInterface.sol";
+import "../../interface/minipool/RocketMinipoolInterface.sol";
+import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
+import "../../interface/network/RocketNetworkFeesInterface.sol";
+import "../../interface/network/RocketNetworkVotingInterface.sol";
+import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
+import "../../interface/node/RocketNodeDepositInterface.sol";
+import "../../interface/node/RocketNodeManagerInterface.sol";
+import "../../interface/node/RocketNodeStakingInterface.sol";
+import "../RocketBase.sol";
 
-/// @notice
+/// @notice Entry point for node operators to perform deposits for the creation of new validators on the network
 contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     // Constants
     uint256 constant internal pubKeyLength = 48;
@@ -207,7 +207,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         rocketDepositPool.nodeDeposit{value: msg.value}(_bondAmount);
         // Attempt to assign 1 megapool
-        rocketDepositPool.assignMegapools(1);
+        rocketDepositPool.maybeAssignOneDeposit();
     }
 
     /// @notice Called by minipools during bond reduction to increase the amount of ETH the node operator has
@@ -223,7 +223,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     function _increaseEthMatched(address _nodeAddress, uint256 _amount) private {
         // Check amount doesn't exceed limits
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
-        RocketNetworkSnapshots rocketNetworkSnapshots = RocketNetworkSnapshots(getContractAddress("rocketNetworkSnapshots"));
+        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         uint256 ethMatched = rocketNodeStaking.getNodeETHMatched(_nodeAddress) + _amount;
         require(
             ethMatched <= rocketNodeStaking.getNodeETHMatchedLimit(_nodeAddress),
@@ -237,7 +237,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     /// @dev Increases the amount of ETH supplied by a node operator as bond
     function _increaseEthProvided(address _nodeAddress, uint256 _amount) private {
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
-        RocketNetworkSnapshots rocketNetworkSnapshots = RocketNetworkSnapshots(getContractAddress("rocketNetworkSnapshots"));
+        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         uint256 ethProvided = rocketNodeStaking.getNodeETHProvided(_nodeAddress) + _amount;
         bytes32 key = keccak256(abi.encodePacked("eth.provided.node.amount", _nodeAddress));
         rocketNetworkSnapshots.push(key, uint224(ethProvided));

@@ -8,7 +8,7 @@ const hre = require('hardhat');
 const ethers = hre.ethers;
 
 export default function() {
-    describe.only('BeaconStateVerifier', () => {
+    describe('BeaconStateVerifier', () => {
         let owner,
             node,
             random;

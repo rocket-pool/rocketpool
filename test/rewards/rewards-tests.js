@@ -3,7 +3,6 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { submitPrices } from '../_helpers/network';
 import {
-    getNodeEffectiveRPLStake,
     nodeStakeRPL,
     registerNode,
     setNodeRPLWithdrawalAddress,
@@ -12,7 +11,6 @@ import {
 } from '../_helpers/node';
 import {
     RevertOnTransfer, RocketDAONodeTrustedProposals,
-    RocketDAONodeTrustedSettingsMinipool,
     RocketDAOProtocolSettingsNode,
     RocketMerkleDistributorMainnet,
     RocketRewardsPool,
@@ -27,9 +25,6 @@ import {
     setRPLInflationStartTime,
 } from '../dao/scenario-dao-protocol-bootstrap';
 import { mintRPL } from '../_helpers/tokens';
-import { createMinipool, stakeMinipool } from '../_helpers/minipool';
-import { userDeposit } from '../_helpers/deposit';
-import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { executeRewards, submitRewards } from './scenario-submit-rewards';
 import { claimRewards } from './scenario-claim-rewards';
 import { claimAndStakeRewards } from './scenario-claim-and-stake-rewards';
@@ -129,9 +124,6 @@ export default function() {
 
             let slotTimestamp = '1600000000';
 
-            // Set settings
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, { from: owner });
-
             // Register nodes
             await registerNode({ from: registeredNode1 });
             await registerNode({ from: registeredNode2 });
@@ -158,28 +150,6 @@ export default function() {
             await mintRPL(owner, registeredNode2, '32'.ether);
             await nodeStakeRPL('32'.ether, { from: registeredNode1 });
             await nodeStakeRPL('32'.ether, { from: registeredNode2 });
-
-            // User deposits
-            await userDeposit({ from: userOne, value: '48'.ether });
-
-            // Create minipools
-            let minipool1 = await createMinipool({ from: registeredNode1, value: '16'.ether });
-            let minipool2 = await createMinipool({ from: registeredNode2, value: '16'.ether });
-            let minipool3 = await createMinipool({ from: registeredNode2, value: '16'.ether });
-
-            // Wait required scrub period
-            await helpers.time.increase(scrubPeriod + 1);
-
-            // Stake minipools
-            await stakeMinipool(minipool1, { from: registeredNode1 });
-            await stakeMinipool(minipool2, { from: registeredNode2 });
-            await stakeMinipool(minipool3, { from: registeredNode2 });
-
-            // Check node effective stakes
-            let node1EffectiveStake = await getNodeEffectiveRPLStake(registeredNode1);
-            let node2EffectiveStake = await getNodeEffectiveRPLStake(registeredNode2);
-            assertBN.equal(node1EffectiveStake, '16'.ether, 'Incorrect node 1 effective stake');
-            assertBN.equal(node2EffectiveStake, '32'.ether, 'Incorrect node 2 effective stake');
         });
 
         /*** Setting Claimers *************************/

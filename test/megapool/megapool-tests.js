@@ -21,7 +21,7 @@ const hre = require('hardhat');
 const ethers = hre.ethers;
 
 export default function() {
-    describe.only('Megapools', () => {
+    describe('Megapools', () => {
         let owner,
             node,
             nodeWithdrawalAddress,

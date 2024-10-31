@@ -1,3 +1,5 @@
+import { decompressABI } from './contract';
+
 const hre = require('hardhat');
 const ethers = hre.ethers;
 
@@ -25,12 +27,30 @@ class Artifact {
         return (await ethers.getContractFactory(this.name)).deploy(...args);
     }
 
-    at (address) {
+    at(address) {
         return new ethers.Contract(address, this.abi, hre.ethers.provider);
+    }
+
+    async fromDeployment(rocketStorage) {
+        let contractName = this.name.charAt(0).toLowerCase() + this.name.slice(1);
+
+        const addressKey = ethers.solidityPackedKeccak256(['string', 'string'], ['contract.address', contractName]);
+        const abiKey = ethers.solidityPackedKeccak256(['string', 'string'], ['contract.abi', contractName]);
+
+        const address = await rocketStorage['getAddress(bytes32)'](addressKey);
+        const abiRaw = await rocketStorage['getString(bytes32)'](abiKey);
+
+        if (address === '0x0000000000000000000000000000000000000000' || abiRaw === '') {
+            return;
+        }
+
+        this.abi = decompressABI(abiRaw);
+
+        this.instance = new ethers.Contract(address, this.abi, hre.ethers.provider);
     }
 }
 
-class Artifacts {
+export class Artifacts {
     constructor() {
         this.artifacts = {};
     }
@@ -40,6 +60,19 @@ class Artifacts {
             this.artifacts[name] = new Artifact(name);
         }
         return this.artifacts[name];
+    }
+
+    async loadFromDeployment(rocketStorageAddress) {
+        RocketStorage.instance = this.artifacts['RocketStorage'].at(rocketStorageAddress);
+
+        for (const name in this.artifacts) {
+            switch (name) {
+                case 'RocketStorage':
+                    break;
+                default:
+                    await this.artifacts[name].fromDeployment(RocketStorage.instance);
+            }
+        }
     }
 }
 
@@ -108,3 +141,4 @@ export const RocketNetworkVoting = artifacts.require('RocketNetworkVoting');
 export const MegapoolUpgradeHelper = artifacts.require('MegapoolUpgradeHelper');
 export const BeaconStateVerifier = artifacts.require('BeaconStateVerifierMock');
 export const BlockRootsMock = artifacts.require('BlockRootsMock');
+export const RocketUpgradeOneDotFour = artifacts.require('RocketUpgradeOneDotFour');

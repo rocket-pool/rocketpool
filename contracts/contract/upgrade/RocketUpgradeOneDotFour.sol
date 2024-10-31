@@ -7,6 +7,7 @@ import "../../interface/network/RocketNetworkPricesInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
 
 /// @notice v1.4 Saturn 1 upgrade contract
 contract RocketUpgradeOneDotFour is RocketBase {
@@ -18,28 +19,22 @@ contract RocketUpgradeOneDotFour is RocketBase {
     bool public locked;
 
     // Upgrade contracts
-    address public newRocketDAOProposal;
-    address public newRocketDAOProtocolProposal;
-    address public newRocketDAOProtocolVerifier;
-    address public newRocketDAOProtocolSettingsProposals;
-    address public newRocketDAOProtocolSettingsAuction;
-    address public newRocketMinipoolManager;
-    address public newRocketNodeStaking;
-    address public newRocketMinipoolDelegate;
-    address public newRocketNodeDeposit;
-    address public newRocketNetworkVoting;
+    address public rocketMegapoolDelegate;
+    address public rocketMegapoolFactory;
+    address public rocketMegapoolProxy;
+    address public rocketNodeManager;
+    address public rocketNodeDeposit;
+    address public rocketDepositPool;
+    address public linkedListStorage;
 
     // Upgrade ABIs
-    string public newRocketDAOProposalAbi;
-    string public newRocketDAOProtocolProposalAbi;
-    string public newRocketDAOProtocolVerifierAbi;
-    string public newRocketDAOProtocolSettingsProposalsAbi;
-    string public newRocketDAOProtocolSettingsAuctionAbi;
-    string public newRocketMinipoolManagerAbi;
-    string public newRocketNodeStakingAbi;
-    string public newRocketMinipoolDelegateAbi;
-    string public newRocketNodeDepositAbi;
-    string public newRocketNetworkVotingAbi;
+    string public rocketMegapoolDelegateAbi;
+    string public rocketMegapoolFactoryAbi;
+    string public rocketMegapoolProxyAbi;
+    string public rocketNodeManagerAbi;
+    string public rocketNodeDepositAbi;
+    string public rocketDepositPoolAbi;
+    string public linkedListStorageAbi;
 
     // Save deployer to limit access to set functions
     address immutable deployer;
@@ -63,30 +58,22 @@ contract RocketUpgradeOneDotFour is RocketBase {
         require(!locked, "Contract locked");
 
         // Set contract addresses
-        newRocketDAOProposal = _addresses[0];
-        newRocketDAOProtocolProposal = _addresses[1];
-        newRocketDAOProtocolVerifier = _addresses[2];
-        newRocketDAOProtocolSettingsProposals = _addresses[3];
-        newRocketDAOProtocolSettingsAuction = _addresses[4];
-        newRocketMinipoolManager = _addresses[5];
-        newRocketNodeStaking = _addresses[6];
-        newRocketMinipoolDelegate = _addresses[7];
-        newRocketNodeDeposit = _addresses[8];
-        newRocketNetworkVoting = _addresses[9];
+        rocketMegapoolDelegate = _addresses[0];
+        rocketMegapoolFactory = _addresses[1];
+        rocketMegapoolProxy = _addresses[2];
+        rocketNodeManager = _addresses[3];
+        rocketNodeDeposit = _addresses[4];
+        rocketDepositPool = _addresses[5];
+        linkedListStorage = _addresses[6];
 
         // Set ABIs
-        newRocketDAOProposalAbi = _abis[0];
-        newRocketDAOProtocolProposalAbi = _abis[1];
-        newRocketDAOProtocolVerifierAbi = _abis[2];
-        newRocketDAOProtocolSettingsProposalsAbi = _abis[3];
-        newRocketDAOProtocolSettingsAuctionAbi = _abis[4];
-        newRocketMinipoolManagerAbi = _abis[5];
-        newRocketNodeStakingAbi = _abis[6];
-        newRocketMinipoolDelegateAbi = _abis[7];
-        newRocketNodeDepositAbi = _abis[8];
-        newRocketNetworkVotingAbi = _abis[9];
-
-        // Note: rocketMinipool abi has not changed so does not require updating
+        rocketMegapoolDelegateAbi = _abis[0];
+        rocketMegapoolFactoryAbi = _abis[1];
+        rocketMegapoolProxyAbi = _abis[2];
+        rocketNodeManagerAbi = _abis[3];
+        rocketNodeDepositAbi = _abis[4];
+        rocketDepositPoolAbi = _abis[5];
+        linkedListStorageAbi = _abis[6];
     }
 
     /// @notice Prevents further changes from being applied
@@ -100,17 +87,19 @@ contract RocketUpgradeOneDotFour is RocketBase {
         require(!executed, "Already executed");
         executed = true;
 
-        // Upgrade contracts
-        _upgradeContract("rocketDAOProposal", newRocketDAOProposal, newRocketDAOProposalAbi);
-        _upgradeContract("rocketDAOProtocolProposal", newRocketDAOProtocolProposal, newRocketDAOProtocolProposalAbi);
-        _upgradeContract("rocketDAOProtocolVerifier", newRocketDAOProtocolVerifier, newRocketDAOProtocolVerifierAbi);
-        _upgradeContract("rocketDAOProtocolSettingsProposals", newRocketDAOProtocolSettingsProposals, newRocketDAOProtocolSettingsProposalsAbi);
-        _upgradeContract("rocketDAOProtocolSettingsAuction", newRocketDAOProtocolSettingsAuction, newRocketDAOProtocolSettingsAuctionAbi);
-        _upgradeContract("rocketMinipoolManager", newRocketMinipoolManager, newRocketMinipoolManagerAbi);
-        _upgradeContract("rocketNodeStaking", newRocketNodeStaking, newRocketNodeStakingAbi);
-        _upgradeContract("rocketMinipoolDelegate", newRocketMinipoolDelegate, newRocketMinipoolDelegateAbi);
-        _upgradeContract("rocketNodeDeposit", newRocketNodeDeposit, newRocketNodeDepositAbi);
-        _upgradeContract("rocketNetworkVoting", newRocketNetworkVoting, newRocketNetworkVotingAbi);
+        // Add new contracts
+        _addContract("rocketMegapoolDelegate", rocketMegapoolDelegate, rocketMegapoolDelegateAbi);
+        _addContract("rocketMegapoolFactory", rocketMegapoolFactory, rocketMegapoolFactoryAbi);
+        _addContract("rocketMegapoolProxy", rocketMegapoolProxy, rocketMegapoolProxyAbi);
+        _addContract("linkedListStorage", linkedListStorage, linkedListStorageAbi);
+
+        // Upgrade existing contracts
+        _upgradeContract("rocketNodeManager", rocketNodeManager, rocketNodeManagerAbi);
+        _upgradeContract("rocketNodeDeposit", rocketNodeDeposit, rocketNodeDepositAbi);
+        _upgradeContract("rocketDepositPool", rocketDepositPool, rocketDepositPoolAbi);
+
+        // Init the megapool factory
+        RocketMegapoolFactoryInterface(rocketMegapoolFactory).initialise();
 
         // Set a protocol version value in storage for convenience with bindings
         setString(keccak256(abi.encodePacked("protocol.version")), "1.4");
@@ -135,5 +124,27 @@ contract RocketUpgradeOneDotFour is RocketBase {
         // Deregister old contract
         deleteString(keccak256(abi.encodePacked("contract.name", oldContractAddress)));
         deleteBool(keccak256(abi.encodePacked("contract.exists", oldContractAddress)));
+    }
+
+    /// @dev Add a new network contract
+    function _addContract(string memory _name, address _contractAddress, string memory _contractAbi) internal {
+        // Check contract name
+        bytes32 nameHash = keccak256(abi.encodePacked(_name));
+        require(bytes(_name).length > 0, "Invalid contract name");
+        // Cannot add contract if it already exists (use upgradeContract instead)
+        require(getAddress(keccak256(abi.encodePacked("contract.address", _name))) == address(0x0), "Contract name is already in use");
+        // Cannot add contract if already in use as ABI only
+        string memory existingAbi = getString(keccak256(abi.encodePacked("contract.abi", _name)));
+        require(bytes(existingAbi).length == 0, "Contract name is already in use");
+        // Check contract address
+        require(_contractAddress != address(0x0), "Invalid contract address");
+        require(!getBool(keccak256(abi.encodePacked("contract.exists", _contractAddress))), "Contract address is already in use");
+        // Check ABI isn't empty
+        require(bytes(_contractAbi).length > 0, "Empty ABI is invalid");
+        // Register contract
+        setBool(keccak256(abi.encodePacked("contract.exists", _contractAddress)), true);
+        setString(keccak256(abi.encodePacked("contract.name", _contractAddress)), _name);
+        setAddress(keccak256(abi.encodePacked("contract.address", _name)), _contractAddress);
+        setString(keccak256(abi.encodePacked("contract.abi", _name)), _contractAbi);
     }
 }

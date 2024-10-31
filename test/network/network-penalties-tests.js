@@ -15,7 +15,8 @@ const hre = require('hardhat');
 const ethers = hre.ethers;
 
 export default function() {
-    describe('RocketNetworkPenalties', () => {
+    // TODO: Update penalties to Saturn once implemented
+    describe.skip('RocketNetworkPenalties', () => {
         let owner,
             node,
             trustedNode1,

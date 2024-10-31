@@ -1,7 +1,7 @@
 import { assertBN } from './bn';
 import * as assert from 'assert';
 import {
-    artifacts, RocketDepositPool,
+    artifacts, RocketDAOProtocolSettingsDeposit, RocketDepositPool,
     RocketMegapoolDelegate,
     RocketMegapoolFactory,
     RocketNodeDeposit, RocketNodeManager,
@@ -47,16 +47,16 @@ export async function deployMegapool(txOptions) {
 export async function nodeDeposit(useExpressTicket, useCredit, txOptions) {
     const [
         rocketNodeDeposit,
-        rocketNodeStaking,
         rocketNodeManager,
         rocketMegapoolFactory,
         rocketDepositPool,
+        rocketDAOProtocolSettingsDeposit,
     ] = await Promise.all([
         RocketNodeDeposit.deployed(),
-        RocketNodeStaking.deployed(),
         RocketNodeManager.deployed(),
         RocketMegapoolFactory.deployed(),
         RocketDepositPool.deployed(),
+        RocketDAOProtocolSettingsDeposit.deployed(),
     ]);
 
     // Construct deposit data for prestake
@@ -91,9 +91,10 @@ export async function nodeDeposit(useExpressTicket, useCredit, txOptions) {
 
     const data1 = await getData();
 
+    const assignmentsEnabled = await rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled();
     const depositPoolCapacity = await rocketDepositPool.getBalance();
     const amountRequired = '32'.ether - txOptions.value;
-    const expectAssignment = depositPoolCapacity >= amountRequired;
+    const expectAssignment = assignmentsEnabled && depositPoolCapacity >= amountRequired;
 
     const tx = await rocketNodeDeposit.connect(txOptions.from).deposit(txOptions.value, useExpressTicket, depositData.pubkey, depositData.signature, depositDataRoot, txOptions);
     await tx.wait();

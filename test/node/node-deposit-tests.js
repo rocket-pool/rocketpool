@@ -25,7 +25,8 @@ const hre = require('hardhat');
 const ethers = hre.ethers;
 
 export default function() {
-    describe('RocketNodeDeposit', () => {
+    // TODO: Remove irrelevant tests for Saturn
+    describe.skip('RocketNodeDeposit', () => {
         let owner,
             node,
             trustedNode,

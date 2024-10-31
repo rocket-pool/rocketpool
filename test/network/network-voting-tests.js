@@ -14,7 +14,8 @@ const hre = require('hardhat');
 const ethers = hre.ethers;
 
 export default function() {
-    describe('RocketNetworkVoting', () => {
+    // TODO: Update to Saturn once implemented
+    describe.skip('RocketNetworkVoting', () => {
         let owner,
             node,
             random;

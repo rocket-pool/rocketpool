@@ -72,7 +72,7 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
     /// @notice Add an item to the end of the list. Requires that the item does not exist in the list
     /// @param _namespace defines the queue to be used
     /// @param _item the deposit queue item to be added
-    function enqueueItem(bytes32 _namespace, DepositQueueValue memory _item) virtual override external onlyLatestContract("addressLinkedListStorage", address(this)) onlyLatestNetworkContract {
+    function enqueueItem(bytes32 _namespace, DepositQueueValue memory _item) virtual override external onlyLatestContract("linkedListStorage", address(this)) onlyLatestNetworkContract {
         _enqueueItem(_namespace, _item);
     }
 
@@ -110,7 +110,7 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
 
     /// @notice Remove an item from the start of a queue and return it. Requires that the queue is not empty
     /// @param _namespace defines the queue to be used
-    function dequeueItem(bytes32 _namespace) public virtual override onlyLatestContract("addressLinkedListStorage", address(this)) onlyLatestNetworkContract returns (DepositQueueValue memory item) {
+    function dequeueItem(bytes32 _namespace) public virtual override onlyLatestContract("linkedListStorage", address(this)) onlyLatestNetworkContract returns (DepositQueueValue memory item) {
         return _dequeueItem(_namespace);
     }
 
@@ -159,7 +159,7 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
     /// @notice Removes an item from a queue. Requires that the item exists in the queue
     /// @param _namespace defines the queue to be used
     /// @param _item to be removed from the queue
-    function removeItem(bytes32 _namespace, DepositQueueValue memory _item) public virtual override onlyLatestContract("addressLinkedListStorage", address(this)) onlyLatestNetworkContract {
+    function removeItem(bytes32 _namespace, DepositQueueValue memory _item) public virtual override onlyLatestContract("linkedListStorage", address(this)) onlyLatestNetworkContract {
         _removeItem(_namespace, _item);
     }
 
