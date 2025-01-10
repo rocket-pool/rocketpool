@@ -19,6 +19,8 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
             setSettingUint("deposit.assign.maximum", 90);
             setSettingUint("deposit.assign.socialised.maximum", 2);
             setSettingUint("deposit.fee", 0.0005 ether);    // Set to approx. 1 day of rewards at 18.25% APR
+            setSettingUint("deposit.express.queue.rate", 2);
+            setSettingUint("deposit.express.queue.tickets.base.provision", 2);
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -71,6 +73,16 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
     /// @notice Returns the current fee paid on user deposits
     function getDepositFee() override external view returns (uint256) {
         return getSettingUint("deposit.fee");
+    }
+
+    /// @notice Returns the rate at which the deposit queue is processed
+    function getDepositQueueRate() override external view returns (uint256) {
+        return getSettingUint("deposit.express.queue.rate");
+    }
+
+    /// @notice Returns the number of express tickets provisioned 
+    function getDepositQueueTicketsBaseProvision() override external view returns (uint256) {
+        return getSettingUint("deposit.express.queue.tickets.base.provision");
     }
 
 }

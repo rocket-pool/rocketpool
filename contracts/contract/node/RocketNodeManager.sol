@@ -194,8 +194,9 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         setBool(keccak256(abi.encodePacked("node.voting.enabled", msg.sender)), true);
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         setBool(keccak256(abi.encodePacked("node.express.provisioned", msg.sender)), true);
-        // TODO: Parameterise `express_queue_tickets_base_provision`
-        uint256 expressQueueTicketsBaseProvision = 2;
+        // Get the number of express tickets to provision
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
+        uint256 expressQueueTicketsBaseProvision = rocketDAOProtocolSettingsDeposit.getDepositQueueTicketsBaseProvision();
         setUint(keccak256(abi.encodePacked("node.express.tickets")), expressQueueTicketsBaseProvision);
         // Add node to index
         bytes32 nodeIndexKey = keccak256(abi.encodePacked("nodes.index"));
@@ -476,7 +477,9 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         uint256 expressTickets = 0;
         if (!provisioned) {
             // Nodes prior to Saturn should receive 2 express tickets (initial value of `express_queue_tickets_base_provision`)
-            expressTickets += 2;
+            RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
+            uint256 expressQueueTicketsBaseProvision = rocketDAOProtocolSettingsDeposit.getDepositQueueTicketsBaseProvision();
+            expressTickets += expressQueueTicketsBaseProvision;
             // Each node SHALL be provided additional express_queue_tickets equal to (bonded ETH in legacy minipools)/4
             RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
             uint256 ethProvided = rocketNodeStaking.getNodeETHProvided(_nodeAddress);
