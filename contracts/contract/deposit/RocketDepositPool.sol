@@ -371,8 +371,9 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         uint256 queueIndex = getUint("megapool.queue.index");
         uint256 nodeBalanceUsed = 0;
 
-        // TODO: Parameterise express_queue_rate
-        uint256 expressQueueRate = 2;
+        // Get the rate at which the deposit queue is processed
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
+        uint256 expressQueueRate = rocketDAOProtocolSettingsDeposit.getDepositQueueRate();
         uint256 totalSent = 0;
 
         for (uint256 i = 0; i < _count; i++) {
