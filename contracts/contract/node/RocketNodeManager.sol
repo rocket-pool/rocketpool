@@ -10,6 +10,7 @@ import {RocketDAONodeTrustedSettingsRewardsInterface} from "../../interface/dao/
 import {RocketDAOProtocolSettingsMinipoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import {RocketDAOProtocolSettingsNodeInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import {RocketDAOProtocolSettingsRewardsInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
+import {RocketDAOProtocolSettingsDepositInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
 import {RocketMegapoolFactoryInterface} from "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
 import {RocketMinipoolInterface} from "../../interface/minipool/RocketMinipoolInterface.sol";
 import {RocketMinipoolManagerInterface} from "../../interface/minipool/RocketMinipoolManagerInterface.sol";
