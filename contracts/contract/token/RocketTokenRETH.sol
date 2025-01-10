@@ -61,7 +61,7 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
         return _ethAmount.mul(rethSupply).div(totalEthBalance);
     }
 
-    // Get the current ETH : rETH exchange rate
+    // Get the current rETH / ETH exchange rate
     // Returns the amount of ETH backing 1 rETH
     function getExchangeRate() override external view returns (uint256) {
         return getEthValue(1 ether);
