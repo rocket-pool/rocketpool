@@ -197,7 +197,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         setBool(keccak256(abi.encodePacked("node.express.provisioned", msg.sender)), true);
         // Get the number of express tickets to provision
         RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
-        uint256 expressQueueTicketsBaseProvision = rocketDAOProtocolSettingsDeposit.getDepositQueueTicketsBaseProvision();
+        uint256 expressQueueTicketsBaseProvision = rocketDAOProtocolSettingsDeposit.getExpressQueueTicketsBaseProvision();
         setUint(keccak256(abi.encodePacked("node.express.tickets")), expressQueueTicketsBaseProvision);
         // Add node to index
         bytes32 nodeIndexKey = keccak256(abi.encodePacked("nodes.index"));
@@ -479,7 +479,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         if (!provisioned) {
             // Nodes prior to Saturn should receive 2 express tickets (initial value of `express_queue_tickets_base_provision`)
             RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
-            uint256 expressQueueTicketsBaseProvision = rocketDAOProtocolSettingsDeposit.getDepositQueueTicketsBaseProvision();
+            uint256 expressQueueTicketsBaseProvision = rocketDAOProtocolSettingsDeposit.getExpressQueueTicketsBaseProvision();
             expressTickets += expressQueueTicketsBaseProvision;
             // Each node SHALL be provided additional express_queue_tickets equal to (bonded ETH in legacy minipools)/4
             RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));

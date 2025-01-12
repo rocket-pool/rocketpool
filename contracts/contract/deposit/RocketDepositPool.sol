@@ -373,7 +373,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
         // Get the rate at which the deposit queue is processed
         RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
-        uint256 expressQueueRate = rocketDAOProtocolSettingsDeposit.getDepositQueueRate();
+        uint256 expressQueueRate = rocketDAOProtocolSettingsDeposit.getExpressQueueRate();
         uint256 totalSent = 0;
 
         for (uint256 i = 0; i < _count; i++) {

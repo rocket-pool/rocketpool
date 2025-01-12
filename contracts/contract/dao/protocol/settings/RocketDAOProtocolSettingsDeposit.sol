@@ -76,12 +76,12 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
     }
 
     /// @notice Returns the rate at which the deposit queue is processed
-    function getDepositQueueRate() override external view returns (uint256) {
+    function getExpressQueueRate() override external view returns (uint256) {
         return getSettingUint("deposit.express.queue.rate");
     }
 
     /// @notice Returns the number of express tickets provisioned 
-    function getDepositQueueTicketsBaseProvision() override external view returns (uint256) {
+    function getExpressQueueTicketsBaseProvision() override external view returns (uint256) {
         return getSettingUint("deposit.express.queue.tickets.base.provision");
     }
 
