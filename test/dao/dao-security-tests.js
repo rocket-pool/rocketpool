@@ -1,7 +1,10 @@
 import { before, describe, it } from 'mocha';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { setDAOProtocolBootstrapSecurityInvite } from './scenario-dao-protocol-bootstrap';
+import {
+    setDAOProtocolBootstrapSecurityInvite,
+    setDAOProtocolBootstrapSetting,
+} from './scenario-dao-protocol-bootstrap';
 import { userDeposit } from '../_helpers/deposit';
 import {
     getDaoProtocolSecurityLeaveTime,
@@ -18,9 +21,14 @@ import {
     daoSecurityVote,
 } from './scenario-dao-security';
 import { getDepositSetting } from '../_helpers/settings';
-import { RocketDAOSecurityProposals } from '../_utils/artifacts';
+import {
+    RocketDAOProtocolSettingsNetwork,
+    RocketDAOSecurityProposals,
+    RocketNetworkRevenues,
+} from '../_utils/artifacts';
 import * as assert from 'assert';
 import { globalSnapShot } from '../_utils/snapshotting';
+import { assertBN } from '../_helpers/bn';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -151,6 +159,34 @@ export default function() {
                 await daoSecurityVote(proposalId, true, { from: securityMember1 });
                 // Fail to execute
                 await shouldRevert(daoSecurityExecute(proposalId, { from: securityMember2 }), 'Proposal was executed', 'Proposal has not succeeded, has expired or has already been executed');
+            });
+
+            it(printTitle('security member', 'can adjust the node commission share security council adder'), async () => {
+                // Get contracts
+                const rocketNetworkRevenues = await RocketNetworkRevenues.deployed();
+                const rocketDAOProtocolSettingsNetwork = await RocketDAOProtocolSettingsNetwork.deployed();
+                // Raise a proposal to disable deposits
+                const adder = '0.005'.ether;
+                let proposalCalldata = rocketDAOSecurityProposals.interface.encodeFunctionData('proposalSettingUint', ['network', 'network.node.commission.share.security.council.adder', adder]);
+                // Add the proposal
+                let proposalId = await daoSecurityPropose('Adjust node commission share security council adder', proposalCalldata, {
+                    from: securityMember1,
+                });
+                // Vote in favour
+                await daoSecurityVote(proposalId, true, { from: securityMember1 });
+                await daoSecurityVote(proposalId, true, { from: securityMember2 });
+                // Execute and check
+                await daoSecurityExecute(proposalId, { from: securityMember2 });
+                // Check node share
+                const effectiveNodeShare = await rocketDAOProtocolSettingsNetwork.getEffectiveNodeShare();
+                assertBN.equal(effectiveNodeShare, '0.05'.ether + adder);
+                const nodeShare = await rocketNetworkRevenues.getCurrentNodeShare();
+                assertBN.equal(nodeShare, '0.05'.ether + adder);
+                // Check voter share
+                const effectiveVoterShare = await rocketDAOProtocolSettingsNetwork.getEffectiveVoterShare();
+                assertBN.equal(effectiveVoterShare, '0.09'.ether - adder);
+                const voterShare = await rocketNetworkRevenues.getCurrentVoterShare();
+                assertBN.equal(voterShare, '0.09'.ether - adder);
             });
         });
     });

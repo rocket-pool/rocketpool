@@ -16,6 +16,7 @@ import "./RocketMegapoolDelegateBase.sol";
 
 import "hardhat/console.sol";
 import {BeaconStateVerifier} from "../util/BeaconStateVerifier.sol";
+import {RocketNetworkRevenuesInterface} from "../../interface/network/RocketNetworkRevenuesInterface.sol";
 
 /// @title RocketMegapool
 /// @notice This contract manages multiple validators. It serves as the target of Beacon Chain withdrawal credentials.
@@ -139,8 +140,12 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         require(keccak256(_proof.pubkey) == keccak256(validator.pubKey));
         // Store last requested value for later
         uint32 lastRequestedValue = validator.lastRequestedValue;
+        // TODO: We might have to force a distribution before adjusting capital ratio?
+        if (lastDistributionBlock == 0) {
+            lastDistributionBlock = block.number;
+        }
         // Account for assigned value
-        assignedValue -= lastRequestedValue - prestakeValue;
+        assignedValue -= lastRequestedValue * milliToWei - prestakeValue;
         userCapital += uint256(lastRequestedValue - validator.lastRequestedBond) * milliToWei;
         nodeCapital += uint256(validator.lastRequestedBond) * milliToWei;
         // Update validator status
@@ -155,7 +160,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         require(beaconStateVerifier.verifyValidator(_proof), "Invalid proof");
         // Perform remaining 31 ETH stake onto beaconchain
         DepositInterface casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
-        casperDeposit.deposit{value: lastRequestedValue}(validator.pubKey, abi.encodePacked(withdrawalCredentials), _signature, _depositDataRoot);
+        casperDeposit.deposit{value: (lastRequestedValue * milliToWei) - prestakeValue}(validator.pubKey, abi.encodePacked(withdrawalCredentials), _signature, _depositDataRoot);
     }
 
     /// @notice Dissolves a validator that has not staked within the required period
@@ -249,7 +254,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         revert("Not implemented");
         // Calculate split of rewards
         uint256 rewards = getPendingRewards();
-        (uint256 rethRewards, uint256 voterRewards, uint256 nodeRewards) = _calculateRewards(rewards);
+        (uint256 nodeRewards, uint256 voterRewards, uint256 rethRewards) = _calculateRewards(rewards);
+        lastDistributionBlock = block.number;
         // Maybe repay debt from node share
         if (debt > 0) {
             uint256 amountToRepay = nodeRewards;
@@ -262,7 +268,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         // Send user share to rETH
         (bool success,) = rocketTokenRETH.call{value: rethRewards}("");
         require(success, "Failed to send ETH to the rETH contract");
-        // TODO: Send voter share to merkle distributor
+        // TODO: Send voterShare to a holding contract for use in rewards tree generation
         // Increase node rewards value
         nodeRewards += nodeRewards;
         // If owner is calling, claim immediately
@@ -326,21 +332,28 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         return userCapital;
     }
 
-    function _calculateRewards(uint256 _rewards) internal returns (uint256 rethRewards, uint256 voterRewards, uint256 nodeRewards) {
-        // TODO: Move this into the UAR calculator and parameterise
-        uint256 nodeOperatorCommissionShare = 0.05 ether;
-        uint256 nodeOperatorCommissionShareCouncilAdder = 0;
-        uint256 voterShare = 0.09 ether;
-        uint256 newShare = 0;
-        uint256 rethCommission = nodeOperatorCommissionShare + voterShare + newShare;
-        uint256 rethShare = 1 ether - rethCommission;
+    function calculateRewards() override external view returns (uint256 nodeRewards, uint256 voterRewards, uint256 rethRewards) {
+        return _calculateRewards(getPendingRewards());
+    }
+
+    function _calculateRewards(uint256 _rewards) internal view returns (uint256 nodeRewards, uint256 voterRewards, uint256 rethRewards) {
+        RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
+        console.log("lastDistributionBlock %d", lastDistributionBlock);
+        (uint256 nodeShare, uint256 voterShare, uint256 rethShare) = rocketNetworkRevenues.calculateSplit(lastDistributionBlock);
+        console.log("%d %d %d", nodeShare, voterShare, rethShare);
         uint256 borrowedPortion = _rewards * userCapital / (nodeCapital + userCapital);
+        console.log("userCapital %d", userCapital);
+        console.log("nodeCapital %d", nodeCapital);
+        console.log("borrowedPortion %d", borrowedPortion);
         rethRewards = rethShare * borrowedPortion / calcBase;
-        voterRewards = (voterShare - nodeOperatorCommissionShare) * borrowedPortion / calcBase;
+        voterRewards = voterShare * borrowedPortion / calcBase;
         nodeRewards = _rewards - rethRewards - voterRewards;
     }
 
     function getPendingRewards() override public view returns (uint256) {
+        console.log("balance %d", address(this).balance);
+        console.log("refundValue %d", refundValue);
+        console.log("assignedValue %d", assignedValue);
         return
             address(this).balance
             - refundValue

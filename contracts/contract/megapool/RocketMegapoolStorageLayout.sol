@@ -73,6 +73,8 @@ abstract contract RocketMegapoolStorageLayout {
 
     uint256 internal debt;            // Amount the owner owes the DP
 
+    uint256 internal lastDistributionBlock; // The block of the last time a distribution of rewards was executed
+
     // TODO: Move this to rocketNodeStaking
     uint256 internal stakedRPL;
     uint256 internal unstakedRPL;

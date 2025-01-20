@@ -19,12 +19,15 @@ class Artifact {
     }
 
     async new(...args) {
-        this.instance = (await ethers.getContractFactory(this.name)).deploy(...args);
+        this.instance = await (await ethers.getContractFactory(this.name)).deploy(...args);
+        await this.instance.waitForDeployment();
         return this.instance;
     }
 
     async clone(...args) {
-        return (await ethers.getContractFactory(this.name)).deploy(...args);
+        const instance = await (await ethers.getContractFactory(this.name)).deploy(...args);
+        await instance.waitForDeployment();
+        return instance;
     }
 
     at(address) {
@@ -141,4 +144,5 @@ export const RocketNetworkVoting = artifacts.require('RocketNetworkVoting');
 export const MegapoolUpgradeHelper = artifacts.require('MegapoolUpgradeHelper');
 export const BeaconStateVerifier = artifacts.require('BeaconStateVerifierMock');
 export const BlockRootsMock = artifacts.require('BlockRootsMock');
+export const RocketNetworkRevenues = artifacts.require('RocketNetworkRevenues');
 export const RocketUpgradeOneDotFour = artifacts.require('RocketUpgradeOneDotFour');

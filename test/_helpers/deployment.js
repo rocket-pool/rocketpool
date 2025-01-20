@@ -1,9 +1,13 @@
-/*** Dependencies ********************/
-import { artifacts, RocketMegapoolFactory } from '../_utils/artifacts';
-
-const hre = require('hardhat');
-const pako = require('pako');
-const fs = require('fs');
+import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
+import {
+    artifacts,
+    RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsInflation, RocketDAOProtocolSettingsMinipool,
+    RocketDAOProtocolSettingsNetwork,
+    RocketDAOProtocolSettingsNode, RocketMegapoolFactory, RocketNetworkRevenues, RocketStorage,
+} from '../_utils/artifacts';
+import fs from 'fs';
+import pako from 'pako';
+import { beginHiddenCallStack } from '@babel/core/lib/errors/rewrite-stack-trace';
 
 const ethers = hre.ethers;
 
@@ -21,7 +25,7 @@ function decompressABI(abi) {
 
 // Load ABI files and parse
 function loadABI(abiFilePath) {
-    return JSON.parse(fs.readFileSync(abiFilePath));
+    return JSON.parse(fs.readFileSync(abiFilePath).toString('utf-8'));
 }
 
 /*** Contracts ***********************/
@@ -102,22 +106,24 @@ const networkContracts = {
     rocketMegapoolFactory: artifacts.require('RocketMegapoolFactory'),
     rocketMegapoolProxy: artifacts.require('RocketMegapoolProxy'),
     rocketMegapoolDelegate: artifacts.require('RocketMegapoolDelegate'),
+    rocketNetworkRevenues: artifacts.require('RocketNetworkRevenues'),
     // Utils
     addressQueueStorage: artifacts.require('AddressQueueStorage'),
     addressSetStorage: artifacts.require('AddressSetStorage'),
     beaconStateVerifier: artifacts.require('BeaconStateVerifier'),
-    blockRoots: artifacts.require('BlockRootsMock'),
+    blockRoots: artifacts.require('BlockRoots'),
     linkedListStorage: artifacts.require('LinkedListStorage'),
 };
 
 // Development helper contracts
 const revertOnTransfer = artifacts.require('RevertOnTransfer');
 
-if (network.name !== 'live' && network.name !== 'goerli') {
+if (network.name === 'hardhat') {
     // Unit test helper contracts
     networkContracts.linkedListStorage = artifacts.require('LinkedListStorageHelper');
     networkContracts.megapoolUpgradeHelper = artifacts.require('MegapoolUpgradeHelper');
     networkContracts.beaconStateVerifier = artifacts.require('BeaconStateVerifierMock');
+    networkContracts.blockRoots = artifacts.require('BlockRootsMock');
 }
 
 // Contract details to store into RocketStorage
@@ -176,10 +182,10 @@ export async function deployRocketPool() {
         contracts.rocketTokenRPLFixedSupply.address = '0xb4efd85c19999d84251304bda99e90b92300bd93';
     }
 
-    // Goerli test network
-    else if (network.name === 'goerli') {
-        // Casper deposit contract details
-        const casperDepositAddress = '0xff50ed3d0ec03ac01d4c79aad74928bff48a7b2b';       // Prater
+    // Holesky test network
+    else if (network.name === 'testnet') {
+        // Holesky deposit contract
+        const casperDepositAddress = '0x4242424242424242424242424242424242424242';
         contracts.casperDeposit = {
             address: casperDepositAddress,
             abi: casperDepositABI,
@@ -225,8 +231,19 @@ export async function deployRocketPool() {
             case 'rocketMinipoolDelegate':
             case 'rocketNodeDistributorDelegate':
             case 'rocketMinipoolBase':
-            case 'blockRoots':
                 instance = await networkContracts[contract].new();
+                break;
+
+            case 'blockRoots':
+                if (network.name === 'hardhat') {
+                    instance = await networkContracts[contract].new();
+                } else {
+                    const genesisBlockTimestamp = 1695902400n;
+                    const secondsPerSlot = 12n;
+                    const beaconRootsHistoryBufferLength = 8191n;
+                    const beaconRoots = '0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02';
+                    instance = await networkContracts[contract].new(genesisBlockTimestamp, secondsPerSlot, beaconRootsHistoryBufferLength, beaconRoots);
+                }
                 break;
 
             // All other contracts - pass storage address
@@ -234,10 +251,10 @@ export async function deployRocketPool() {
                 instance = await networkContracts[contract].new(rocketStorageInstance.target);
                 // Slight hack to allow gas optimisation using immutable addresses for non-upgradable contracts
                 if (contract === 'rocketVault' || contract === 'rocketTokenRETH') {
-                    await rocketStorageInstance.setAddress(
+                    await (await rocketStorageInstance.setAddress(
                         ethers.solidityPackedKeccak256(['string', 'string'], ['contract.address', contract]),
                         instance.target,
-                    );
+                    )).wait();
                 }
                 break;
 
@@ -251,7 +268,6 @@ export async function deployRocketPool() {
 
     // Register all other contracts with storage and store their abi
     const addContracts = async function() {
-        const rocketStorageInstance = await rocketStorage.deployed();
         // Log RocketStorage
         console.log('\x1b[31m%s\x1b[0m:', '   Set Storage Address');
         console.log('     ' + rocketStorageInstance.target);
@@ -272,27 +288,27 @@ export async function deployRocketPool() {
                         console.log('\x1b[31m%s\x1b[0m:', '   Set Storage ' + contract + ' Address');
                         console.log('     ' + address);
                         // Register the contract address as part of the network
-                        await rocketStorageInstance.setBool(
+                        await (await rocketStorageInstance.setBool(
                             ethers.solidityPackedKeccak256(['string', 'address'], ['contract.exists', address]),
                             true,
-                        );
+                        )).wait();
                         // Register the contract's name by address
-                        await rocketStorageInstance.setString(
+                        await (await rocketStorageInstance.setString(
                             ethers.solidityPackedKeccak256(['string', 'address'], ['contract.name', address]),
                             contract,
-                        );
+                        )).wait();
                         // Register the contract's address by name (rocketVault and rocketTokenRETH addresses already stored)
                         if (!(contract === 'rocketVault' || contract === 'rocketTokenRETH')) {
-                            await rocketStorageInstance.setAddress(
+                            await (await rocketStorageInstance.setAddress(
                                 ethers.solidityPackedKeccak256(['string', 'string'], ['contract.address', contract]),
                                 address,
-                            );
+                            )).wait();
                         }
                         // Compress and store the ABI by name
-                        await rocketStorageInstance.setString(
+                        await (await rocketStorageInstance.setString(
                             ethers.solidityPackedKeccak256(['string', 'string'], ['contract.abi', contract]),
                             compressABI(abi),
-                        );
+                        )).wait();
                         break;
                 }
             }
@@ -309,19 +325,19 @@ export async function deployRocketPool() {
                     // Merge ABIs from multiple artifacts
                     let combinedAbi = [];
                     for (const artifact of abis[contract]) {
-                        combinedAbi = combinedAbi.concat(artifact.abi);
+                        combinedAbi = combinedAbi.concat(artifact);
                     }
                     // Compress and store the ABI
-                    await rocketStorageInstance.setString(
+                    await (await rocketStorageInstance.setString(
                         ethers.solidityPackedKeccak256(['string', 'string'], ['contract.abi', contract]),
                         compressABI(combinedAbi),
-                    );
+                    )).wait();
                 } else {
                     // Compress and store the ABI
-                    await rocketStorageInstance.setString(
+                    await (await rocketStorageInstance.setString(
                         ethers.solidityPackedKeccak256(['string', 'string'], ['contract.abi', contract]),
-                        compressABI(abis[contract].abi),
-                    );
+                        compressABI(abis[contract]),
+                    )).wait();
                 }
             }
         }
@@ -339,25 +355,29 @@ export async function deployRocketPool() {
     // Store deployed block
     console.log('\n');
     console.log('Setting `deploy.block` to ' + deployBlock);
-    await rocketStorageInstance.setUint(
+    await (await rocketStorageInstance.setUint(
         ethers.solidityPackedKeccak256(['string'], ['deploy.block']),
         deployBlock,
-    );
+    )).wait();
 
     // Set protocol version
-    const protocolVersion = '1.3.0';
+    const protocolVersion = '1.4';
     console.log('Setting `protocol.version` to ' + protocolVersion);
-    await rocketStorageInstance.setString(
+    await (await rocketStorageInstance.setString(
         ethers.solidityPackedKeccak256(['string'], ['protocol.version']),
         protocolVersion,
-    );
+    )).wait();
 
     // Initialise rocketMegapoolFactory
     const rocketMegapoolFactory = await RocketMegapoolFactory.deployed();
-    await rocketMegapoolFactory.initialise();
+    await (await rocketMegapoolFactory.initialise()).wait();
+
+    // Initialise revenues contracts
+    const rocketNetworkRevenues = await RocketNetworkRevenues.deployed();
+    await (await rocketNetworkRevenues.initialise()).wait();
 
     // Disable direct access to storage now
-    await rocketStorageInstance.setDeployedStatus();
+    await (await rocketStorageInstance.setDeployedStatus()).wait();
     if (await rocketStorageInstance.getDeployedStatus() !== true) throw 'Storage Access Not Locked Down!!';
 
     // Log it
@@ -366,7 +386,7 @@ export async function deployRocketPool() {
     console.log('\n');
 
     // Deploy development help contracts
-    if (network.name !== 'live' && network.name !== 'goerli') {
+    if (network.name === 'hardhat') {
         let instance = await revertOnTransfer.new();
         revertOnTransfer.setAsDeployed(instance);
     }

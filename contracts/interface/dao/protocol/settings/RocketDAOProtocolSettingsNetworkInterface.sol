@@ -17,4 +17,11 @@ interface RocketDAOProtocolSettingsNetworkInterface {
     function getTargetRethCollateralRate() external view returns (uint256);
     function getRethDepositDelay() external view returns (uint256);
     function getSubmitRewardsEnabled() external view returns (bool);
+    function getMaxNodeShareSecurityCouncilAdder() external view returns (uint256);
+    function getVoterShare() external view returns (uint256);
+    function getNodeShare() external view returns (uint256);
+    function getNodeShareSecurityCouncilAdder() external view returns (uint256);
+    function getRethCommission() external view returns (uint256);
+    function getEffectiveVoterShare() external view returns (uint256);
+    function getEffectiveNodeShare() external view returns (uint256);
 }

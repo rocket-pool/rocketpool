@@ -43,10 +43,10 @@ export async function setDAOProtocolBootstrapSetting(_settingContractInstance, _
 
     // Set as a bootstrapped setting. detect type first, can be a number, string or bn object
     if (ethers.isAddress(_value)) {
-        await rocketDAOProtocol.bootstrapSettingAddress(contractName, _settingPath, _value, txOptions);
+        await (await rocketDAOProtocol.bootstrapSettingAddress(contractName, _settingPath, _value, txOptions)).wait();
     } else {
-        if (typeof (_value) == 'number' || typeof (_value) == 'string' || typeof (_value) == 'bigint') await rocketDAOProtocol.bootstrapSettingUint(contractName, _settingPath, _value, txOptions);
-        if (typeof (_value) == 'boolean') await rocketDAOProtocol.bootstrapSettingBool(contractName, _settingPath, _value, txOptions);
+        if (typeof (_value) == 'number' || typeof (_value) == 'string' || typeof (_value) == 'bigint') await (await rocketDAOProtocol.bootstrapSettingUint(contractName, _settingPath, _value, txOptions)).wait();
+        if (typeof (_value) == 'boolean') await(await rocketDAOProtocol.bootstrapSettingBool(contractName, _settingPath, _value, txOptions)).wait();
     }
 
     // Capture data

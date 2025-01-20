@@ -101,6 +101,9 @@ contract RocketUpgradeOneDotFour is RocketBase {
         // Init the megapool factory
         RocketMegapoolFactoryInterface(rocketMegapoolFactory).initialise();
 
+        // Add new security council allowed parameter
+        setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "network", "network.node.commission.share.security.council.adder")), true);
+
         // Set a protocol version value in storage for convenience with bindings
         setString(keccak256(abi.encodePacked("protocol.version")), "1.4");
     }

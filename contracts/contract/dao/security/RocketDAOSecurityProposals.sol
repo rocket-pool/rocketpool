@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import "../../RocketBase.sol";
+import "../../../interface/RocketVaultInterface.sol";
+import "../../../interface/dao/RocketDAOProposalInterface.sol";
+import "../../../interface/dao/protocol/RocketDAOProtocolInterface.sol";
+import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsSecurityInterface.sol";
+import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
+import "../../../interface/dao/security/RocketDAOSecurityActionsInterface.sol";
 import "../../../interface/dao/security/RocketDAOSecurityInterface.sol";
 import "../../../interface/dao/security/RocketDAOSecurityProposalsInterface.sol";
-import "../../../interface/rewards/claims/RocketClaimDAOInterface.sol";
-import "../../../interface/dao/RocketDAOProposalInterface.sol";
-import "../../../interface/node/RocketNodeManagerInterface.sol";
-import "../../../types/SettingType.sol";
-
-import "../../../interface/dao/security/RocketDAOSecurityActionsInterface.sol";
-import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsSecurityInterface.sol";
+import "../../../interface/network/RocketNetworkRevenuesInterface.sol";
+import "../../../interface/util/IERC20Burnable.sol";
+import "../../RocketBase.sol";
 
 /// @notice Proposal contract for the security council
 contract RocketDAOSecurityProposals is RocketBase, RocketDAOSecurityProposalsInterface {
@@ -98,6 +99,25 @@ contract RocketDAOSecurityProposals is RocketBase, RocketDAOSecurityProposalsInt
     function proposalSettingUint(string memory _settingNameSpace, string memory _settingPath, uint256 _value) override public onlyExecutingContracts() onlyValidSetting(_settingNameSpace, _settingPath) {
         bytes32 namespace = keccak256(abi.encodePacked(protocolDaoSettingNamespace, _settingNameSpace));
         setUint(keccak256(abi.encodePacked(namespace, _settingPath)), _value);
+
+        // Security council adder requires additional processing
+        // TODO: Consider abstracting this out to a common call between security council and pDAO
+        if (keccak256(bytes(_settingNameSpace)) == keccak256(bytes("network"))) {
+            if (keccak256(bytes(_settingPath)) == keccak256(bytes("network.node.commission.share.security.council.adder"))) {
+                RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
+
+                // Check guardrails
+                uint256 maxAdderValue = rocketDAOProtocolSettingsNetwork.getMaxNodeShareSecurityCouncilAdder();
+                require(_value <= maxAdderValue, "Value must be <= max value");
+                uint256 maxVoterValue = rocketDAOProtocolSettingsNetwork.getVoterShare();
+                require(_value <= maxVoterValue, "Value must be <= voter share");
+
+                // Notify RocketNetworkRevenue of the changes to voter and node share
+                RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
+                rocketNetworkRevenues.setVoterShare(rocketDAOProtocolSettingsNetwork.getEffectiveVoterShare());
+                rocketNetworkRevenues.setNodeShare(rocketDAOProtocolSettingsNetwork.getEffectiveNodeShare());
+            }
+        }
     }
 
     /// @notice Change one of the current bool settings of the protocol DAO

@@ -37,6 +37,9 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     event DepositRecycled(address indexed from, uint256 amount, uint256 time);
     event DepositAssigned(address indexed minipool, uint256 amount, uint256 time);
     event ExcessWithdrawn(address indexed to, uint256 amount, uint256 time);
+    event FundsRequested(address indexed receiver, uint256 validatorId, uint256 amount, bool expressQueue, uint256 time);
+    event FundsAssigned(address indexed receiver, uint256 amount, uint256 time);
+    event QueueExited(address indexed receiver, uint256 time);
 
     // Structs
     struct MinipoolAssignment {
@@ -230,7 +233,15 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             return;
         }
         // TODO: Clarify in RPIP "If possible, deposit SHALL assign one validator as described below" if this means node deposit should assign to legacy minipools too
-        assignMegapools(1);
+        _assignMegapools(1);
+    }
+
+    /// @notice Assigns funds to megapools at the front of the queue if enough ETH is available
+    /// @param _count The maximum number of megapools to assign in this call
+    function assignMegapools(uint256 _count) override external onlyThisLatestContract {
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
+        require (rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled(), "Deposit assignments are disabled");
+        _assignMegapools(_count);
     }
 
     /// @dev Assigns deposits to available minipools, returns false if assignment is currently disabled
@@ -246,12 +257,13 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             _assignDepositsLegacy(rocketMinipoolQueue, _rocketDAOProtocolSettingsDeposit);
         } else {
             // Then assign megapools
-            _assignMegapools(_rocketDAOProtocolSettingsDeposit);
+            _assignDepositsNew(_rocketDAOProtocolSettingsDeposit);
         }
         return true;
     }
 
-    function _assignMegapools(RocketDAOProtocolSettingsDepositInterface _rocketDAOProtocolSettingsDeposit) private {
+    /// @dev Assigns deposits using the new megapool queue
+    function _assignDepositsNew(RocketDAOProtocolSettingsDepositInterface _rocketDAOProtocolSettingsDeposit) private {
         // Load contracts
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         // Calculate the number of minipools to assign
@@ -262,7 +274,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         if (assignments > maxAssignments) {
             assignments = maxAssignments;
         }
-        assignMegapools(assignments);
+        _assignMegapools(assignments);
     }
 
     /// @dev Assigns deposits using the legacy minipool queue
@@ -332,16 +344,21 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         bytes32 namespace = getQueueNamespace(_expressQueue);
         DepositQueueValue memory value = DepositQueueValue({
             receiver: msg.sender,                             // Megapool address
-            validatorId: uint32(_validatorId),               // Incrementing id per validator in a megapool
-            suppliedValue: uint32(_bondAmount / milliToWei),   // NO bond amount
-            requestedValue: uint32(_amount / milliToWei)     // Amount being requested
+            validatorId: uint32(_validatorId),                // Incrementing id per validator in a megapool
+            suppliedValue: uint32(_bondAmount / milliToWei),  // NO bond amount
+            requestedValue: uint32(_amount / milliToWei)      // Amount being requested
         });
         LinkedListStorageInterface linkedListStorage = LinkedListStorageInterface(getContractAddress("linkedListStorage"));
         linkedListStorage.enqueueItem(namespace, value);
         // Increase requested balance
         addUint("deposit.pool.requested.total", _amount);
+        // Emit event
+        emit FundsRequested(msg.sender, _validatorId, _amount, _expressQueue, block.timestamp);
     }
 
+    /// @notice Removes a pending entry in the validator queue
+    /// @param _validatorId Internal ID of the validator to be removed
+    /// @param _expressQueue Whether the entry is in the express queue or not
     function exitQueue(uint256 _validatorId, bool _expressQueue) external onlyRegisteredMegapool(msg.sender) {
         LinkedListStorageInterface linkedListStorage = LinkedListStorageInterface(getContractAddress("linkedListStorage"));
         DepositQueueValue memory key = DepositQueueValue({
@@ -352,12 +369,56 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         });
         bytes32 namespace = getQueueNamespace(_expressQueue);
         linkedListStorage.removeItem(namespace, key);
+        emit QueueExited(msg.sender, block.timestamp);
     }
 
-    /// @notice Assigns funds to megapools at the front of the queue if enough ETH is available
-    /// @param _count The maximum number of megapools to assign in this call
-    // TODO: Make this only callable internally or via RocketNodeDeposit
-    function assignMegapools(uint256 _count) override public {
+    /// @notice Gets the receiver next to be assigned and whether it can be assigned immediately
+    /// @dev During the transition period from the legacy minipool queue, this will always return null address
+    /// @return receiver Address of the receiver of the next assignment or null address for an empty queue
+    /// @return assignmentPossible Whether there is enough funds in the pool to perform an assignment now
+    function getQueueTop() override external view returns (address receiver, bool assignmentPossible) {
+        // If legacy queue is still being processed, return null address
+        AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
+        if (addressQueueStorage.getLength(queueKeyVariable) > 0) {
+            return (address(0x0), false);
+        }
+
+        LinkedListStorageInterface linkedListStorage = LinkedListStorageInterface(getContractAddress("linkedListStorage"));
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+
+        uint256 expressQueueLength = linkedListStorage.getLength(expressQueueNamespace);
+        uint256 standardQueueLength = linkedListStorage.getLength(standardQueueNamespace);
+
+        // If both queues are empty, return null address
+        if (expressQueueLength == 0 && standardQueueLength == 0) {
+            return (address(0x0), false);
+        }
+
+        uint256 queueIndex = getUint("megapool.queue.index");
+
+        // TODO: Parameterise express_queue_rate
+        uint256 expressQueueRate = 2;
+
+        bool express = queueIndex % (expressQueueRate + 1) != 0;
+        if (express && expressQueueLength == 0) {
+            express = false;
+        }
+
+        if (!express && standardQueueLength == 0) {
+            express = true;
+        }
+
+        bytes32 namespace = getQueueNamespace(express);
+        DepositQueueValue memory head = linkedListStorage.peekItem(namespace);
+
+        bool assignmentPossible = rocketVault.balanceOf("rocketDepositPool") >= head.requestedValue;
+
+        return (head.receiver, assignmentPossible);
+    }
+
+    /// @dev Loops over a maximum of `_count` entries in the queue and assigns funds
+    /// @param _count Maximum number of entries to assign
+    function _assignMegapools(uint256 _count) internal {
         if (_count == 0) {
             // Nothing to do
             return;
@@ -403,6 +464,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
             // Assign funds and dequeue megapool
             RocketMegapoolInterface(head.receiver).assignFunds{value: ethRequired}(head.validatorId);
+            emit FundsAssigned(head.receiver, ethRequired, block.timestamp);
             linkedListStorage.dequeueItem(namespace);
 
             // Account for node balance
@@ -424,7 +486,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         subUint("deposit.pool.requested.total", totalSent);
     }
 
-    /// @notice 
+    /// @dev Convenience method to return queue key for express and non-express queues
     function getQueueNamespace(bool _expressQueue) internal pure returns (bytes32) {
         if (_expressQueue) {
             return expressQueueNamespace;

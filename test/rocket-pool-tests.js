@@ -31,6 +31,7 @@ import rewardsPoolTests from './rewards/rewards-tests';
 import megapoolTests from './megapool/megapool-tests';
 import networkSnapshotsTests from './network/network-snapshots-tests';
 import networkVotingTests from './network/network-voting-tests';
+import networkRevenuesTests from './network/network-revenues-tests';
 import utilTests from './util/util-tests';
 import verifierTests from './util/verifier-tests';
 
@@ -78,6 +79,7 @@ networkFeesTests();
 networkPricesTests();
 networkSnapshotsTests();
 networkVotingTests();
+networkRevenuesTests();
 nodeDepositTests();
 nodeManagerTests();
 nodeStakingTests();

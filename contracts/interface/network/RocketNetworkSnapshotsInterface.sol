@@ -14,5 +14,6 @@ interface RocketNetworkSnapshotsInterface {
     function latestBlock(bytes32 _key) external view returns (uint32);
     function latestValue(bytes32 _key) external view returns (uint224);
     function lookup(bytes32 _key, uint32 _block) external view returns (uint224);
+    function lookupCheckpoint(bytes32 _key, uint32 _block) external view returns (bool, uint32, uint224);
     function lookupRecent(bytes32 _key, uint32 _block, uint256 _recency) external view returns (uint224);
 }

@@ -55,6 +55,16 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
         return pos == 0 ? 0 : _valueAt(_key, pos - 1);
     }
 
+    function lookupCheckpoint(bytes32 _key, uint32 _block) external override view returns (bool, uint32, uint224) {
+        uint256 len = length(_key);
+        uint256 pos = _binaryLookup(_key, _block, 0, len);
+        if (pos == 0) {
+            return (false, 0, 0);
+        }
+        Checkpoint224 memory checkpoint = _load(_key, pos - 1);
+        return (true, checkpoint._block, checkpoint._value);
+    }
+
     function lookupRecent(bytes32 _key, uint32 _block, uint256 _recency) external view returns (uint224) {
         uint256 len = length(_key);
 

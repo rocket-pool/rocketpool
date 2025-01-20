@@ -15,6 +15,8 @@ import {
 } from '../_utils/artifacts';
 import assert from 'assert';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
+import { stakeMegapoolValidator } from './scenario-stake';
+import { assertBN } from '../_helpers/bn';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -102,20 +104,38 @@ export default function() {
             });
 
             it(printTitle('node', 'can create new validators per bond requirements'), async () => {
-                await shouldRevert(nodeDeposit(false, false, { value: '8'.ether, from: node }), 'Created validator', 'Bond requirement not met');
-                await shouldRevert(nodeDeposit(false, false, { value: '2'.ether, from: node }), 'Created validator', 'Bond requirement not met');
+                await shouldRevert(nodeDeposit(false, false, {
+                    value: '8'.ether,
+                    from: node,
+                }), 'Created validator', 'Bond requirement not met');
+                await shouldRevert(nodeDeposit(false, false, {
+                    value: '2'.ether,
+                    from: node,
+                }), 'Created validator', 'Bond requirement not met');
                 await nodeDeposit(false, false, { value: '4'.ether, from: node });
-                await shouldRevert(nodeDeposit(false, false, { value: '2'.ether, from: node }), 'Created validator', 'Bond requirement not met');
+                await shouldRevert(nodeDeposit(false, false, {
+                    value: '2'.ether,
+                    from: node,
+                }), 'Created validator', 'Bond requirement not met');
                 await nodeDeposit(false, false, { value: '4'.ether, from: node });
-                await shouldRevert(nodeDeposit(false, false, { value: '2'.ether, from: node }), 'Created validator', 'Bond requirement not met');
+                await shouldRevert(nodeDeposit(false, false, {
+                    value: '2'.ether,
+                    from: node,
+                }), 'Created validator', 'Bond requirement not met');
                 await nodeDeposit(false, false, { value: '4'.ether, from: node });
-                await shouldRevert(nodeDeposit(false, false, { value: '2'.ether, from: node }), 'Created validator', 'Bond requirement not met');
+                await shouldRevert(nodeDeposit(false, false, {
+                    value: '2'.ether,
+                    from: node,
+                }), 'Created validator', 'Bond requirement not met');
             });
 
             it(printTitle('node', 'can not consume more than 2 provisioned express tickets'), async () => {
                 await nodeDeposit(true, false, { value: '4'.ether, from: node });
                 await nodeDeposit(true, false, { value: '4'.ether, from: node });
-                await shouldRevert(nodeDeposit(true, false, { value: '4'.ether, from: node }), 'Consumed express ticket', 'No express tickets');
+                await shouldRevert(nodeDeposit(true, false, {
+                    value: '4'.ether,
+                    from: node,
+                }), 'Consumed express ticket', 'No express tickets');
             });
 
             it(printTitle('node', 'can create a new validator without an express ticket'), async () => {
@@ -136,15 +156,56 @@ export default function() {
                 await helpers.time.increase(dissolvePeriod + 1);
                 await megapool.connect(random).dissolveValidator(0);
             });
-        });
 
-        describe('With pre-staked validator', () => {
-
-            before(async () => {
-                await deployMegapool({ from: node });
+            it(printTitle('node', 'can perform stake operation on pre-stake validator'), async () => {
                 await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                await stakeMegapoolValidator(megapool, 0, { from: node });
             });
 
+            describe('With pre-staked validator', () => {
+
+                before(async () => {
+                    await deployMegapool({ from: node });
+                    await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                });
+
+            });
+
+            describe('With staking validator', () => {
+
+                before(async () => {
+                    await deployMegapool({ from: node });
+                    await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                    await stakeMegapoolValidator(megapool, 0, { from: node });
+                });
+
+                it(printTitle('node', 'cannot perform stake operation on staking validator'), async () => {
+                    await shouldRevert(stakeMegapoolValidator(megapool, 0, { from: node }), 'Was able to stake', 'Validator must be pre-staked');
+                });
+
+                it(printTitle('node', 'can distribute rewards'), async () => {
+                    await owner.sendTransaction({
+                        to: megapool.target,
+                        value: '1'.ether,
+                    });
+
+                    /*
+                        Rewards: 1 ETH
+                        Collat Ratio: 1/8
+                        Node Portion: 0.125 ETH
+                        User Portion: 0.875 ETH
+                        Commission: 0.875 * 5% = 0.04375 ETH
+                        Node Share: 0.04375 + 0.125 = 0.16875 ETH
+                        Voter Share: 0.875 * 9% = 0.07875 ETH
+                        rETH Share: 1 - 0.875 - 0.04375 = 0.08125 ETH
+                     */
+                    const rewardSplit = await megapool.calculateRewards();
+                    console.log(rewardSplit);
+                    assertBN.equal(rewardSplit[0], '0.16875'.ether);
+                    assertBN.equal(rewardSplit[1], '0.07875'.ether);
+                    assertBN.equal(rewardSplit[2], '0.7525'.ether);
+                });
+            });
         });
 
         describe('With upgraded delegate', () => {
@@ -156,7 +217,6 @@ export default function() {
                 upgradeHelper = await MegapoolUpgradeHelper.deployed();
                 oldDelegate = await RocketMegapoolDelegate.deployed();
                 newDelegate = await RocketMegapoolDelegate.clone(rocketStorage.target);
-                await deployMegapool({ from: node });
             });
 
             it(printTitle('random', 'can not upgrade non-expired delegate'), async () => {
