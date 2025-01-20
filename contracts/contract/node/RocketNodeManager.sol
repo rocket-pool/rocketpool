@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
+pragma abicoder v2;
 
 import "../../types/MinipoolStatus.sol";
 import {AddressSetStorageInterface} from "../../interface/util/AddressSetStorageInterface.sol";
@@ -20,7 +21,6 @@ import {RocketNodeDistributorInterface} from "../../interface/node/RocketNodeDis
 import {RocketNodeManagerInterface} from "../../interface/node/RocketNodeManagerInterface.sol";
 import {RocketNodeStakingInterface} from "../../interface/node/RocketNodeStakingInterface.sol";
 import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
-pragma abicoder v2;
 
 /// @notice Node registration and management
 contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
@@ -196,7 +196,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         setBool(keccak256(abi.encodePacked("node.express.provisioned", msg.sender)), true);
         // TODO: Parameterise `express_queue_tickets_base_provision`
         uint256 expressQueueTicketsBaseProvision = 2;
-        setUint(keccak256(abi.encodePacked("node.express.tickets")), expressQueueTicketsBaseProvision);
+        setUint(keccak256(abi.encodePacked("node.express.tickets", msg.sender)), expressQueueTicketsBaseProvision);
         // Add node to index
         bytes32 nodeIndexKey = keccak256(abi.encodePacked("nodes.index"));
         addressSetStorage.addItem(nodeIndexKey, msg.sender);
@@ -463,7 +463,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     }
 
     /// @notice Deploys a single Megapool contract for the calling node operator
-    function deployMegapool() override external onlyRegisteredNode(msg.sender) returns (address) {
+    function deployMegapool() override external onlyLatestContract("rocketNodeManager", address(this)) onlyRegisteredNode(msg.sender) returns (address) {
         RocketMegapoolFactoryInterface rocketMegapool = RocketMegapoolFactoryInterface(getContractAddress("rocketMegapoolFactory"));
         require (!rocketMegapool.getMegapoolDeployed(msg.sender), "Megapool already deployed for this node");
         return rocketMegapool.deployContract(msg.sender);
@@ -482,17 +482,17 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
             uint256 ethProvided = rocketNodeStaking.getNodeETHProvided(_nodeAddress);
             expressTickets += ethProvided / 4 ether;
         }
-        expressTickets += getUint(keccak256(abi.encodePacked("node.express.tickets")));
+        expressTickets += getUint(keccak256(abi.encodePacked("node.express.tickets", _nodeAddress)));
         return expressTickets;
     }
 
     /// @notice Consumes an express ticket for the given node operator
     /// @param _nodeAddress Address of the node operator to consume express ticket for
-    function useExpressTicket(address _nodeAddress) external override {
+    function useExpressTicket(address _nodeAddress) external override onlyLatestContract("rocketNodeManager", address(this)) onlyLatestContract("rocketDepositPool", msg.sender) {
         uint256 tickets = getExpressTicketCount(_nodeAddress);
         require(tickets > 0, "No express tickets");
         tickets -= 1;
         setBool(keccak256(abi.encodePacked("node.express.provisioned", _nodeAddress)), true);
-        setUint(keccak256(abi.encodePacked("node.express.tickets")), tickets);
+        setUint(keccak256(abi.encodePacked("node.express.tickets", _nodeAddress)), tickets);
     }
 }
