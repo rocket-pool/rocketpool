@@ -2,6 +2,7 @@
 pragma solidity 0.8.18;
 pragma abicoder v2;
 
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
 import "../../types/MinipoolStatus.sol";
 import {AddressSetStorageInterface} from "../../interface/util/AddressSetStorageInterface.sol";
 import {IERC20} from "../../interface/util/IERC20.sol";
@@ -185,6 +186,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
         // Check node settings
         require(rocketDAOProtocolSettingsNode.getRegistrationEnabled(), "Rocket Pool node registrations are currently disabled");
         // Check timezone location
@@ -194,9 +196,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         setBool(keccak256(abi.encodePacked("node.voting.enabled", msg.sender)), true);
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         setBool(keccak256(abi.encodePacked("node.express.provisioned", msg.sender)), true);
-        // TODO: Parameterise `express_queue_tickets_base_provision`
-        uint256 expressQueueTicketsBaseProvision = 2;
-        setUint(keccak256(abi.encodePacked("node.express.tickets", msg.sender)), expressQueueTicketsBaseProvision);
+        setUint(keccak256(abi.encodePacked("node.express.tickets", msg.sender)), rocketDAOProtocolSettingsDeposit.getExpressQueueTicketsBaseProvision());
         // Add node to index
         bytes32 nodeIndexKey = keccak256(abi.encodePacked("nodes.index"));
         addressSetStorage.addItem(nodeIndexKey, msg.sender);
@@ -499,7 +499,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     /// @notice Convenience function to return the megapool address for a node if it is deployed, otherwise null address
     /// @param _nodeAddress Address of the node to query
     function getMegapoolAddress(address _nodeAddress) override external view returns (address) {
-       RocketMegapoolFactoryInterface rocketMegapoolFactory = RocketMegapoolFactoryInterface(getAddress("rocketMegapoolFactory"));
+       RocketMegapoolFactoryInterface rocketMegapoolFactory = RocketMegapoolFactoryInterface(getContractAddress("rocketMegapoolFactory"));
         if (rocketMegapoolFactory.getMegapoolDeployed(_nodeAddress)) {
             return rocketMegapoolFactory.getExpectedAddress(_nodeAddress);
         }

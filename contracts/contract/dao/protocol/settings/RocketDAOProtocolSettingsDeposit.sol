@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import "./RocketDAOProtocolSettings.sol";
-import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
+import {RocketStorageInterface} from "../../../../interface/RocketStorageInterface.sol";
+import {RocketDAOProtocolSettingsDepositInterface} from "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
+import {RocketBase} from "../../../RocketBase.sol";
+import {RocketDAOProtocolSettings} from "./RocketDAOProtocolSettings.sol";
 
 /// @notice Network deposit settings
 contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDAOProtocolSettingsDepositInterface {
@@ -10,15 +12,17 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "deposit") {
         version = 4;
         // Initialize settings on deployment
-        if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
+        if (!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
             setSettingBool("deposit.enabled", false);
             setSettingBool("deposit.assign.enabled", true);
-            setSettingUint("deposit.minimum", 0.01 ether);
-            setSettingUint("deposit.pool.maximum", 160 ether);
-            setSettingUint("deposit.assign.maximum", 90);
-            setSettingUint("deposit.assign.socialised.maximum", 2);
-            setSettingUint("deposit.fee", 0.0005 ether);    // Set to approx. 1 day of rewards at 18.25% APR
+            _setSettingUint("deposit.minimum", 0.01 ether);
+            _setSettingUint("deposit.pool.maximum", 160 ether);
+            _setSettingUint("deposit.assign.maximum", 90);
+            _setSettingUint("deposit.assign.socialised.maximum", 2);
+            _setSettingUint("deposit.fee", 0.0005 ether);                // Set to approx. 1 day of rewards at 18.25% APR
+            _setSettingUint("express.queue.rate", 2);                    // RPIP-59
+            _setSettingUint("express.queue.tickets.base.provision", 2);  // RPIP-59
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -29,12 +33,18 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
     /// @param _value The value to set it to
     function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
         // Some safety guards for certain settings
-        if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
-            if(keccak256(abi.encodePacked(_settingPath)) == keccak256(abi.encodePacked("deposit.fee"))) {
-                require(_value < 0.01 ether, "Fee must be less than 1%");
-            }
+        bytes32 settingKey = keccak256(bytes(_settingPath));
+        if (settingKey == keccak256(abi.encodePacked("deposit.fee"))) {
+            require(_value < 0.01 ether, "Fee must be less than 1%");
+        } else if (settingKey == keccak256(abi.encodePacked("express.queue.rate"))) {
+            require(_value > 0, "Rate must be greater than 0");
         }
         // Update setting now
+        _setSettingUint(_settingPath, _value);
+    }
+
+    /// @dev Sets a namespaced uint value skipping any guardrails
+    function _setSettingUint(string memory _settingPath, uint256 _value) internal {
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }
 
@@ -73,4 +83,14 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
         return getSettingUint("deposit.fee");
     }
 
+    /// @notice Returns the rate at which the express queue processes over the normal queue
+    function getExpressQueueRate() override external view returns (uint256) {
+        return getSettingUint("express.queue.rate");
+    }
+
+    /// @notice Returns the number of express queue tickets a new node operator receives
+    function getExpressQueueTicketsBaseProvision() override external view returns (uint256) {
+        return getSettingUint("express.queue.tickets.base.provision");
+    }
 }
+

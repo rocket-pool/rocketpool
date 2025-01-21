@@ -37,27 +37,17 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     /// @dev Accept incoming ETH from the deposit pool
     receive() external payable onlyLatestContract("rocketDepositPool", msg.sender) {}
 
-    /// @notice Returns the `base_bond_array` cumulative array of bond requirements for number of validators
-    function getBaseBondArray() override public pure returns (uint256[] memory) {
-        uint256[] memory amounts = new uint256[](2);
-        amounts[0] = 4 ether;
-        amounts[1] = 8 ether;
-        return amounts;
-    }
-
-    /// @notice Returns the `reduced_bond` parameter
-    function getReducedBond() override public pure returns (uint256) {
-        // TODO: Parameterise this value
-        return 4 ether;
-    }
-
     /// @notice Returns the bond requirement for the given number of validators
     function getBondRequirement(uint256 _numValidators) override public view returns (uint256) {
-        uint256[] memory baseBondArray = getBaseBondArray();
+        // Get contracts
+        RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
+        // Calculate bond requirement
+        uint256[] memory baseBondArray = rocketDAOProtocolSettingsNode.getBaseBondArray();
         if (_numValidators < baseBondArray.length) {
             return baseBondArray[_numValidators];
         }
-        return baseBondArray[baseBondArray.length - 1] + (1 + _numValidators - baseBondArray.length) * getReducedBond();
+        uint256 reducedBond = rocketDAOProtocolSettingsNode.getReducedBond();
+        return baseBondArray[baseBondArray.length - 1] + (1 + _numValidators - baseBondArray.length) * reducedBond;
     }
 
     /// @notice Returns a node operator's credit balance in wei

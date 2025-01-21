@@ -10,4 +10,6 @@ interface RocketDAOProtocolSettingsDepositInterface {
     function getMaximumDepositAssignments() external view returns (uint256);
     function getMaximumDepositSocialisedAssignments() external view returns (uint256);
     function getDepositFee() external view returns (uint256);
+    function getExpressQueueRate() external view returns (uint256);
+    function getExpressQueueTicketsBaseProvision() external view returns (uint256);
 }

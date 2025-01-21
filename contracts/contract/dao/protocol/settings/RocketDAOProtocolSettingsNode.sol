@@ -21,8 +21,9 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
             setSettingBool("node.smoothing.pool.registration.enabled", true);
             setSettingBool("node.deposit.enabled", false);
             setSettingBool("node.vacant.minipools.enabled", false);
-            setSettingUint("node.per.minipool.stake.minimum", 0.1 ether);      // 10% of user ETH value (matched ETH)
-            setSettingUint("node.per.minipool.stake.maximum", 1.5 ether);      // 150% of node ETH value (provided ETH)
+            _setSettingUint("node.per.minipool.stake.minimum", 0.1 ether);      // 10% of user ETH value (matched ETH)
+            _setSettingUint("node.per.minipool.stake.maximum", 1.5 ether);      // 150% of node ETH value (provided ETH)
+            _setSettingUint("reduced.bond", 4 ether);                           // RPIP-42
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -38,6 +39,11 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
             return;
         }
         // Update setting now
+        _setSettingUint(_settingPath, _value);
+    }
+
+    /// @dev Sets a namespaced uint value skipping any guardrails
+    function _setSettingUint(string memory _settingPath, uint256 _value) internal {
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }
 
@@ -76,5 +82,18 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
         bytes32 settingKey = keccak256(bytes("node.voting.power.stake.maximum"));
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         return uint256(rocketNetworkSnapshots.latestValue(settingKey));
+    }
+
+    /// @notice Returns the `reduced_bond` variable used in bond requirements calculation
+    function getReducedBond() override external view returns (uint256) {
+        return getSettingUint("reduced.bond");
+    }
+
+    /// @notice Returns the `base_bond_array` cumulative array of bond requirements for number of validators
+    function getBaseBondArray() override public view returns (uint256[] memory) {
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 4 ether;
+        amounts[1] = 8 ether;
+        return amounts;
     }
 }

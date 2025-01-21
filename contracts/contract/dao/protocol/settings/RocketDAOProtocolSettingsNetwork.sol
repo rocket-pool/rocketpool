@@ -13,24 +13,23 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
-            setSettingUint("network.consensus.threshold", 0.51 ether);      // 51%
+            _setSettingUint("network.consensus.threshold", 0.51 ether);      // 51%
             setSettingBool("network.submit.balances.enabled", true);
-            setSettingUint("network.submit.balances.frequency", 1 days);    
+            _setSettingUint("network.submit.balances.frequency", 1 days);
             setSettingBool("network.submit.prices.enabled", true);
-            setSettingUint("network.submit.prices.frequency", 1 days);      
-            setSettingUint("network.node.fee.minimum", 0.15 ether);         // 15%
-            setSettingUint("network.node.fee.target", 0.15 ether);          // 15%
-            setSettingUint("network.node.fee.maximum", 0.15 ether);         // 15%
-            setSettingUint("network.node.fee.demand.range", 160 ether);
-            setSettingUint("network.reth.collateral.target", 0.1 ether);
-            setSettingUint("network.penalty.threshold", 0.51 ether);       // Consensus for penalties requires 51% vote
-            setSettingUint("network.penalty.per.rate", 0.1 ether);         // 10% per penalty
+            _setSettingUint("network.submit.prices.frequency", 1 days);
+            _setSettingUint("network.node.fee.minimum", 0.15 ether);         // 15%
+            _setSettingUint("network.node.fee.target", 0.15 ether);          // 15%
+            _setSettingUint("network.node.fee.maximum", 0.15 ether);         // 15%
+            _setSettingUint("network.node.fee.demand.range", 160 ether);
+            _setSettingUint("network.reth.collateral.target", 0.1 ether);
+            _setSettingUint("network.penalty.threshold", 0.51 ether);       // Consensus for penalties requires 51% vote
+            _setSettingUint("network.penalty.per.rate", 0.1 ether);         // 10% per penalty
             setSettingBool("network.submit.rewards.enabled", true);        // Enable reward submission
-            // RPIP-49 UARS parameters (skip guardrails for initial setup)
-            setUint(keccak256(abi.encodePacked(settingNameSpace,"network.node.commission.share")), 0.05 ether);                        // 5%
-            setUint(keccak256(abi.encodePacked(settingNameSpace,"network.node.commission.share.security.council.adder")), 0 ether);    // 0%
-            setUint(keccak256(abi.encodePacked(settingNameSpace,"network.voter.share")), 0.09 ether);                                  // 9%
-            setUint(keccak256(abi.encodePacked(settingNameSpace,"network.max.node.commission.share.council.adder")), 0.01 ether);      // 1%
+            _setSettingUint("network.node.commission.share", 0.05 ether);                        // 5%
+            _setSettingUint("network.node.commission.share.security.council.adder", 0 ether);    // 0%
+            _setSettingUint("network.voter.share", 0.09 ether);                                  // 9%
+            _setSettingUint("network.max.node.commission.share.council.adder", 0.01 ether);      // 1%
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -65,7 +64,7 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             voterShareModified = true;
         }
         // Update setting now
-        setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
+        _setSettingUint(_settingPath, _value);
         // Check for changes to UARS parameters
         if (voterShareModified || nodeShareModified) {
             // Check rETH commission invariant
@@ -79,6 +78,11 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
                 rocketNetworkRevenues.setNodeShare(getEffectiveNodeShare());
             }
         }
+    }
+
+    /// @dev Sets a namespaced uint value skipping any guardrails
+    function _setSettingUint(string memory _settingPath, uint256 _value) internal {
+        setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }
 
     function getMaxNodeShareSecurityCouncilAdder() override public view returns (uint256) {

@@ -403,8 +403,10 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             return (address(0x0), false);
         }
 
+        // Get contracts
         LinkedListStorageInterface linkedListStorage = LinkedListStorageInterface(getContractAddress("linkedListStorage"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
 
         uint256 expressQueueLength = linkedListStorage.getLength(expressQueueNamespace);
         uint256 standardQueueLength = linkedListStorage.getLength(standardQueueNamespace);
@@ -416,8 +418,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
         uint256 queueIndex = getUint(keccak256("megapool.queue.index"));
 
-        // TODO: Parameterise express_queue_rate
-        uint256 expressQueueRate = 2;
+        uint256 expressQueueRate = rocketDAOProtocolSettingsDeposit.getExpressQueueRate();
 
         bool express = queueIndex % (expressQueueRate + 1) != 0;
         if (express && expressQueueLength == 0) {
@@ -434,7 +435,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         bool assignmentPossible = rocketVault.balanceOf("rocketDepositPool") >= head.requestedValue;
 
         // Check assignments are enabled
-        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
         if (!rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) {
             assignmentPossible = false;
         }
@@ -458,8 +458,8 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         uint256 queueIndex = getUint(keccak256("megapool.queue.index"));
         uint256 nodeBalanceUsed = 0;
 
-        // TODO: Parameterise express_queue_rate
-        uint256 expressQueueRate = 2;
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
+        uint256 expressQueueRate = rocketDAOProtocolSettingsDeposit.getExpressQueueRate();
         uint256 totalSent = 0;
 
         for (uint256 i = 0; i < _count; i++) {
