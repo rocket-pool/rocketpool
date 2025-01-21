@@ -8,7 +8,10 @@ import { shouldRevert } from '../_utils/testing';
 import {
     BeaconStateVerifier,
     MegapoolUpgradeHelper,
-    RocketDAONodeTrustedSettingsMinipool, RocketDepositPool,
+    RocketDAONodeTrustedSettingsMinipool,
+    RocketDAOProtocolSettingsDeposit,
+    RocketDAOProtocolSettingsNetwork,
+    RocketDepositPool,
     RocketMegapoolDelegate,
     RocketMegapoolFactory,
     RocketStorage,
@@ -18,6 +21,8 @@ import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trus
 import { stakeMegapoolValidator } from './scenario-stake';
 import { assertBN } from '../_helpers/bn';
 import { exitQueue } from './scenario-exit-queue';
+import { getDepositSetting } from '../_helpers/settings';
+import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -99,6 +104,31 @@ export default function() {
                 await userDeposit({ from: random, value: '32'.ether });
                 // Set scrub period
                 await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'megapool.dissolve.period', dissolvePeriod, { from: owner });
+            });
+
+            it(printTitle('node', 'can deposit while assignments are disabled and be assigned once enabled again'), async () => {
+                const rocketDepositPool = await RocketDepositPool.deployed();
+                // Disable deposit assignments
+                await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', false, {from: owner});
+                // Deploy a validator
+                await deployMegapool({ from: node });
+                await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                const topBefore = await rocketDepositPool.getQueueTop();
+                assert.equal(topBefore[1], false);
+                // Check the validator is still in the queue
+                const megapool = await getMegapoolForNode(node);
+                const validatorInfoBefore = await megapool.getValidatorInfo(0);
+                assert.equal(validatorInfoBefore.inQueue, true);
+                // Enable assignments
+                await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', true, {from: owner});
+                // Check queue top is now assignable
+                const topAfter = await rocketDepositPool.getQueueTop();
+                assert.equal(topAfter[1], true);
+                // Assign the validator from random user
+                await rocketDepositPool.connect(random).assignMegapools(1);
+                // Check the validator is now assigned
+                const validatorInfoAfter = await megapool.getValidatorInfo(0);
+                assert.equal(validatorInfoAfter.inQueue, false);
             });
 
             it(printTitle('node', 'cannot exit the deposit queue once assigned'), async () => {

@@ -428,10 +428,16 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             express = true;
         }
 
+        // Check if enough value is in the deposit pool to assign the requested value
         bytes32 namespace = getQueueNamespace(express);
         DepositQueueValue memory head = linkedListStorage.peekItem(namespace);
-
         bool assignmentPossible = rocketVault.balanceOf("rocketDepositPool") >= head.requestedValue;
+
+        // Check assignments are enabled
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
+        if (!rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) {
+            assignmentPossible = false;
+        }
 
         return (head.receiver, assignmentPossible);
     }
