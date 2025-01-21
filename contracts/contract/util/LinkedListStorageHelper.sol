@@ -28,9 +28,9 @@ contract LinkedListStorageHelper is LinkedListStorage {
 
     /// @notice Removes an item from a queue. Requires that the item exists in the queue
     /// @param _namespace to be used
-    /// @param _item to be removed from the queue
-    function removeItem(bytes32 _namespace, DepositQueueValue memory _item) public virtual override {
-        return _removeItem(_namespace, _item);
+    /// @param _key to be removed from the queue
+    function removeItem(bytes32 _namespace, DepositQueueKey memory _key) public virtual override {
+        return _removeItem(_namespace, _key);
     }
 
     function packItem(DepositQueueValue memory _item) public pure returns (uint256 packed) {

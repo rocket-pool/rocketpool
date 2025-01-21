@@ -42,9 +42,9 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
 
     /// @notice The index of an item in a queue. Returns 0 if the value is not found
     /// @param _namespace defines the queue to be used
-    /// @param _value the deposit queue value
-    function getIndexOf(bytes32 _namespace, DepositQueueValue memory _value) override external view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked(_namespace, ".index", _value.receiver, _value.validatorId)));
+    /// @param _key the deposit queue value
+    function getIndexOf(bytes32 _namespace, DepositQueueKey memory _key) override external view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked(_namespace, ".index", _key.receiver, _key.validatorId)));
     }
 
     /// @notice Finds an item index in a queue and returns the previous item
@@ -158,16 +158,16 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
 
     /// @notice Removes an item from a queue. Requires that the item exists in the queue
     /// @param _namespace defines the queue to be used
-    /// @param _item to be removed from the queue
-    function removeItem(bytes32 _namespace, DepositQueueValue memory _item) public virtual override onlyLatestContract("linkedListStorage", address(this)) onlyLatestNetworkContract {
-        _removeItem(_namespace, _item);
+    /// @param _key to be removed from the queue
+    function removeItem(bytes32 _namespace, DepositQueueKey memory _key) public virtual override onlyLatestContract("linkedListStorage", address(this)) onlyLatestNetworkContract {
+        _removeItem(_namespace, _key);
     }
 
     /// @notice Internal funciton to remove an item from a queue. Requires that the item exists in the queue
     /// @param _namespace defines the queue to be used
-    /// @param _item to be removed from the queue
-    function _removeItem(bytes32 _namespace, DepositQueueValue memory _item) internal {
-        uint256 index = getUint(keccak256(abi.encodePacked(_namespace, ".index", _item.receiver, _item.validatorId)));
+    /// @param _key to be removed from the queue
+    function _removeItem(bytes32 _namespace, DepositQueueKey memory _key) internal {
+        uint256 index = getUint(keccak256(abi.encodePacked(_namespace, ".index", _key.receiver, _key.validatorId)));
         uint256 data = getUint(keccak256(abi.encodePacked(_namespace, ".data")));
         require(index > 0, "Item does not exist in queue");
         
@@ -194,7 +194,7 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
             data |= prevIndex << endOffset;
         }
 
-        setUint(keccak256(abi.encodePacked(_namespace, ".index", _item.receiver, _item.validatorId)), 0);
+        setUint(keccak256(abi.encodePacked(_namespace, ".index", _key.receiver, _key.validatorId)), 0);
         setUint(keccak256(abi.encodePacked(_namespace, ".next", index)), 0);
         setUint(keccak256(abi.encodePacked(_namespace, ".prev", index)), 0);
 

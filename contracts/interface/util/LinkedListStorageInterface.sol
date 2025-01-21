@@ -10,12 +10,17 @@ struct DepositQueueValue {
     uint32 requestedValue; // in milliether
 }
 
+struct DepositQueueKey {
+    address receiver;      // the address that will receive the requested value
+    uint32 validatorId;    // internal validator id
+}
+
 interface LinkedListStorageInterface {
     function getLength(bytes32 _namespace) external view returns (uint256);
     function getItem(bytes32 _namespace, uint _index) external view returns (DepositQueueValue memory);
     function peekItem(bytes32 _namespace) external view returns (DepositQueueValue memory);
-    function getIndexOf(bytes32 _namespace, DepositQueueValue memory _value) external view returns (uint256);
+    function getIndexOf(bytes32 _namespace, DepositQueueKey memory _key) external view returns (uint256);
     function enqueueItem(bytes32 _namespace, DepositQueueValue memory _value) external;
     function dequeueItem(bytes32 _namespace) external returns (DepositQueueValue memory);
-    function removeItem(bytes32 _namespace, DepositQueueValue memory _value) external;
+    function removeItem(bytes32 _namespace, DepositQueueKey memory _key) external;
 }

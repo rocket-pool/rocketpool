@@ -14,7 +14,6 @@ import "../../interface/token/RocketTokenRETHInterface.sol";
 import {RocketMegapoolProxy} from "./RocketMegapoolProxy.sol";
 import "./RocketMegapoolDelegateBase.sol";
 
-import "hardhat/console.sol";
 import {BeaconStateVerifier} from "../util/BeaconStateVerifier.sol";
 import {RocketNetworkRevenuesInterface} from "../../interface/network/RocketNetworkRevenuesInterface.sol";
 
@@ -84,7 +83,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
 
     /// @notice Removes a validator from the deposit queue
     /// @param _validatorId the validator ID
-    function dequeue(uint32 _validatorId) external onlyLatestContract("rocketNodeDeposit", msg.sender) {
+    function dequeue(uint32 _validatorId) external onlyMegapoolOwner {
         ValidatorInfo memory validator = validators[_validatorId];
         // Validate validator status
         require(validator.inQueue, "Validator must be in queue");
@@ -93,7 +92,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         rocketDepositPool.exitQueue(_validatorId, validator.expressUsed);
         // Decrease total bond used for bond requirement calculations
         nodeBond -= validator.lastRequestedBond;
-        // TODO: Apply an ETH credit of validator.lastRequestedBond
         // Update validator state
         validator.inQueue = false;
         validator.lastRequestedBond = 0;
@@ -338,22 +336,14 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
 
     function _calculateRewards(uint256 _rewards) internal view returns (uint256 nodeRewards, uint256 voterRewards, uint256 rethRewards) {
         RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
-        console.log("lastDistributionBlock %d", lastDistributionBlock);
         (uint256 nodeShare, uint256 voterShare, uint256 rethShare) = rocketNetworkRevenues.calculateSplit(lastDistributionBlock);
-        console.log("%d %d %d", nodeShare, voterShare, rethShare);
         uint256 borrowedPortion = _rewards * userCapital / (nodeCapital + userCapital);
-        console.log("userCapital %d", userCapital);
-        console.log("nodeCapital %d", nodeCapital);
-        console.log("borrowedPortion %d", borrowedPortion);
         rethRewards = rethShare * borrowedPortion / calcBase;
         voterRewards = voterShare * borrowedPortion / calcBase;
         nodeRewards = _rewards - rethRewards - voterRewards;
     }
 
     function getPendingRewards() override public view returns (uint256) {
-        console.log("balance %d", address(this).balance);
-        console.log("refundValue %d", refundValue);
-        console.log("assignedValue %d", assignedValue);
         return
             address(this).balance
             - refundValue

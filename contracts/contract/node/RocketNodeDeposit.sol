@@ -103,7 +103,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
 
     /// @notice Deposits ETH for the given node operator
     /// @param _nodeAddress The address of the node operator to deposit ETH for
-    function depositEthFor(address _nodeAddress) override external payable onlyRegisteredMinipool(_nodeAddress) {
+    function depositEthFor(address _nodeAddress) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(_nodeAddress) {
         // Send the ETH to vault
         uint256 amount = msg.value;
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
@@ -117,7 +117,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     /// @notice Withdraws ETH from a node operator's balance. Must be called from withdrawal address.
     /// @param _nodeAddress Address of the node operator to withdraw from
     /// @param _amount Amount of ETH to withdraw
-    function withdrawEth(address _nodeAddress, uint256 _amount) external onlyRegisteredMinipool(_nodeAddress) {
+    function withdrawEth(address _nodeAddress, uint256 _amount) external onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(_nodeAddress) {
         // Check valid caller
         address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
         require(msg.sender == withdrawalAddress, "Only withdrawal address can withdraw ETH");
@@ -135,7 +135,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         emit DepositFor(_nodeAddress, withdrawalAddress, _amount, block.timestamp);
     }
 
-    /// @notice Accept a node deposit and create a new minipool under the node. Only accepts calls from registered nodes
+    /// @notice Accept a node deposit and create a new validator under the node. Only accepts calls from registered nodes
     /// @param _bondAmount The amount of capital the node operator wants to put up as his bond
     /// @param _useExpressTicket If the express queue should be used 
     /// @param _validatorPubkey Pubkey of the validator the node operator wishes to migrate

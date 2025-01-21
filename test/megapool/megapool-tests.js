@@ -8,7 +8,7 @@ import { shouldRevert } from '../_utils/testing';
 import {
     BeaconStateVerifier,
     MegapoolUpgradeHelper,
-    RocketDAONodeTrustedSettingsMinipool,
+    RocketDAONodeTrustedSettingsMinipool, RocketDepositPool,
     RocketMegapoolDelegate,
     RocketMegapoolFactory,
     RocketStorage,
@@ -17,6 +17,7 @@ import assert from 'assert';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { stakeMegapoolValidator } from './scenario-stake';
 import { assertBN } from '../_helpers/bn';
+import { exitQueue } from './scenario-exit-queue';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -84,6 +85,12 @@ export default function() {
             await shouldRevert(deployMegapool({ from: node }), 'Redeploy worked');
         });
 
+        it(printTitle('node', 'can exit the deposit queue'), async () => {
+            await deployMegapool({ from: node });
+            await nodeDeposit(false, false, { value: '4'.ether, from: node });
+            await exitQueue(node, 0);
+        });
+
         describe('With full deposit pool', () => {
             const dissolvePeriod = (60 * 60 * 24); // 24 hours
 
@@ -92,6 +99,12 @@ export default function() {
                 await userDeposit({ from: random, value: '32'.ether });
                 // Set scrub period
                 await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'megapool.dissolve.period', dissolvePeriod, { from: owner });
+            });
+
+            it(printTitle('node', 'cannot exit the deposit queue once assigned'), async () => {
+                await deployMegapool({ from: node });
+                await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                await shouldRevert(exitQueue(node, 0), 'Was able to exit the deposit queue once assigned', 'Validator must be in queue');
             });
 
             it(printTitle('node', 'can not create a new validator while debt is present'), async () => {
@@ -200,7 +213,6 @@ export default function() {
                         rETH Share: 1 - 0.875 - 0.04375 = 0.08125 ETH
                      */
                     const rewardSplit = await megapool.calculateRewards();
-                    console.log(rewardSplit);
                     assertBN.equal(rewardSplit[0], '0.16875'.ether);
                     assertBN.equal(rewardSplit[1], '0.07875'.ether);
                     assertBN.equal(rewardSplit[2], '0.7525'.ether);
