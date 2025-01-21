@@ -495,4 +495,14 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         setBool(keccak256(abi.encodePacked("node.express.provisioned", _nodeAddress)), true);
         setUint(keccak256(abi.encodePacked("node.express.tickets", _nodeAddress)), tickets);
     }
+
+    /// @notice Convenience function to return the megapool address for a node if it is deployed, otherwise null address
+    /// @param _nodeAddress Address of the node to query
+    function getMegapoolAddress(address _nodeAddress) override external view returns (address) {
+       RocketMegapoolFactoryInterface rocketMegapoolFactory = RocketMegapoolFactoryInterface(getAddress("rocketMegapoolFactory"));
+        if (rocketMegapoolFactory.getMegapoolDeployed(_nodeAddress)) {
+            return rocketMegapoolFactory.getExpectedAddress(_nodeAddress);
+        }
+        return address(0x0);
+    }
 }
