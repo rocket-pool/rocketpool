@@ -1,19 +1,20 @@
 import { afterEach, before, beforeEach, describe, it } from 'mocha';
 import {
-    Artifacts,
-    artifacts, RocketNetworkVoting,
-    RocketNodeManager,
+    artifacts,
+    RocketDAOProtocolSettingsDeposit,
     RocketStorage,
     RocketUpgradeOneDotFour,
 } from '../test/_utils/artifacts';
-import { injectBNHelpers } from '../test/_helpers/bn';
+import { assertBN, injectBNHelpers } from '../test/_helpers/bn';
 import { endSnapShot, globalSnapShot, startSnapShot } from '../test/_utils/snapshotting';
 import { registerNode } from '../test/_helpers/node';
 import { printTitle } from '../test/_utils/formatting';
 import { setDefaultParameters } from '../test/_helpers/defaults';
-import { deployMegapool, nodeDeposit } from '../test/_helpers/megapool';
+import { deployMegapool, getMegapoolForNode, nodeDeposit } from '../test/_helpers/megapool';
 import { deployUpgrade } from './_helpers/upgrade';
 import { setDaoNodeTrustedBootstrapUpgrade } from '../test/dao/scenario-dao-node-trusted-bootstrap';
+import { userDeposit } from '../test/_helpers/deposit';
+import assert from 'assert';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -50,20 +51,44 @@ describe('Test Upgrade', () => {
         await setDefaultParameters();
     });
 
+    beforeEach(async () => {
+        await artifacts.loadFromDeployment(rocketStorageAddress);
+    });
+
     async function executeUpgrade() {
         // Bootstrap add the upgrade contract and execute
-        await setDaoNodeTrustedBootstrapUpgrade('addContract', 'rocketUpgradeOneDotFour', RocketUpgradeOneDotFour.abi, upgradeContract.target, {from: owner});
+        await setDaoNodeTrustedBootstrapUpgrade('addContract', 'rocketUpgradeOneDotFour', RocketUpgradeOneDotFour.abi, upgradeContract.target, { from: owner });
         await upgradeContract.connect(owner).execute();
         // Reload contracts from deployment as some were upgraded
         await artifacts.loadFromDeployment(rocketStorageAddress);
     }
 
+    it(printTitle('upgrade', 'updates expected settings'), async () => {
+        await executeUpgrade();
+
+        const rocketDAOProtocolSettingsDeposit = await RocketDAOProtocolSettingsDeposit.deployed();
+        const rocketStorage = await RocketStorage.deployed();
+
+        // Check socialised assignments value is set to 0
+        assertBN.equal(await rocketDAOProtocolSettingsDeposit.getMaximumDepositSocialisedAssignments(), 0n);
+
+        // Check protocol version string is set to 1.4
+        assert.equal(await rocketStorage.getString(ethers.solidityPackedKeccak256(['string'], ['protocol.version'])), '1.4');
+    });
+
     it(printTitle('node', 'can create megapool and deposit'), async () => {
         await registerNode({ from: node });
+        await userDeposit({ from: random, value: '28'.ether });
 
         await executeUpgrade();
 
         await deployMegapool({ from: node });
         await nodeDeposit(false, false, { value: '4'.ether, from: node });
+
+        const megapool = await getMegapoolForNode(node);
+
+        const validatorInfoAfter = await megapool.getValidatorInfo(0);
+        assert.equal(validatorInfoAfter.active, false);
+        assert.equal(validatorInfoAfter.inQueue, false);
     });
 });
