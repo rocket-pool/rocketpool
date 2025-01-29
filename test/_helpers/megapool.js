@@ -3,7 +3,7 @@ import * as assert from 'assert';
 import {
     artifacts, RocketDAOProtocolSettingsDeposit, RocketDepositPool,
     RocketMegapoolDelegate,
-    RocketMegapoolFactory,
+    RocketMegapoolFactory, RocketMegapoolManager,
     RocketNodeDeposit, RocketNodeManager,
     RocketNodeStaking,
 } from '../_utils/artifacts';
@@ -23,7 +23,7 @@ export async function getValidatorInfo(megapool, index) {
         lastRequestedValue: validatorInfo[2],
         lastRequestedBond: validatorInfo[3],
 
-        active: validatorInfo[4],
+        staked: validatorInfo[4],
         exited: validatorInfo[5],
         inQueue: validatorInfo[6],
         inPrestake: validatorInfo[7],
@@ -51,12 +51,14 @@ export async function nodeDeposit(useExpressTicket, useCredit, txOptions) {
         rocketMegapoolFactory,
         rocketDepositPool,
         rocketDAOProtocolSettingsDeposit,
+        rocketMegapoolManager,
     ] = await Promise.all([
         RocketNodeDeposit.deployed(),
         RocketNodeManager.deployed(),
         RocketMegapoolFactory.deployed(),
         RocketDepositPool.deployed(),
         RocketDAOProtocolSettingsDeposit.deployed(),
+        RocketMegapoolManager.deployed(),
     ]);
 
     // Construct deposit data for prestake
@@ -73,9 +75,10 @@ export async function nodeDeposit(useExpressTicket, useCredit, txOptions) {
         let data = await Promise.all([
             rocketMegapoolFactory.getMegapoolDeployed(txOptions.from.address),
             rocketNodeManager.getExpressTicketCount(txOptions.from.address),
+            rocketMegapoolManager.getValidatorCount(),
         ]).then(
-            ([ deployed, numExpressTickets]) =>
-                ({ deployed, numExpressTickets, numValidators: 0n, assignedValue: 0n, nodeCapital: 0n, userCapital: 0n }),
+            ([ deployed, numExpressTickets, numGlobalValidators]) =>
+                ({ deployed, numExpressTickets, numGlobalValidators, numValidators: 0n, assignedValue: 0n, nodeCapital: 0n, userCapital: 0n }),
         );
 
         if (data.deployed) {
@@ -107,12 +110,14 @@ export async function nodeDeposit(useExpressTicket, useCredit, txOptions) {
 
     // Confirm state changes to node
     const numValidatorsDelta = data2.numValidators - data1.numValidators;
+    const numGlobalValidatorsDelta = data2.numGlobalValidators - data1.numGlobalValidators;
     const numExpressTicketsDelta = data2.numExpressTickets - data1.numExpressTickets;
     const assignedValueDelta = data2.assignedValue - data1.assignedValue;
     const nodeCapitalDelta = data2.nodeCapital - data1.nodeCapital;
     const userCapitalDelta = data2.userCapital - data1.userCapital;
 
     assertBN.equal(numValidatorsDelta, 1n, "Number of validators did not increase by 1");
+    assertBN.equal(numGlobalValidatorsDelta, 1n, "Number of global validators did not increase by 1");
 
     if (useExpressTicket) {
         assertBN.equal(numExpressTicketsDelta, -1n, "Did not consume express ticket");
@@ -141,7 +146,7 @@ export async function nodeDeposit(useExpressTicket, useCredit, txOptions) {
     assertBN.equal(validatorInfo.lastRequestedValue, '32'.ether / milliToWei, "Incorrect validator lastRequestedValue");
     assertBN.equal(validatorInfo.lastRequestedBond, txOptions.value / milliToWei, "Incorrect validator lastRequestedBond");
 
-    assert.equal(validatorInfo.active, false, "Incorrect validator status");
+    assert.equal(validatorInfo.staked, false, "Incorrect validator status");
     assert.equal(validatorInfo.dissolved, false, "Incorrect validator status");
     assert.equal(validatorInfo.exited, false, "Incorrect validator status");
     assert.equal(validatorInfo.expressUsed, useExpressTicket, "Incorrect validator express ticket usage");

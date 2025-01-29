@@ -1,21 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
-pragma abicoder v2;
 
-import "../RocketBase.sol";
-import "../../interface/RocketVaultInterface.sol";
-import "../../interface/deposit/RocketDepositPoolInterface.sol";
-import "../../interface/casper/DepositInterface.sol";
-import "../../interface/megapool/RocketMegapoolDelegateInterface.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
-import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMinipoolInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMegapoolInterface.sol";
-import "../../interface/token/RocketTokenRETHInterface.sol";
-import {RocketMegapoolProxy} from "./RocketMegapoolProxy.sol";
-import "./RocketMegapoolDelegateBase.sol";
-
-import {BeaconStateVerifier} from "../util/BeaconStateVerifier.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
+import {RocketVaultInterface} from "../../interface/RocketVaultInterface.sol";
+import {DepositInterface} from "../../interface/casper/DepositInterface.sol";
+import {RocketDAONodeTrustedSettingsMinipoolInterface} from "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMinipoolInterface.sol";
+import {RocketDAOProtocolSettingsMegapoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMegapoolInterface.sol";
+import {RocketDepositPoolInterface} from "../../interface/deposit/RocketDepositPoolInterface.sol";
+import {RocketMegapoolDelegateInterface} from "../../interface/megapool/RocketMegapoolDelegateInterface.sol";
 import {RocketNetworkRevenuesInterface} from "../../interface/network/RocketNetworkRevenuesInterface.sol";
+import {RocketNodeManagerInterface} from "../../interface/node/RocketNodeManagerInterface.sol";
+import {ValidatorProof, BeaconStateVerifierInterface} from "../../interface/util/BeaconStateVerifierInterface.sol";
+import {IERC20} from "../../interface/util/IERC20.sol";
+import {RocketMegapoolDelegateBase} from "./RocketMegapoolDelegateBase.sol";
+import {RocketMegapoolStorageLayout} from "./RocketMegapoolStorageLayout.sol";
+pragma abicoder v2;
 
 /// @title RocketMegapool
 /// @notice This contract manages multiple validators. It serves as the target of Beacon Chain withdrawal credentials.
@@ -23,7 +22,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     // Constants
     uint256 constant internal prestakeValue = 1 ether;
     uint256 constant internal fullDepositValue = 32 ether;
-    uint256 constant internal milliToWei = 10**15;
+    uint256 constant internal milliToWei = 10 ** 15;
     uint256 constant internal calcBase = 1 ether;
 
     // Events
@@ -69,16 +68,101 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         // Store prestake data
         {
             PrestakeData memory prestake;
-            prestake._depositDataRoot = _depositDataRoot;
             prestake._signature = _validatorSignature;
             prestakeData[validatorId] = prestake;
         }
+        // Compute and verify supplied deposit data root is correct
+        bytes32 depositDataRoot = computeDepositDataRoot(_validatorPubkey, _validatorSignature, uint64(prestakeValue / 1 gwei));
+        require(depositDataRoot == _depositDataRoot, "Invalid deposit data root");
         // Increase total bond used for bond requirement calculations
         nodeBond += _bondAmount;
         // Request full deposit amount from deposit pool
         rocketDepositPool.requestFunds(_bondAmount, validatorId, fullDepositValue, _useExpressTicket);
         // Emit event
         emit MegapoolValidatorEnqueued(address(this), validatorId, block.timestamp);
+    }
+
+    function computeDepositDataRoot(bytes memory pubkey, bytes memory signature, uint64 amount) public view returns (bytes32 ret) {
+        bytes32 withdrawalCredentials = getWithdrawalCredentials();
+        assembly {
+            let result
+            let temp := mload(0x40)
+
+        // [0x00] = pubkey[0x00:0x20]
+        // [0x20] = pubkey[0x20:0x30] . bytes16(0)
+            mstore(0x00, mload(add(pubkey, 0x20)))
+            mstore(0x20, and(mload(add(pubkey, 0x40)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000000000000000000000))
+
+        // temp[0x00] = sha256([0x00:0x40])
+            result := staticcall(84, 0x02, 0x00, 0x40, temp, 0x20)
+            if iszero(result) {
+                revert(0, 0)
+            }
+
+        // temp[0x20] = withdrawal_credentials
+            mstore(add(temp, 0x20), withdrawalCredentials)
+
+        // temp[0x00] = sha256(temp[0x00:0x40])
+            result := staticcall(84, 0x02, temp, 0x40, temp, 0x20)
+            if iszero(result) {
+                revert(0, 0)
+            }
+
+        // temp[0x20] = sha256(signature[0x00:0x40])
+            result := staticcall(84, 0x02, add(signature, 0x20), 0x40, add(temp, 0x20), 0x20)
+            if iszero(result) {
+                revert(0,0)
+            }
+
+        // [0x00] = signature[0x40]
+        // [0x20] = bytes32(0)
+            mstore(0x00, mload(add(signature, 0x60)))
+            mstore(0x20, 0)
+
+        // [0x20] = sha256([0x00:0x40])
+            result := staticcall(84, 0x02, 0x00, 0x40, 0x20, 0x20)
+            if iszero(result) {
+                revert(0, 0)
+            }
+
+        // [0x00] = temp[0x20]
+            mstore(0x00, mload(add(temp, 0x20)))
+
+        // [0x20] = sha256([0x00:0x40])
+            result := staticcall(84, 0x02, 0x00, 0x40, 0x20, 0x20)
+            if iszero(result) {
+                revert(0, 0)
+            }
+
+        // [0x00] = to_little_endian(amount) . bytes24(0)
+            mstore(0x00, 0)
+            mstore8(0x00, shr(0x00, amount))
+            mstore8(0x01, shr(0x08, amount))
+            mstore8(0x02, shr(0x10, amount))
+            mstore8(0x03, shr(0x18, amount))
+            mstore8(0x04, shr(0x20, amount))
+            mstore8(0x05, shr(0x28, amount))
+            mstore8(0x06, shr(0x30, amount))
+            mstore8(0x07, shr(0x38, amount))
+
+        // [0x20] = sha256([0x00:0x40])
+            result := staticcall(84, 0x02, 0x00, 0x40, 0x20, 0x20)
+            if iszero(result) {
+                revert(0, 0)
+            }
+
+        // [0x00] = temp[0x00]
+            mstore(0x00, mload(temp))
+
+        // [0x00] = sha256([0x00:0x40])
+            result := staticcall(84, 0x02, 0x00, 0x40, 0x00, 0x20)
+            if iszero(result) {
+                revert(0, 0)
+            }
+
+        // Return [0x00:0x20]
+            ret := mload(0x00)
+        }
     }
 
     /// @notice Removes a validator from the deposit queue
@@ -116,7 +200,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         // Execute prestake operation
         PrestakeData memory validatorPrestakeData = prestakeData[_validatorId];
         DepositInterface casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
-        casperDeposit.deposit{value: prestakeValue}(validator.pubKey, abi.encodePacked(getWithdrawalCredentials()), validatorPrestakeData._signature, validatorPrestakeData._depositDataRoot);
+        bytes32 depositDataRoot = computeDepositDataRoot(validator.pubKey, validatorPrestakeData._signature, uint64(prestakeValue / 1 gwei));
+        casperDeposit.deposit{value: prestakeValue}(validator.pubKey, abi.encodePacked(getWithdrawalCredentials()), validatorPrestakeData._signature, depositDataRoot);
         // Clean up prestake data
         delete prestakeData[_validatorId];
         // Emit event
@@ -147,7 +232,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         userCapital += uint256(lastRequestedValue - validator.lastRequestedBond) * milliToWei;
         nodeCapital += uint256(validator.lastRequestedBond) * milliToWei;
         // Update validator status
-        validator.active = true;
+        validator.staked = true;
         validator.inPrestake = false;
         validator.lastAssignmentTime = 0;
         validator.lastRequestedBond = 0;
@@ -181,7 +266,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         refundValue += uint256(validator.lastRequestedBond) * milliToWei - prestakeValue;
         // Recycle the ETH
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-        rocketDepositPool.recycleDissolvedDeposit{value : validator.lastRequestedValue - validator.lastRequestedBond}();
+        rocketDepositPool.recycleDissolvedDeposit{value: validator.lastRequestedValue - validator.lastRequestedBond}();
         // TODO: Handle recovery of prestakeValue as part of capital distribution process
     }
 
@@ -297,7 +382,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     }
 
     /// @notice Returns the number of validators created for this megapool
-    function getValidatorCount() override external view returns (uint256) {
+    function getValidatorCount() override external view returns (uint32) {
         return numValidators;
     }
 

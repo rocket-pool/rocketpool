@@ -18,6 +18,7 @@ import "../../interface/node/RocketNodeDepositInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../RocketBase.sol";
+import {RocketMegapoolManagerInterface} from "../../interface/megapool/RocketMegapoolManagerInterface.sol";
 
 /// @notice Entry point for node operators to perform deposits for the creation of new validators on the network
 contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
@@ -188,11 +189,13 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         // Get or deploy a megapool for the caller
         RocketMegapoolFactoryInterface rocketMegapoolFactory = RocketMegapoolFactoryInterface(getContractAddress("rocketMegapoolFactory"));
         RocketMegapoolInterface megapool = RocketMegapoolInterface(rocketMegapoolFactory.getOrDeployContract(msg.sender));
+        RocketMegapoolManagerInterface rocketMegapoolManager = RocketMegapoolManagerInterface(getContractAddress("rocketMegapoolManager"));
         // Check bond requirements
         checkBondRequirement(megapool, _bondAmount);
         checkDebtRequirement(megapool);
         // Request a new validator from the megapool
         megapool.newValidator(_bondAmount, _useExpressTicket, _validatorPubkey, _validatorSignature, _depositDataRoot);
+        rocketMegapoolManager.addValidator(address(megapool), megapool.getValidatorCount());
         // Send node operator's bond to the deposit pool
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         rocketDepositPool.nodeDeposit{value: msg.value}(_bondAmount);

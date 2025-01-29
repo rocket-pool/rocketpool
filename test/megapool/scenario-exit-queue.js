@@ -16,7 +16,7 @@ export async function exitQueue(node, validatorIndex) {
 
     // Check the validator status
     const validatorInfoAfter = await megapool.getValidatorInfo(validatorIndex);
-    assert.equal(validatorInfoAfter.active, false);
+    assert.equal(validatorInfoAfter.staked, false);
     assert.equal(validatorInfoAfter.inQueue, false);
 
     // Check an ETH credit was applied

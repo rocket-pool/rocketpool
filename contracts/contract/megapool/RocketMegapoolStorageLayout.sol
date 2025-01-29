@@ -28,7 +28,7 @@ abstract contract RocketMegapoolStorageLayout {
         uint32 lastRequestedValue;  // Value in milliether last requested
         uint32 lastRequestedBond;   // Value in milliether of the bond supplied for last request for funds
 
-        bool active;        // Whether the validator is actively validating on the beacon chain
+        bool staked;        // Whether the validator has staked the minimum required to begin validating (32 ETH)
         bool exited;        // Whether the validator has exited the beacon chain
         bool inQueue;       // Whether the validator is currently awaiting funds from the deposit pool
         bool inPrestake;    // Whether the validator is currently awaiting the stake operation
@@ -39,7 +39,6 @@ abstract contract RocketMegapoolStorageLayout {
     // Extra data temporarily stored for prestake operation
     struct PrestakeData {
         bytes _signature;
-        bytes32 _depositDataRoot;
     }
 
     //
@@ -61,7 +60,7 @@ abstract contract RocketMegapoolStorageLayout {
     //
 
     address internal nodeAddress;     // Megapool owner
-    uint256 internal numValidators;   // Number of individual validators handled by this megapool
+    uint32 internal numValidators;    // Number of individual validators handled by this megapool
 
     uint256 internal assignedValue;   // ETH assigned from DP pending prestake/stake
     uint256 internal refundValue;     // ETH refunded to the owner after a dissolution

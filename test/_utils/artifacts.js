@@ -130,6 +130,7 @@ export const SnapshotTest = artifacts.require('SnapshotTest');
 export const RocketMegapoolFactory = artifacts.require('RocketMegapoolFactory');
 export const RocketMegapoolDelegate = artifacts.require('RocketMegapoolDelegate');
 export const RocketMegapoolProxy = artifacts.require('RocketMegapoolProxy');
+export const RocketMegapoolManager = artifacts.require('RocketMegapoolManager');
 export const RocketMinipoolFactory = artifacts.require('RocketMinipoolFactory');
 export const RocketMinipoolBase = artifacts.require('RocketMinipoolBase');
 export const RocketMinipoolQueue = artifacts.require('RocketMinipoolQueue');

@@ -22,6 +22,7 @@ contract RocketUpgradeOneDotFour is RocketBase {
     address public rocketMegapoolDelegate;
     address public rocketMegapoolFactory;
     address public rocketMegapoolProxy;
+    address public rocketMegapoolManager;
     address public rocketNodeManager;
     address public rocketNodeDeposit;
     address public rocketNodeStaking;
@@ -41,6 +42,7 @@ contract RocketUpgradeOneDotFour is RocketBase {
     string public rocketMegapoolDelegateAbi;
     string public rocketMegapoolFactoryAbi;
     string public rocketMegapoolProxyAbi;
+    string public rocketMegapoolManagerAbi;
     string public rocketNodeManagerAbi;
     string public rocketNodeDepositAbi;
     string public rocketNodeStakingAbi;
@@ -81,39 +83,41 @@ contract RocketUpgradeOneDotFour is RocketBase {
         rocketMegapoolDelegate = _addresses[0];
         rocketMegapoolFactory = _addresses[1];
         rocketMegapoolProxy = _addresses[2];
-        rocketNodeManager = _addresses[3];
-        rocketNodeDeposit = _addresses[4];
-        rocketNodeStaking = _addresses[5];
-        rocketDepositPool = _addresses[6];
-        linkedListStorage = _addresses[7];
-        rocketDAOProtocolSettingsNode = _addresses[8];
-        rocketDAOProtocolSettingsDeposit = _addresses[9];
-        rocketDAOProtocolSettingsNetwork = _addresses[10];
-        rocketDAOProtocolSettingsSecurity = _addresses[11];
-        rocketDAOSecurityProposals = _addresses[12];
-        rocketNetworkRevenues = _addresses[13];
-        rocketNetworkSnapshots = _addresses[14];
-        blockRoots = _addresses[15];
-        beaconStateVerifier = _addresses[16];
+        rocketMegapoolManager = _addresses[3];
+        rocketNodeManager = _addresses[4];
+        rocketNodeDeposit = _addresses[5];
+        rocketNodeStaking = _addresses[6];
+        rocketDepositPool = _addresses[7];
+        linkedListStorage = _addresses[8];
+        rocketDAOProtocolSettingsNode = _addresses[9];
+        rocketDAOProtocolSettingsDeposit = _addresses[10];
+        rocketDAOProtocolSettingsNetwork = _addresses[11];
+        rocketDAOProtocolSettingsSecurity = _addresses[12];
+        rocketDAOSecurityProposals = _addresses[13];
+        rocketNetworkRevenues = _addresses[14];
+        rocketNetworkSnapshots = _addresses[15];
+        blockRoots = _addresses[16];
+        beaconStateVerifier = _addresses[17];
 
         // Set ABIs
         rocketMegapoolDelegateAbi = _abis[0];
         rocketMegapoolFactoryAbi = _abis[1];
         rocketMegapoolProxyAbi = _abis[2];
-        rocketNodeManagerAbi = _abis[3];
-        rocketNodeDepositAbi = _abis[4];
-        rocketNodeStakingAbi = _abis[5];
-        rocketDepositPoolAbi = _abis[6];
-        linkedListStorageAbi = _abis[7];
-        rocketDAOProtocolSettingsNodeAbi = _abis[8];
-        rocketDAOProtocolSettingsDepositAbi = _abis[9];
-        rocketDAOProtocolSettingsNetworkAbi = _abis[10];
-        rocketDAOProtocolSettingsSecurityAbi = _abis[11];
-        rocketDAOSecurityProposalsAbi = _abis[12];
-        rocketNetworkRevenuesAbi = _abis[13];
-        rocketNetworkSnapshotsAbi = _abis[14];
-        blockRootsAbi = _abis[15];
-        beaconStateVerifierAbi = _abis[16];
+        rocketMegapoolManagerAbi = _abis[3];
+        rocketNodeManagerAbi = _abis[4];
+        rocketNodeDepositAbi = _abis[5];
+        rocketNodeStakingAbi = _abis[6];
+        rocketDepositPoolAbi = _abis[7];
+        linkedListStorageAbi = _abis[8];
+        rocketDAOProtocolSettingsNodeAbi = _abis[9];
+        rocketDAOProtocolSettingsDepositAbi = _abis[10];
+        rocketDAOProtocolSettingsNetworkAbi = _abis[11];
+        rocketDAOProtocolSettingsSecurityAbi = _abis[12];
+        rocketDAOSecurityProposalsAbi = _abis[13];
+        rocketNetworkRevenuesAbi = _abis[14];
+        rocketNetworkSnapshotsAbi = _abis[15];
+        blockRootsAbi = _abis[16];
+        beaconStateVerifierAbi = _abis[17];
     }
 
     /// @notice Prevents further changes from being applied
@@ -131,6 +135,7 @@ contract RocketUpgradeOneDotFour is RocketBase {
         _addContract("rocketMegapoolDelegate", rocketMegapoolDelegate, rocketMegapoolDelegateAbi);
         _addContract("rocketMegapoolFactory", rocketMegapoolFactory, rocketMegapoolFactoryAbi);
         _addContract("rocketMegapoolProxy", rocketMegapoolProxy, rocketMegapoolProxyAbi);
+        _addContract("rocketMegapoolManager", rocketMegapoolManager, rocketMegapoolManagerAbi);
         _addContract("linkedListStorage", linkedListStorage, linkedListStorageAbi);
         _addContract("rocketNetworkRevenues", rocketNetworkRevenues, rocketNetworkRevenuesAbi);
         _addContract("blockRoots", blockRoots, blockRootsAbi);

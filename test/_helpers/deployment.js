@@ -105,6 +105,7 @@ const networkContracts = {
     // v1.4
     rocketMegapoolFactory: artifacts.require('RocketMegapoolFactory'),
     rocketMegapoolProxy: artifacts.require('RocketMegapoolProxy'),
+    rocketMegapoolManager: artifacts.require('RocketMegapoolManager'),
     rocketMegapoolDelegate: artifacts.require('RocketMegapoolDelegate'),
     rocketNetworkRevenues: artifacts.require('RocketNetworkRevenues'),
     // Utils
