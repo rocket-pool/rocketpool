@@ -130,7 +130,7 @@ export default function() {
 
         it(printTitle('random address', 'can assign deposits'), async () => {
             // Assign deposits with no assignable deposits
-            await assignDeposits({
+            await assignDeposits(1n, {
                 from: staker,
             });
             // Disable deposit assignment
@@ -150,7 +150,7 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.maximum', 3, { from: owner });
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.socialised.maximum', 3, { from: owner });
             // Assign deposits with assignable deposits
-            await assignDeposits({
+            await assignDeposits(1n, {
                 from: staker,
             });
         });
@@ -160,7 +160,7 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', false, { from: owner });
 
             // Attempt to assign deposits
-            await shouldRevert(assignDeposits({
+            await shouldRevert(assignDeposits(1n, {
                 from: staker,
             }), 'Assigned deposits while deposit assignment is disabled');
         });

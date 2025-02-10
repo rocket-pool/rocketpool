@@ -197,8 +197,8 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
         // Send node operator's bond to the deposit pool
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         rocketDepositPool.nodeDeposit{value: _value}(_bondAmount);
-        // Attempt to assign 1 megapool
-        rocketDepositPool.maybeAssignOneDeposit();
+        // Attempt to assign 1 minipool/megapool
+        rocketDepositPool.maybeAssignDeposits(1);
     }
 
     /// @notice Called by minipools during bond reduction to increase the amount of ETH the node operator has

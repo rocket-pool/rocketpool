@@ -280,7 +280,7 @@ export default function() {
                 const topAfter = await rocketDepositPool.getQueueTop();
                 assert.equal(topAfter[1], true);
                 // Assign the validator from random user
-                await rocketDepositPool.connect(random).assignMegapools(1);
+                await rocketDepositPool.connect(random).assignDeposits(1);
                 // Check the validator is now assigned
                 const validatorInfoAfter = await megapool.getValidatorInfo(0);
                 assert.equal(validatorInfoAfter.inQueue, false);

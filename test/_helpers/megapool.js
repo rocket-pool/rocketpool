@@ -77,9 +77,11 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
             rocketMegapoolFactory.getMegapoolDeployed(node.address),
             rocketNodeManager.getExpressTicketCount(node.address),
             rocketMegapoolManager.getValidatorCount(),
+            rocketDepositPool.getExpressQueueLength(),
+            rocketDepositPool.getStandardQueueLength(),
         ]).then(
-            ([ deployed, numExpressTickets, numGlobalValidators]) =>
-                ({ deployed, numExpressTickets, numGlobalValidators, numValidators: 0n, assignedValue: 0n, nodeCapital: 0n, userCapital: 0n }),
+            ([ deployed, numExpressTickets, numGlobalValidators, expressQueueLength, standardQueueLength]) =>
+                ({ deployed, numExpressTickets, numGlobalValidators, expressQueueLength, standardQueueLength, numValidators: 0n, assignedValue: 0n, nodeCapital: 0n, userCapital: 0n }),
         );
 
         if (data.deployed) {
@@ -125,14 +127,24 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     const assignedValueDelta = data2.assignedValue - data1.assignedValue;
     const nodeCapitalDelta = data2.nodeCapital - data1.nodeCapital;
     const userCapitalDelta = data2.userCapital - data1.userCapital;
+    const expressQueueLengthDelta = data2.expressQueueLength - data1.expressQueueLength;
+    const standardQueueLengthDelta = data2.standardQueueLength - data1.standardQueueLength;
 
     assertBN.equal(numValidatorsDelta, 1n, "Number of validators did not increase by 1");
     assertBN.equal(numGlobalValidatorsDelta, 1n, "Number of global validators did not increase by 1");
 
     if (useExpressTicket) {
         assertBN.equal(numExpressTicketsDelta, -1n, "Did not consume express ticket");
+        if (!expectAssignment) {
+            assertBN.equal(expressQueueLengthDelta, 1n, "Express queue did not grow by 1");
+            assertBN.equal(standardQueueLengthDelta, 0n, "Standard queue grew");
+        }
     } else {
         assertBN.equal(numExpressTicketsDelta, 0n, "Express ticket count incorrect");
+        if (!expectAssignment) {
+            assertBN.equal(expressQueueLengthDelta, 0n, "Express queue grew");
+            assertBN.equal(standardQueueLengthDelta, 1n, "Standard queue did not grow by 1");
+        }
     }
 
     // Confirm state of new validator

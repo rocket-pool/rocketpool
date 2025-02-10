@@ -14,14 +14,16 @@ interface RocketDepositPoolInterface {
     function recycleDissolvedDeposit() external payable;
     function recycleExcessCollateral() external payable;
     function recycleLiquidatedStake() external payable;
-    function assignDeposits() external;
-    function maybeAssignOneDeposit() external;
-    function maybeAssignDeposits() external returns (bool);
+    function maybeAssignDeposits(uint256 _max) external;
+    function assignDeposits(uint256 _max) external;
     function withdrawExcessBalance(uint256 _amount) external;
     function requestFunds(uint256 _bondAmount, uint32 _validatorId, uint256 _amount, bool _useExpressTicket) external;
     function exitQueue(uint32 _validatorId, bool _expressQueue) external;
     function withdrawCredit(uint256 _amount) external;
     function getQueueTop() external view returns (address receiver, bool assignmentPossible, uint256 headMovedBlock);
-    function assignMegapools(uint256 _count) external;
     function getQueueIndex() external view returns (uint256);
+    function getMinipoolQueueLength() external view returns (uint256);
+    function getExpressQueueLength() external view returns (uint256);
+    function getStandardQueueLength() external view returns (uint256);
+    function getTotalQueueLength() external view returns (uint256);
 }
