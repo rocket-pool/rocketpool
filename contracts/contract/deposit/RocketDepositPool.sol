@@ -231,7 +231,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         uint256 minipoolQueueLength = addressQueueStorage.getLength(queueKeyVariable);
         if (minipoolQueueLength > 0) {
             if (minipoolQueueLength >= _max) {
-                _assignMinipools(minipoolQueueLength, _rocketDAOProtocolSettingsDeposit);
+                _assignMinipools(_max, _rocketDAOProtocolSettingsDeposit);
                 return;
             } else {
                 _max -= minipoolQueueLength;
