@@ -16,7 +16,6 @@ import {IERC20} from "../../interface/util/IERC20.sol";
 import {RocketMegapoolDelegateBase} from "./RocketMegapoolDelegateBase.sol";
 import {RocketMegapoolStorageLayout} from "./RocketMegapoolStorageLayout.sol";
 
-/// @title RocketMegapool
 /// @notice This contract manages multiple validators. It serves as the target of Beacon Chain withdrawal credentials.
 contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDelegateInterface {
     // Constants
@@ -95,7 +94,9 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         rocketDepositPool.exitQueue(_validatorId, validator.expressUsed);
         // Decrease total bond used for bond requirement calculations
-        nodeBond -= validator.lastRequestedBond;
+        nodeBond -= validator.lastRequestedBond * milliToWei;
+        // Increment inactive validator count
+        numInactiveValidators++;
         // Update validator state
         validator.inQueue = false;
         validator.lastRequestedBond = 0;
@@ -329,6 +330,11 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         return numValidators;
     }
 
+    /// @notice Returns the number of validators that are considered for bond requirement
+    function getActiveValidatorCount() override external view returns (uint32) {
+        return numValidators - numInactiveValidators;
+    }
+
     /// @notice Returns information about a given validator
     function getValidatorInfo(uint32 _validatorId) override external view returns (RocketMegapoolStorageLayout.ValidatorInfo memory) {
         return validators[_validatorId];
@@ -366,13 +372,13 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         return _calculateRewards(_amount);
     }
 
-    function _calculateRewards(uint256 _rewards) internal view returns (uint256 nodeAmount, uint256 voterAmount, uint256 rethAmount) {
+    function _calculateRewards(uint256 _rewards) internal view returns (uint256 nodeRewards, uint256 voterRewards, uint256 rethRewards) {
         RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
         (, uint256 voterShare, uint256 rethShare) = rocketNetworkRevenues.calculateSplit(lastDistributionBlock);
         uint256 borrowedPortion = _rewards * userCapital / (nodeCapital + userCapital);
-        rethAmount = rethShare * borrowedPortion / calcBase;
-        voterAmount = voterShare * borrowedPortion / calcBase;
-        nodeAmount = _rewards - rethAmount - voterAmount;
+        rethRewards = rethShare * borrowedPortion / calcBase;
+        voterRewards = voterShare * borrowedPortion / calcBase;
+        nodeRewards = _rewards - rethRewards - voterRewards;
     }
 
     function getPendingRewards() override public view returns (uint256) {

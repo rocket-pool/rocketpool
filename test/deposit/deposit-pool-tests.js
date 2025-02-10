@@ -115,7 +115,7 @@ export default function() {
             }), 'Made a deposit which exceeds the maximum deposit pool size');
             // Perform 4 node deposits so there is 16 ETH space available for user deposits
             for (let i = 0; i < 4; ++i) {
-                await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                await nodeDeposit(node);
             }
             // Attempt deposit
             await deposit({
@@ -143,7 +143,7 @@ export default function() {
             // Deposit and queue up some validators
             await userDeposit({ from: staker, value: '100'.ether });
             for (let i = 0; i < 3; ++i) {
-                await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                await nodeDeposit(node);
             }
             // Re-enable deposit assignment & set limit
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', true, { from: owner });
@@ -183,7 +183,7 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', false, { from: owner });
             // Create 4 validators totally 112 ETH extra capacity
             for (let i = 0; i < 4; ++i) {
-                await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                await nodeDeposit(node);
             }
             // Enable assignments to make that extra capacity usable
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', true, { from: owner });

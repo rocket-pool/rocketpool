@@ -80,10 +80,8 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
 
     /// @notice Calculates the time-weighted average revenue split values between the supplied block number and now
     /// @param _sinceBlock The starting block number for the calculation
-    function calculateSplit(uint256 _sinceBlock) external override view returns (uint256, uint256, uint256) {
+    function calculateSplit(uint256 _sinceBlock) external override view returns (uint256 nodeShare, uint256 voterShare, uint256 rethShare) {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
-        uint256 nodeShare;
-        uint256 voterShare;
         if (_sinceBlock == block.number) {
             nodeShare = _getCurrentShare(rocketNetworkSnapshots, nodeShareKey);
             voterShare = _getCurrentShare(rocketNetworkSnapshots, voterShareKey);
@@ -103,7 +101,7 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
             voterShare *= shareScale;
         }
         uint256 rethCommission = nodeShare + voterShare;
-        uint256 rethShare = 1 ether - rethCommission;
+        rethShare = 1 ether - rethCommission;
         return (nodeShare, voterShare, rethShare);
     }
 

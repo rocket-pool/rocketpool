@@ -32,12 +32,12 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
 
     /// @notice Returns validator info for the given global megapool validator index
     /// @param _index The index of the validator to query
-    function getValidatorInfo(uint256 _index) override external view returns (RocketMegapoolStorageLayout.ValidatorInfo memory, address, uint32) {
+    function getValidatorInfo(uint256 _index) override external view returns (RocketMegapoolStorageLayout.ValidatorInfo memory validatorInfo, address megapool, uint32 validatorId) {
         uint256 encoded = getUint(keccak256(abi.encodePacked("megapool.validator.set", _index)));
-        address megapoolAddress = address(uint160(encoded >> 96));
-        uint32 validatorId = uint32(encoded);
+        megapool = address(uint160(encoded >> 96));
+        validatorId = uint32(encoded);
 
-        RocketMegapoolInterface rocketMegapool = RocketMegapoolInterface(megapoolAddress);
-        return (rocketMegapool.getValidatorInfo(validatorId), megapoolAddress, validatorId);
+        RocketMegapoolInterface rocketMegapool = RocketMegapoolInterface(megapool);
+        return (rocketMegapool.getValidatorInfo(validatorId), megapool, validatorId);
     }
 }

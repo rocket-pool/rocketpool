@@ -24,5 +24,5 @@ interface LinkedListStorageInterface {
     function enqueueItem(bytes32 _namespace, DepositQueueValue memory _value) external;
     function dequeueItem(bytes32 _namespace) external returns (DepositQueueValue memory);
     function removeItem(bytes32 _namespace, DepositQueueKey memory _key) external;
-    function scan(bytes32 _namespace, uint256 _startIndex, uint256 _count) external view returns (DepositQueueValue[] memory, uint256 nextIndex);
+    function scan(bytes32 _namespace, uint256 _startIndex, uint256 _count) external view returns (DepositQueueValue[] memory entries, uint256 nextIndex);
 }

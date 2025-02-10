@@ -137,7 +137,7 @@ export async function setDaoNodeTrustedBootstrapUpgrade(_type, _name, _abi, _con
     let contract1 = await getContractData();
 
     // Upgrade contract
-    await rocketDAONodeTrusted.connect(txOptions.from).bootstrapUpgrade(_type, _name, compressedAbi, _contractAddress, txOptions);
+    await (await rocketDAONodeTrusted.connect(txOptions.from).bootstrapUpgrade(_type, _name, compressedAbi, _contractAddress, txOptions)).wait();
 
     // Get updated contract data
     let contract2 = await getContractData();

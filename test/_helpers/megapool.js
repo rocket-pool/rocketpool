@@ -44,7 +44,7 @@ export async function deployMegapool(txOptions) {
     assert.equal(existsAfter, true, "Megapool was not created");
 }
 
-export async function nodeDeposit(useExpressTicket, useCredit, txOptions) {
+export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket = false, creditAmount = '0'.ether) {
     const [
         rocketNodeDeposit,
         rocketNodeManager,
@@ -62,7 +62,7 @@ export async function nodeDeposit(useExpressTicket, useCredit, txOptions) {
     ]);
 
     // Construct deposit data for prestake
-    let withdrawalCredentials = await getMegapoolWithdrawalCredentials(txOptions.from.address);
+    let withdrawalCredentials = await getMegapoolWithdrawalCredentials(node.address);
     let depositData = {
         pubkey: getValidatorPubkey(),
         withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
@@ -70,11 +70,12 @@ export async function nodeDeposit(useExpressTicket, useCredit, txOptions) {
         signature: getValidatorSignature(),
     };
     let depositDataRoot = getDepositDataRoot(depositData);
+    let usingCredit = creditAmount > 0n;
 
     async function getData() {
         let data = await Promise.all([
-            rocketMegapoolFactory.getMegapoolDeployed(txOptions.from.address),
-            rocketNodeManager.getExpressTicketCount(txOptions.from.address),
+            rocketMegapoolFactory.getMegapoolDeployed(node.address),
+            rocketNodeManager.getExpressTicketCount(node.address),
             rocketMegapoolManager.getValidatorCount(),
         ]).then(
             ([ deployed, numExpressTickets, numGlobalValidators]) =>
@@ -82,7 +83,7 @@ export async function nodeDeposit(useExpressTicket, useCredit, txOptions) {
         );
 
         if (data.deployed) {
-            const megapool = (await getMegapoolForNode(txOptions.from));
+            const megapool = (await getMegapoolForNode(node));
             data.numValidators = await megapool.getValidatorCount();
             data.assignedValue = await megapool.getAssignedValue();
             data.nodeCapital = await megapool.getNodeCapital();
@@ -96,11 +97,20 @@ export async function nodeDeposit(useExpressTicket, useCredit, txOptions) {
 
     const assignmentsEnabled = await rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled();
     const depositPoolCapacity = await rocketDepositPool.getBalance();
-    const amountRequired = '32'.ether - txOptions.value;
+    const amountRequired = '32'.ether - bondAmount;
     const expectAssignment = assignmentsEnabled && depositPoolCapacity >= amountRequired;
 
-    const tx = await rocketNodeDeposit.connect(txOptions.from).deposit(txOptions.value, useExpressTicket, depositData.pubkey, depositData.signature, depositDataRoot, txOptions);
-    await tx.wait();
+    if (!usingCredit) {
+        const tx = await rocketNodeDeposit.connect(node).deposit(bondAmount, useExpressTicket, depositData.pubkey, depositData.signature, depositDataRoot, {value: bondAmount});
+        await tx.wait();
+    } else {
+        const creditBefore = await rocketNodeDeposit.getNodeUsableCreditAndBalance(node.address);
+        const tx = await rocketNodeDeposit.connect(node).depositWithCredit(bondAmount, useExpressTicket, depositData.pubkey, depositData.signature, depositDataRoot, {value: bondAmount - creditAmount});
+        await tx.wait();
+        const creditAfter = await rocketNodeDeposit.getNodeUsableCreditAndBalance(node.address);
+        const creditDelta = creditAfter - creditBefore;
+        assertBN.equal(creditDelta, -creditAmount);
+    }
 
     const data2 = await getData();
 
@@ -126,7 +136,7 @@ export async function nodeDeposit(useExpressTicket, useCredit, txOptions) {
     }
 
     // Confirm state of new validator
-    const megapool = await getMegapoolForNode(txOptions.from);
+    const megapool = await getMegapoolForNode(node);
     const validatorInfo = await getValidatorInfo(megapool, data1.numValidators);
 
     if (expectAssignment) {
@@ -144,7 +154,7 @@ export async function nodeDeposit(useExpressTicket, useCredit, txOptions) {
     }
 
     assertBN.equal(validatorInfo.lastRequestedValue, '32'.ether / milliToWei, "Incorrect validator lastRequestedValue");
-    assertBN.equal(validatorInfo.lastRequestedBond, txOptions.value / milliToWei, "Incorrect validator lastRequestedBond");
+    assertBN.equal(validatorInfo.lastRequestedBond, bondAmount / milliToWei, "Incorrect validator lastRequestedBond");
 
     assert.equal(validatorInfo.staked, false, "Incorrect validator status");
     assert.equal(validatorInfo.dissolved, false, "Incorrect validator status");

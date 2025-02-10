@@ -81,7 +81,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     /// @notice Returns the credit balance for a given node operator
     /// @param _nodeAddress Address of the node operator to query
     function getNodeCreditBalance(address _nodeAddress) override public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked("deposit.pool.node.credit", _nodeAddress)));
+        return getUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress)));
     }
 
     /// @notice Excess deposit pool balance (in excess of minipool queue capacity)
@@ -379,7 +379,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Add to node's credit for the amount supplied
         RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(msg.sender);
         address nodeAddress = megapool.getNodeAddress();
-        addUint(keccak256(abi.encodePacked("deposit.pool.node.credit", nodeAddress)), value.suppliedValue * milliToWei);
+        addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", nodeAddress)), value.suppliedValue * milliToWei);
         if (_expressQueue) {
             // Refund express ticket
             RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
@@ -401,10 +401,10 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     /// @notice Allows node operator to withdraw any ETH credit they have as rETH
     /// @param _amount Amount in ETH to withdraw
     function withdrawCredit(uint256 _amount) override external onlyRegisteredNode(msg.sender) {
-        uint256 credit = getUint(keccak256(abi.encodePacked("deposit.pool.node.credit", msg.sender)));
+        uint256 credit = getUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)));
         require(credit >= _amount, "Amount exceeds credit available");
         // Account for balance changes
-        subUint(keccak256(abi.encodePacked("deposit.pool.node.credit", msg.sender)), _amount);
+        subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), _amount);
         subUint("deposit.pool.node.balance", _amount);
         // Mint rETH to node
         // TODO: Do we need to check deposits are enabled, capacity is respected and apply a deposit fee?

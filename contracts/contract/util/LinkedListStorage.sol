@@ -233,9 +233,9 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
     }
 
     /// @notice Returns the supplied number of entries starting at the supplied index
-    function scan(bytes32 _namespace, uint256 _start, uint256 _count) override external view returns (DepositQueueValue[] memory, uint256) {
-        DepositQueueValue[] memory entries = new DepositQueueValue[](_count);
-        uint256 nextIndex = _start;
+    function scan(bytes32 _namespace, uint256 _start, uint256 _count) override external view returns (DepositQueueValue[] memory entries, uint256 nextIndex) {
+        entries = new DepositQueueValue[](_count);
+        nextIndex = _start;
         uint256 total = 0;
 
         // If nextIndex is 0, begin scan at the start of the list

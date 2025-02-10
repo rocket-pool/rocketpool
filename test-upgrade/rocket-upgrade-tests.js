@@ -97,7 +97,7 @@ describe('Test Upgrade', () => {
         await executeUpgrade();
 
         await deployMegapool({ from: node });
-        await nodeDeposit(false, false, { value: '4'.ether, from: node });
+        await nodeDeposit(node);
 
         const megapool = await getMegapoolForNode(node);
 

@@ -7,5 +7,5 @@ interface RocketNetworkRevenuesInterface {
     function getCurrentVoterShare() external view returns (uint256);
     function setNodeShare(uint256 _newShare) external;
     function setVoterShare(uint256 _newShare) external;
-    function calculateSplit(uint256 _sinceBlock) external view returns (uint256, uint256, uint256);
+    function calculateSplit(uint256 _sinceBlock) external view returns (uint256 nodeShare, uint256 voterShare, uint256 rethShare);
 }

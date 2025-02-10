@@ -1,6 +1,6 @@
 import { before, describe, it } from 'mocha';
 import { printTitle } from '../_utils/formatting';
-import { registerNode, setNodeWithdrawalAddress } from '../_helpers/node';
+import { nodeDepositEthFor, registerNode, setNodeWithdrawalAddress } from '../_helpers/node';
 import { globalSnapShot } from '../_utils/snapshotting';
 import { userDeposit } from '../_helpers/deposit';
 import {
@@ -13,22 +13,21 @@ import {
 import { shouldRevert } from '../_utils/testing';
 import {
     BeaconStateVerifier,
-    LinkedListStorage,
     MegapoolUpgradeHelper,
-    RocketDAONodeTrustedSettingsMinipool,
-    RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsMegapool,
+    RocketDAOProtocolSettingsDeposit,
+    RocketDAOProtocolSettingsMegapool,
     RocketDepositPool,
     RocketMegapoolDelegate,
     RocketMegapoolFactory,
     RocketStorage,
 } from '../_utils/artifacts';
 import assert from 'assert';
-import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { stakeMegapoolValidator } from './scenario-stake';
 import { assertBN } from '../_helpers/bn';
 import { exitQueue } from './scenario-exit-queue';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { distributeMegapool } from './scenario-distribute';
+import { withdrawCredit } from './scenario-withdraw-credit';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -91,7 +90,20 @@ export default function() {
 
         it(printTitle('node', 'can manually deploy a megapool then deposit'), async () => {
             await deployMegapool({ from: node });
-            await nodeDeposit(false, false, { value: '4'.ether, from: node });
+            await nodeDeposit(node);
+        });
+
+        it(printTitle('node', 'can deposit using supplied ETH'), async () => {
+            await nodeDepositEthFor(node, { from: random, value: '4'.ether });
+            await nodeDeposit(node, '4'.ether, false, '4'.ether);
+        });
+
+        it(printTitle('node', 'can deposit using ETH credit'), async () => {
+            // Enter and exit queue to receive a 4 ETH credit
+            await nodeDeposit(node, '4'.ether);
+            await exitQueue(node, 0);
+            // Use credit on entering the queue again
+            await nodeDeposit(node, '4'.ether, false, '4'.ether);
         });
 
         it(printTitle('node', 'can not deploy megapool twice'), async () => {
@@ -99,10 +111,14 @@ export default function() {
             await shouldRevert(deployMegapool({ from: node }), 'Redeploy worked');
         });
 
-        it(printTitle('node', 'can exit the deposit queue'), async () => {
+        it(printTitle('node', 'can exit the deposit queue and withdraw credit as rETH'), async () => {
             await deployMegapool({ from: node });
-            await nodeDeposit(false, false, { value: '4'.ether, from: node });
+            await nodeDeposit(node);
             await exitQueue(node, 0);
+            // Withdraw 1 ETH worth of rETH
+            await withdrawCredit(node, '1'.ether);
+            // Fail to withdraw 4 ETH worth of rETH
+            await shouldRevert(withdrawCredit(node, '4'.ether), 'Withdrew more rETH than credit', 'Amount exceeds credit available');
         });
 
         it(printTitle('node', 'can queue up and exit multiple validators'), async () => {
@@ -113,7 +129,7 @@ export default function() {
             await deployMegapool({ from: node });
 
             for (let i = 0; i < numValidators; i++) {
-                await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                await nodeDeposit(node);
 
                 const position = await calculatePositionInQueue(megapool, i);
                 assertBN.equal(position, BigInt(i));
@@ -134,7 +150,6 @@ export default function() {
             }
         });
 
-
         it(printTitle('misc', 'calculates position in queue correctly'), async () => {
             const rocketDepositPool = await RocketDepositPool.deployed();
 
@@ -150,11 +165,11 @@ export default function() {
              * 4: node-4
              */
 
-            await nodeDeposit(false, false, { value: '4'.ether, from: node }); // 0
-            await nodeDeposit(true, false, { value: '4'.ether, from: node });  // 1 (express)
-            await nodeDeposit(true, false, { value: '4'.ether, from: node });  // 2 (express)
-            await nodeDeposit(false, false, { value: '4'.ether, from: node }); // 3
-            await nodeDeposit(false, false, { value: '4'.ether, from: node }); // 4
+            await nodeDeposit(node); // 0
+            await nodeDeposit(node, '4'.ether, true);  // 1 (express)
+            await nodeDeposit(node, '4'.ether, true);  // 2 (express)
+            await nodeDeposit(node); // 3
+            await nodeDeposit(node); // 4
 
             assertBN.equal(await calculatePositionInQueue(megapool, 1n), 0n);
             assertBN.equal(await calculatePositionInQueue(megapool, 2n), 1n);
@@ -190,8 +205,8 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', false, { from: owner });
 
             // Add 2 more validators in the express queue
-            await nodeDeposit(true, false, { value: '4'.ether, from: node2 });
-            await nodeDeposit(true, false, { value: '4'.ether, from: node2 });
+            await nodeDeposit(node2, '4'.ether, true);
+            await nodeDeposit(node2, '4'.ether, true);
             const megapool2 = await getMegapoolForNode(node2);
 
             /**
@@ -252,7 +267,7 @@ export default function() {
                 await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', false, { from: owner });
                 // Deploy a validator
                 await deployMegapool({ from: node });
-                await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                await nodeDeposit(node);
                 const topBefore = await rocketDepositPool.getQueueTop();
                 assert.equal(topBefore[1], false);
                 // Check the validator is still in the queue
@@ -273,75 +288,54 @@ export default function() {
 
             it(printTitle('node', 'cannot exit the deposit queue once assigned'), async () => {
                 await deployMegapool({ from: node });
-                await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                await nodeDeposit(node);
                 await shouldRevert(exitQueue(node, 0), 'Was able to exit the deposit queue once assigned', 'Validator must be in queue');
             });
 
             it(printTitle('node', 'can not create a new validator while debt is present'), async () => {
                 await deployMegapool({ from: node });
                 await megapool.connect(owner).setDebt('1'.ether);
-                await shouldRevert(nodeDeposit(false, false, {
-                    value: '4'.ether,
-                    from: node,
-                }), 'Created validator', 'Cannot create validator while debt exists');
+                await shouldRevert(nodeDeposit(node), 'Created validator', 'Cannot create validator while debt exists');
             });
 
             it(printTitle('node', 'can create new validators per bond requirements'), async () => {
-                await shouldRevert(nodeDeposit(false, false, {
-                    value: '8'.ether,
-                    from: node,
-                }), 'Created validator', 'Bond requirement not met');
-                await shouldRevert(nodeDeposit(false, false, {
-                    value: '2'.ether,
-                    from: node,
-                }), 'Created validator', 'Bond requirement not met');
-                await nodeDeposit(false, false, { value: '4'.ether, from: node });
-                await shouldRevert(nodeDeposit(false, false, {
-                    value: '2'.ether,
-                    from: node,
-                }), 'Created validator', 'Bond requirement not met');
-                await nodeDeposit(false, false, { value: '4'.ether, from: node });
-                await shouldRevert(nodeDeposit(false, false, {
-                    value: '2'.ether,
-                    from: node,
-                }), 'Created validator', 'Bond requirement not met');
-                await nodeDeposit(false, false, { value: '4'.ether, from: node });
-                await shouldRevert(nodeDeposit(false, false, {
-                    value: '2'.ether,
-                    from: node,
-                }), 'Created validator', 'Bond requirement not met');
+                await shouldRevert(nodeDeposit(node, '8'.ether), 'Created validator', 'Bond requirement not met');
+                await shouldRevert(nodeDeposit(node, '2'.ether), 'Created validator', 'Bond requirement not met');
+                await nodeDeposit(node);
+                await shouldRevert(nodeDeposit(node, '2'.ether), 'Created validator', 'Bond requirement not met');
+                await nodeDeposit(node);
+                await shouldRevert(nodeDeposit(node, '2'.ether), 'Created validator', 'Bond requirement not met');
+                await nodeDeposit(node);
+                await shouldRevert(nodeDeposit(node,'2'.ether), 'Created validator', 'Bond requirement not met');
             });
 
             it(printTitle('node', 'can not consume more than 2 provisioned express tickets'), async () => {
-                await nodeDeposit(true, false, { value: '4'.ether, from: node });
-                await nodeDeposit(true, false, { value: '4'.ether, from: node });
-                await shouldRevert(nodeDeposit(true, false, {
-                    value: '4'.ether,
-                    from: node,
-                }), 'Consumed express ticket', 'No express tickets');
+                await nodeDeposit(node, '4'.ether, true);
+                await nodeDeposit(node, '4'.ether, true);
+                await shouldRevert(nodeDeposit(node, '4'.ether, true), 'Consumed express ticket', 'No express tickets');
             });
 
             it(printTitle('node', 'can create a new validator without an express ticket'), async () => {
-                await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                await nodeDeposit(node);
             });
 
             it(printTitle('node', 'can create a new validator with an express ticket'), async () => {
-                await nodeDeposit(true, false, { value: '4'.ether, from: node });
+                await nodeDeposit(node, '4'.ether, true);
             });
 
             it(printTitle('random', 'can not dissolve validator before dissolve period ends'), async () => {
-                await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                await nodeDeposit(node);
                 await shouldRevert(megapool.connect(random).dissolveValidator(0), 'Dissolved validator', 'Not enough time has passed to dissolve');
             });
 
             it(printTitle('random', 'can dissolve validator after dissolve period ends'), async () => {
-                await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                await nodeDeposit(node);
                 await helpers.time.increase(dissolvePeriod + 1);
                 await megapool.connect(random).dissolveValidator(0);
             });
 
             it(printTitle('node', 'can perform stake operation on pre-stake validator'), async () => {
-                await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                await nodeDeposit(node);
                 await stakeMegapoolValidator(megapool, 0, { from: node });
             });
 
@@ -349,7 +343,7 @@ export default function() {
 
                 before(async () => {
                     await deployMegapool({ from: node });
-                    await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                    await nodeDeposit(node);
                 });
 
             });
@@ -358,7 +352,7 @@ export default function() {
 
                 before(async () => {
                     await deployMegapool({ from: node });
-                    await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                    await nodeDeposit(node);
                     await stakeMegapoolValidator(megapool, 0, { from: node });
                 });
 

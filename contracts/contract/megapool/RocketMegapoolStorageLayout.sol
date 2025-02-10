@@ -77,9 +77,5 @@ abstract contract RocketMegapoolStorageLayout {
     mapping(uint32 => ValidatorInfo) internal validators;
     mapping(uint32 => PrestakeData) internal prestakeData;
 
-    // TODO: Move this to rocketNodeStaking
-    uint256 internal stakedRPL;
-    uint256 internal unstakedRPL;
-    uint256 internal lastUnstakeRequest;
-
+    uint32 internal numInactiveValidators;    // Number of validators that are no longer contributing to bond requirement
 }

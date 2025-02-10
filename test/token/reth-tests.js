@@ -137,7 +137,7 @@ export default function() {
                 await setNodeTrusted(trustedNode, 'saas_1', 'node@home.com', owner);
                 // Register node and create a validator
                 await registerNode({ from: node });
-                await nodeDeposit(false, false, { value: '4'.ether, from: node });
+                await nodeDeposit(node);
                 await getMegapoolForNode(node);
             });
 
