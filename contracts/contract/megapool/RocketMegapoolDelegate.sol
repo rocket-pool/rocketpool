@@ -211,54 +211,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         }
     }
 
-    /// @notice Stakes RPL on the megapool
-    /// @param _amount the RPL amount to be staked on this megapool
-    // TODO: Move to new RPL staking contract
-    function stakeRPL(uint256 _amount) external {
-        revert("Not implemented");
-//        require(_amount > 0, "Invalid amount");
-//        // Transfer RPL tokens
-//        address rplTokenAddress = rocketStorage.getAddress(rocketTokenRPLKey);
-//        IERC20 rplToken = IERC20(rplTokenAddress);
-//        require(rplToken.transferFrom(msg.sender, address(this), _amount), "Could not transfer RPL to staking contract");
-//        stakedRPL += _amount;
-    }
-
-    /// @notice Requests RPL previously staked on this megapool to be unstaked
-    // @param _amount the RPL amount to be unstaked 
-    // TODO: Move to new RPL staking contract
-    function requestUnstakeRPL(uint256 _amount) external onlyRPLWithdrawalAddressOrNode() {
-        revert("Not implemented");
-//        require(_amount > 0 && _amount >= stakedRPL, "Invalid amount");
-//        stakedRPL -= _amount;
-//        unstakedRPL += _amount;
-//        lastUnstakeRequest = block.timestamp;
-    }
-
-    /// @notice Unstakes RPL after waiting the 'unstaking period' after the last unstake request
-    // TODO: Move to new RPL staking contract
-    function unstakeRPL() external onlyRPLWithdrawalAddressOrNode() {
-        revert("Not implemented");
-//        uint256 unstakingPeriod = 28 days; // Change to unstaking_period parameter (RPIP-30)
-//        require(lastUnstakeRequest + unstakingPeriod >= block.timestamp, "Not enough time passed since last unstake RPL request");
-//        address rplWithdrawalAddress;
-//
-//        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-//        if (rocketNodeManager.getNodeRPLWithdrawalAddressIsSet(nodeAddress)) {
-//            rplWithdrawalAddress = rocketNodeManager.getNodeRPLWithdrawalAddress(nodeAddress);
-//        } else {
-//            rplWithdrawalAddress = nodeAddress;
-//        }
-//
-//        address rplAddress = rocketStorage.getAddress(rocketTokenRPLKey);
-//
-//        uint256 unstakedAmount = unstakedRPL;
-//        unstakedRPL = 0;
-//
-//        RocketVaultInterface rocketVault = RocketVaultInterface(rocketStorage.getAddress(rocketVaultKey));
-//        rocketVault.withdrawToken(rplWithdrawalAddress, IERC20(rplAddress), unstakedAmount);
-    }
-
     /// @notice Distributes any accrued execution layer rewards sent to this address
     function distribute() override public {
         _distribute();

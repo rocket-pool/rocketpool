@@ -2,12 +2,12 @@ import { afterEach, before, beforeEach, describe, it } from 'mocha';
 import {
     artifacts,
     RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsMegapool, RocketNetworkRevenues,
-    RocketStorage,
+    RocketStorage, RocketTokenDummyRPL,
     RocketUpgradeOneDotFour,
 } from '../test/_utils/artifacts';
 import { assertBN, injectBNHelpers } from '../test/_helpers/bn';
 import { endSnapShot, globalSnapShot, startSnapShot } from '../test/_utils/snapshotting';
-import { registerNode } from '../test/_helpers/node';
+import { nodeStakeRPL, registerNode } from '../test/_helpers/node';
 import { printTitle } from '../test/_utils/formatting';
 import { setDefaultParameters } from '../test/_helpers/defaults';
 import { deployMegapool, getMegapoolForNode, getValidatorInfo, nodeDeposit } from '../test/_helpers/megapool';
@@ -15,6 +15,8 @@ import { deployUpgrade } from './_helpers/upgrade';
 import { setDaoNodeTrustedBootstrapUpgrade } from '../test/dao/scenario-dao-node-trusted-bootstrap';
 import { userDeposit } from '../test/_helpers/deposit';
 import assert from 'assert';
+import { createMinipool, getMinipoolMinimumRPLStake } from '../test/_helpers/minipool';
+import { mintRPL } from '../test/_helpers/tokens';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -101,6 +103,32 @@ describe('Test Upgrade', () => {
 
         const megapool = await getMegapoolForNode(node);
 
+        const validatorInfoAfter = await getValidatorInfo(megapool, 0);
+        assert.equal(validatorInfoAfter.staked, false);
+        assert.equal(validatorInfoAfter.inPrestake, true);
+        assert.equal(validatorInfoAfter.inQueue, false);
+    });
+
+    it(printTitle('node', 'can assign a minipool after upgrade'), async () => {
+        // Register node and create a 16 ETH minipool
+        await registerNode({ from: node });
+        const minipoolRplStake = await getMinipoolMinimumRPLStake();
+        await mintRPL(owner, node, minipoolRplStake);
+        await nodeStakeRPL(minipoolRplStake, { from: node });
+        const minipool = await createMinipool({ from: node, value: '16'.ether });
+        assertBN.equal(await minipool.getStatus(), 0n); // Initialised
+        // Execute upgrade
+        await executeUpgrade();
+        // Queue up a megapool validator
+        await nodeDeposit(node);
+        // Perform a user deposit that will assign 1 validator (the minipool)
+        await userDeposit({ from: random, value: '32'.ether });
+        // Check minipool was assigned
+        assertBN.equal(await minipool.getStatus(), 1n); // Prestake status
+        // Perform a user deposit that will assign 1 validator (the megapool)
+        await userDeposit({ from: random, value: '32'.ether });
+        // Check megapool validator status
+        const megapool = await getMegapoolForNode(node);
         const validatorInfoAfter = await getValidatorInfo(megapool, 0);
         assert.equal(validatorInfoAfter.staked, false);
         assert.equal(validatorInfoAfter.inPrestake, true);

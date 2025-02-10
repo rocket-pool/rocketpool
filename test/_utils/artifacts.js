@@ -34,8 +34,10 @@ class Artifact {
         return new ethers.Contract(address, this.abi, hre.ethers.provider);
     }
 
-    async fromDeployment(rocketStorage) {
-        let contractName = this.name.charAt(0).toLowerCase() + this.name.slice(1);
+    async fromDeployment(rocketStorage, contractName = null) {
+        if (contractName === null) {
+            contractName = this.name.charAt(0).toLowerCase() + this.name.slice(1);
+        }
 
         const addressKey = ethers.solidityPackedKeccak256(['string', 'string'], ['contract.address', contractName]);
         const abiKey = ethers.solidityPackedKeccak256(['string', 'string'], ['contract.abi', contractName]);
@@ -67,13 +69,20 @@ export class Artifacts {
 
     async loadFromDeployment(rocketStorageAddress) {
         RocketStorage.instance = this.artifacts['RocketStorage'].at(rocketStorageAddress);
-
+        // Map between network contract name and actual contract name
+        const mapping = {
+           'RocketTokenDummyRPL': 'rocketTokenRPLFixedSupply'
+        }
         for (const name in this.artifacts) {
             switch (name) {
                 case 'RocketStorage':
                     break;
                 default:
-                    await this.artifacts[name].fromDeployment(RocketStorage.instance);
+                    if (mapping.hasOwnProperty(name)) {
+                        await this.artifacts[name].fromDeployment(RocketStorage.instance, mapping[name]);
+                    } else {
+                        await this.artifacts[name].fromDeployment(RocketStorage.instance);
+                    }
             }
         }
     }

@@ -304,11 +304,19 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     function _assignMinipools(uint256 _count, RocketDAOProtocolSettingsDepositInterface _rocketDAOProtocolSettingsDeposit) internal {
         // Get contracts
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+        // Calculate max possible assignments based on current balance
+        uint256 variableDepositAmount = rocketDAOProtocolSettingsMinipool.getVariableDepositAmount();
+        uint256 maxPossible = getBalance() / variableDepositAmount;
+        if (maxPossible == 0) {
+            return;
+        }
+        if (_count > maxPossible) {
+            _count = maxPossible;
+        }
         // Dequeue minipools
         address[] memory minipools = rocketMinipoolQueue.dequeueMinipools(_count);
         if (minipools.length > 0) {
-            RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-            uint256 variableDepositAmount = rocketDAOProtocolSettingsMinipool.getVariableDepositAmount();
             // Withdraw ETH from vault
             uint256 totalEther = minipools.length * variableDepositAmount;
             rocketVault.withdrawEther(totalEther);
