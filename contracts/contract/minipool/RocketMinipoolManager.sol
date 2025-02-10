@@ -177,7 +177,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     /// @notice Get the number of minipools owned by a node that are in staking status
     /// @param _nodeAddress The node operator to query the count of staking minipools of
     function getNodeStakingMinipoolCount(address _nodeAddress) override public view returns (uint256) {
-        RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
         // Get valid deposit amounts
         uint256[2] memory depositSizes;
         depositSizes[0] = 16 ether;

@@ -11,6 +11,8 @@ export async function exitQueue(node, validatorIndex) {
 
     const validatorInfoBefore = await megapool.getValidatorInfo(validatorIndex);
 
+    const creditBefore = await rocketDepositPool.getNodeCreditBalance(node.address);
+
     // Dequeue the validator
     await megapool.dequeue(validatorIndex);
 
@@ -20,6 +22,7 @@ export async function exitQueue(node, validatorIndex) {
     assert.equal(validatorInfoAfter.inQueue, false);
 
     // Check an ETH credit was applied
-    const credit = await rocketDepositPool.getNodeCreditBalance(node.address);
-    assertBN.equal(credit, validatorInfoBefore.lastRequestedBond * milliToWei);
+    const creditAfter = await rocketDepositPool.getNodeCreditBalance(node.address);
+    const creditDelta = creditAfter - creditBefore;
+    assertBN.equal(creditDelta, validatorInfoBefore.lastRequestedBond * milliToWei);
 }

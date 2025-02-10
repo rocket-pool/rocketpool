@@ -3,14 +3,20 @@ import { printTitle } from '../_utils/formatting';
 import { registerNode, setNodeWithdrawalAddress } from '../_helpers/node';
 import { globalSnapShot } from '../_utils/snapshotting';
 import { userDeposit } from '../_helpers/deposit';
-import { deployMegapool, getMegapoolForNode, nodeDeposit } from '../_helpers/megapool';
+import {
+    calculatePositionInQueue,
+    deployMegapool,
+    getMegapoolForNode,
+    getValidatorInfo,
+    nodeDeposit,
+} from '../_helpers/megapool';
 import { shouldRevert } from '../_utils/testing';
 import {
     BeaconStateVerifier,
+    LinkedListStorage,
     MegapoolUpgradeHelper,
     RocketDAONodeTrustedSettingsMinipool,
-    RocketDAOProtocolSettingsDeposit,
-    RocketDAOProtocolSettingsNetwork,
+    RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsMegapool,
     RocketDepositPool,
     RocketMegapoolDelegate,
     RocketMegapoolFactory,
@@ -21,8 +27,8 @@ import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trus
 import { stakeMegapoolValidator } from './scenario-stake';
 import { assertBN } from '../_helpers/bn';
 import { exitQueue } from './scenario-exit-queue';
-import { getDepositSetting } from '../_helpers/settings';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
+import { distributeMegapool } from './scenario-distribute';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -32,6 +38,7 @@ export default function() {
     describe('Megapools', () => {
         let owner,
             node,
+            node2,
             nodeWithdrawalAddress,
             random;
 
@@ -43,6 +50,7 @@ export default function() {
             [
                 owner,
                 node,
+                node2,
                 nodeWithdrawalAddress,
                 random,
             ] = await ethers.getSigners();
@@ -50,6 +58,7 @@ export default function() {
             // Register node & set withdrawal address
             await registerNode({ from: node });
             await setNodeWithdrawalAddress(node, nodeWithdrawalAddress, { from: node });
+            await registerNode({ from: node2 });
 
             megapool = await getMegapoolForNode(node);
 
@@ -96,20 +105,151 @@ export default function() {
             await exitQueue(node, 0);
         });
 
+        it(printTitle('node', 'can queue up and exit multiple validators'), async () => {
+            const rocketDepositPool = await RocketDepositPool.deployed();
+
+            const numValidators = 5;
+
+            await deployMegapool({ from: node });
+
+            for (let i = 0; i < numValidators; i++) {
+                await nodeDeposit(false, false, { value: '4'.ether, from: node });
+
+                const position = await calculatePositionInQueue(megapool, i);
+                assertBN.equal(position, BigInt(i));
+            }
+
+            // Check queue top is correct
+            const queueTop = await rocketDepositPool.getQueueTop();
+            assertBN.equal(queueTop[2], BigInt(await ethers.provider.getBlockNumber() - numValidators + 1));
+
+            for (let i = 0; i < numValidators; i++) {
+                await exitQueue(node, i);
+
+                // Check queue top
+                const queueTop = await rocketDepositPool.getQueueTop();
+                if (queueTop[1]) {
+                    assertBN.equal(queueTop[2], BigInt(await ethers.provider.getBlockNumber()));
+                }
+            }
+        });
+
+
+        it(printTitle('misc', 'calculates position in queue correctly'), async () => {
+            const rocketDepositPool = await RocketDepositPool.deployed();
+
+            /**
+             * We will add 5 validators to the queue, 2 of which using an express ticket.
+             *
+             * The queue should end up looking like this:
+             *
+             * 0: node-1 (express)
+             * 1: node-2 (express)
+             * 2: node-0
+             * 3: node-3
+             * 4: node-4
+             */
+
+            await nodeDeposit(false, false, { value: '4'.ether, from: node }); // 0
+            await nodeDeposit(true, false, { value: '4'.ether, from: node });  // 1 (express)
+            await nodeDeposit(true, false, { value: '4'.ether, from: node });  // 2 (express)
+            await nodeDeposit(false, false, { value: '4'.ether, from: node }); // 3
+            await nodeDeposit(false, false, { value: '4'.ether, from: node }); // 4
+
+            assertBN.equal(await calculatePositionInQueue(megapool, 1n), 0n);
+            assertBN.equal(await calculatePositionInQueue(megapool, 2n), 1n);
+            assertBN.equal(await calculatePositionInQueue(megapool, 0n), 2n);
+            assertBN.equal(await calculatePositionInQueue(megapool, 3n), 3n);
+            assertBN.equal(await calculatePositionInQueue(megapool, 4n), 4n);
+
+            // Assign one of the validators and re-check positions
+            await userDeposit({ from: random, value: '32'.ether });
+
+            // Validator at the top of the queue should be assigned now (in prestake)
+            const info = await getValidatorInfo(megapool, 1n);
+            assert.equal(info.inPrestake, true);
+
+            /**
+             * Queue should now look like:
+             *
+             * 0: node-2 (express)
+             * 1: node-0
+             * 2: node-3
+             * 3: node-4
+             */
+
+            // Should not be in the queue anymore
+            assert.equal(await calculatePositionInQueue(megapool, 1n), null);
+
+            assertBN.equal(await calculatePositionInQueue(megapool, 2n), 0n);
+            assertBN.equal(await calculatePositionInQueue(megapool, 0n), 1n);
+            assertBN.equal(await calculatePositionInQueue(megapool, 3n), 2n);
+            assertBN.equal(await calculatePositionInQueue(megapool, 4n), 3n);
+
+            // Prevent new node deposits from assigning and messing up the queue for our test
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', false, { from: owner });
+
+            // Add 2 more validators in the express queue
+            await nodeDeposit(true, false, { value: '4'.ether, from: node2 });
+            await nodeDeposit(true, false, { value: '4'.ether, from: node2 });
+            const megapool2 = await getMegapoolForNode(node2);
+
+            /**
+             * As we just assigned a validator in the express queue, so there should be another express queue on top
+             * followed by a standard, then the 2 new express queue validators
+             *
+             * Therefore, the queue should now look like:
+             *
+             * 0: node-2 (express)
+             * 1: node-0
+             * 2: node2-0 (express)
+             * 3: node2-1 (express)
+             * 4: node-3
+             * 5: node-4
+             */
+
+            assertBN.equal(await calculatePositionInQueue(megapool, 2n), 0n);
+            assertBN.equal(await calculatePositionInQueue(megapool, 0n), 1n);
+            assertBN.equal(await calculatePositionInQueue(megapool2, 0n), 2n);
+            assertBN.equal(await calculatePositionInQueue(megapool2, 1n), 3n);
+            assertBN.equal(await calculatePositionInQueue(megapool, 3n), 4n);
+            assertBN.equal(await calculatePositionInQueue(megapool, 4n), 5n);
+
+            // Assign another validator
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', true, { from: owner });
+            await userDeposit({ from: random, value: '32'.ether });
+
+            /**
+             * The queue should now look like:
+             *
+             * 0: node-0
+             * 1: node2-0 (express)
+             * 2: node2-1 (express)
+             * 3: node-3
+             * 4: node-4
+             */
+
+            assertBN.equal(await calculatePositionInQueue(megapool, 0n), 0n);
+            assertBN.equal(await calculatePositionInQueue(megapool2, 0n), 1n);
+            assertBN.equal(await calculatePositionInQueue(megapool2, 1n), 2n);
+            assertBN.equal(await calculatePositionInQueue(megapool, 3n), 3n);
+            assertBN.equal(await calculatePositionInQueue(megapool, 4n), 4n);
+        });
+
         describe('With full deposit pool', () => {
-            const dissolvePeriod = (60 * 60 * 24); // 24 hours
+            const dissolvePeriod = (60 * 60 * 48); // 24 hours
 
             before(async () => {
                 // Deposit ETH into deposit pool
                 await userDeposit({ from: random, value: '32'.ether });
-                // Set scrub period
-                await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'megapool.dissolve.period', dissolvePeriod, { from: owner });
+                // Set time before dissolve
+                await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMegapool, 'megapool.time.before.dissolve', dissolvePeriod, { from: owner });
             });
 
             it(printTitle('node', 'can deposit while assignments are disabled and be assigned once enabled again'), async () => {
                 const rocketDepositPool = await RocketDepositPool.deployed();
                 // Disable deposit assignments
-                await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', false, {from: owner});
+                await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', false, { from: owner });
                 // Deploy a validator
                 await deployMegapool({ from: node });
                 await nodeDeposit(false, false, { value: '4'.ether, from: node });
@@ -120,7 +260,7 @@ export default function() {
                 const validatorInfoBefore = await megapool.getValidatorInfo(0);
                 assert.equal(validatorInfoBefore.inQueue, true);
                 // Enable assignments
-                await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', true, {from: owner});
+                await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', true, { from: owner });
                 // Check queue top is now assignable
                 const topAfter = await rocketDepositPool.getQueueTop();
                 assert.equal(topAfter[1], true);
@@ -191,7 +331,7 @@ export default function() {
 
             it(printTitle('random', 'can not dissolve validator before dissolve period ends'), async () => {
                 await nodeDeposit(false, false, { value: '4'.ether, from: node });
-                await shouldRevert(megapool.connect(random).dissolveValidator(0), 'Dissolved validator', 'Not past the dissolve period');
+                await shouldRevert(megapool.connect(random).dissolveValidator(0), 'Dissolved validator', 'Not enough time has passed to dissolve');
             });
 
             it(printTitle('random', 'can dissolve validator after dissolve period ends'), async () => {
@@ -231,6 +371,8 @@ export default function() {
                         to: megapool.target,
                         value: '1'.ether,
                     });
+                    const pendingRewards = await megapool.getPendingRewards();
+                    assertBN.equal(pendingRewards, '1'.ether);
 
                     /*
                         Rewards: 1 ETH
@@ -241,11 +383,16 @@ export default function() {
                         Node Share: 0.04375 + 0.125 = 0.16875 ETH
                         Voter Share: 0.875 * 9% = 0.07875 ETH
                         rETH Share: 1 - 0.875 - 0.04375 = 0.08125 ETH
+
+                        Note: calculations on-chain are of 3 fixed point precision
                      */
-                    const rewardSplit = await megapool.calculateRewards();
+                    const rewardSplit = await megapool.calculatePendingRewards();
                     assertBN.equal(rewardSplit[0], '0.16875'.ether);
                     assertBN.equal(rewardSplit[1], '0.07875'.ether);
                     assertBN.equal(rewardSplit[2], '0.7525'.ether);
+
+                    // Perform distribution
+                    await distributeMegapool(megapool);
                 });
             });
         });

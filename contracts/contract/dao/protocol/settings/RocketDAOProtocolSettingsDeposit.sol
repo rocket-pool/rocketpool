@@ -11,19 +11,19 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "deposit") {
         version = 4;
-        // Initialize settings on deployment
-        if (!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
-            // Apply settings
+        // Initialise settings on deployment
+        if (!rocketStorage.getDeployedStatus()) {
+            // Set defaults
             setSettingBool("deposit.enabled", false);
             setSettingBool("deposit.assign.enabled", true);
             _setSettingUint("deposit.minimum", 0.01 ether);
             _setSettingUint("deposit.pool.maximum", 160 ether);
             _setSettingUint("deposit.assign.maximum", 90);
-            _setSettingUint("deposit.assign.socialised.maximum", 2);
+            _setSettingUint("deposit.assign.socialised.maximum", 0);
             _setSettingUint("deposit.fee", 0.0005 ether);                // Set to approx. 1 day of rewards at 18.25% APR
             _setSettingUint("express.queue.rate", 2);                    // RPIP-59
             _setSettingUint("express.queue.tickets.base.provision", 2);  // RPIP-59
-            // Settings initialised
+            // Set deploy flag
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
     }
@@ -33,17 +33,19 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
     /// @param _value The value to set it to
     function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
         // Some safety guards for certain settings
-        bytes32 settingKey = keccak256(bytes(_settingPath));
-        if (settingKey == keccak256(abi.encodePacked("deposit.fee"))) {
-            require(_value < 0.01 ether, "Fee must be less than 1%");
-        } else if (settingKey == keccak256(abi.encodePacked("express.queue.rate"))) {
-            require(_value > 0, "Rate must be greater than 0");
+        if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
+            bytes32 settingKey = keccak256(bytes(_settingPath));
+            if (settingKey == keccak256(abi.encodePacked("deposit.fee"))) {
+                require(_value < 0.01 ether, "Fee must be less than 1%");
+            } else if (settingKey == keccak256(abi.encodePacked("express.queue.rate"))) {
+                require(_value > 0, "Rate must be greater than 0");
+            }
         }
         // Update setting now
         _setSettingUint(_settingPath, _value);
     }
 
-    /// @dev Sets a namespaced uint value skipping any guardrails
+    /// @dev Directly updates a setting, no guardrails applied
     function _setSettingUint(string memory _settingPath, uint256 _value) internal {
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }

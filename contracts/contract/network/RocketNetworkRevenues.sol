@@ -10,10 +10,6 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
     uint256 private constant shareMagnitude = 100_000;
     uint256 private constant shareScale = 1 ether / shareMagnitude;
 
-    // The initial values to initialise the revenue split system to (as specified in RPIP-46)
-    uint256 private constant initialNodeShare = 0.05 ether;
-    uint256 private constant initialVoterShare = 0.09 ether;
-
     bytes32 private immutable nodeShareKey;
     bytes32 private immutable voterShareKey;
 
@@ -24,8 +20,20 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
         voterShareKey = keccak256(abi.encodePacked("network.revenue.voter.share"));
     }
 
+    /// @dev Only allows calls from the pDAO setting contract or the security DAO contract
+    modifier onlyProtocolOrSecurityDAO() {
+        if(msg.sender != getAddress(keccak256(abi.encodePacked("contract.address", "rocketDAOProtocolSettingsNetwork")))) {
+            if(msg.sender != getAddress(keccak256(abi.encodePacked("contract.address", "rocketDAOSecurityProposals")))) {
+                revert("Invalid or outdated network contract");
+            }
+        }
+        _;
+    }
+
     /// @notice Used following an upgrade or new deployment to initialise the revenue split system
-    function initialise() override public {
+    /// @param _initialNodeShare The initial value to for the node share
+    /// @param _initialVoterShare The initial value to for the voter share
+    function initialise(uint256 _initialNodeShare, uint256 _initialVoterShare) override public {
         // On new deploy, allow guardian to initialise, otherwise, only a network contract
         if (rocketStorage.getDeployedStatus()) {
             require(getBool(keccak256(abi.encodePacked("contract.exists", msg.sender))), "Invalid or outdated network contract");
@@ -38,55 +46,41 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
         require(!exists, "Already initialised");
         // Initialise node share
         bytes32 valueKey = bytes32(uint256(nodeShareKey) + block.number);
-        setUint(valueKey, initialNodeShare / shareScale);
+        setUint(valueKey, _initialNodeShare / shareScale);
         rocketNetworkSnapshots.push(nodeShareKey, 0);
         // Initialise voter share
         valueKey = bytes32(uint256(voterShareKey) + block.number);
-        setUint(valueKey, initialVoterShare / shareScale);
+        setUint(valueKey, _initialVoterShare / shareScale);
         rocketNetworkSnapshots.push(voterShareKey, 0);
     }
 
+    /// @notice Returns the current node share value
     function getCurrentNodeShare() external override view returns (uint256) {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         return _getCurrentShare(rocketNetworkSnapshots, nodeShareKey);
     }
 
+    /// @notice Returns the current voter share value
     function getCurrentVoterShare() external override view returns (uint256) {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         return _getCurrentShare(rocketNetworkSnapshots, voterShareKey);
     }
 
-    function _getCurrentShare(RocketNetworkSnapshotsInterface _rocketNetworkSnapshots, bytes32 _key) internal view returns (uint256) {
-        (bool exists, uint32 block, uint224 value) = _rocketNetworkSnapshots.latest(_key);
-        require(exists, "RocketNetworkRevenues is not initialised");
-        bytes32 valueKey = bytes32(uint256(_key) + block);
-        return getUint(valueKey) * shareScale;
+    /// @notice Called by a pDAO governance contract or security council to update the `node_operator_commission_share` parameter
+    /// @param _newShare The value to set `node_operator_commission_share` to
+    function setNodeShare(uint256 _newShare) external override onlyProtocolOrSecurityDAO {
+        _setShare(nodeShareKey, _newShare);
     }
 
-    /// @notice Called by a pDAO governance contract to update the `node_operator_commission_share` parameter
-    function setNodeShare(uint256 _newShare) external override {
-        // TODO: Limit to calls from pDAO / security council
-        setShare(nodeShareKey, _newShare);
-    }
-
-    /// @notice Called by a pDAO governance contract to update the `voter_share` parameter
-    function setVoterShare(uint256 _newShare) external override {
-        // TODO: Limit to calls from pDAO / security council
-        setShare(voterShareKey, _newShare);
-    }
-
-    function setShare(bytes32 _key, uint256 _newShare) internal {
-        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
-        uint256 currentAccum = getAccumulatorAt(rocketNetworkSnapshots, _key, block.number);
-        rocketNetworkSnapshots.push(_key, uint224(currentAccum));
-        uint256 newShareScaled = _newShare / shareScale;
-        bytes32 valueKey = bytes32(uint256(_key) + block.number);
-        setUint(valueKey, newShareScaled);
+    /// @notice Called by a pDAO governance contract or security council to update the `voter_share` parameter
+    /// @param _newShare The value to set the `voter_share` to
+    function setVoterShare(uint256 _newShare) external override onlyProtocolOrSecurityDAO {
+        _setShare(voterShareKey, _newShare);
     }
 
     /// @notice Calculates the time-weighted average revenue split values between the supplied block number and now
     /// @param _sinceBlock The starting block number for the calculation
-    function calculateSplit(uint256 _sinceBlock) external override view returns (uint256 nodeShare, uint256 voterShare, uint256 rethShare) {
+    function calculateSplit(uint256 _sinceBlock) external override view returns (uint256, uint256, uint256) {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         uint256 nodeShare;
         uint256 voterShare;
@@ -94,21 +88,23 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
             nodeShare = _getCurrentShare(rocketNetworkSnapshots, nodeShareKey);
             voterShare = _getCurrentShare(rocketNetworkSnapshots, voterShareKey);
         } else {
+            require(_sinceBlock < block.number, "Block must be in the past");
             // Query accumulators
             uint256 nodeShareAccumLast = getAccumulatorAt(rocketNetworkSnapshots, nodeShareKey, _sinceBlock);
             uint256 voterShareAccumLast = getAccumulatorAt(rocketNetworkSnapshots, voterShareKey, _sinceBlock);
             uint256 nodeShareAccumCurr = getAccumulatorAt(rocketNetworkSnapshots, nodeShareKey, block.number);
             uint256 voterShareAccumCurr = getAccumulatorAt(rocketNetworkSnapshots, voterShareKey, block.number);
-            // Calculate block duration
+            // Calculate average fee between the blocks
             uint256 duration = (block.number - _sinceBlock);
-            // Calculate and return shares
             nodeShare = (nodeShareAccumCurr - nodeShareAccumLast) / duration;
             voterShare = (voterShareAccumCurr - voterShareAccumLast) / duration;
+            // Scale values
+            nodeShare *= shareScale;
+            voterShare *= shareScale;
         }
         uint256 rethCommission = nodeShare + voterShare;
-        uint256 rethShare = shareMagnitude - rethCommission;
-        // Scale shares to conventional 18 point fixed values
-        return (nodeShare * shareScale, voterShare * shareScale, rethShare * shareScale);
+        uint256 rethShare = 1 ether - rethCommission;
+        return (nodeShare, voterShare, rethShare);
     }
 
     /// @dev Calculates the cumulative value of the accumulator at a given block
@@ -119,5 +115,25 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
         uint256 valueAtBlock = getUint(valueKey);
         uint256 blockDuration = (_block - checkpointBlock);
         return uint256(checkpointValue) + (valueAtBlock * blockDuration);
+    }
+
+    /// @dev Convenience method to return the current value given a key
+    function _getCurrentShare(RocketNetworkSnapshotsInterface _rocketNetworkSnapshots, bytes32 _key) internal view returns (uint256) {
+        (bool exists, uint32 blockNumber, ) = _rocketNetworkSnapshots.latest(_key);
+        require(exists, "RocketNetworkRevenues is not initialised");
+        bytes32 valueKey = bytes32(uint256(_key) + blockNumber);
+        return getUint(valueKey) * shareScale;
+    }
+
+    /// @dev Sets the share value of the given key
+    /// @param _key Key of the share value to set
+    /// @param _newShare Value to set it to
+    function _setShare(bytes32 _key, uint256 _newShare) internal {
+        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
+        uint256 currentAccum = getAccumulatorAt(rocketNetworkSnapshots, _key, block.number);
+        rocketNetworkSnapshots.push(_key, uint224(currentAccum));
+        uint256 newShareScaled = _newShare / shareScale;
+        bytes32 valueKey = bytes32(uint256(_key) + block.number);
+        setUint(valueKey, newShareScaled);
     }
 }

@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import "../RocketBase.sol";
-import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
-import "../../interface/network/RocketNetworkPricesInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
-import "../../interface/util/AddressSetStorageInterface.sol";
-import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
+import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import "../../interface/network/RocketNetworkPricesInterface.sol";
+import "../../interface/network/RocketNetworkRevenuesInterface.sol";
+import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
+import "../../interface/util/AddressSetStorageInterface.sol";
+import "../RocketBase.sol";
+import {RocketDAOProtocolSettingsNetworkInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
+
+interface InitialiseInterface {
+    function initialise() external;
+}
 
 /// @notice v1.4 Saturn 1 upgrade contract
 contract RocketUpgradeOneDotFour is RocketBase {
@@ -32,9 +38,11 @@ contract RocketUpgradeOneDotFour is RocketBase {
     address public rocketDAOProtocolSettingsDeposit;
     address public rocketDAOProtocolSettingsNetwork;
     address public rocketDAOProtocolSettingsSecurity;
+    address public rocketDAOProtocolSettingsMegapool;
     address public rocketDAOSecurityProposals;
     address public rocketNetworkRevenues;
     address public rocketNetworkSnapshots;
+    address public rocketVoterRewards;
     address public blockRoots;
     address public beaconStateVerifier;
 
@@ -52,9 +60,11 @@ contract RocketUpgradeOneDotFour is RocketBase {
     string public rocketDAOProtocolSettingsDepositAbi;
     string public rocketDAOProtocolSettingsNetworkAbi;
     string public rocketDAOProtocolSettingsSecurityAbi;
+    string public rocketDAOProtocolSettingsMegapoolAbi;
     string public rocketDAOSecurityProposalsAbi;
     string public rocketNetworkRevenuesAbi;
     string public rocketNetworkSnapshotsAbi;
+    string public rocketVoterRewardsAbi;
     string public blockRootsAbi;
     string public beaconStateVerifierAbi;
 
@@ -93,11 +103,13 @@ contract RocketUpgradeOneDotFour is RocketBase {
         rocketDAOProtocolSettingsDeposit = _addresses[10];
         rocketDAOProtocolSettingsNetwork = _addresses[11];
         rocketDAOProtocolSettingsSecurity = _addresses[12];
-        rocketDAOSecurityProposals = _addresses[13];
-        rocketNetworkRevenues = _addresses[14];
-        rocketNetworkSnapshots = _addresses[15];
-        blockRoots = _addresses[16];
-        beaconStateVerifier = _addresses[17];
+        rocketDAOProtocolSettingsMegapool = _addresses[13];
+        rocketDAOSecurityProposals = _addresses[14];
+        rocketNetworkRevenues = _addresses[15];
+        rocketNetworkSnapshots = _addresses[16];
+        rocketVoterRewards = _addresses[17];
+        blockRoots = _addresses[18];
+        beaconStateVerifier = _addresses[19];
 
         // Set ABIs
         rocketMegapoolDelegateAbi = _abis[0];
@@ -113,11 +125,13 @@ contract RocketUpgradeOneDotFour is RocketBase {
         rocketDAOProtocolSettingsDepositAbi = _abis[10];
         rocketDAOProtocolSettingsNetworkAbi = _abis[11];
         rocketDAOProtocolSettingsSecurityAbi = _abis[12];
-        rocketDAOSecurityProposalsAbi = _abis[13];
-        rocketNetworkRevenuesAbi = _abis[14];
-        rocketNetworkSnapshotsAbi = _abis[15];
-        blockRootsAbi = _abis[16];
-        beaconStateVerifierAbi = _abis[17];
+        rocketDAOProtocolSettingsMegapoolAbi = _abis[13];
+        rocketDAOSecurityProposalsAbi = _abis[14];
+        rocketNetworkRevenuesAbi = _abis[15];
+        rocketNetworkSnapshotsAbi = _abis[16];
+        rocketVoterRewardsAbi = _abis[17];
+        blockRootsAbi = _abis[18];
+        beaconStateVerifierAbi = _abis[19];
     }
 
     /// @notice Prevents further changes from being applied
@@ -140,6 +154,8 @@ contract RocketUpgradeOneDotFour is RocketBase {
         _addContract("rocketNetworkRevenues", rocketNetworkRevenues, rocketNetworkRevenuesAbi);
         _addContract("blockRoots", blockRoots, blockRootsAbi);
         _addContract("beaconStateVerifier", beaconStateVerifier, beaconStateVerifierAbi);
+        _addContract("rocketVoterRewards", rocketVoterRewards, rocketVoterRewardsAbi);
+        _addContract("rocketDAOProtocolSettingsMegapool", rocketDAOProtocolSettingsMegapool, rocketDAOProtocolSettingsMegapoolAbi);
 
         // Upgrade existing contracts
         _upgradeContract("rocketNodeManager", rocketNodeManager, rocketNodeManagerAbi);
@@ -154,7 +170,10 @@ contract RocketUpgradeOneDotFour is RocketBase {
         _upgradeContract("rocketDAOSecurityProposals", rocketDAOSecurityProposals, rocketDAOSecurityProposalsAbi);
 
         // Init the megapool factory
-        RocketMegapoolFactoryInterface(rocketMegapoolFactory).initialise();
+        InitialiseInterface(rocketMegapoolFactory).initialise();
+
+        // Initialise the new megapool settings contract
+        InitialiseInterface(rocketDAOProtocolSettingsMegapool).initialise();
 
         // Add new security council allowed parameter
         setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "network", "network.node.commission.share.security.council.adder")), true);
@@ -162,6 +181,17 @@ contract RocketUpgradeOneDotFour is RocketBase {
         // Set socialised assignments to 0 per RPIP-59
         bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "deposit"));
         setUint(keccak256(abi.encodePacked(settingNameSpace, "deposit.assign.socialised.maximum")), 0);
+
+        // Initialise UARS setting defaults per RPIP-46
+        settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "network"));
+        setUint(keccak256(abi.encodePacked(settingNameSpace,"network.node.commission.share")), 0.05 ether);                        // 5% (RPIP-46)
+        setUint(keccak256(abi.encodePacked(settingNameSpace,"network.node.commission.share.security.council.adder")), 0 ether);    // 0% (RPIP-46)
+        setUint(keccak256(abi.encodePacked(settingNameSpace,"network.voter.share")), 0.09 ether);                                  // 9% (RPIP-46)
+        setUint(keccak256(abi.encodePacked(settingNameSpace,"network.max.node.commission.share.council.adder")), 0.01 ether);      // 1% (RPIP-46)
+
+        // Initialise UARS system
+        RocketNetworkRevenuesInterface rocketNetworkRevenuesInstance = RocketNetworkRevenuesInterface(rocketNetworkRevenues);
+        rocketNetworkRevenuesInstance.initialise(0.05 ether, 0.09 ether); // 5% node share, 9% voter share (RPIP-46)
 
         // Set a protocol version value in storage for convenience with bindings
         setString(keccak256(abi.encodePacked("protocol.version")), "1.4");
@@ -191,7 +221,6 @@ contract RocketUpgradeOneDotFour is RocketBase {
     /// @dev Add a new network contract
     function _addContract(string memory _name, address _contractAddress, string memory _contractAbi) internal {
         // Check contract name
-        bytes32 nameHash = keccak256(abi.encodePacked(_name));
         require(bytes(_name).length > 0, "Invalid contract name");
         // Cannot add contract if it already exists (use upgradeContract instead)
         require(getAddress(keccak256(abi.encodePacked("contract.address", _name))) == address(0x0), "Contract name is already in use");

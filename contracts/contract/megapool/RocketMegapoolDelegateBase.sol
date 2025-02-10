@@ -21,6 +21,8 @@ contract RocketMegapoolDelegateBase is RocketMegapoolStorageLayout, RocketMegapo
     }
 
     /// @notice Called by an upgrade to begin the expiry countdown for this delegate
+    /// @dev The expiration block can only ever be set to an offset from the current block to prevent malicious oDAO
+    ///      from manually expiring a delegate and forcing node operators onto a new one without a time buffer
     function deprecate() external override onlyLatestNetworkContract {
         // Expiry is only used on the delegate contract itself
         require(!storageState);
@@ -48,20 +50,20 @@ contract RocketMegapoolDelegateBase is RocketMegapoolStorageLayout, RocketMegapo
     // Modifiers
     //
 
-    /// @dev Throws if caller is not the owner of the megapool
+    /// @dev Reverts if caller is not the owner of the megapool
     modifier onlyMegapoolOwner() {
         address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
         require(msg.sender == nodeAddress || msg.sender == withdrawalAddress, "Only the node operator can access this method");
         _;
     }
 
-    /// @dev Throws if called by any sender that doesn't match one of the supplied contract or is the latest version of that contract
+    /// @dev Reverts if called by any sender that doesn't match one of the supplied contract or is the latest version of that contract
     modifier onlyLatestContract(string memory _contractName, address _contractAddress) {
         require(_contractAddress == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", _contractName))), "Invalid or outdated contract");
         _;
     }
 
-    /// @dev Throws if not called by a valid network contract
+    /// @dev Reverts if not called by a valid network contract
     modifier onlyLatestNetworkContract() {
         require(rocketStorage.getBool(keccak256(abi.encodePacked("contract.exists", msg.sender))), "Invalid or outdated network contract");
         _;

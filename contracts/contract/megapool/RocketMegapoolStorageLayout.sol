@@ -74,11 +74,12 @@ abstract contract RocketMegapoolStorageLayout {
 
     uint256 internal lastDistributionBlock; // The block of the last time a distribution of rewards was executed
 
+    mapping(uint32 => ValidatorInfo) internal validators;
+    mapping(uint32 => PrestakeData) internal prestakeData;
+
     // TODO: Move this to rocketNodeStaking
     uint256 internal stakedRPL;
     uint256 internal unstakedRPL;
     uint256 internal lastUnstakeRequest;
 
-    mapping(uint32 => ValidatorInfo) internal validators;
-    mapping(uint32 => PrestakeData) internal prestakeData;
 }

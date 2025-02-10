@@ -6,5 +6,5 @@ import "../../contract/megapool/RocketMegapoolStorageLayout.sol";
 interface RocketMegapoolManagerInterface {
     function getValidatorCount() external view returns (uint256);
     function addValidator(address _megapoolAddress, uint32 _validatorId) external;
-    function getValidatorInfo(uint256 _index) external view returns (RocketMegapoolStorageLayout.ValidatorInfo memory);
+    function getValidatorInfo(uint256 _index) external view returns (RocketMegapoolStorageLayout.ValidatorInfo memory validatorInfo, address megapoolAddress, uint32 validatorId);
 }

@@ -108,6 +108,8 @@ const networkContracts = {
     rocketMegapoolManager: artifacts.require('RocketMegapoolManager'),
     rocketMegapoolDelegate: artifacts.require('RocketMegapoolDelegate'),
     rocketNetworkRevenues: artifacts.require('RocketNetworkRevenues'),
+    rocketVoterRewards: artifacts.require('RocketVoterRewards'),
+    rocketDAOProtocolSettingsMegapool: artifacts.require('RocketDAOProtocolSettingsMegapool'),
     // Utils
     addressQueueStorage: artifacts.require('AddressQueueStorage'),
     addressSetStorage: artifacts.require('AddressSetStorage'),
@@ -375,7 +377,7 @@ export async function deployRocketPool() {
 
     // Initialise revenues contracts
     const rocketNetworkRevenues = await RocketNetworkRevenues.deployed();
-    await (await rocketNetworkRevenues.initialise()).wait();
+    await (await rocketNetworkRevenues.initialise('0.05'.ether, '0.09'.ether)).wait();
 
     // Disable direct access to storage now
     await (await rocketStorageInstance.setDeployedStatus()).wait();

@@ -14,9 +14,9 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "node") {
         // Set version
         version = 4;
-        // Initialize settings on deployment
-        if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
-            // Apply settings
+        // Initialise settings on deployment
+        if (!rocketStorage.getDeployedStatus()) {
+            // Set defaults
             setSettingBool("node.registration.enabled", false);
             setSettingBool("node.smoothing.pool.registration.enabled", true);
             setSettingBool("node.deposit.enabled", false);
@@ -24,25 +24,27 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
             _setSettingUint("node.per.minipool.stake.minimum", 0.1 ether);      // 10% of user ETH value (matched ETH)
             _setSettingUint("node.per.minipool.stake.maximum", 1.5 ether);      // 150% of node ETH value (provided ETH)
             _setSettingUint("reduced.bond", 4 ether);                           // RPIP-42
-            // Settings initialised
+            // Update deployed flag
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
     }
 
     /// @notice Update a setting, overrides inherited setting method with extra checks for this contract
     function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
-        bytes32 settingKey = keccak256(bytes(_settingPath));
-        if(settingKey == keccak256(bytes("node.voting.power.stake.maximum"))) {
-            // Redirect the setting change to push a new value into the snapshot system instead
-            RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
-            rocketNetworkSnapshots.push(settingKey, uint224(_value));
-            return;
+        if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
+            bytes32 settingKey = keccak256(bytes(_settingPath));
+            if(settingKey == keccak256(bytes("node.voting.power.stake.maximum"))) {
+                // Redirect the setting change to push a new value into the snapshot system instead
+                RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
+                rocketNetworkSnapshots.push(settingKey, uint224(_value));
+                return;
+            }
         }
         // Update setting now
         _setSettingUint(_settingPath, _value);
     }
 
-    /// @dev Sets a namespaced uint value skipping any guardrails
+    /// @dev Directly updates a setting, no guardrails applied
     function _setSettingUint(string memory _settingPath, uint256 _value) internal {
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }
@@ -90,7 +92,7 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
     }
 
     /// @notice Returns the `base_bond_array` cumulative array of bond requirements for number of validators
-    function getBaseBondArray() override public view returns (uint256[] memory) {
+    function getBaseBondArray() override public pure returns (uint256[] memory) {
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = 4 ether;
         amounts[1] = 8 ether;

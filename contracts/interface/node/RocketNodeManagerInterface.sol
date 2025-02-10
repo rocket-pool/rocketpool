@@ -41,5 +41,6 @@ interface RocketNodeManagerInterface {
     function deployMegapool() external returns (address);
     function getExpressTicketCount(address _nodeAddress) external view returns (uint256);
     function useExpressTicket(address _nodeAddress) external;
+    function refundExpressTicket(address _nodeAddress) external;
     function getMegapoolAddress(address _nodeAddress) external view returns (address);
 }

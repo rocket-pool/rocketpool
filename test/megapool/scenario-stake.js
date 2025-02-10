@@ -3,7 +3,7 @@ import { getMegapoolWithdrawalCredentials, getValidatorInfo } from '../_helpers/
 
 const hre = require('hardhat');
 
-// Stake a minipool
+// Stake a megapool validator
 export async function stakeMegapoolValidator(megapool, index, txOptions) {
     // Gather info
     const withdrawalCredentials = await getMegapoolWithdrawalCredentials(txOptions.from.address);

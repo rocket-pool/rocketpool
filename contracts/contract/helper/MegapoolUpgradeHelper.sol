@@ -11,7 +11,7 @@ contract MegapoolUpgradeHelper is RocketBase {
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
     }
 
-    function upgradeDelegate(address _newDelegate) external {
+    function upgradeDelegate(address _newDelegate) external onlyGuardian {
         RocketMegapoolFactoryInterface rocketMegapoolFactory = RocketMegapoolFactoryInterface(getContractAddress("rocketMegapoolFactory"));
         rocketMegapoolFactory.upgradeDelegate(_newDelegate);
     }

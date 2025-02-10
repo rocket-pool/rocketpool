@@ -1,24 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import "../../interface/RocketVaultInterface.sol";
-import "../../interface/RocketVaultWithdrawerInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
-import "../../interface/deposit/RocketDepositPoolInterface.sol";
-import "../../interface/megapool/RocketMegapoolInterface.sol";
-import "../../interface/minipool/RocketMinipoolInterface.sol";
-import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
-import "../../interface/token/RocketTokenRETHInterface.sol";
-import "../../interface/util/AddressQueueStorageInterface.sol";
 import "../../interface/util/LinkedListStorageInterface.sol";
-import "../../types/MinipoolDeposit.sol";
-import "../RocketBase.sol";
-import "../../interface/node/RocketNodeStakingInterface.sol";
-import "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
-import {RocketNodeManager} from "../node/RocketNodeManager.sol";
+import {AddressQueueStorageInterface} from "../../interface/util/AddressQueueStorageInterface.sol";
+import {LinkedListStorageInterface} from "../../interface/util/LinkedListStorageInterface.sol";
+import {RocketBase} from "../RocketBase.sol";
+import {RocketDAOProtocolSettingsDepositInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
+import {RocketDAOProtocolSettingsMinipoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import {RocketDepositPoolInterface} from "../../interface/deposit/RocketDepositPoolInterface.sol";
+import {RocketMegapoolDelegateInterface} from "../../interface/megapool/RocketMegapoolDelegateInterface.sol";
+import {RocketMegapoolInterface} from "../../interface/megapool/RocketMegapoolInterface.sol";
+import {RocketMinipoolInterface} from "../../interface/minipool/RocketMinipoolInterface.sol";
+import {RocketMinipoolQueueInterface} from "../../interface/minipool/RocketMinipoolQueueInterface.sol";
+import {RocketNodeManagerInterface} from "../../interface/node/RocketNodeManagerInterface.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
+import {RocketTokenRETHInterface} from "../../interface/token/RocketTokenRETHInterface.sol";
+import {RocketVaultInterface} from "../../interface/RocketVaultInterface.sol";
+import {RocketVaultWithdrawerInterface} from "../../interface/RocketVaultWithdrawerInterface.sol";
 
 /// @notice Accepts user deposits and mints rETH; handles assignment of deposited ETH to megapools
 contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaultWithdrawerInterface {
@@ -260,8 +258,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
     /// @dev Assigns deposits using the new megapool queue
     function _assignDepositsNew(RocketDAOProtocolSettingsDepositInterface _rocketDAOProtocolSettingsDeposit) internal {
-        // Load contracts
-        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         // Calculate the number of minipools to assign
         // TODO: Confirm whether we still want to support socialised assignments or whether the RPIP intends for them to be entirely removed (improve gas if removed)
         uint256 maxAssignments = _rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments();
@@ -326,7 +322,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     /// @param _validatorId The megapool-managed ID of the validator requesting funds
     /// @param _amount The amount of ETH requested by the node operator
     /// @param _expressQueue Whether to consume an express ticket to be placed in the express queue
-    function requestFunds(uint256 _bondAmount, uint256 _validatorId, uint256 _amount, bool _expressQueue) external onlyRegisteredMegapool(msg.sender) {
+    function requestFunds(uint256 _bondAmount, uint32 _validatorId, uint256 _amount, bool _expressQueue) external onlyRegisteredMegapool(msg.sender) {
         // Validate arguments
         require(_bondAmount % milliToWei == 0, "Invalid supplied amount");
         require(_amount % milliToWei == 0, "Invalid requested amount");
@@ -340,7 +336,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         bytes32 namespace = getQueueNamespace(_expressQueue);
         DepositQueueValue memory value = DepositQueueValue({
             receiver: msg.sender,                             // Megapool address
-            validatorId: uint32(_validatorId),                // Incrementing id per validator in a megapool
+            validatorId: _validatorId,                // Incrementing id per validator in a megapool
             suppliedValue: uint32(_bondAmount / milliToWei),  // NO bond amount
             requestedValue: uint32(_amount / milliToWei)      // Amount being requested
         });
@@ -348,6 +344,18 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         linkedListStorage.enqueueItem(namespace, value);
         // Increase requested balance and node balance
         addUint(keccak256("deposit.pool.requested.total"), _amount);
+        // Check if head moved
+        if (_expressQueue) {
+            uint256 expressQueueLength = linkedListStorage.getLength(expressQueueNamespace);
+            if (expressQueueLength == 1) {
+                setUint(keccak256("megapool.express.queue.head.moved.block"), block.number);
+            }
+        } else {
+            uint256 standardQueueLength = linkedListStorage.getLength(standardQueueNamespace);
+            if (standardQueueLength == 1) {
+                setUint(keccak256("megapool.standard.queue.head.moved.block"), block.number);
+            }
+        }
         // Emit event
         emit FundsRequested(msg.sender, _validatorId, _amount, _expressQueue, block.timestamp);
     }
@@ -355,15 +363,16 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     /// @notice Removes a pending entry in the validator queue and returns funds to node by credit mechanism
     /// @param _validatorId Internal ID of the validator to be removed
     /// @param _expressQueue Whether the entry is in the express queue or not
-    function exitQueue(uint256 _validatorId, bool _expressQueue) external onlyRegisteredMegapool(msg.sender) {
+    function exitQueue(uint32 _validatorId, bool _expressQueue) external onlyRegisteredMegapool(msg.sender) {
         LinkedListStorageInterface linkedListStorage = LinkedListStorageInterface(getContractAddress("linkedListStorage"));
         DepositQueueKey memory key = DepositQueueKey({
             receiver: msg.sender,
-            validatorId: uint32(_validatorId)
+            validatorId: _validatorId
         });
         bytes32 namespace = getQueueNamespace(_expressQueue);
         uint256 index = linkedListStorage.getIndexOf(namespace, key);
         DepositQueueValue memory value = linkedListStorage.getItem(namespace, index);
+        bool isAtHead = linkedListStorage.getHeadIndex(namespace) == index;
         linkedListStorage.removeItem(namespace, key);
         // Perform balance accounting
         subUint(keccak256("deposit.pool.requested.total"), value.requestedValue * milliToWei);
@@ -371,7 +380,21 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(msg.sender);
         address nodeAddress = megapool.getNodeAddress();
         addUint(keccak256(abi.encodePacked("deposit.pool.node.credit", nodeAddress)), value.suppliedValue * milliToWei);
-        // TODO: Should node operator receive their express ticket back?
+        if (_expressQueue) {
+            // Refund express ticket
+            RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+            rocketNodeManager.refundExpressTicket(nodeAddress);
+            // Update head moved block
+            if (isAtHead) {
+                setUint(keccak256("megapool.express.queue.head.moved.block"), block.number);
+            }
+        } else {
+            // Update head moved block
+            if (isAtHead) {
+                setUint(keccak256("megapool.standard.queue.head.moved.block"), block.number);
+            }
+        }
+        // Emit event
         emit QueueExited(msg.sender, block.timestamp);
     }
 
@@ -396,16 +419,16 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     /// @dev During the transition period from the legacy minipool queue, this will always return null address
     /// @return receiver Address of the receiver of the next assignment or null address for an empty queue
     /// @return assignmentPossible Whether there is enough funds in the pool to perform an assignment now
-    function getQueueTop() override external view returns (address receiver, bool assignmentPossible) {
+    /// @return headMovedBlock The block at which the receiver entered the top of the queue
+    function getQueueTop() override external view returns (address, bool, uint256) {
         // If legacy queue is still being processed, return null address
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
         if (addressQueueStorage.getLength(queueKeyVariable) > 0) {
-            return (address(0x0), false);
+            return (address(0x0), false, 0);
         }
 
         // Get contracts
         LinkedListStorageInterface linkedListStorage = LinkedListStorageInterface(getContractAddress("linkedListStorage"));
-        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
 
         uint256 expressQueueLength = linkedListStorage.getLength(expressQueueNamespace);
@@ -413,7 +436,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
         // If both queues are empty, return null address
         if (expressQueueLength == 0 && standardQueueLength == 0) {
-            return (address(0x0), false);
+            return (address(0x0), false, 0);
         }
 
         uint256 queueIndex = getUint(keccak256("megapool.queue.index"));
@@ -439,7 +462,15 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             assignmentPossible = false;
         }
 
-        return (head.receiver, assignmentPossible);
+        // Retrieve the block at which the entry at the top of the queue got to that position
+        uint256 headMovedBlock;
+        if (express) {
+            headMovedBlock = getUint(keccak256("megapool.express.queue.head.moved.block"));
+        } else {
+            headMovedBlock = getUint(keccak256("megapool.standard.queue.head.moved.block"));
+        }
+
+        return (head.receiver, assignmentPossible, headMovedBlock);
     }
 
     /// @dev Loops over a maximum of `_count` entries in the queue and assigns funds
@@ -450,7 +481,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             return;
         }
         LinkedListStorageInterface linkedListStorage = LinkedListStorageInterface(getContractAddress("linkedListStorage"));
-        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
 
         uint256 expressQueueLength = linkedListStorage.getLength(expressQueueNamespace);
         uint256 standardQueueLength = linkedListStorage.getLength(standardQueueNamespace);
@@ -462,12 +492,15 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         uint256 expressQueueRate = rocketDAOProtocolSettingsDeposit.getExpressQueueRate();
         uint256 totalSent = 0;
 
+        bool expressHeadMoved = false;
+        bool standardHeadMoved = false;
+
         for (uint256 i = 0; i < _count; i++) {
             if (expressQueueLength == 0 && standardQueueLength == 0) {
                 break;
             }
 
-            bool express = queueIndex % (expressQueueRate + 1) != 0;
+            bool express = queueIndex % (expressQueueRate + 1) != expressQueueRate;
 
             if (express && expressQueueLength == 0) {
                 express = false;
@@ -501,8 +534,10 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             queueIndex ++;
             if (express) {
                 expressQueueLength -= 1;
+                expressHeadMoved = true;
             } else {
                 standardQueueLength -= 1;
+                standardHeadMoved = true;
             }
         }
 
@@ -510,6 +545,20 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         subUint("deposit.pool.node.balance", nodeBalanceUsed);
         setUint(keccak256("megapool.queue.index"), queueIndex);
         subUint(keccak256("deposit.pool.requested.total"), totalSent);
+        setUint(keccak256("megapool.queue.last.moved.block"), block.number);
+
+        // Update head moved blocks
+        if (expressHeadMoved) {
+            setUint(keccak256("megapool.express.queue.head.moved.block"), block.number);
+        }
+        if (standardHeadMoved) {
+            setUint(keccak256("megapool.standard.queue.head.moved.block"), block.number);
+        }
+    }
+
+    /// @notice Retrieves the queue index (used for deciding whether to assign express or standard queue next)
+    function getQueueIndex() override external view returns (uint256) {
+        return getUint(keccak256("megapool.queue.index"));
     }
 
     /// @dev Convenience method to return queue key for express and non-express queues

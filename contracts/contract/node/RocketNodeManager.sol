@@ -274,7 +274,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     function getAverageNodeFee(address _nodeAddress) override external view returns (uint256) {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         // Get valid deposit amounts
         uint256[2] memory depositSizes;
@@ -494,6 +493,13 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         tickets -= 1;
         setBool(keccak256(abi.encodePacked("node.express.provisioned", _nodeAddress)), true);
         setUint(keccak256(abi.encodePacked("node.express.tickets", _nodeAddress)), tickets);
+    }
+
+    /// @notice Refunds an express ticket for the given node operator
+    /// @param _nodeAddress Address of the node operator to refund express ticket for
+    function refundExpressTicket(address _nodeAddress) external override onlyLatestContract("rocketNodeManager", address(this)) onlyLatestContract("rocketDepositPool", msg.sender) {
+        // Refunds can only occur after the use of a ticket which guarantees tickets were provisioned
+        addUint(keccak256(abi.encodePacked("node.express.tickets", _nodeAddress)), 1);
     }
 
     /// @notice Convenience function to return the megapool address for a node if it is deployed, otherwise null address

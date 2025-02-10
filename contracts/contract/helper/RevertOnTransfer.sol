@@ -1,8 +1,7 @@
-pragma solidity 0.7.6;
-
 // SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.8.18;
 
-// Helper contract to simulate malicious node withdrawal address or withdrawal address
+/// @notice Helper contract to simulate malicious node withdrawal address or withdrawal address
 contract RevertOnTransfer {
     bool public enabled = true;
 
@@ -10,11 +9,12 @@ contract RevertOnTransfer {
         enabled = _enabled;
     }
 
-    fallback() external payable {
+    receive() external payable {
         require(!enabled);
     }
 
     function call(address _address, bytes calldata _payload) external payable {
-        _address.call{value: msg.value}(_payload);
+        (bool success,) = _address.call{value: msg.value}(_payload);
+        require(success, "Failed to transfer");
     }
 }

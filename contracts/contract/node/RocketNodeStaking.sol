@@ -58,18 +58,6 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         return getUint(totalKey);
     }
 
-    /// @dev Increases the total network RPL stake
-    /// @param _amount How much to increase by
-    function increaseTotalRPLStake(uint256 _amount) private {
-        addUint(totalKey, _amount);
-    }
-
-    /// @dev Decrease the total network RPL stake
-    /// @param _amount How much to decrease by
-    function decreaseTotalRPLStake(uint256 _amount) private {
-        subUint(totalKey, _amount);
-    }
-
     /// @notice Returns the amount a given node operator has staked
     /// @param _nodeAddress The address of the node operator to query
     function getNodeRPLStake(address _nodeAddress) override public view returns (uint256) {
@@ -490,4 +478,15 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         emit RPLSlashed(_nodeAddress, rplSlashAmount, _ethSlashAmount, block.timestamp);
     }
 
+    /// @dev Increases the total network RPL stake
+    /// @param _amount How much to increase by
+    function increaseTotalRPLStake(uint256 _amount) internal {
+        addUint(totalKey, _amount);
+    }
+
+    /// @dev Decrease the total network RPL stake
+    /// @param _amount How much to decrease by
+    function decreaseTotalRPLStake(uint256 _amount) internal {
+        subUint(totalKey, _amount);
+    }
 }

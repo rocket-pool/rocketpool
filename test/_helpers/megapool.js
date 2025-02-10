@@ -1,7 +1,7 @@
 import { assertBN } from './bn';
 import * as assert from 'assert';
 import {
-    artifacts, RocketDAOProtocolSettingsDeposit, RocketDepositPool,
+    artifacts, LinkedListStorage, RocketDAOProtocolSettingsDeposit, RocketDepositPool,
     RocketMegapoolDelegate,
     RocketMegapoolFactory, RocketMegapoolManager,
     RocketNodeDeposit, RocketNodeManager,
@@ -169,4 +169,67 @@ export async function getMegapoolForNode(node) {
     const combinedAbi = [...delegateAbi, ...proxyAbi].filter(fragment => fragment.type !== 'constructor');
 
     return new ethers.Contract(megapoolAddress, combinedAbi, node);
+}
+
+export async function findInQueue(megapoolAddress, validatorId, queueKey, indexOffset = 0n, positionOffset = 0n) {
+    const maxSliceLength = 100n; // Number of entries to scan per call
+
+    validatorId = BigInt(validatorId);
+
+    const linkedListStorage = await LinkedListStorage.deployed();
+    const scan = await linkedListStorage.scan(ethers.solidityPackedKeccak256(['string'], [queueKey]), indexOffset, maxSliceLength);
+
+    for (const entry of scan[0]) {
+        if (entry[0].toLowerCase() === megapoolAddress.toLowerCase()) {
+            if (entry[1] === validatorId) {
+                // Found the entry
+                return positionOffset;
+            }
+        }
+        positionOffset += 1n;
+    }
+
+    if (scan[1] === 0n) {
+        // We hit the end of the queue without finding the entry
+        return null;
+    } else {
+        // Nothing in this slice, recurse until end of queue is reached
+        return await findInQueue(megapoolAddress, validatorId, queueKey, scan[1], positionOffset);
+    }
+}
+
+export async function calculatePositionInQueue(megapool, validatorId) {
+    const { expressUsed } = await getValidatorInfo(megapool, validatorId);
+
+    const queueKeyString = expressUsed ? 'deposit.queue.express' : 'deposit.queue.standard';
+    const position = await findInQueue(megapool.target, validatorId, queueKeyString);
+
+    if (position === null) {
+        // Not found in the queue
+        return null;
+    }
+
+    const linkedListStorage = await LinkedListStorage.deployed();
+    const rocketDepositPool = await RocketDepositPool.deployed();
+    const rocketDAOProtocolSettingsDeposit = await RocketDAOProtocolSettingsDeposit.deployed();
+
+    const expressQueueLength = await linkedListStorage.getLength(ethers.solidityPackedKeccak256(['string'], ['deposit.queue.express']));
+    const standardQueueLength = await linkedListStorage.getLength(ethers.solidityPackedKeccak256(['string'], ['deposit.queue.standard']));
+    const queueIndex = await rocketDepositPool.getQueueIndex();
+    const expressQueueRate = await rocketDAOProtocolSettingsDeposit.getExpressQueueRate();
+    const queueInterval = expressQueueRate + 1n;
+
+    if (expressUsed) {
+        let standardEntriesBefore = (position + (queueIndex % queueInterval)) / expressQueueRate;
+        if (standardEntriesBefore > standardQueueLength) {
+            standardEntriesBefore = standardQueueLength;
+        }
+        return position + standardEntriesBefore;
+    } else {
+        let expressEntriesBefore = (position * expressQueueLength) + (expressQueueRate - (queueIndex % queueInterval));
+        if (expressEntriesBefore > expressQueueLength) {
+            expressEntriesBefore = expressQueueLength;
+        }
+        return position + expressEntriesBefore;
+    }
 }

@@ -8,8 +8,8 @@ library SSZ {
     }
 
     function toIndex(Path memory path) internal pure returns (uint256) {
-        uint256 length = uint8(path._data);
-        uint256 anchor = uint256(1) << length;
+        uint256 pathLength = uint8(path._data);
+        uint256 anchor = uint256(1) << pathLength;
         return (path._data >> 8) | anchor;
     }
 

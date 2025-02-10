@@ -1,10 +1,11 @@
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 pragma abicoder v2;
 
-// SPDX-License-Identifier: GPL-3.0-only
-
-import "../RocketBase.sol";
 import "../../interface/util/LinkedListStorageInterface.sol";
+import {LinkedListStorageInterface} from "../../interface/util/LinkedListStorageInterface.sol";
+import {RocketBase} from "../RocketBase.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 
 /// @notice A linked list storage helper for the deposit requests queue data
 contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
@@ -20,7 +21,7 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
     uint256 constant internal suppliedOffset = 256 - 160 - 32 - 32;
 
     uint64 constant internal ones64Bits = 0xFFFFFFFFFFFFFFFF;
-    
+
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
@@ -45,6 +46,13 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
     /// @param _key the deposit queue value
     function getIndexOf(bytes32 _namespace, DepositQueueKey memory _key) override external view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(_namespace, ".index", _key.receiver, _key.validatorId)));
+    }
+
+    /// @notice Returns the index of the item at the head of the list
+    /// @param _namespace defines the queue to be used
+    function getHeadIndex(bytes32 _namespace) override external view returns (uint256) {
+        uint256 data = getUint(keccak256(abi.encodePacked(_namespace, ".data")));
+        return uint64(data >> startOffset);
     }
 
     /// @notice Finds an item index in a queue and returns the previous item
@@ -93,7 +101,7 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
             data &= ~(uint256(ones64Bits) << startOffset);
             data |= newIndex << startOffset;
         }
-        
+
         setUint(keccak256(abi.encodePacked(_namespace, ".item", newIndex)), _packItem(_item));
         setUint(keccak256(abi.encodePacked(_namespace, ".index", _item.receiver, _item.validatorId)), newIndex);
         // clear the 64 bits used to stored the 'end' pointer
@@ -133,7 +141,7 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
         uint256 start = uint64(data >> startOffset);
         uint256 packedItem = getUint(keccak256(abi.encodePacked(_namespace, ".item", start)));
         item = _unpackItem(packedItem);
-        
+
         uint256 nextItem = getUint(keccak256(abi.encodePacked(_namespace, ".next", start)));
         // clear the 64 bits used to stored the 'start' pointer
         data &= ~(uint256(ones64Bits) << startOffset);
@@ -146,7 +154,7 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
             // zero the 64 bits storing the 'end' pointer
             data &= ~(uint256(ones64Bits) << endOffset);
         }
- 
+
         // Update the length of the queue
         // clear the 64 bits used to stored the 'length' information
         data &= ~(uint256(ones64Bits) << lengthOffset);
@@ -163,14 +171,14 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
         _removeItem(_namespace, _key);
     }
 
-    /// @notice Internal funciton to remove an item from a queue. Requires that the item exists in the queue
+    /// @notice Internal function to remove an item from a queue. Requires that the item exists in the queue
     /// @param _namespace defines the queue to be used
     /// @param _key to be removed from the queue
     function _removeItem(bytes32 _namespace, DepositQueueKey memory _key) internal {
         uint256 index = getUint(keccak256(abi.encodePacked(_namespace, ".index", _key.receiver, _key.validatorId)));
         uint256 data = getUint(keccak256(abi.encodePacked(_namespace, ".data")));
         require(index > 0, "Item does not exist in queue");
-        
+
         uint256 prevIndex = getUint(keccak256(abi.encodePacked(_namespace, ".prev", index)));
         uint256 nextIndex = getUint(keccak256(abi.encodePacked(_namespace, ".next", index)));
         if (prevIndex > 0) {
@@ -222,6 +230,33 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
         item.validatorId = uint32(_packedValue >> indexOffset);
         item.suppliedValue = uint32(_packedValue >> suppliedOffset);
         item.requestedValue = uint32(_packedValue);
+    }
+
+    /// @notice Returns the supplied number of entries starting at the supplied index
+    function scan(bytes32 _namespace, uint256 _start, uint256 _count) override external view returns (DepositQueueValue[] memory, uint256) {
+        DepositQueueValue[] memory entries = new DepositQueueValue[](_count);
+        uint256 nextIndex = _start;
+        uint256 total = 0;
+
+        // If nextIndex is 0, begin scan at the start of the list
+        if (nextIndex == 0) {
+            uint256 data = getUint(keccak256(abi.encodePacked(_namespace, ".data")));
+            uint256 start = uint64(data >> startOffset);
+            nextIndex = start;
+        }
+
+        while (total < _count && nextIndex != 0) {
+            uint256 packedValue = getUint(keccak256(abi.encodePacked(_namespace, ".item", nextIndex)));
+            entries[total] = _unpackItem(packedValue);
+            nextIndex = getUint(keccak256(abi.encodePacked(_namespace, ".next", nextIndex)));
+            total++;
+        }
+
+        assembly {
+            mstore(entries, total)
+        }
+
+        return (entries, nextIndex);
     }
 
 }

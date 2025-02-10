@@ -8,9 +8,6 @@ import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInter
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
 import "../../interface/megapool/RocketMegapoolInterface.sol";
-import "../../interface/minipool/RocketMinipoolInterface.sol";
-import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
-import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../interface/network/RocketNetworkVotingInterface.sol";
 import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
@@ -147,33 +144,33 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     /// @param _depositDataRoot The hash tree root of the deposit data (passed onto the deposit contract on pre stake)
     function depositWithCredit(uint256 _bondAmount, bool _useExpressTicket, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(msg.sender) {
         revert("Not implemented");
-        {
-            uint256 balanceToUse = 0;
-            uint256 creditToUse = 0;
-            uint256 shortFall = _bondAmount - msg.value;
-            uint256 credit = getNodeUsableCredit(msg.sender);
-            uint256 balance = getNodeEthBalance(msg.sender);
-            // Check credit
-            require(credit + balance >= shortFall, "Insufficient credit");
-            // Calculate amounts to use
-            creditToUse = shortFall;
-            if (credit < shortFall) {
-                balanceToUse = shortFall - credit;
-                creditToUse = credit;
-            }
-            // Update balances
-            if (balanceToUse > 0) {
-                subUint(keccak256(abi.encodePacked("node.eth.balance", msg.sender)), balanceToUse);
-                // Withdraw the funds
-                RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
-                rocketVault.withdrawEther(balanceToUse);
-            }
-            if (creditToUse > 0) {
-                subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), creditToUse);
-            }
-        }
-        // Process the deposit
-        _deposit(_bondAmount, _useExpressTicket, _validatorPubkey, _validatorSignature, _depositDataRoot);
+//        {
+//            uint256 balanceToUse = 0;
+//            uint256 creditToUse = 0;
+//            uint256 shortFall = _bondAmount - msg.value;
+//            uint256 credit = getNodeUsableCredit(msg.sender);
+//            uint256 balance = getNodeEthBalance(msg.sender);
+//            // Check credit
+//            require(credit + balance >= shortFall, "Insufficient credit");
+//            // Calculate amounts to use
+//            creditToUse = shortFall;
+//            if (credit < shortFall) {
+//                balanceToUse = shortFall - credit;
+//                creditToUse = credit;
+//            }
+//            // Update balances
+//            if (balanceToUse > 0) {
+//                subUint(keccak256(abi.encodePacked("node.eth.balance", msg.sender)), balanceToUse);
+//                // Withdraw the funds
+//                RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+//                rocketVault.withdrawEther(balanceToUse);
+//            }
+//            if (creditToUse > 0) {
+//                subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), creditToUse);
+//            }
+//        }
+//        // Process the deposit
+//        _deposit(_bondAmount, _useExpressTicket, _validatorPubkey, _validatorSignature, _depositDataRoot);
     }
 
     /// @dev Internal logic to process a deposit
@@ -207,13 +204,8 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     /// @param _nodeAddress The node operator's address to increase the ETH matched for
     /// @param _amount The amount to increase the ETH matched
     /// @dev Will revert if the new ETH matched amount exceeds the node operators limit
+    ///      Deprecated. Exists only for transition period to megapools
     function increaseEthMatched(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeDeposit", address(this)) onlyLatestNetworkContract() {
-        _increaseEthMatched(_nodeAddress, _amount);
-    }
-
-    /// @dev Increases the amount of ETH that has been matched against a node operators bond. Reverts if it exceeds the
-    ///      collateralisation requirements of the network
-    function _increaseEthMatched(address _nodeAddress, uint256 _amount) private {
         // Check amount doesn't exceed limits
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
@@ -236,12 +228,6 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         rocketNetworkSnapshots.push(key, uint224(ethProvided));
     }
 
-    /// @dev Adds a minipool to the queue
-    function enqueueMinipool(address _minipoolAddress) private {
-        // Add minipool to queue
-        RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue")).enqueueMinipool(_minipoolAddress);
-    }
-
     /// @dev Checks the bond requirements for a node deposit
     function checkBondRequirement(RocketMegapoolInterface _megapool, uint256 _bondAmount) internal {
         uint256 totalBondRequired = getBondRequirement(_megapool.getValidatorCount());
@@ -262,41 +248,8 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         rocketNetworkVoting.initialiseVotingFor(msg.sender);
     }
 
-    /// @dev Reverts if node operator has not initialised their fee distributor
-    function checkDistributorInitialised() private view {
-        // Check node has initialised their fee distributor
-        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-        require(rocketNodeManager.getFeeDistributorInitialised(msg.sender), "Fee distributor not initialised");
-    }
-
-    /// @dev Creates a minipool and returns an instance of it
-    /// @param _salt The salt used to determine the minipools address
-    /// @param _expectedMinipoolAddress The expected minipool address. Reverts if not correct
-    function createMinipool(uint256 _salt, address _expectedMinipoolAddress) private returns (RocketMinipoolInterface) {
-        // Load contracts
-        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        // Check minipool doesn't exist or previously exist
-        require(!rocketMinipoolManager.getMinipoolExists(_expectedMinipoolAddress) && !rocketMinipoolManager.getMinipoolDestroyed(_expectedMinipoolAddress), "Minipool already exists or was previously destroyed");
-        // Create minipool
-        RocketMinipoolInterface minipool = rocketMinipoolManager.createMinipool(msg.sender, _salt);
-        // Ensure minipool address matches expected
-        require(address(minipool) == _expectedMinipoolAddress, "Unexpected minipool address");
-        // Return
-        return minipool;
-    }
-
-    /// @dev Reverts if network node fee is below a minimum
-    /// @param _minimumNodeFee The minimum node fee required to not revert
-    function checkNodeFee(uint256 _minimumNodeFee) private view {
-        // Load contracts
-        RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
-        // Check current node fee
-        uint256 nodeFee = rocketNetworkFees.getNodeFee();
-        require(nodeFee >= _minimumNodeFee, "Minimum node fee exceeds current network node fee");
-    }
-
     /// @dev Reverts if deposits are not enabled
-    function checkDepositsEnabled() private view {
+    function checkDepositsEnabled() private {
         // Get contracts
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         // Check node settings
@@ -309,5 +262,4 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     function validateBytes(bytes memory _data, uint256 _length) pure internal {
         require(_data.length == _length, "Invalid bytes length");
     }
-
 }

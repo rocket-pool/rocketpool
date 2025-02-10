@@ -34,5 +34,8 @@
     "mocha": "^10.1.0",
     "pako": "^1.0.6",
     "solidity-coverage": "^0.8.13"
+  },
+  "dependencies": {
+    "hardhat-ignore-warnings": "^0.2.12"
   }
 }

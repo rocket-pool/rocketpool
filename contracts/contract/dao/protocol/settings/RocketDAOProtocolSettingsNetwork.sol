@@ -1,22 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import "./RocketDAOProtocolSettings.sol";
-import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
+import {RocketStorageInterface} from "../../../../interface/RocketStorageInterface.sol";
+import {RocketDAOProtocolSettingsNetworkInterface} from "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 import {RocketNetworkRevenuesInterface} from "../../../../interface/network/RocketNetworkRevenuesInterface.sol";
+import {RocketBase} from "../../../RocketBase.sol";
+import {RocketDAOProtocolSettings} from "./RocketDAOProtocolSettings.sol";
 
 /// @notice Network auction settings
 contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDAOProtocolSettingsNetworkInterface {
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "network") {
         version = 4;
-        // Initialize settings on deployment
-        if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
-            // Apply settings
+        // Initialise settings on deployment
+        if (!rocketStorage.getDeployedStatus()) {
+            // Set defaults
             _setSettingUint("network.consensus.threshold", 0.51 ether);      // 51%
-            setSettingBool("network.submit.balances.enabled", true);
+            _setSettingBool("network.submit.balances.enabled", true);
             _setSettingUint("network.submit.balances.frequency", 1 days);
-            setSettingBool("network.submit.prices.enabled", true);
+            _setSettingBool("network.submit.prices.enabled", true);
             _setSettingUint("network.submit.prices.frequency", 1 days);
             _setSettingUint("network.node.fee.minimum", 0.15 ether);         // 15%
             _setSettingUint("network.node.fee.target", 0.15 ether);          // 15%
@@ -25,64 +27,74 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             _setSettingUint("network.reth.collateral.target", 0.1 ether);
             _setSettingUint("network.penalty.threshold", 0.51 ether);       // Consensus for penalties requires 51% vote
             _setSettingUint("network.penalty.per.rate", 0.1 ether);         // 10% per penalty
-            setSettingBool("network.submit.rewards.enabled", true);        // Enable reward submission
-            _setSettingUint("network.node.commission.share", 0.05 ether);                        // 5%
-            _setSettingUint("network.node.commission.share.security.council.adder", 0 ether);    // 0%
-            _setSettingUint("network.voter.share", 0.09 ether);                                  // 9%
-            _setSettingUint("network.max.node.commission.share.council.adder", 0.01 ether);      // 1%
-            // Settings initialised
+            _setSettingBool("network.submit.rewards.enabled", true);        // Enable reward submission
+            _setSettingUint("network.node.commission.share", 0.05 ether);                        // 5% (RPIP-46)
+            _setSettingUint("network.node.commission.share.security.council.adder", 0 ether);    // 0% (RPIP-46)
+            _setSettingUint("network.voter.share", 0.09 ether);                                  // 9% (RPIP-46)
+            _setSettingUint("network.max.node.commission.share.council.adder", 0.01 ether);      // 1% (RPIP-46)
+            // Set deploy flag
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
     }
 
     /// @notice Update a setting, overrides inherited setting method with extra checks for this contract
     function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
-        // Some safety guards for certain settings
-        bytes32 settingKey = keccak256(bytes(_settingPath));
-        bool voterShareModified = false;
-        bool nodeShareModified = false;
-        if(settingKey == keccak256(bytes("network.consensus.threshold"))) {
-            require(_value >= 0.51 ether, "Consensus threshold must be 51% or higher");
-        } else if(settingKey == keccak256(bytes("network.node.fee.minimum"))) {
-            require(_value >= 0.05 ether && _value <= 0.2 ether, "The node fee minimum must be a value between 5% and 20%");
-        } else if(settingKey == keccak256(bytes("network.node.fee.target"))) {
-            require(_value >= 0.05 ether && _value <= 0.2 ether, "The node fee target must be a value between 5% and 20%");
-        } else if(settingKey == keccak256(bytes("network.node.fee.maximum"))) {
-            require(_value >= 0.05 ether && _value <= 0.2 ether, "The node fee maximum must be a value between 5% and 20%");
-        } else if(settingKey == keccak256(bytes("network.submit.balances.frequency"))) {
-            require(_value >= 1 hours, "The submit frequency must be >= 1 hour");
-        } else if(settingKey == keccak256(bytes("network.node.commission.share.security.council.adder"))) {
-            uint256 maxAdderValue = getSettingUint("network.max.node.commission.share.council.adder");
-            require(_value <= maxAdderValue, "Value must be <= max value");
-            uint256 maxVoterValue = getSettingUint("network.voter.share");
-            require(_value <= maxVoterValue, "Value must be <= voter share");
-            voterShareModified = true;
-            nodeShareModified = true;
-        }  else if(settingKey == keccak256(bytes("network.node.commission.share"))) {
-            nodeShareModified = true;
-        } else if(settingKey == keccak256(bytes("network.voter.share"))) {
-            voterShareModified = true;
-        }
-        // Update setting now
-        _setSettingUint(_settingPath, _value);
-        // Check for changes to UARS parameters
-        if (voterShareModified || nodeShareModified) {
-            // Check rETH commission invariant
-            require(getRethCommission() <= 1 ether, "rETH Commission must be <= 100%");
-            // If one of the UARS parameters changed, notify RocketNetworkRevenues
-            RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
-            if (voterShareModified) {
-                rocketNetworkRevenues.setVoterShare(getEffectiveVoterShare());
+        if (getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
+            // Some safety guards for certain settings
+            bytes32 settingKey = keccak256(bytes(_settingPath));
+            bool voterShareModified = false;
+            bool nodeShareModified = false;
+            if (settingKey == keccak256(bytes("network.consensus.threshold"))) {
+                require(_value >= 0.51 ether, "Consensus threshold must be 51% or higher");
+            } else if (settingKey == keccak256(bytes("network.node.fee.minimum"))) {
+                require(_value >= 0.05 ether && _value <= 0.2 ether, "The node fee minimum must be a value between 5% and 20%");
+            } else if (settingKey == keccak256(bytes("network.node.fee.target"))) {
+                require(_value >= 0.05 ether && _value <= 0.2 ether, "The node fee target must be a value between 5% and 20%");
+            } else if (settingKey == keccak256(bytes("network.node.fee.maximum"))) {
+                require(_value >= 0.05 ether && _value <= 0.2 ether, "The node fee maximum must be a value between 5% and 20%");
+            } else if (settingKey == keccak256(bytes("network.submit.balances.frequency"))) {
+                require(_value >= 1 hours, "The submit frequency must be >= 1 hour");
+            } else if (settingKey == keccak256(bytes("network.node.commission.share.security.council.adder"))) {
+                uint256 maxAdderValue = getSettingUint("network.max.node.commission.share.council.adder");
+                require(_value <= maxAdderValue, "Value must be <= max value");
+                uint256 maxVoterValue = getSettingUint("network.voter.share");
+                require(_value <= maxVoterValue, "Value must be <= voter share");
+                voterShareModified = true;
+                nodeShareModified = true;
+            } else if (settingKey == keccak256(bytes("network.node.commission.share"))) {
+                nodeShareModified = true;
+            } else if (settingKey == keccak256(bytes("network.voter.share"))) {
+                voterShareModified = true;
             }
-            if (nodeShareModified) {
-                rocketNetworkRevenues.setNodeShare(getEffectiveNodeShare());
+            // Update setting now
+            _setSettingUint(_settingPath, _value);
+            // Check for changes to UARS parameters
+            if (voterShareModified || nodeShareModified) {
+                // Check rETH commission invariant
+                require(getRethCommission() <= 1 ether, "rETH Commission must be <= 100%");
+                // If one of the UARS parameters changed, notify RocketNetworkRevenues
+                RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
+                if (voterShareModified) {
+                    rocketNetworkRevenues.setVoterShare(getEffectiveVoterShare());
+                }
+                if (nodeShareModified) {
+                    rocketNetworkRevenues.setNodeShare(getEffectiveNodeShare());
+                }
             }
+        } else {
+            // Update setting now
+            _setSettingUint(_settingPath, _value);
         }
     }
 
     /// @dev Sets a namespaced uint value skipping any guardrails
     function _setSettingUint(string memory _settingPath, uint256 _value) internal {
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
+    }
+
+    /// @dev Sets a namespaced bool value skipping any guardrails
+    function _setSettingBool(string memory _settingPath, bool _value) internal {
+        setBool(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }
 
     function getMaxNodeShareSecurityCouncilAdder() override public view returns (uint256) {
@@ -168,7 +180,7 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
         return getSettingUint("network.node.fee.demand.range");
     }
 
-    /// @notice Target rETH collateralization rate as a fraction of 1 ether
+    /// @notice Target rETH collateralisation rate as a fraction of 1 ether
     function getTargetRethCollateralRate() override external view returns (uint256) {
         return getSettingUint("network.reth.collateral.target");
     }

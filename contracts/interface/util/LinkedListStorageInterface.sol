@@ -17,10 +17,12 @@ struct DepositQueueKey {
 
 interface LinkedListStorageInterface {
     function getLength(bytes32 _namespace) external view returns (uint256);
-    function getItem(bytes32 _namespace, uint _index) external view returns (DepositQueueValue memory);
+    function getItem(bytes32 _namespace, uint256 _index) external view returns (DepositQueueValue memory);
     function peekItem(bytes32 _namespace) external view returns (DepositQueueValue memory);
     function getIndexOf(bytes32 _namespace, DepositQueueKey memory _key) external view returns (uint256);
+    function getHeadIndex(bytes32 _namespace) external view returns (uint256);
     function enqueueItem(bytes32 _namespace, DepositQueueValue memory _value) external;
     function dequeueItem(bytes32 _namespace) external returns (DepositQueueValue memory);
     function removeItem(bytes32 _namespace, DepositQueueKey memory _key) external;
+    function scan(bytes32 _namespace, uint256 _startIndex, uint256 _count) external view returns (DepositQueueValue[] memory, uint256 nextIndex);
 }
