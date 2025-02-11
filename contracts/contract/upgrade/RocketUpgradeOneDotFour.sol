@@ -176,6 +176,10 @@ contract RocketUpgradeOneDotFour is RocketBase {
         bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "deposit"));
         setUint(keccak256(abi.encodePacked(settingNameSpace, "deposit.assign.socialised.maximum")), 0);
 
+        // Set default express queue settings per RPIP-59
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "express.queue.rate")), 2);
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "express.queue.tickets.base.provision")), 2);
+
         // Initialise UARS setting defaults per RPIP-46
         settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "network"));
         setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.commission.share")), 0.05 ether);                        // 5% (RPIP-46)
