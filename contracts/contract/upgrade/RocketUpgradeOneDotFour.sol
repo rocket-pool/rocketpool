@@ -187,6 +187,10 @@ contract RocketUpgradeOneDotFour is RocketBase {
         setUint(keccak256(abi.encodePacked(settingNameSpace, "network.voter.share")), 0.09 ether);                                  // 9% (RPIP-46)
         setUint(keccak256(abi.encodePacked(settingNameSpace, "network.max.node.commission.share.council.adder")), 0.01 ether);      // 1% (RPIP-46)
 
+        // Initialised reduced_bond setting per RPIP-42
+        settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "node"));
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "reduced.bond")), 4 ether);     // 4 ether (RPIP-42)
+
         // Initialise UARS system
         RocketNetworkRevenuesInterface rocketNetworkRevenuesInstance = RocketNetworkRevenuesInterface(rocketNetworkRevenues);
         rocketNetworkRevenuesInstance.initialise(0.05 ether, 0.09 ether); // 5% node share, 9% voter share (RPIP-46)
