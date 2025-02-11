@@ -102,17 +102,26 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     const depositPoolCapacity = await rocketDepositPool.getBalance();
     const amountRequired = '32'.ether - bondAmount;
     const expectAssignment = assignmentsEnabled && depositPoolCapacity >= amountRequired;
+    let expectedNodeBalanceChange = bondAmount;
 
     if (!usingCredit) {
         const tx = await rocketNodeDeposit.connect(node).deposit(bondAmount, useExpressTicket, depositData.pubkey, depositData.signature, depositDataRoot, {value: bondAmount});
         await tx.wait();
     } else {
-        const creditBefore = await rocketNodeDeposit.getNodeUsableCreditAndBalance(node.address);
+        const creditBefore = await rocketNodeDeposit.getNodeDepositCredit(node.address);
+        const balanceBefore = await rocketNodeDeposit.getNodeEthBalance(node.address);
+
         const tx = await rocketNodeDeposit.connect(node).depositWithCredit(bondAmount, useExpressTicket, depositData.pubkey, depositData.signature, depositDataRoot, {value: bondAmount - creditAmount});
         await tx.wait();
-        const creditAfter = await rocketNodeDeposit.getNodeUsableCreditAndBalance(node.address);
+
+        const creditAfter = await rocketNodeDeposit.getNodeDepositCredit(node.address);
+        const balanceAfter = await rocketNodeDeposit.getNodeEthBalance(node.address);
+
+        const creditAndBalanceDelta = (creditAfter + balanceAfter) - (creditBefore + balanceBefore);
+        assertBN.equal(creditAndBalanceDelta, -creditAmount);
+
         const creditDelta = creditAfter - creditBefore;
-        assertBN.equal(creditDelta, -creditAmount);
+        expectedNodeBalanceChange += creditDelta;
     }
 
     const data2 = await getData();
@@ -166,7 +175,7 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
         assertBN.equal(nodeCapitalDelta, 0n, "Incorrect node capital");
         assertBN.equal(userCapitalDelta, 0n, "Incorrect user capital");
         assertBN.equal(assignedValueDelta, 0n, "Incorrect assigned value");
-        assertBN.equal(nodeBalanceDelta, bondAmount, "Incorrect node balance value");
+        assertBN.equal(nodeBalanceDelta, expectedNodeBalanceChange, "Incorrect node balance value");
     }
 
     assertBN.equal(validatorInfo.lastRequestedValue, '32'.ether / milliToWei, "Incorrect validator lastRequestedValue");

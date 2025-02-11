@@ -168,7 +168,10 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             rocketVault.depositEther{value: msg.value}();
         }
         // Increase recorded node balance
-        addUint("deposit.pool.node.balance", _bondAmount);
+        // Note: The difference between `_bondAmount` and `msg.value` is the amount of credit being used on this deposit.
+        //       That amount of credit is already accounted for in `deposit.pool.node.balance` and therefore we only
+        //       need to add `msg.value` to the node balance.
+        addUint("deposit.pool.node.balance", msg.value);
     }
 
     /// @notice Recycle a deposit from a dissolved validator
