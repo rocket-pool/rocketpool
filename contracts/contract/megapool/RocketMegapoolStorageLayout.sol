@@ -59,8 +59,9 @@ abstract contract RocketMegapoolStorageLayout {
     // Megapool state
     //
 
-    address internal nodeAddress;     // Megapool owner
-    uint32 internal numValidators;    // Number of individual validators handled by this megapool
+    address internal nodeAddress;             // Megapool owner
+    uint32 internal numValidators;            // Number of individual validators handled by this megapool
+    uint32 internal numInactiveValidators;    // Number of validators that are no longer contributing to bond requirement
 
     uint256 internal assignedValue;   // ETH assigned from DP pending prestake/stake
     uint256 internal refundValue;     // ETH refunded to the owner after a dissolution
@@ -76,6 +77,4 @@ abstract contract RocketMegapoolStorageLayout {
 
     mapping(uint32 => ValidatorInfo) internal validators;
     mapping(uint32 => PrestakeData) internal prestakeData;
-
-    uint32 internal numInactiveValidators;    // Number of validators that are no longer contributing to bond requirement
 }

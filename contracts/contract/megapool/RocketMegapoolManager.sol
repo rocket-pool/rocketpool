@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import "./RocketMegapoolStorageLayout.sol";
-import "./RocketMegapoolStorageLayout.sol";
+import {RocketMegapoolStorageLayout} from "./RocketMegapoolStorageLayout.sol";
 import {RocketBase} from "../RocketBase.sol";
 import {RocketMegapoolInterface} from "../../interface/megapool/RocketMegapoolInterface.sol";
 import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";

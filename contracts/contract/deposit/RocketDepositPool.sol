@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import "../../interface/util/LinkedListStorageInterface.sol";
 import {AddressQueueStorageInterface} from "../../interface/util/AddressQueueStorageInterface.sol";
-import {LinkedListStorageInterface} from "../../interface/util/LinkedListStorageInterface.sol";
+import {LinkedListStorageInterface, DepositQueueKey, DepositQueueValue} from "../../interface/util/LinkedListStorageInterface.sol";
 import {RocketBase} from "../RocketBase.sol";
 import {RocketDAOProtocolSettingsDepositInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
 import {RocketDAOProtocolSettingsMinipoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";

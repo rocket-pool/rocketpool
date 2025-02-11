@@ -233,6 +233,9 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
     }
 
     /// @notice Returns the supplied number of entries starting at the supplied index
+    /// @param _namespace The namespace of the linked list to scan
+    /// @param _start The index to start from, or 0 to start from the start of the first item in the list
+    /// @param _count The maximum number of items to return
     function scan(bytes32 _namespace, uint256 _start, uint256 _count) override external view returns (DepositQueueValue[] memory entries, uint256 nextIndex) {
         entries = new DepositQueueValue[](_count);
         nextIndex = _start;
@@ -258,5 +261,4 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
 
         return (entries, nextIndex);
     }
-
 }

@@ -1,9 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 pragma abicoder v2;
 
-// SPDX-License-Identifier: GPL-3.0-only
-
-import "./LinkedListStorage.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
+import {LinkedListStorage, DepositQueueValue, DepositQueueKey} from "./LinkedListStorage.sol";
 
 /// @notice A linked list storage helper to test internal functions
 contract LinkedListStorageHelper is LinkedListStorage {

@@ -5,7 +5,7 @@ import {RocketBase} from "../RocketBase.sol";
 import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 import {SSZ} from "./SSZ.sol";
 import {BlockRootsInterface} from "../../interface/util/BlockRootsInterface.sol";
-import "../../interface/util/BeaconStateVerifierInterface.sol";
+import {BeaconStateVerifierInterface, ValidatorProof, Withdrawal} from "../../interface/util/BeaconStateVerifierInterface.sol";
 
 contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
     // TODO: Decide how to supply these required beacon chain constants

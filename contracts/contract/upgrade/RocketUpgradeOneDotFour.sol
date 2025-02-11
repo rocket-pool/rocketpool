@@ -1,15 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
-import "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
-import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
-import "../../interface/network/RocketNetworkPricesInterface.sol";
-import "../../interface/network/RocketNetworkRevenuesInterface.sol";
-import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
-import "../../interface/util/AddressSetStorageInterface.sol";
-import "../RocketBase.sol";
-import {RocketDAOProtocolSettingsNetworkInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
+import {RocketNetworkRevenuesInterface} from "../../interface/network/RocketNetworkRevenuesInterface.sol";
+import {RocketBase} from "../RocketBase.sol";
 
 interface InitialiseInterface {
     function initialise() external;
@@ -184,10 +178,10 @@ contract RocketUpgradeOneDotFour is RocketBase {
 
         // Initialise UARS setting defaults per RPIP-46
         settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "network"));
-        setUint(keccak256(abi.encodePacked(settingNameSpace,"network.node.commission.share")), 0.05 ether);                        // 5% (RPIP-46)
-        setUint(keccak256(abi.encodePacked(settingNameSpace,"network.node.commission.share.security.council.adder")), 0 ether);    // 0% (RPIP-46)
-        setUint(keccak256(abi.encodePacked(settingNameSpace,"network.voter.share")), 0.09 ether);                                  // 9% (RPIP-46)
-        setUint(keccak256(abi.encodePacked(settingNameSpace,"network.max.node.commission.share.council.adder")), 0.01 ether);      // 1% (RPIP-46)
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.commission.share")), 0.05 ether);                        // 5% (RPIP-46)
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.commission.share.security.council.adder")), 0 ether);    // 0% (RPIP-46)
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.voter.share")), 0.09 ether);                                  // 9% (RPIP-46)
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.max.node.commission.share.council.adder")), 0.01 ether);      // 1% (RPIP-46)
 
         // Initialise UARS system
         RocketNetworkRevenuesInterface rocketNetworkRevenuesInstance = RocketNetworkRevenuesInterface(rocketNetworkRevenues);

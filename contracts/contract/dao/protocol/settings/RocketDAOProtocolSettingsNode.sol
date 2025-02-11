@@ -1,13 +1,12 @@
-pragma solidity 0.7.6;
-
 // SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.8.18;
 
-import "./RocketDAOProtocolSettings.sol";
-import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
-import "../../../../interface/network/RocketNetworkSnapshotsInterface.sol";
+import {RocketStorageInterface} from "../../../../interface/RocketStorageInterface.sol";
+import {RocketDAOProtocolSettings} from "./RocketDAOProtocolSettings.sol";
+import {RocketDAOProtocolSettingsNodeInterface} from "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
+import {RocketNetworkSnapshotsInterface} from "../../../../interface/network/RocketNetworkSnapshotsInterface.sol";
 
-// Network auction settings
-
+/// @notice Network auction settings
 contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOProtocolSettingsNodeInterface {
 
     // Construct

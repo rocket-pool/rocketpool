@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import "../RocketBase.sol";
+import {RocketBase} from "../RocketBase.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 import {RocketNetworkSnapshotsInterface} from "../../interface/network/RocketNetworkSnapshotsInterface.sol";
 import {RocketNetworkRevenuesInterface} from "../../interface/network/RocketNetworkRevenuesInterface.sol";
 

@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import "../../../interface/RocketVaultInterface.sol";
-import "../../../interface/dao/RocketDAOProposalInterface.sol";
-import "../../../interface/dao/protocol/RocketDAOProtocolInterface.sol";
-import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsSecurityInterface.sol";
-import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
-import "../../../interface/dao/security/RocketDAOSecurityActionsInterface.sol";
-import "../../../interface/dao/security/RocketDAOSecurityInterface.sol";
-import "../../../interface/dao/security/RocketDAOSecurityProposalsInterface.sol";
-import "../../../interface/network/RocketNetworkRevenuesInterface.sol";
-import "../../../interface/util/IERC20Burnable.sol";
-import "../../RocketBase.sol";
+import {RocketBase} from "../../RocketBase.sol";
+import {RocketStorageInterface} from "../../../interface/RocketStorageInterface.sol";
+import {RocketVaultInterface} from "../../../interface/RocketVaultInterface.sol";
+import {RocketDAOProposalInterface} from "../../../interface/dao/RocketDAOProposalInterface.sol";
+import {RocketDAOProtocolInterface} from "../../../interface/dao/protocol/RocketDAOProtocolInterface.sol";
+import {RocketDAOProtocolSettingsSecurityInterface} from "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsSecurityInterface.sol";
+import {RocketDAOProtocolSettingsNetworkInterface} from "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
+import {RocketDAOSecurityActionsInterface} from "../../../interface/dao/security/RocketDAOSecurityActionsInterface.sol";
+import {RocketDAOSecurityInterface} from "../../../interface/dao/security/RocketDAOSecurityInterface.sol";
+import {RocketDAOSecurityProposalsInterface} from "../../../interface/dao/security/RocketDAOSecurityProposalsInterface.sol";
+import {RocketNetworkRevenuesInterface} from "../../../interface/network/RocketNetworkRevenuesInterface.sol";
+import {IERC20Burnable} from "../../../interface/util/IERC20Burnable.sol";
 
 /// @notice Proposal contract for the security council
 contract RocketDAOSecurityProposals is RocketBase, RocketDAOSecurityProposalsInterface {

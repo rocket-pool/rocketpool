@@ -2,8 +2,8 @@
 pragma solidity 0.8.18;
 pragma abicoder v2;
 
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
-import "../../types/MinipoolStatus.sol";
+import {RocketDAOProtocolSettingsDepositInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
+import {MinipoolStatus} from "../../types/MinipoolStatus.sol";
 import {AddressSetStorageInterface} from "../../interface/util/AddressSetStorageInterface.sol";
 import {IERC20} from "../../interface/util/IERC20.sol";
 import {NodeDetails} from "../../types/NodeDetails.sol";

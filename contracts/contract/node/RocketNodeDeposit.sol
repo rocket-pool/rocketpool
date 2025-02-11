@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import "../../interface/RocketStorageInterface.sol";
-import "../../interface/RocketVaultInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
-import "../../interface/deposit/RocketDepositPoolInterface.sol";
-import "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
-import "../../interface/megapool/RocketMegapoolInterface.sol";
-import "../../interface/network/RocketNetworkFeesInterface.sol";
-import "../../interface/network/RocketNetworkVotingInterface.sol";
-import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
-import "../../interface/node/RocketNodeDepositInterface.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
-import "../../interface/node/RocketNodeStakingInterface.sol";
-import "../RocketBase.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
+import {RocketVaultInterface} from "../../interface/RocketVaultInterface.sol";
+import {RocketDAOProtocolSettingsMinipoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import {RocketDAOProtocolSettingsNodeInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
+import {RocketDepositPoolInterface} from "../../interface/deposit/RocketDepositPoolInterface.sol";
+import {RocketMegapoolFactoryInterface} from "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
+import {RocketMegapoolInterface} from "../../interface/megapool/RocketMegapoolInterface.sol";
+import {RocketNetworkFeesInterface} from "../../interface/network/RocketNetworkFeesInterface.sol";
+import {RocketNetworkVotingInterface} from "../../interface/network/RocketNetworkVotingInterface.sol";
+import {RocketNetworkSnapshotsInterface} from "../../interface/network/RocketNetworkSnapshotsInterface.sol";
+import {RocketNodeDepositInterface} from "../../interface/node/RocketNodeDepositInterface.sol";
+import {RocketNodeManagerInterface} from "../../interface/node/RocketNodeManagerInterface.sol";
+import {RocketNodeStakingInterface} from "../../interface/node/RocketNodeStakingInterface.sol";
+import {RocketBase} from "../RocketBase.sol";
 import {RocketMegapoolManagerInterface} from "../../interface/megapool/RocketMegapoolManagerInterface.sol";
 import {RocketVaultWithdrawerInterface} from "../../interface/RocketVaultWithdrawerInterface.sol";
 

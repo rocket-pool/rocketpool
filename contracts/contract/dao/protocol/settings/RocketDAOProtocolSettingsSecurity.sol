@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import "./RocketDAOProtocolSettings.sol";
-import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsSecurityInterface.sol";
+import {RocketStorageInterface} from "../../../../interface/RocketStorageInterface.sol";
+import {RocketDAOProtocolSettings} from "./RocketDAOProtocolSettings.sol";
+import {RocketDAOProtocolSettingsSecurityInterface} from "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsSecurityInterface.sol";
 
 /// @notice Protocol parameters relating to the security council
 contract RocketDAOProtocolSettingsSecurity is RocketDAOProtocolSettings, RocketDAOProtocolSettingsSecurityInterface {

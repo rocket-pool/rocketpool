@@ -3,10 +3,11 @@
 // Adapted from OpenZeppelin `Checkpoints` contract
 pragma solidity 0.8.18;
 
-import "@openzeppelin4/contracts/utils/math/Math.sol";
+import {Math} from "@openzeppelin4/contracts/utils/math/Math.sol";
 
-import "../RocketBase.sol";
-import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
+import {RocketBase} from "../RocketBase.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
+import {RocketNetworkSnapshotsInterface, Checkpoint224} from "../../interface/network/RocketNetworkSnapshotsInterface.sol";
 
 /// @notice Accounting for snapshotting of values based on block numbers
 contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
