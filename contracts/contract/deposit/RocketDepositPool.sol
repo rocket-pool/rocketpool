@@ -380,7 +380,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             emit FundsAssigned(head.receiver, ethRequired, block.timestamp);
             linkedListStorage.dequeueItem(namespace);
             // Account for node balance
-            nodeBalanceUsed += head.suppliedValue;
+            nodeBalanceUsed += head.suppliedValue * milliToWei;
             totalSent += ethRequired;
             // Update counts for next iteration
             queueIndex ++;

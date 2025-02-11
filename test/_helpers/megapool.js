@@ -79,9 +79,10 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
             rocketMegapoolManager.getValidatorCount(),
             rocketDepositPool.getExpressQueueLength(),
             rocketDepositPool.getStandardQueueLength(),
+            rocketDepositPool.getNodeBalance(),
         ]).then(
-            ([ deployed, numExpressTickets, numGlobalValidators, expressQueueLength, standardQueueLength]) =>
-                ({ deployed, numExpressTickets, numGlobalValidators, expressQueueLength, standardQueueLength, numValidators: 0n, assignedValue: 0n, nodeCapital: 0n, userCapital: 0n }),
+            ([ deployed, numExpressTickets, numGlobalValidators, expressQueueLength, standardQueueLength, nodeBalance]) =>
+                ({ deployed, numExpressTickets, numGlobalValidators, expressQueueLength, standardQueueLength, nodeBalance, numValidators: 0n, assignedValue: 0n, nodeCapital: 0n, userCapital: 0n }),
         );
 
         if (data.deployed) {
@@ -129,6 +130,7 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     const userCapitalDelta = data2.userCapital - data1.userCapital;
     const expressQueueLengthDelta = data2.expressQueueLength - data1.expressQueueLength;
     const standardQueueLengthDelta = data2.standardQueueLength - data1.standardQueueLength;
+    const nodeBalanceDelta = data2.nodeBalance - data1.nodeBalance;
 
     assertBN.equal(numValidatorsDelta, 1n, "Number of validators did not increase by 1");
     assertBN.equal(numGlobalValidatorsDelta, 1n, "Number of global validators did not increase by 1");
@@ -157,12 +159,14 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
         assertBN.equal(nodeCapitalDelta, 0n, "Incorrect node capital");
         assertBN.equal(userCapitalDelta, 0n, "Incorrect user capital");
         assertBN.equal(assignedValueDelta, '31'.ether, "Incorrect assigned value");
+        assertBN.equal(nodeBalanceDelta, 0n, "Incorrect node balance value");
     } else {
         assert.equal(validatorInfo.inQueue, true, "Incorrect validator status");
         assert.equal(validatorInfo.inPrestake, false, "Incorrect validator status");
         assertBN.equal(nodeCapitalDelta, 0n, "Incorrect node capital");
         assertBN.equal(userCapitalDelta, 0n, "Incorrect user capital");
         assertBN.equal(assignedValueDelta, 0n, "Incorrect assigned value");
+        assertBN.equal(nodeBalanceDelta, bondAmount, "Incorrect node balance value");
     }
 
     assertBN.equal(validatorInfo.lastRequestedValue, '32'.ether / milliToWei, "Incorrect validator lastRequestedValue");
