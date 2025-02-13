@@ -524,7 +524,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     /// @return receiver Address of the receiver of the next assignment or null address for an empty queue
     /// @return assignmentPossible Whether there is enough funds in the pool to perform an assignment now
     /// @return headMovedBlock The block at which the receiver entered the top of the queue
-    function getQueueTop() override external view returns (address, bool, uint256) {
+    function getQueueTop() override external view returns (address receiver, bool assignmentPossible, uint256 headMovedBlock) {
         // If legacy queue is still being processed, return null address
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
         if (addressQueueStorage.getLength(queueKeyVariable) > 0) {
@@ -559,7 +559,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Check if enough value is in the deposit pool to assign the requested value
         bytes32 namespace = getQueueNamespace(express);
         DepositQueueValue memory head = linkedListStorage.peekItem(namespace);
-        bool assignmentPossible = rocketVault.balanceOf("rocketDepositPool") >= head.requestedValue;
+        assignmentPossible = rocketVault.balanceOf("rocketDepositPool") >= head.requestedValue;
 
         // Check assignments are enabled
         if (!rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) {
@@ -567,7 +567,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         }
 
         // Retrieve the block at which the entry at the top of the queue got to that position
-        uint256 headMovedBlock;
         if (express) {
             headMovedBlock = getUint(keccak256("megapool.express.queue.head.moved.block"));
         } else {
