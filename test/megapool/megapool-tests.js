@@ -1,7 +1,7 @@
-import { before, describe, it } from 'mocha';
+import { before, it, describe } from 'mocha';
 import { printTitle } from '../_utils/formatting';
 import { nodeDepositEthFor, registerNode, setNodeWithdrawalAddress } from '../_helpers/node';
-import { globalSnapShot } from '../_utils/snapshotting';
+import { snapshotDescribe, globalSnapShot } from '../_utils/snapshotting';
 import { userDeposit } from '../_helpers/deposit';
 import {
     calculatePositionInQueue,
@@ -16,9 +16,10 @@ import {
     MegapoolUpgradeHelper,
     RocketDAOProtocolSettingsDeposit,
     RocketDAOProtocolSettingsMegapool,
+    RocketDAOProtocolSettingsNode,
     RocketDepositPool,
     RocketMegapoolDelegate,
-    RocketMegapoolFactory,
+    RocketMegapoolFactory, RocketNodeDeposit,
     RocketStorage,
 } from '../_utils/artifacts';
 import assert from 'assert';
@@ -28,6 +29,8 @@ import { exitQueue } from './scenario-exit-queue';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { distributeMegapool } from './scenario-distribute';
 import { withdrawCredit } from './scenario-withdraw-credit';
+import { notifyExitValidator, notifyFinalBalanceValidator } from './scenario-exit';
+import { getDepositDataRoot, getValidatorSignature } from '../_utils/beacon';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -42,6 +45,30 @@ export default function() {
             random;
 
         let megapool;
+
+        const genesisTime = 1606824023;
+        const secondsPerSlot = 12;
+        const slotsPerEpoch = 32;
+
+        async function mockRewards(megapool, amount = '1'.ether) {
+            await owner.sendTransaction({
+                to: megapool.target,
+                value: amount,
+            });
+        }
+
+        async function getCurrentEpoch() {
+            const latestBlock = await ethers.provider.getBlock('latest');
+            const currentTime = latestBlock.timestamp;
+
+            const slotsPassed = Math.floor((currentTime - genesisTime) / secondsPerSlot);
+            return Math.floor(slotsPassed / slotsPerEpoch);
+        }
+
+        async function waitEpochs(count) {
+            const seconds = count * slotsPerEpoch * secondsPerSlot;
+            await helpers.time.increase(seconds);
+        }
 
         before(async () => {
             await globalSnapShot();
@@ -93,6 +120,31 @@ export default function() {
             await nodeDeposit(node);
         });
 
+        it(printTitle('node', 'can exit the queue after a bond reduction and then use credit to deposit'), async () => {
+            const rocketNodeDeposit = await RocketNodeDeposit.deployed();
+            // Deposit enough for 3 validators
+            await userDeposit({ from: random, value: ('32'.ether - '4'.ether) * 3n });
+            await nodeDeposit(node, '4'.ether);
+            await nodeDeposit(node, '4'.ether);
+            await nodeDeposit(node, '4'.ether);
+            await nodeDeposit(node, '4'.ether); // 4th validator enters the queue
+            assertBN.equal(await megapool.getActiveValidatorCount(), 4n);
+            assertBN.equal(await megapool.getNodeBond(), '4'.ether * 4n);
+            // NO has 4 validators with a required 16 ETH bond 1 of those validators is in the queue
+            // Reduce 'reduced.bond' to 2 ETH
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
+            // Exit the queue
+            await exitQueue(node, 3);
+            // NO had 16 ETH bond but new requirement for 3 validators is only 10, so they should receive 6 ETH credit
+            assertBN.equal(await rocketNodeDeposit.getNodeDepositCredit(node.address), '6'.ether)
+            // Perform 3 new deposits with credit at the reduced bond
+            await nodeDeposit(node, '2'.ether, false, '2'.ether);
+            await nodeDeposit(node, '2'.ether, false, '2'.ether);
+            await nodeDeposit(node, '2'.ether, false, '2'.ether);
+            // Used up all credit
+            await shouldRevert(nodeDeposit(node, '2'.ether, false, '2'.ether), 'Exceeded credit', 'Insufficient credit');
+        });
+
         it(printTitle('node', 'can deposit using supplied ETH'), async () => {
             await nodeDepositEthFor(node, { from: random, value: '4'.ether });
             await nodeDeposit(node, '4'.ether, false, '4'.ether);
@@ -119,6 +171,13 @@ export default function() {
             await withdrawCredit(node, '1'.ether);
             // Fail to withdraw 4 ETH worth of rETH
             await shouldRevert(withdrawCredit(node, '4'.ether), 'Withdrew more rETH than credit', 'Amount exceeds credit available');
+        });
+
+        it(printTitle('node', 'can not exit queue twice'), async () => {
+            await deployMegapool({ from: node });
+            await nodeDeposit(node);
+            await exitQueue(node, 0);
+            await shouldRevert(exitQueue(node, 0), 'Exit queue twice', 'Validator must be in queue');
         });
 
         it(printTitle('node', 'can queue up and exit multiple validators'), async () => {
@@ -251,12 +310,12 @@ export default function() {
             assertBN.equal(await calculatePositionInQueue(megapool, 4n), 4n);
         });
 
-        describe('With full deposit pool', () => {
+        snapshotDescribe('With full deposit pool', () => {
             const dissolvePeriod = (60 * 60 * 48); // 24 hours
 
             before(async () => {
                 // Deposit ETH into deposit pool
-                await userDeposit({ from: random, value: '32'.ether });
+                await userDeposit({ from: random, value: '32'.ether * 10n });
                 // Set time before dissolve
                 await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMegapool, 'megapool.time.before.dissolve', dissolvePeriod, { from: owner });
             });
@@ -306,7 +365,7 @@ export default function() {
                 await nodeDeposit(node);
                 await shouldRevert(nodeDeposit(node, '2'.ether), 'Created validator', 'Bond requirement not met');
                 await nodeDeposit(node);
-                await shouldRevert(nodeDeposit(node,'2'.ether), 'Created validator', 'Bond requirement not met');
+                await shouldRevert(nodeDeposit(node, '2'.ether), 'Created validator', 'Bond requirement not met');
             });
 
             it(printTitle('node', 'can not consume more than 2 provisioned express tickets'), async () => {
@@ -334,20 +393,53 @@ export default function() {
                 await megapool.connect(random).dissolveValidator(0);
             });
 
+            it(printTitle('node', 'can recover funds from dissolved validator'), async () => {
+                await nodeDeposit(node);
+                await helpers.time.increase(dissolvePeriod + 1);
+                await megapool.connect(random).dissolveValidator(0);
+                const nodeRefundBefore = await megapool.getRefundValue();
+                // Notify exiting validator
+                await notifyExitValidator(megapool, 0, await getCurrentEpoch());
+                await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner);
+                // Check refund of 32 ETH occurred
+                const nodeRefundAfter = await megapool.getRefundValue();
+                assertBN.equal(nodeRefundAfter - nodeRefundBefore, '32'.ether);
+            });
+
             it(printTitle('node', 'can perform stake operation on pre-stake validator'), async () => {
                 await nodeDeposit(node);
                 await stakeMegapoolValidator(megapool, 0, { from: node });
             });
 
+            it(printTitle('node', 'can not stake with invalid withdrawal credentials'), async () => {
+                await nodeDeposit(node);
+                const validatorInfo = await getValidatorInfo(megapool, 0);
+                let depositData = {
+                    pubkey: Buffer.from(validatorInfo.pubkey.substr(2), 'hex'),
+                    withdrawalCredentials: Buffer.from('0100000000000000000000000000000000000000000000000000000000000000', 'hex'),
+                    amount: BigInt(31000000000), // gwei
+                    signature: getValidatorSignature(),
+                };
+                const depositDataRoot = getDepositDataRoot(depositData);
+                // Construct a fake proof
+                const proof = {
+                    slot: 0,
+                    validatorIndex: 0,
+                    pubkey: validatorInfo.pubkey,
+                    withdrawalCredentials: depositData.withdrawalCredentials,
+                    witnesses: []
+                }
+                await shouldRevert(megapool.stake(0, depositData.signature, depositDataRoot, proof), 'Staked with invalid credentials', 'Invalid withdrawal credentials');
+            });
+
             it(printTitle('node', 'can perform a second stake operation with no rewards available'), async () => {
-                await userDeposit({ from: random, value: '32'.ether });
                 await nodeDeposit(node);
                 await nodeDeposit(node);
                 await stakeMegapoolValidator(megapool, 0, { from: node });
                 await stakeMegapoolValidator(megapool, 1, { from: node });
             });
 
-            describe('With pre-staked validator', () => {
+            snapshotDescribe('With pre-staked validator', () => {
 
                 before(async () => {
                     await deployMegapool({ from: node });
@@ -356,8 +448,7 @@ export default function() {
 
             });
 
-            describe('With staking validator', () => {
-
+            snapshotDescribe('With staking validator', () => {
                 before(async () => {
                     await deployMegapool({ from: node });
                     await nodeDeposit(node);
@@ -369,10 +460,7 @@ export default function() {
                 });
 
                 it(printTitle('node', 'can distribute rewards'), async () => {
-                    await owner.sendTransaction({
-                        to: megapool.target,
-                        value: '1'.ether,
-                    });
+                    await mockRewards(megapool, '1'.ether);
                     const pendingRewards = await megapool.getPendingRewards();
                     assertBN.equal(pendingRewards, '1'.ether);
 
@@ -396,14 +484,150 @@ export default function() {
                     // Perform distribution
                     await distributeMegapool(megapool);
                 });
+
+                it(printTitle('node', 'can distribute until withdrawable epoch is reached'), async () => {
+                    // Notify exit in 5 epochs
+                    const currentEpoch = await getCurrentEpoch();
+                    await notifyExitValidator(megapool, 0, currentEpoch + 5);
+                    // Can distribute
+                    await mockRewards(megapool, '1'.ether);
+                    await distributeMegapool(megapool);
+                    // Pass 5 epochs
+                    await waitEpochs(5);
+                    // Can't distribute
+                    await mockRewards(megapool, '1'.ether);
+                    await shouldRevert(distributeMegapool(megapool), 'Was able to distribute', 'Can not distribute until validators have fully exited');
+                });
+
+                it(printTitle('node', 'can not notify exit when withdrawable_epoch = FAR_FUTURE_EPOCH'), async () => {
+                    const farFutureEpoch = 2n ** 64n - 1n;
+                    await shouldRevert(notifyExitValidator(megapool, 0, farFutureEpoch), 'Notified non-exiting validator', 'Validator is not exiting');
+                });
+
+                it(printTitle('node', 'can not notify exit twice'), async () => {
+                    const currentEpoch = await getCurrentEpoch();
+                    await notifyExitValidator(megapool, 0, currentEpoch + 5);
+                    await shouldRevert(notifyExitValidator(megapool, 0, currentEpoch + 5), 'Notified exit twice', 'Already notified');
+                });
+
+                it(printTitle('node', 'can not notify final balance twice'), async () => {
+                    await notifyExitValidator(megapool, 0, await getCurrentEpoch());
+                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner);
+                    await shouldRevert(notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner), 'Notified final balance twice', 'Already exited');
+                });
+
+            });
+
+            snapshotDescribe('With multiple staking validators', () => {
+
+                before(async () => {
+                    await deployMegapool({ from: node });
+                    for (let i = 0; i < 5; i++) {
+                        await nodeDeposit(node);
+                        await stakeMegapoolValidator(megapool, i, { from: node });
+                    }
+                });
+
+                it(printTitle('node', 'can distribute exiting rewards after full exit'), async () => {
+                    // Notify exit and final balance
+                    await notifyExitValidator(megapool, 0, await getCurrentEpoch());
+                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner);
+                    // Can distribute
+                    await mockRewards(megapool, '1'.ether);
+                    await distributeMegapool(megapool);
+                });
+
+                it(printTitle('node', 'can bond reduce on exit'), async () => {
+                    // Adjust `reduced_bond` to 2 ETH
+                    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
+                    // Notify exit in 5 epochs
+                    await notifyExitValidator(megapool, 0, await getCurrentEpoch());
+                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner);
+                    /*
+                        NO started with 5 validators
+                        old bond requirement = 8 + (4 * 3) = 20
+                        new bond requirement = 8 + (2 * 2) = 12
+                        therefore, NOs bond after exit should be 12, with an 8 ETH refund from the 32 ETH final balance
+                     */
+                    const nodeBond = await megapool.getNodeBond();
+                    const nodeRefund = await megapool.getRefundValue();
+                    assertBN.equal(nodeBond, '12'.ether);
+                    assertBN.equal(nodeRefund, '8'.ether);
+                });
+
+                it(printTitle('node', 'can bond reduce on exit with balance < 32 ETH'), async () => {
+                    // Adjust `reduced_bond` to 2 ETH
+                    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
+                    // Notify exit in 5 epochs
+                    await notifyExitValidator(megapool, 0, await getCurrentEpoch());
+                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether - '7'.ether, owner);
+                    /*
+                        NO should receive 8 ETH bond on exit, but lost 7 ETH capital so bond should reduce by 8 ETH
+                        but NO should only receive 1 ETH refund
+                     */
+                    const nodeBond = await megapool.getNodeBond();
+                    const nodeRefund = await megapool.getRefundValue();
+                    assertBN.equal(nodeBond, '12'.ether);
+                    assertBN.equal(nodeRefund, '1'.ether);
+                });
+
+                it(printTitle('node', 'accrues debt when exit balance is too low and bond has been reduced'), async () => {
+                    // Adjust `reduced_bond` to 2 ETH
+                    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
+                    // Notify exit in 5 epochs
+                    await notifyExitValidator(megapool, 0, await getCurrentEpoch());
+                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether - '9'.ether, owner);
+                    /*
+                        NO should receive 8 ETH bond on exit, but lost 9 ETH capital so bond should reduce by 8 ETH
+                        but NO should accrue a 1 ETH debt
+                     */
+                    const nodeBond = await megapool.getNodeBond();
+                    const nodeRefund = await megapool.getRefundValue();
+                    const nodeDebt = await megapool.getDebt();
+                    assertBN.equal(nodeBond, '12'.ether);
+                    assertBN.equal(nodeRefund, '0'.ether);
+                    assertBN.equal(nodeDebt, '1'.ether);
+                });
+
+                snapshotDescribe('With debt', () => {
+                    before(async () => {
+                        /*
+                            Exit the validator with 5 ETH capital loss will result in a debt of 1 ETH
+                         */
+                        await notifyExitValidator(megapool, 0, await getCurrentEpoch());
+                        await notifyFinalBalanceValidator(megapool, 0, '32'.ether - '5'.ether, owner);
+                        const nodeDebt = await megapool.getDebt();
+                        assertBN.equal(nodeDebt, '1'.ether);
+                    });
+
+                    it(printTitle('node', 'can manually pay down debt'), async () => {
+                        const debtBefore = await megapool.getDebt();
+                        assertBN.isAbove(debtBefore, 0n);
+                        await megapool.repayDebt({value: debtBefore});
+                        const debtAfter = await megapool.getDebt();
+                        assertBN.equal(debtAfter, '0'.ether);
+                    });
+
+                    it(printTitle('node', 'can use rewards to partially pay down debt'), async () => {
+                        await mockRewards(megapool, '1'.ether);
+                        await distributeMegapool(megapool);
+                    });
+
+                    it(printTitle('node', 'can use rewards to fully pay down debt'), async () => {
+                        await mockRewards(megapool, '20'.ether);
+                        await distributeMegapool(megapool);
+                    });
+                });
             });
         });
 
-        describe('With upgraded delegate', () => {
+        snapshotDescribe('With upgraded delegate', () => {
             let upgradeHelper;
             let oldDelegate, newDelegate;
 
             before(async () => {
+                await deployMegapool({ from: node });
+
                 const rocketStorage = await RocketStorage.deployed();
                 upgradeHelper = await MegapoolUpgradeHelper.deployed();
                 oldDelegate = await RocketMegapoolDelegate.deployed();

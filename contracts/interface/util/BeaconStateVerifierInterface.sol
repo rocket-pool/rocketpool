@@ -10,7 +10,7 @@ struct Withdrawal {
 
 struct ValidatorProof {
     uint64 slot;
-    uint256 validatorIndex;
+    uint64 validatorIndex;
     bytes pubkey;
     bytes32 withdrawalCredentials;
     bytes32[] witnesses;

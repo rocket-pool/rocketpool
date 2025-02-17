@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: GPL-3.0-onl1000000000y
 pragma solidity >0.5.0 <0.9.0;
 
 import "../util/BeaconStateVerifierInterface.sol";
@@ -22,11 +22,13 @@ interface RocketMegapoolDelegateInterface is RocketMegapoolDelegateBaseInterface
 
     function getValidatorCount() external view returns (uint32);
     function getActiveValidatorCount() external view returns (uint32);
+    function getExitingValidatorCount() external view returns (uint32);
+    function getSoonestWithdrawableEpoch() external view returns (uint32);
     function getValidatorInfo(uint32 _validatorId) external view returns (RocketMegapoolStorageLayout.ValidatorInfo memory);
     function getAssignedValue() external view returns (uint256);
     function getDebt() external view returns (uint256);
     function getRefundValue() external view returns (uint256);
-    function getNodeCapital() external view returns (uint256);
+    function getNodeRewards() external view returns (uint256);
     function getNodeBond() external view returns (uint256);
     function getUserCapital() external view returns (uint256);
     function calculatePendingRewards() external view returns (uint256 nodeRewards, uint256 voterRewards, uint256 rethRewards);

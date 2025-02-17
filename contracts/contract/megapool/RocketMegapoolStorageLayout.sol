@@ -27,6 +27,7 @@ abstract contract RocketMegapoolStorageLayout {
         uint32 lastAssignmentTime;  // Timestamp of when the last fund assignment took place
         uint32 lastRequestedValue;  // Value in milliether last requested
         uint32 lastRequestedBond;   // Value in milliether of the bond supplied for last request for funds
+        uint32 depositValue;        // Total amount deposited to beaconchain in gwei
 
         bool staked;        // Whether the validator has staked the minimum required to begin validating (32 ETH)
         bool exited;        // Whether the validator has exited the beacon chain
@@ -34,6 +35,10 @@ abstract contract RocketMegapoolStorageLayout {
         bool inPrestake;    // Whether the validator is currently awaiting the stake operation
         bool expressUsed;   // Whether the last request for funds consumed an express ticket
         bool dissolved;     // Whether the validator failed to prestake their initial deposit in time
+        bool exiting;       // Whether the validator is queued to exit on the beaconchain
+
+        uint64 validatorIndex;      // Index of the validator on the beaconchain
+        uint64 exitBalance;         // Final balance of the validator at withdrawable_epoch in gwei (amount returned to EL)
     }
 
     // Extra data temporarily stored for prestake operation
@@ -68,7 +73,6 @@ abstract contract RocketMegapoolStorageLayout {
     uint256 internal nodeRewards;     // Unclaimed ETH rewards for the owner
 
     uint256 internal nodeBond;        // Total value of bond supplied by node operator
-    uint256 internal nodeCapital;     // Value of capital on the beacon chain supplied by the owner
     uint256 internal userCapital;     // Value of capital on the beacon chain supplied by the DP
 
     uint256 internal debt;            // Amount the owner owes the DP
@@ -77,4 +81,7 @@ abstract contract RocketMegapoolStorageLayout {
 
     mapping(uint32 => ValidatorInfo) internal validators;
     mapping(uint32 => PrestakeData) internal prestakeData;
+
+    uint32 internal numExitingValidators;
+    uint32 internal soonestWithdrawableEpoch;
 }

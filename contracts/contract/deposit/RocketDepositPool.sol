@@ -480,13 +480,11 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         linkedListStorage.removeItem(namespace, key);
         // Perform balance accounting
         subUint(keccak256("deposit.pool.requested.total"), value.requestedValue * milliToWei);
-        // Add to node's credit for the amount supplied
-        RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(msg.sender);
-        address nodeAddress = megapool.getNodeAddress();
-        addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", nodeAddress)), value.suppliedValue * milliToWei);
         if (_expressQueue) {
             // Refund express ticket
+            RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(msg.sender);
             RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+            address nodeAddress = megapool.getNodeAddress();
             rocketNodeManager.refundExpressTicket(nodeAddress);
             // Update head moved block
             if (isAtHead) {
@@ -500,6 +498,13 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         }
         // Emit event
         emit QueueExited(msg.sender, block.timestamp);
+    }
+
+    function applyCredit(uint256 _amount) external onlyRegisteredMegapool(msg.sender) {
+        // Add to node's credit for the amount supplied
+        RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(msg.sender);
+        address nodeAddress = megapool.getNodeAddress();
+        addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", nodeAddress)), _amount);
     }
 
     /// @notice Allows node operator to withdraw any ETH credit they have as rETH

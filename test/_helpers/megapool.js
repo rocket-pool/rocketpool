@@ -22,13 +22,18 @@ export async function getValidatorInfo(megapool, index) {
         lastAssignmentTime: validatorInfo[1],
         lastRequestedValue: validatorInfo[2],
         lastRequestedBond: validatorInfo[3],
+        depositValue: validatorInfo[4],
 
-        staked: validatorInfo[4],
-        exited: validatorInfo[5],
-        inQueue: validatorInfo[6],
-        inPrestake: validatorInfo[7],
-        expressUsed: validatorInfo[8],
-        dissolved: validatorInfo[9],
+        staked: validatorInfo[5],
+        exited: validatorInfo[6],
+        inQueue: validatorInfo[7],
+        inPrestake: validatorInfo[8],
+        expressUsed: validatorInfo[9],
+        dissolved: validatorInfo[10],
+        exiting: validatorInfo[11],
+
+        validatorIndex: validatorInfo[12],
+        exitBalance: validatorInfo[13],
     }
 }
 
@@ -89,7 +94,7 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
             const megapool = (await getMegapoolForNode(node));
             data.numValidators = await megapool.getValidatorCount();
             data.assignedValue = await megapool.getAssignedValue();
-            data.nodeCapital = await megapool.getNodeCapital();
+            data.nodeCapital = await megapool.getNodeBond();
             data.userCapital = await megapool.getUserCapital();
         }
 
@@ -162,18 +167,17 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     const megapool = await getMegapoolForNode(node);
     const validatorInfo = await getValidatorInfo(megapool, data1.numValidators);
 
+    assertBN.equal(nodeCapitalDelta, bondAmount, "Incorrect node capital");
+    assertBN.equal(userCapitalDelta, '32'.ether - bondAmount, "Incorrect user capital");
+
     if (expectAssignment) {
         assert.equal(validatorInfo.inQueue, false, "Incorrect validator status");
         assert.equal(validatorInfo.inPrestake, true, "Incorrect validator status");
-        assertBN.equal(nodeCapitalDelta, 0n, "Incorrect node capital");
-        assertBN.equal(userCapitalDelta, 0n, "Incorrect user capital");
         assertBN.equal(assignedValueDelta, '31'.ether, "Incorrect assigned value");
         assertBN.equal(nodeBalanceDelta, 0n, "Incorrect node balance value");
     } else {
         assert.equal(validatorInfo.inQueue, true, "Incorrect validator status");
         assert.equal(validatorInfo.inPrestake, false, "Incorrect validator status");
-        assertBN.equal(nodeCapitalDelta, 0n, "Incorrect node capital");
-        assertBN.equal(userCapitalDelta, 0n, "Incorrect user capital");
         assertBN.equal(assignedValueDelta, 0n, "Incorrect assigned value");
         assertBN.equal(nodeBalanceDelta, expectedNodeBalanceChange, "Incorrect node balance value");
     }

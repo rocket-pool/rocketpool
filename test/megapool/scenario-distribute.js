@@ -16,14 +16,15 @@ export async function distributeMegapool(megapool) {
     const withdrawalAddress = await rocketStorage.getNodeWithdrawalAddress(nodeAddress);
 
     async function getBalances() {
-        let [pendingRewards, megapoolBalance, nodeBalance, voterBalance, rethBalance] = await Promise.all([
+        let [pendingRewards, megapoolBalance, nodeBalance, voterBalance, rethBalance, nodeDebt] = await Promise.all([
             megapool.getPendingRewards(),
             ethers.provider.getBalance(megapool.target),
             ethers.provider.getBalance(withdrawalAddress),
             rocketVault.balanceOf("rocketVoterRewards"),
             ethers.provider.getBalance(rocketTokenRETH.target),
+            megapool.getDebt()
         ]);
-        return { pendingRewards, megapoolBalance, nodeBalance, voterBalance, rethBalance };
+        return { pendingRewards, megapoolBalance, nodeBalance, voterBalance, rethBalance, nodeDebt };
     }
 
     const [expectedNodeRewards, expectedVoterRewards, expectedRethRewards] = await megapool.calculatePendingRewards();
@@ -38,10 +39,22 @@ export async function distributeMegapool(megapool) {
         nodeBalance: balancesAfter.nodeBalance - balancesBefore.nodeBalance,
         voterBalance: balancesAfter.voterBalance - balancesBefore.voterBalance,
         rethBalance: balancesAfter.rethBalance - balancesBefore.rethBalance,
+        nodeDebt: balancesAfter.nodeDebt - balancesBefore.nodeDebt,
     }
 
-    assertBN.equal(balanceDeltas.nodeBalance, expectedNodeRewards);
+    let expectedDebtDelta = 0n;
+
+    if (balancesBefore.nodeDebt > 0n) {
+        if (balancesBefore.nodeDebt > expectedNodeRewards) {
+            expectedDebtDelta = -expectedNodeRewards;
+        } else {
+            expectedDebtDelta = -balancesBefore.nodeDebt;
+        }
+    }
+
+    assertBN.equal(balanceDeltas.nodeDebt, expectedDebtDelta);
+    assertBN.equal(balanceDeltas.nodeBalance - balanceDeltas.nodeDebt, expectedNodeRewards);
     assertBN.equal(balanceDeltas.voterBalance, expectedVoterRewards);
-    assertBN.equal(balanceDeltas.rethBalance, expectedRethRewards);
+    assertBN.equal(balanceDeltas.rethBalance + balanceDeltas.nodeDebt, expectedRethRewards);
     assertBN.equal(balancesAfter.pendingRewards, 0n);
 }

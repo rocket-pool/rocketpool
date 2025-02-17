@@ -138,5 +138,7 @@ export async function deployUpgrade(rocketStorageAddress) {
         };
     }
 
+    console.log(addresses);
+
     return upgradeContract;
 }

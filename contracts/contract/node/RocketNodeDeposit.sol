@@ -3,20 +3,17 @@ pragma solidity 0.8.18;
 
 import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 import {RocketVaultInterface} from "../../interface/RocketVaultInterface.sol";
-import {RocketDAOProtocolSettingsMinipoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import {RocketVaultWithdrawerInterface} from "../../interface/RocketVaultWithdrawerInterface.sol";
 import {RocketDAOProtocolSettingsNodeInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import {RocketDepositPoolInterface} from "../../interface/deposit/RocketDepositPoolInterface.sol";
 import {RocketMegapoolFactoryInterface} from "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
 import {RocketMegapoolInterface} from "../../interface/megapool/RocketMegapoolInterface.sol";
-import {RocketNetworkFeesInterface} from "../../interface/network/RocketNetworkFeesInterface.sol";
-import {RocketNetworkVotingInterface} from "../../interface/network/RocketNetworkVotingInterface.sol";
+import {RocketMegapoolManagerInterface} from "../../interface/megapool/RocketMegapoolManagerInterface.sol";
 import {RocketNetworkSnapshotsInterface} from "../../interface/network/RocketNetworkSnapshotsInterface.sol";
+import {RocketNetworkVotingInterface} from "../../interface/network/RocketNetworkVotingInterface.sol";
 import {RocketNodeDepositInterface} from "../../interface/node/RocketNodeDepositInterface.sol";
-import {RocketNodeManagerInterface} from "../../interface/node/RocketNodeManagerInterface.sol";
 import {RocketNodeStakingInterface} from "../../interface/node/RocketNodeStakingInterface.sol";
 import {RocketBase} from "../RocketBase.sol";
-import {RocketMegapoolManagerInterface} from "../../interface/megapool/RocketMegapoolManagerInterface.sol";
-import {RocketVaultWithdrawerInterface} from "../../interface/RocketVaultWithdrawerInterface.sol";
 
 /// @notice Entry point for node operators to perform deposits for the creation of new validators on the network
 contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaultWithdrawerInterface {
@@ -41,15 +38,18 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
 
     /// @notice Returns the bond requirement for the given number of validators
     function getBondRequirement(uint256 _numValidators) override public view returns (uint256) {
+        if (_numValidators == 0) {
+            return 0;
+        }
         // Get contracts
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         // Calculate bond requirement
         uint256[] memory baseBondArray = rocketDAOProtocolSettingsNode.getBaseBondArray();
-        if (_numValidators < baseBondArray.length) {
-            return baseBondArray[_numValidators];
+        if (_numValidators - 1 < baseBondArray.length) {
+            return baseBondArray[_numValidators - 1];
         }
         uint256 reducedBond = rocketDAOProtocolSettingsNode.getReducedBond();
-        return baseBondArray[baseBondArray.length - 1] + (1 + _numValidators - baseBondArray.length) * reducedBond;
+        return baseBondArray[baseBondArray.length - 1] + (_numValidators - baseBondArray.length) * reducedBond;
     }
 
     /// @notice Returns a node operator's credit balance in wei
@@ -188,9 +188,6 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
         RocketMegapoolFactoryInterface rocketMegapoolFactory = RocketMegapoolFactoryInterface(getContractAddress("rocketMegapoolFactory"));
         RocketMegapoolInterface megapool = RocketMegapoolInterface(rocketMegapoolFactory.getOrDeployContract(msg.sender));
         RocketMegapoolManagerInterface rocketMegapoolManager = RocketMegapoolManagerInterface(getContractAddress("rocketMegapoolManager"));
-        // Check bond requirements
-        checkBondRequirement(megapool, _bondAmount);
-        checkDebtRequirement(megapool);
         // Request a new validator from the megapool
         rocketMegapoolManager.addValidator(address(megapool), megapool.getValidatorCount());
         megapool.newValidator(_bondAmount, _useExpressTicket, _validatorPubkey, _validatorSignature, _depositDataRoot);
@@ -227,19 +224,6 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
         uint256 ethProvided = rocketNodeStaking.getNodeETHProvided(_nodeAddress) + _amount;
         bytes32 key = keccak256(abi.encodePacked("eth.provided.node.amount", _nodeAddress));
         rocketNetworkSnapshots.push(key, uint224(ethProvided));
-    }
-
-    /// @dev Checks the bond requirements for a node deposit
-    function checkBondRequirement(RocketMegapoolInterface _megapool, uint256 _bondAmount) internal {
-        uint256 totalBondRequired = getBondRequirement(_megapool.getActiveValidatorCount());
-        uint256 currentBond = _megapool.getNodeBond();
-        uint256 requiredBond = totalBondRequired - currentBond;
-        require(_bondAmount == requiredBond, "Bond requirement not met");
-    }
-
-    /// @dev Checks the debt requirements for a node deposit
-    function checkDebtRequirement(RocketMegapoolInterface _megapool) internal {
-        require(_megapool.getDebt() == 0, "Cannot create validator while debt exists");
     }
 
     /// @dev Initialises node's voting power if not already done

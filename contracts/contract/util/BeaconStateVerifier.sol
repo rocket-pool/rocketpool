@@ -51,7 +51,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         // TODO: Extract this out into a parameterised system for updating the gindices alongside hardforks
         SSZ.Path memory path = SSZ.from(3, 3); // 0b011 (BeaconBlockHeader -> state_root)
         if (isHistorical) {
-            path = SSZ.concat(path, SSZ.from(11, 5)); // 0b01011 (BeaconState -> validators)
+            path = SSZ.concat(path, SSZ.from(27, 5)); // 0b01011 (BeaconState -> historical_summaries)
             path = SSZ.concat(path, SSZ.intoVector(uint256(_withdrawalSlot) / SLOTS_PER_HISTORICAL_ROOT, 24)); // historical_summaries -> historical_summaries[n]
             path = SSZ.concat(path, SSZ.from(0, 1)); // 0b0 (HistoricalSummary -> block_summary_root)
         } else {
