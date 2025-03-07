@@ -224,6 +224,9 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     function _distribute() internal {
         // Calculate split of rewards
         uint256 rewards = getPendingRewards();
+        if (rewards == 0) {
+            return;
+        }
         (uint256 nodeAmount, uint256 voterAmount, uint256 rethAmount) = _calculateRewards(rewards);
         // Update last distribution block for use in calculating time-weighted average commission
         lastDistributionBlock = block.number;
@@ -237,13 +240,17 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             _repayDebt(amountToRepay);
         }
         // Send user share to rETH
-        (bool success,) = rocketTokenRETH.call{value: rethAmount}("");
-        require(success, "Failed to send ETH to the rETH contract");
+        if (rethAmount > 0) {
+            (bool success,) = rocketTokenRETH.call{value: rethAmount}("");
+            require(success, "Failed to send ETH to the rETH contract");
+        }
         // Send voter share to voting contract
-        // TODO: Potential oDAO attack here by making rocketVoterRewards revert on transfer
-        address rocketVoterRewards = getContractAddress("rocketVoterRewards");
-        (success,) = rocketVoterRewards.call{value: voterAmount}("");
-        require(success, "Failed to send voter rewards");
+        if (voterAmount > 0) {
+            // TODO: Potential oDAO attack here by making rocketVoterRewards revert on transfer
+            address rocketVoterRewards = getContractAddress("rocketVoterRewards");
+            (bool success,) = rocketVoterRewards.call{value: voterAmount}("");
+            require(success, "Failed to send voter rewards");
+        }
         // Increase node rewards value
         nodeRewards += nodeAmount;
         // Emit event

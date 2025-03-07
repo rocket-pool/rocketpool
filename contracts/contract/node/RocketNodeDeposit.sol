@@ -192,8 +192,8 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
         checkBondRequirement(megapool, _bondAmount);
         checkDebtRequirement(megapool);
         // Request a new validator from the megapool
-        megapool.newValidator(_bondAmount, _useExpressTicket, _validatorPubkey, _validatorSignature, _depositDataRoot);
         rocketMegapoolManager.addValidator(address(megapool), megapool.getValidatorCount());
+        megapool.newValidator(_bondAmount, _useExpressTicket, _validatorPubkey, _validatorSignature, _depositDataRoot);
         // Send node operator's bond to the deposit pool
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         rocketDepositPool.nodeDeposit{value: _value}(_bondAmount);

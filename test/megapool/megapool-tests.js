@@ -339,6 +339,14 @@ export default function() {
                 await stakeMegapoolValidator(megapool, 0, { from: node });
             });
 
+            it(printTitle('node', 'can perform a second stake operation with no rewards available'), async () => {
+                await userDeposit({ from: random, value: '32'.ether });
+                await nodeDeposit(node);
+                await nodeDeposit(node);
+                await stakeMegapoolValidator(megapool, 0, { from: node });
+                await stakeMegapoolValidator(megapool, 1, { from: node });
+            });
+
             describe('With pre-staked validator', () => {
 
                 before(async () => {
