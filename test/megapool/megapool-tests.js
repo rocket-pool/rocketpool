@@ -397,13 +397,13 @@ export default function() {
                 await nodeDeposit(node);
                 await helpers.time.increase(dissolvePeriod + 1);
                 await megapool.connect(random).dissolveValidator(0);
-                const nodeRefundBefore = await megapool.getRefundValue();
                 // Notify exiting validator
                 await notifyExitValidator(megapool, 0, await getCurrentEpoch());
+                const nodeBalanceBefore = await ethers.provider.getBalance(nodeWithdrawalAddress);
                 await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner);
-                // Check refund of 32 ETH occurred
-                const nodeRefundAfter = await megapool.getRefundValue();
-                assertBN.equal(nodeRefundAfter - nodeRefundBefore, '32'.ether);
+                const nodeBalanceAfter = await ethers.provider.getBalance(nodeWithdrawalAddress);
+                // Check refund of 32 ETH occurred (+ the refund for the original 4 ETH node deposit
+                assertBN.equal(nodeBalanceAfter - nodeBalanceBefore, '36'.ether);
             });
 
             it(printTitle('node', 'can perform stake operation on pre-stake validator'), async () => {
@@ -528,7 +528,7 @@ export default function() {
                     }
                 });
 
-                it(printTitle('node', 'can distribute exiting rewards after full exit'), async () => {
+                it(printTitle('node', 'can distribute capital after full exit'), async () => {
                     // Notify exit and final balance
                     await notifyExitValidator(megapool, 0, await getCurrentEpoch());
                     await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner);
@@ -537,12 +537,24 @@ export default function() {
                     await distributeMegapool(megapool);
                 });
 
+                it(printTitle('random', 'can permissionlessly notify final balance and distribute a validator'), async () => {
+                    // Notify exit and final balance
+                    const megapoolWithRandom = megapool.connect(random);
+                    await notifyExitValidator(megapoolWithRandom, 0, await getCurrentEpoch());
+                    await notifyFinalBalanceValidator(megapoolWithRandom, 0, '32'.ether, owner);
+                    // Can distribute
+                    await mockRewards(megapoolWithRandom, '1'.ether);
+                    await distributeMegapool(megapoolWithRandom);
+                });
+
                 it(printTitle('node', 'can bond reduce on exit'), async () => {
                     // Adjust `reduced_bond` to 2 ETH
                     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
                     // Notify exit in 5 epochs
                     await notifyExitValidator(megapool, 0, await getCurrentEpoch());
+                    const nodeBalanceBefore = await ethers.provider.getBalance(nodeWithdrawalAddress);
                     await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner);
+                    const nodeBalanceAfter = await ethers.provider.getBalance(nodeWithdrawalAddress);
                     /*
                         NO started with 5 validators
                         old bond requirement = 8 + (4 * 3) = 20
@@ -550,9 +562,8 @@ export default function() {
                         therefore, NOs bond after exit should be 12, with an 8 ETH refund from the 32 ETH final balance
                      */
                     const nodeBond = await megapool.getNodeBond();
-                    const nodeRefund = await megapool.getRefundValue();
                     assertBN.equal(nodeBond, '12'.ether);
-                    assertBN.equal(nodeRefund, '8'.ether);
+                    assertBN.equal(nodeBalanceAfter - nodeBalanceBefore, '8'.ether);
                 });
 
                 it(printTitle('node', 'can bond reduce on exit with balance < 32 ETH'), async () => {
@@ -560,15 +571,16 @@ export default function() {
                     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
                     // Notify exit in 5 epochs
                     await notifyExitValidator(megapool, 0, await getCurrentEpoch());
+                    const nodeBalanceBefore = await ethers.provider.getBalance(nodeWithdrawalAddress);
                     await notifyFinalBalanceValidator(megapool, 0, '32'.ether - '7'.ether, owner);
+                    const nodeBalanceAfter = await ethers.provider.getBalance(nodeWithdrawalAddress);
                     /*
                         NO should receive 8 ETH bond on exit, but lost 7 ETH capital so bond should reduce by 8 ETH
                         but NO should only receive 1 ETH refund
                      */
                     const nodeBond = await megapool.getNodeBond();
-                    const nodeRefund = await megapool.getRefundValue();
                     assertBN.equal(nodeBond, '12'.ether);
-                    assertBN.equal(nodeRefund, '1'.ether);
+                    assertBN.equal(nodeBalanceAfter - nodeBalanceBefore, '1'.ether);
                 });
 
                 it(printTitle('node', 'accrues debt when exit balance is too low and bond has been reduced'), async () => {

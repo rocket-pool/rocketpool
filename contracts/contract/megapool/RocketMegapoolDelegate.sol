@@ -289,7 +289,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             require(success, "Failed to send voter rewards");
         }
         // Increase node rewards value
-        nodeRewards += nodeAmount;
+        refundValue += nodeAmount;
         // Emit event
         emit RewardsDistributed(nodeAmount, voterAmount, rethAmount, block.timestamp);
     }
@@ -300,19 +300,19 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     }
 
     function _claim() internal {
-        uint256 amountToSend = nodeRewards;
+        uint256 amountToSend = refundValue;
         if (debt > 0) {
             if (debt > amountToSend) {
                 debt -= amountToSend;
-                nodeRewards = 0;
+                refundValue = 0;
                 return;
             } else {
                 debt = 0;
                 amountToSend -= debt;
             }
         }
-        // Zero out rewards
-        nodeRewards = 0;
+        // Zero out refund
+        refundValue = 0;
         // Send to withdrawal address
         address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
         (bool success,) = nodeWithdrawalAddress.call{value: amountToSend}("");
@@ -358,10 +358,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         return refundValue;
     }
 
-    function getNodeRewards() override external view returns (uint256) {
-        return nodeRewards;
-    }
-
     function getNodeBond() override external view returns (uint256) {
         return nodeBond;
     }
@@ -391,8 +387,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         return
             address(this).balance
             - refundValue
-            - assignedValue
-            - nodeRewards;
+            - assignedValue;
     }
 
     function getLastDistributionBlock() override external view returns (uint256) {
@@ -439,6 +434,20 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     /// @param _slot The slot for which the supplied proof was generated for
     /// @param _proof Merkle proof of the withdraw object
     function notifyFinalBalance(uint32 _validatorId, uint64 _withdrawalSlot, uint256 _withdrawalNum, Withdrawal calldata _withdrawal, uint64 _slot, bytes32[] calldata _proof) external {
+        _notifyFinalBalance(_validatorId, _withdrawalSlot, _withdrawalNum, _withdrawal, _slot, _proof);
+        // If owner is calling, claim immediately
+        if (msg.sender == nodeAddress) {
+            _claim();
+        } else {
+            address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
+            if (msg.sender == withdrawalAddress) {
+                _claim();
+            }
+        }
+    }
+
+    /// @dev Used to notify the megapool of the final balance of an exited validator
+    function _notifyFinalBalance(uint32 _validatorId, uint64 _withdrawalSlot, uint256 _withdrawalNum, Withdrawal calldata _withdrawal, uint64 _slot, bytes32[] calldata _proof) internal {
         BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
         uint64 validatorIndex = validators[_validatorId].validatorIndex;
         // Verify proof
@@ -453,6 +462,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         uint256 withdrawalBalance = uint256(_withdrawal.amountInGwei) * 1 gwei;
         // Handle dissolved recovery
         if (validators[_validatorId].dissolved) {
+            // TODO: By using refundValue here on dissolve, NO will have debt applied to this value which might be undesirable
+            // TODO: Instead, maybe only NO can notify final balance on a dissolved validator and the funds are immediately sent to their withdrawal address?
             refundValue += withdrawalBalance;
             return;
         }

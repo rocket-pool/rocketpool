@@ -92,6 +92,9 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
         activeValidatorCount: balancesAfter.activeValidatorCount - balancesBefore.activeValidatorCount,
     }
 
+    const nodeCalling = (megapool.runner.address.toLowerCase() === nodeAddress.toLowerCase()) ||
+        (megapool.runner.address.toLowerCase() === withdrawalAddress.toLowerCase());
+
     // Check state updates
     const info = await getValidatorInfo(megapool, validatorId);
 
@@ -99,8 +102,15 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
     assert.equal(info.exited, true);
     assertBN.equal(info.exitBalance, finalBalance / '1'.gwei);
 
+    // Pending rewards shouldn't change on capital distribution
     assertBN.equal(balanceDeltas.pendingRewards, 0);
-    assertBN.equal(balanceDeltas.rethBalance + balanceDeltas.nodeRefund, finalBalance);
+
+    if (nodeCalling) {
+        assertBN.equal(balanceDeltas.rethBalance + balanceDeltas.nodeBalance + balanceDeltas.nodeRefund, finalBalance);
+    } else {
+        console.log('Not node calling');
+        assertBN.equal(balanceDeltas.rethBalance + balanceDeltas.nodeBalance + balanceDeltas.nodeRefund, finalBalance);
+    }
 
     if (!info.dissolved) {
         assertBN.equal(balanceDeltas.activeValidatorCount, -1n);

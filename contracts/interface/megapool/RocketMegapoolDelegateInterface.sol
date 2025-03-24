@@ -28,7 +28,6 @@ interface RocketMegapoolDelegateInterface is RocketMegapoolDelegateBaseInterface
     function getAssignedValue() external view returns (uint256);
     function getDebt() external view returns (uint256);
     function getRefundValue() external view returns (uint256);
-    function getNodeRewards() external view returns (uint256);
     function getNodeBond() external view returns (uint256);
     function getUserCapital() external view returns (uint256);
     function calculatePendingRewards() external view returns (uint256 nodeRewards, uint256 voterRewards, uint256 rethRewards);

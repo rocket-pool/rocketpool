@@ -16,15 +16,16 @@ export async function distributeMegapool(megapool) {
     const withdrawalAddress = await rocketStorage.getNodeWithdrawalAddress(nodeAddress);
 
     async function getBalances() {
-        let [pendingRewards, megapoolBalance, nodeBalance, voterBalance, rethBalance, nodeDebt] = await Promise.all([
+        let [pendingRewards, megapoolBalance, nodeBalance, voterBalance, rethBalance, nodeDebt, refundValue] = await Promise.all([
             megapool.getPendingRewards(),
             ethers.provider.getBalance(megapool.target),
             ethers.provider.getBalance(withdrawalAddress),
             rocketVault.balanceOf("rocketVoterRewards"),
             ethers.provider.getBalance(rocketTokenRETH.target),
-            megapool.getDebt()
+            megapool.getDebt(),
+            megapool.getRefundValue(),
         ]);
-        return { pendingRewards, megapoolBalance, nodeBalance, voterBalance, rethBalance, nodeDebt };
+        return { pendingRewards, megapoolBalance, nodeBalance, voterBalance, rethBalance, nodeDebt, refundValue };
     }
 
     const [expectedNodeRewards, expectedVoterRewards, expectedRethRewards] = await megapool.calculatePendingRewards();
@@ -40,6 +41,7 @@ export async function distributeMegapool(megapool) {
         voterBalance: balancesAfter.voterBalance - balancesBefore.voterBalance,
         rethBalance: balancesAfter.rethBalance - balancesBefore.rethBalance,
         nodeDebt: balancesAfter.nodeDebt - balancesBefore.nodeDebt,
+        refundValue: balancesAfter.refundValue - balancesBefore.refundValue,
     }
 
     let expectedDebtDelta = 0n;
@@ -52,8 +54,16 @@ export async function distributeMegapool(megapool) {
         }
     }
 
+    const nodeCalling = (megapool.runner.address.toLowerCase() === nodeAddress.toLowerCase()) ||
+        (megapool.runner.address.toLowerCase() === withdrawalAddress.toLowerCase());
+
+    if (nodeCalling) {
+        assertBN.equal(balanceDeltas.nodeBalance - balanceDeltas.nodeDebt, expectedNodeRewards);
+    } else {
+        assertBN.equal(balanceDeltas.refundValue - balanceDeltas.nodeDebt, expectedNodeRewards);
+    }
+
     assertBN.equal(balanceDeltas.nodeDebt, expectedDebtDelta);
-    assertBN.equal(balanceDeltas.nodeBalance - balanceDeltas.nodeDebt, expectedNodeRewards);
     assertBN.equal(balanceDeltas.voterBalance, expectedVoterRewards);
     assertBN.equal(balanceDeltas.rethBalance + balanceDeltas.nodeDebt, expectedRethRewards);
     assertBN.equal(balancesAfter.pendingRewards, 0n);
