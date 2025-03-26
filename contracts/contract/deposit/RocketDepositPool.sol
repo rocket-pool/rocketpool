@@ -2,7 +2,7 @@
 pragma solidity 0.8.18;
 
 import {AddressQueueStorageInterface} from "../../interface/util/AddressQueueStorageInterface.sol";
-import {LinkedListStorageInterface, DepositQueueKey, DepositQueueValue} from "../../interface/util/LinkedListStorageInterface.sol";
+import {DepositQueueValue, DepositQueueKey, LinkedListStorageInterface} from "../../interface/util/LinkedListStorageInterface.sol";
 import {RocketBase} from "../RocketBase.sol";
 import {RocketDAOProtocolSettingsDepositInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
 import {RocketDAOProtocolSettingsMinipoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
@@ -113,7 +113,10 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             maxCapacity = maximumDepositPoolSize + queueEffectiveCapacity
             assert(capacityNeeded <= maxCapacity)
         */
-        uint256 capacityNeeded = getBalance() + msg.value;
+        uint256 capacityNeeded;
+        unchecked { // Infeasible overflow
+            capacityNeeded = getBalance() + msg.value;
+        }
         uint256 maxDepositPoolSize = rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize();
         if (capacityNeeded > maxDepositPoolSize) {
             // Doing a conditional require() instead of a single one optimises for the common
@@ -128,10 +131,12 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             }
         }
         // Calculate deposit fee
-        uint256 depositFee = msg.value * rocketDAOProtocolSettingsDeposit.getDepositFee() / calcBase;
-        uint256 depositNet = msg.value - depositFee;
-        // Mint rETH to user account
-        rocketTokenRETH.mint(depositNet, msg.sender);
+        unchecked { // depositFee < msg.value
+            uint256 depositFee = msg.value * rocketDAOProtocolSettingsDeposit.getDepositFee() / calcBase;
+            uint256 depositNet = msg.value - depositFee;
+            // Mint rETH to user account
+            rocketTokenRETH.mint(depositNet, msg.sender);
+        }
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, block.timestamp);
         // Process deposit
@@ -236,7 +241,9 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
                 _assignMinipools(_max, _rocketDAOProtocolSettingsDeposit);
                 return;
             } else {
-                _max -= minipoolQueueLength;
+                unchecked { // _max < minipoolQueueLength
+                    _max -= minipoolQueueLength;
+                }
                 _assignMinipools(minipoolQueueLength, _rocketDAOProtocolSettingsDeposit);
             }
         }
@@ -383,30 +390,34 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             emit FundsAssigned(head.receiver, ethRequired, block.timestamp);
             linkedListStorage.dequeueItem(namespace);
             // Account for node balance
-            nodeBalanceUsed += head.suppliedValue * milliToWei;
-            totalSent += ethRequired;
-            // Update counts for next iteration
-            queueIndex ++;
-            if (express) {
-                expressQueueLength -= 1;
-                expressHeadMoved = true;
-            } else {
-                standardQueueLength -= 1;
-                standardHeadMoved = true;
+            unchecked { // Infeasible overflows and impossible underflows
+                nodeBalanceUsed += head.suppliedValue * milliToWei;
+                totalSent += ethRequired;
+                // Update counts for next iteration
+                queueIndex += 1;
+                if (express) {
+                    expressQueueLength -= 1;
+                    expressHeadMoved = true;
+                } else {
+                    standardQueueLength -= 1;
+                    standardHeadMoved = true;
+                }
             }
         }
         // Store state changes
         subUint("deposit.pool.node.balance", nodeBalanceUsed);
         setUint(keccak256("megapool.queue.index"), queueIndex);
         subUint(keccak256("deposit.pool.requested.total"), totalSent);
-        setUint(keccak256("megapool.queue.last.moved.block"), block.number);
-        // Update head moved blocks
-        if (expressHeadMoved) {
-            setUint(keccak256("megapool.express.queue.head.moved.block"), block.number);
-        }
-        if (standardHeadMoved) {
-            setUint(keccak256("megapool.standard.queue.head.moved.block"), block.number);
-        }
+        setQueueMoved(expressHeadMoved, standardHeadMoved);
+    }
+
+    function setQueueMoved(bool expressHeadMoved, bool standardHeadMoved) internal {
+        uint256 packed = getUint(keccak256("megapool.queue.moved"));
+        uint128 express = expressHeadMoved ? uint128(block.number) : uint128(packed >> 0);
+        uint128 standard = standardHeadMoved ? uint128(block.number) : uint128(packed >> 128);
+        packed = express << 0;
+        packed |= uint256(standard) << 128;
+        setUint(keccak256("megapool.queue.moved"), packed);
     }
 
     /// @dev Withdraw excess deposit pool balance for rETH collateral
@@ -440,7 +451,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         bytes32 namespace = getQueueNamespace(_expressQueue);
         DepositQueueValue memory value = DepositQueueValue({
             receiver: msg.sender,                             // Megapool address
-            validatorId: _validatorId,                // Incrementing id per validator in a megapool
+            validatorId: _validatorId,                        // Incrementing id per validator in a megapool
             suppliedValue: uint32(_bondAmount / milliToWei),  // NO bond amount
             requestedValue: uint32(_amount / milliToWei)      // Amount being requested
         });
@@ -452,12 +463,12 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         if (_expressQueue) {
             uint256 expressQueueLength = linkedListStorage.getLength(expressQueueNamespace);
             if (expressQueueLength == 1) {
-                setUint(keccak256("megapool.express.queue.head.moved.block"), block.number);
+                setQueueMoved(true, false);
             }
         } else {
             uint256 standardQueueLength = linkedListStorage.getLength(standardQueueNamespace);
             if (standardQueueLength == 1) {
-                setUint(keccak256("megapool.standard.queue.head.moved.block"), block.number);
+                setQueueMoved(false, true);
             }
         }
         // Emit event
@@ -488,12 +499,12 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             rocketNodeManager.refundExpressTicket(nodeAddress);
             // Update head moved block
             if (isAtHead) {
-                setUint(keccak256("megapool.express.queue.head.moved.block"), block.number);
+                setQueueMoved(true, false);
             }
         } else {
             // Update head moved block
             if (isAtHead) {
-                setUint(keccak256("megapool.standard.queue.head.moved.block"), block.number);
+                setQueueMoved(false, true);
             }
         }
         // Emit event
@@ -572,10 +583,11 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         }
 
         // Retrieve the block at which the entry at the top of the queue got to that position
+        uint256 packed = getUint(keccak256("megapool.queue.moved"));
         if (express) {
-            headMovedBlock = getUint(keccak256("megapool.express.queue.head.moved.block"));
+            headMovedBlock = uint64(packed >> 64);
         } else {
-            headMovedBlock = getUint(keccak256("megapool.standard.queue.head.moved.block"));
+            headMovedBlock = uint64(packed >> 128);
         }
 
         return (head.receiver, assignmentPossible, headMovedBlock);

@@ -10,19 +10,30 @@ const mnemonicPassword = process.env.MNEMONIC_PASSWORD;
 const providerUrl = process.env.PROVIDER_URL || 'http://localhost:8545';
 
 module.exports = Object.assign(common, {
-    networks: {
-        hardhat: {
-            allowUnlimitedContractSize: true,
-            accounts: {
-                count: 50,
-                accountsBalance: '10000000000000000000000000',
+    solidity: {
+        compilers: [
+            {
+                version: '0.7.6',
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 15000,
+                    },
+                },
             },
-        },
-        localhost: {
-            host: '127.0.0.1',
-            port: 8545,
-            network_id: '*',
-        },
+            {
+                version: '0.8.18',
+                settings: {
+                    viaIR: true,
+                    optimizer: {
+                        enabled: true,
+                        runs: 15000,
+                    },
+                },
+            },
+        ],
+    },
+    networks: {
         testnet: {
             url: `${providerUrl}`,
             accounts: {

@@ -119,5 +119,4 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     function getUserDistributeWindowLength() override public view returns (uint256) {
         return getSettingUint("minipool.user.distribute.window.length");
     }
-
 }

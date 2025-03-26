@@ -78,7 +78,7 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
         value: finalBalance,
     });
 
-    const withdrawalCredentials = await megapool.getWithdrawalCredentials();
+    const withdrawalCredentials = Buffer.from(megapool.target.substr(2), 'hex');
     const amountInGwei = finalBalance / '1'.gwei;
     await megapool.notifyFinalBalance(validatorId, 0n, 0n, [0n, 0n, withdrawalCredentials, amountInGwei], 0n, []);
     const balancesAfter = await getBalances();
@@ -108,7 +108,6 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
     if (nodeCalling) {
         assertBN.equal(balanceDeltas.rethBalance + balanceDeltas.nodeBalance + balanceDeltas.nodeRefund, finalBalance);
     } else {
-        console.log('Not node calling');
         assertBN.equal(balanceDeltas.rethBalance + balanceDeltas.nodeBalance + balanceDeltas.nodeRefund, finalBalance);
     }
 

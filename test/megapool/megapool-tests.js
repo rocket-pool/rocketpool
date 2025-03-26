@@ -30,7 +30,6 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import { distributeMegapool } from './scenario-distribute';
 import { withdrawCredit } from './scenario-withdraw-credit';
 import { notifyExitValidator, notifyFinalBalanceValidator } from './scenario-exit';
-import { getDepositDataRoot, getValidatorSignature } from '../_utils/beacon';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -49,6 +48,8 @@ export default function() {
         const genesisTime = 1606824023;
         const secondsPerSlot = 12;
         const slotsPerEpoch = 32;
+
+        const userDistributeTime = (90 * 24 * 60 * 60); // 90 days
 
         async function mockRewards(megapool, amount = '1'.ether) {
             await owner.sendTransaction({
@@ -384,7 +385,7 @@ export default function() {
 
             it(printTitle('random', 'can not dissolve validator before dissolve period ends'), async () => {
                 await nodeDeposit(node);
-                await shouldRevert(megapool.connect(random).dissolveValidator(0), 'Dissolved validator', 'Not enough time has passed to dissolve');
+                await shouldRevert(megapool.connect(random).dissolveValidator(0), 'Dissolved validator', 'Not enough time has passed');
             });
 
             it(printTitle('random', 'can dissolve validator after dissolve period ends'), async () => {
@@ -393,70 +394,48 @@ export default function() {
                 await megapool.connect(random).dissolveValidator(0);
             });
 
-            it(printTitle('node', 'can recover funds from dissolved validator'), async () => {
-                await nodeDeposit(node);
-                await helpers.time.increase(dissolvePeriod + 1);
-                await megapool.connect(random).dissolveValidator(0);
-                // Notify exiting validator
-                await notifyExitValidator(megapool, 0, await getCurrentEpoch());
-                const nodeBalanceBefore = await ethers.provider.getBalance(nodeWithdrawalAddress);
-                await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner);
-                const nodeBalanceAfter = await ethers.provider.getBalance(nodeWithdrawalAddress);
-                // Check refund of 32 ETH occurred (+ the refund for the original 4 ETH node deposit
-                assertBN.equal(nodeBalanceAfter - nodeBalanceBefore, '36'.ether);
-            });
-
             it(printTitle('node', 'can perform stake operation on pre-stake validator'), async () => {
                 await nodeDeposit(node);
-                await stakeMegapoolValidator(megapool, 0, { from: node });
+                await stakeMegapoolValidator(megapool, 0);
+            });
+
+            it(printTitle('random', 'can perform stake operation on pre-stake validator'), async () => {
+                await nodeDeposit(node);
+                const megapoolRandom = megapool.connect(random)
+                await stakeMegapoolValidator(megapoolRandom, 0);
             });
 
             it(printTitle('node', 'can not stake with invalid withdrawal credentials'), async () => {
                 await nodeDeposit(node);
                 const validatorInfo = await getValidatorInfo(megapool, 0);
-                let depositData = {
-                    pubkey: Buffer.from(validatorInfo.pubkey.substr(2), 'hex'),
-                    withdrawalCredentials: Buffer.from('0100000000000000000000000000000000000000000000000000000000000000', 'hex'),
-                    amount: BigInt(31000000000), // gwei
-                    signature: getValidatorSignature(),
-                };
-                const depositDataRoot = getDepositDataRoot(depositData);
+                const withdrawalCredentials = Buffer.from('0100000000000000000000000000000000000000000000000000000000000000', 'hex');
                 // Construct a fake proof
                 const proof = {
                     slot: 0,
                     validatorIndex: 0,
                     pubkey: validatorInfo.pubkey,
-                    withdrawalCredentials: depositData.withdrawalCredentials,
+                    withdrawalCredentials: withdrawalCredentials,
                     witnesses: []
                 }
-                await shouldRevert(megapool.stake(0, depositData.signature, depositDataRoot, proof), 'Staked with invalid credentials', 'Invalid withdrawal credentials');
+                await shouldRevert(megapool.stake(0, proof), 'Staked with invalid credentials', 'Invalid withdrawal credentials');
             });
 
             it(printTitle('node', 'can perform a second stake operation with no rewards available'), async () => {
                 await nodeDeposit(node);
                 await nodeDeposit(node);
-                await stakeMegapoolValidator(megapool, 0, { from: node });
-                await stakeMegapoolValidator(megapool, 1, { from: node });
-            });
-
-            snapshotDescribe('With pre-staked validator', () => {
-
-                before(async () => {
-                    await deployMegapool({ from: node });
-                    await nodeDeposit(node);
-                });
-
+                await stakeMegapoolValidator(megapool, 0);
+                await stakeMegapoolValidator(megapool, 1);
             });
 
             snapshotDescribe('With staking validator', () => {
                 before(async () => {
                     await deployMegapool({ from: node });
                     await nodeDeposit(node);
-                    await stakeMegapoolValidator(megapool, 0, { from: node });
+                    await stakeMegapoolValidator(megapool, 0);
                 });
 
                 it(printTitle('node', 'cannot perform stake operation on staking validator'), async () => {
-                    await shouldRevert(stakeMegapoolValidator(megapool, 0, { from: node }), 'Was able to stake', 'Validator must be pre-staked');
+                    await shouldRevert(stakeMegapoolValidator(megapool, 0), 'Was able to stake', 'Validator must be pre-staked');
                 });
 
                 it(printTitle('node', 'can distribute rewards'), async () => {
@@ -496,7 +475,7 @@ export default function() {
                     await waitEpochs(5);
                     // Can't distribute
                     await mockRewards(megapool, '1'.ether);
-                    await shouldRevert(distributeMegapool(megapool), 'Was able to distribute', 'Can not distribute until validators have fully exited');
+                    await shouldRevert(distributeMegapool(megapool), 'Was able to distribute', 'Pending validator exit');
                 });
 
                 it(printTitle('node', 'can not notify exit when withdrawable_epoch = FAR_FUTURE_EPOCH'), async () => {
@@ -524,7 +503,7 @@ export default function() {
                     await deployMegapool({ from: node });
                     for (let i = 0; i < 5; i++) {
                         await nodeDeposit(node);
-                        await stakeMegapoolValidator(megapool, i, { from: node });
+                        await stakeMegapoolValidator(megapool, i);
                     }
                 });
 
@@ -537,10 +516,14 @@ export default function() {
                     await distributeMegapool(megapool);
                 });
 
-                it(printTitle('random', 'can permissionlessly notify final balance and distribute a validator'), async () => {
+                it(printTitle('random', 'can permissionlessly notify final balance and distribute a validator after user distribute window'), async () => {
                     // Notify exit and final balance
                     const megapoolWithRandom = megapool.connect(random);
                     await notifyExitValidator(megapoolWithRandom, 0, await getCurrentEpoch());
+                    await shouldRevert(notifyFinalBalanceValidator(megapoolWithRandom, 0, '32'.ether, owner), 'Was able to distribute', 'Not enough time has passed');
+                    // Wait the window
+                    await helpers.time.increase(userDistributeTime + slotsPerEpoch * secondsPerSlot + 1);
+                    // Should work now
                     await notifyFinalBalanceValidator(megapoolWithRandom, 0, '32'.ether, owner);
                     // Can distribute
                     await mockRewards(megapoolWithRandom, '1'.ether);

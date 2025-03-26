@@ -53,7 +53,7 @@ contract RocketMegapoolDelegateBase is RocketMegapoolStorageLayout, RocketMegapo
     /// @dev Reverts if caller is not the owner of the megapool
     modifier onlyMegapoolOwner() {
         address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
-        require(msg.sender == nodeAddress || msg.sender == withdrawalAddress, "Only the node operator can access this method");
+        require(isNodeCalling(), "Not allowed");
         _;
     }
 
@@ -75,10 +75,23 @@ contract RocketMegapoolDelegateBase is RocketMegapoolStorageLayout, RocketMegapo
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         if (rocketNodeManager.getNodeRPLWithdrawalAddressIsSet(nodeAddress)) {
             address rplWithdrawalAddress = rocketNodeManager.getNodeRPLWithdrawalAddress(nodeAddress);
-            require(msg.sender == rplWithdrawalAddress, "Must be called from RPL withdrawal address");
+            require(msg.sender == rplWithdrawalAddress, "Not allowed");
         } else {
-            require(msg.sender == nodeAddress, "Must be called from node address");
+            require(msg.sender == nodeAddress, "Not allowed");
         }
         _;
+    }
+
+    /// @dev Returns true if msg.sender is node or node's withdrawal address
+    function isNodeCalling() internal view returns (bool) {
+        if (msg.sender == nodeAddress) {
+            return true;
+        } else {
+            address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
+            if (msg.sender == withdrawalAddress) {
+                return true;
+            }
+        }
+        return false;
     }
 }

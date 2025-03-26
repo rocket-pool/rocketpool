@@ -2,10 +2,10 @@
 pragma solidity >0.5.0 <0.9.0;
 
 struct Withdrawal {
-    uint256 index;
-    uint256 validatorIndex;
-    bytes32 withdrawalCredentials;
-    uint256 amountInGwei;
+    uint64 index;
+    uint64 validatorIndex;
+    bytes20 withdrawalCredentials;
+    uint64 amountInGwei;
 }
 
 struct ValidatorProof {

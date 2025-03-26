@@ -39,6 +39,7 @@ abstract contract RocketMegapoolStorageLayout {
 
         uint64 validatorIndex;      // Index of the validator on the beaconchain
         uint64 exitBalance;         // Final balance of the validator at withdrawable_epoch in gwei (amount returned to EL)
+        uint64 withdrawableEpoch;   // The epoch this validator is withdrawable
     }
 
     // Extra data temporarily stored for prestake operation
@@ -82,6 +83,8 @@ abstract contract RocketMegapoolStorageLayout {
     mapping(uint32 => ValidatorInfo) internal validators;
     mapping(uint32 => PrestakeData) internal prestakeData;
 
-    uint32 internal numExitingValidators;
-    uint32 internal soonestWithdrawableEpoch;
+    uint32 internal numExitingValidators;       // Number of validators currently exiting
+    uint64 internal soonestWithdrawableEpoch;   // The soonest epoch which a validator will become withdrawable
+
+    uint256 internal __version1Boundary;        // Unused full slot width boundary
 }
