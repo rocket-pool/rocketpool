@@ -4,7 +4,10 @@ const ethers = hre.ethers;
 class Artifact {
     constructor(name) {
         this.name = name;
-        this.abi = hre.artifacts.readArtifactSync(name).abi;
+        const hreArtifact = hre.artifacts.readArtifactSync(name);
+        this.abi = hreArtifact.abi;
+        this.contractName = hreArtifact.contractName;
+        this.sourceName = hreArtifact.sourceName;
         this.instance = null;
     }
 
@@ -14,6 +17,11 @@ class Artifact {
 
     setAsDeployed(instance) {
         this.instance = instance;
+    }
+
+    async newImmediate(...args) {
+        this.instance = await (await ethers.getContractFactory(this.name)).deploy(...args);
+        return this.instance;
     }
 
     async new(...args) {

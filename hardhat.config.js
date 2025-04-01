@@ -21,7 +21,7 @@ module.exports = Object.assign(common, {
             port: 8545,
             network_id: '*',
         },
-        testnet: {
+        custom: {
             url: `${providerUrl}`,
             accounts: {
                 mnemonic: mnemonicPhrase,
