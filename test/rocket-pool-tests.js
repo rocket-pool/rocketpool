@@ -54,7 +54,7 @@ afterEach(endSnapShot);
 
 before(async function() {
   // Deploy Rocket Pool
-  await suppressLog(deployRocketPool);
+  await deployRocketPool();
   // Set starting parameters for all tests
   await setDefaultParameters();
 });

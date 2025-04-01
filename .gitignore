@@ -6,3 +6,4 @@ artifacts/
 .env
 coverage/
 coverage.json
+deployments/
