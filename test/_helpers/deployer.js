@@ -16,11 +16,23 @@ function loadABI(abiFilePath) {
     return JSON.parse(fs.readFileSync(abiFilePath));
 }
 
+function formatConstructorArgs(args) {
+    return JSON.stringify(args, (key, value) =>
+        typeof value === 'bigint'
+            ? value.toString()
+            : value,
+    );
+}
+
 const defaultOpts = {
     protocolVersion: '1.4',
     initialRevenueSplit: ['0.05'.ether, '0.09'.ether],
     depositAddress: null,
     fixedSupplyTokenAddress: null,
+    genesisBlockTimestamp: 1695902400n,
+    secondsPerSlot: 12n,
+    beaconRootsHistoryBufferLength: 8191n,
+    beaconRoots: '0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02',
     logging: true,
 };
 
@@ -132,6 +144,7 @@ export class RocketPoolDeployer {
         this.contractPlan['rocketMinipoolDelegate'].constructorArgs = [];
         this.contractPlan['rocketNodeDistributorDelegate'].constructorArgs = [];
         this.contractPlan['rocketMinipoolBase'].constructorArgs = [];
+        this.contractPlan['blockRoots'].constructorArgs = [opts.genesisBlockTimestamp, opts.secondsPerSlot, opts.beaconRootsHistoryBufferLength, opts.beaconRoots];
 
         // Setup deployment
         this.addStage('Deploy storage', 0, [
@@ -347,7 +360,7 @@ export class RocketPoolDeployer {
 
         this.logDepth += 2;
 
-        this.log(`- Constructor args = ${JSON.stringify(constructorArgs)}`);
+        this.log(`- Constructor args = ${formatConstructorArgs(constructorArgs)}`);
 
         // Deploy and log result
         const instance = await artifact.newImmediate(...constructorArgs);
@@ -385,15 +398,14 @@ export class RocketPoolDeployer {
         const rocketDAOProtocol = this.deployedContracts['rocketDAOProtocol'].instance;
 
         if (ethers.isAddress(value)) {
-            this.log(`- Bootstrap pDAO setting address \`${settingPath}\` = "${value}" on \`${contractName}\``, 'white')
+            this.log(`- Bootstrap pDAO setting address \`${settingPath}\` = "${value}" on \`${contractName}\``, 'white');
             await rocketDAOProtocol.bootstrapSettingAddress(contractName, settingPath, value);
         } else {
             if (typeof (value) == 'number' || typeof (value) == 'string' || typeof (value) == 'bigint') {
-                this.log(`- Bootstrap pDAO setting uint \`${settingPath}\` = ${value} on \`${contractName}\``, 'white')
+                this.log(`- Bootstrap pDAO setting uint \`${settingPath}\` = ${value} on \`${contractName}\``, 'white');
                 await rocketDAOProtocol.bootstrapSettingUint(contractName, settingPath, value);
-            }
-            else if (typeof (value) == 'boolean') {
-                this.log(`- Bootstrap pDAO setting bool \`${settingPath}\` = ${value} on \`${contractName}\``, 'white')
+            } else if (typeof (value) == 'boolean') {
+                this.log(`- Bootstrap pDAO setting bool \`${settingPath}\` = ${value} on \`${contractName}\``, 'white');
                 await rocketDAOProtocol.bootstrapSettingBool(contractName, settingPath, value);
             }
         }
@@ -401,7 +413,7 @@ export class RocketPoolDeployer {
 
     async bootstrapProtocolDAOClaimers(trustedNodePerc, protocolPerc, nodePerc) {
         const rocketDAOProtocol = this.deployedContracts['rocketDAOProtocol'].instance;
-        this.log(`- Bootstrap pDAO setting claimers: oDAO = ${ethers.formatEther(trustedNodePerc * 100n)}%, protocol = ${ethers.formatEther(protocolPerc * 100n)}%, node = ${ethers.formatEther(nodePerc * 100n)}% `, 'white')
+        this.log(`- Bootstrap pDAO setting claimers: oDAO = ${ethers.formatEther(trustedNodePerc * 100n)}%, protocol = ${ethers.formatEther(protocolPerc * 100n)}%, node = ${ethers.formatEther(nodePerc * 100n)}% `, 'white');
         await rocketDAOProtocol.bootstrapSettingClaimers(trustedNodePerc, protocolPerc, nodePerc);
     }
 
