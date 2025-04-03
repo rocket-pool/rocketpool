@@ -1,6 +1,6 @@
 import { before, it, describe } from 'mocha';
 import { printTitle } from '../_utils/formatting';
-import { nodeDepositEthFor, registerNode, setNodeWithdrawalAddress } from '../_helpers/node';
+import { nodeDepositEthFor, registerNode, setNodeTrusted, setNodeWithdrawalAddress } from '../_helpers/node';
 import { snapshotDescribe, globalSnapShot } from '../_utils/snapshotting';
 import { userDeposit } from '../_helpers/deposit';
 import {
@@ -30,6 +30,7 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import { distributeMegapool } from './scenario-distribute';
 import { withdrawCredit } from './scenario-withdraw-credit';
 import { notifyExitValidator, notifyFinalBalanceValidator } from './scenario-exit';
+import { applyPenalty } from './scenario-apply-penalty';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -41,7 +42,10 @@ export default function() {
             node,
             node2,
             nodeWithdrawalAddress,
-            random;
+            random,
+            trustedNode1,
+            trustedNode2,
+            trustedNode3;
 
         let megapool;
 
@@ -80,12 +84,23 @@ export default function() {
                 node2,
                 nodeWithdrawalAddress,
                 random,
+                trustedNode1,
+                trustedNode2,
+                trustedNode3,
             ] = await ethers.getSigners();
 
             // Register node & set withdrawal address
             await registerNode({ from: node });
             await setNodeWithdrawalAddress(node, nodeWithdrawalAddress, { from: node });
             await registerNode({ from: node2 });
+
+            // Setup oDAO
+            await registerNode({ from: trustedNode1 });
+            await setNodeTrusted(trustedNode1, 'saas_1', 'node1@home.com', owner);
+            await registerNode({ from: trustedNode2 });
+            await setNodeTrusted(trustedNode2, 'saas_2', 'node2@home.com', owner);
+            await registerNode({ from: trustedNode3 });
+            await setNodeTrusted(trustedNode3, 'saas_3', 'node3@home.com', owner);
 
             megapool = await getMegapoolForNode(node);
 
@@ -311,6 +326,45 @@ export default function() {
             assertBN.equal(await calculatePositionInQueue(megapool, 4n), 4n);
         });
 
+        //
+        // Trusted nodes
+        //
+
+        it(printTitle('trusted node', 'can apply a penalty to a megapool'), async () => {
+            await deployMegapool({ from: node });
+
+            await applyPenalty(megapool, 0n, '1'.ether, trustedNode1);
+            await applyPenalty(megapool, 0n, '1'.ether, trustedNode2);
+            await shouldRevert(applyPenalty(megapool, 0n, '1'.ether, trustedNode3), 'Applied penalty past majority', 'Penalty already applied');
+        });
+
+        it(printTitle('trusted node', 'can not apply penalty greater than max'), async () => {
+            const maxPenaltyAmount = '300'.ether;
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMegapool, 'maximum.megapool.eth.penalty', maxPenaltyAmount, { from: owner });
+
+            await deployMegapool({ from: node });
+
+            await applyPenalty(megapool, 0n, '301'.ether, trustedNode1);
+            await applyPenalty(megapool, 0n, '301'.ether, trustedNode2);
+        });
+
+        it(printTitle('trusted node', 'can apply another penalty only after 50400 blocks'), async () => {
+            const maxPenaltyAmount = '300'.ether;
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMegapool, 'maximum.megapool.eth.penalty', maxPenaltyAmount, { from: owner });
+            await deployMegapool({ from: node });
+            await applyPenalty(megapool, 0n, '300'.ether, trustedNode1);
+            await applyPenalty(megapool, 0n, '300'.ether, trustedNode2);
+            const megapoolDebtBefore = await megapool.getDebt();
+            await helpers.mine(50397);
+            await applyPenalty(megapool, 1n, '300'.ether, trustedNode1);
+            await shouldRevert(applyPenalty(megapool, 1n, '300'.ether, trustedNode2), 'Applied greater penalty', 'No penalty to apply');
+            await helpers.mine(3);
+            await applyPenalty(megapool, 1n, '300'.ether, trustedNode2);
+            const megapoolDebtAfter = await megapool.getDebt();
+            const debtDelta = megapoolDebtAfter - megapoolDebtBefore;
+            assertBN.equal(debtDelta, '300'.ether);
+        });
+
         snapshotDescribe('With full deposit pool', () => {
             const dissolvePeriod = (60 * 60 * 48); // 24 hours
 
@@ -354,7 +408,8 @@ export default function() {
 
             it(printTitle('node', 'can not create a new validator while debt is present'), async () => {
                 await deployMegapool({ from: node });
-                await megapool.connect(owner).setDebt('1'.ether);
+                await applyPenalty(megapool, 0n, '1'.ether, trustedNode1);
+                await applyPenalty(megapool, 0n, '1'.ether, trustedNode2);
                 await shouldRevert(nodeDeposit(node), 'Created validator', 'Cannot create validator while debt exists');
             });
 

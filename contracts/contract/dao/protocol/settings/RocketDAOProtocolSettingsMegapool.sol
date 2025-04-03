@@ -40,7 +40,7 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
             } else if (settingKey == keccak256(abi.encodePacked("maximum.megapool.eth.penalty"))) {
                 // Per RPIP-42
                 // TODO: This is a placeholder value
-                require(_value <= 300 ether, "Penalty must equal or exceed 300 ETH");
+                require(_value >= 300 ether, "Penalty must equal or exceed 300 ETH");
             }
         }
         // Update setting now
@@ -55,5 +55,10 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
     /// @notice Returns how long after an assignment a watcher must wait to dissolve a megapool validator (seconds)
     function getTimeBeforeDissolve() override external view returns (uint256) {
         return getSettingUint("megapool.time.before.dissolve");
+    }
+
+    /// @notice Returns the maximum amount a megapool can be penalised in 50,400 consecutive slots (~7 days)
+    function getMaximumEthPenalty() override external view returns (uint256) {
+        return getSettingUint("maximum.megapool.eth.penalty");
     }
 }

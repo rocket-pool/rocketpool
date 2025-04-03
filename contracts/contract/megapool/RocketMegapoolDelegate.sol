@@ -8,6 +8,7 @@ import {RocketDAOProtocolSettingsMinipoolInterface} from "../../interface/dao/pr
 import {RocketDepositPoolInterface} from "../../interface/deposit/RocketDepositPoolInterface.sol";
 import {RocketMegapoolDelegateInterface} from "../../interface/megapool/RocketMegapoolDelegateInterface.sol";
 import {RocketNetworkRevenuesInterface} from "../../interface/network/RocketNetworkRevenuesInterface.sol";
+import {RocketNetworkSnapshotsInterface} from "../../interface/network/RocketNetworkSnapshotsInterface.sol";
 import {RocketNodeDepositInterface} from "../../interface/node/RocketNodeDepositInterface.sol";
 import {ValidatorProof, BeaconStateVerifierInterface, Withdrawal} from "../../interface/util/BeaconStateVerifierInterface.sol";
 import {RocketMegapoolDelegateBase} from "./RocketMegapoolDelegateBase.sol";
@@ -34,6 +35,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     event MegapoolValidatorExiting(uint256 indexed validatorId, uint256 time);
     event MegapoolValidatorDissolved(uint256 indexed validatorId, uint256 time);
     event MegapoolValidatorStaked(uint256 indexed validatorId, uint256 time);
+    event MegapoolDebtIncreased(uint256 amount, uint256 time);
+    event MegapoolDebtReduced(uint256 amount, uint256 time);
     event RewardsDistributed(uint256 nodeAmount, uint256 voterAmount, uint256 rethAmount, uint256 time);
     event RewardsClaimed(uint256 amount, uint256 time);
 
@@ -244,9 +247,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     function _repayDebt(uint256 _amount) internal {
         require(debt >= _amount, "Not enough debt");
         sendToRETH(_amount);
-        unchecked { // Will not underflow as debt >= _amount
-            debt -= _amount;
-        }
+        _reduceDebt(_amount);
     }
 
     function sendToRETH(uint256 _amount) internal {
@@ -315,11 +316,11 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         uint256 amountToSend = refundValue;
         if (debt > 0) {
             if (debt > amountToSend) {
-                debt -= amountToSend;
+                _reduceDebt(amountToSend);
                 refundValue = 0;
                 return;
             } else {
-                debt = 0;
+                _reduceDebt(debt);
                 amountToSend -= debt;
             }
         }
@@ -418,7 +419,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     /// @param _withdrawableEpoch The validator's `withdrawable_epoch` value
     /// @param _slot The slot for which the supplied proof was generated for
     /// @param _proof Merkle proof for the withdrawal_epoch value
-    function notifyExit(uint32 _validatorId, uint64 _withdrawableEpoch, uint64 _slot, bytes32[] calldata _proof) external {
+    function notifyExit(uint32 _validatorId, uint64 _withdrawableEpoch, uint64 _slot, bytes32[] calldata _proof) override external {
         ValidatorInfo memory validator = validators[_validatorId];
         // Check required state
         require(_withdrawableEpoch < farFutureEpoch, "Validator is not exiting");
@@ -432,7 +433,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         // Update validator state to exiting
         validator.exiting = true;
         validator.withdrawableEpoch = _withdrawableEpoch;
-        // Setup distribution lock for any non-dissolved validator
+        // Setup distribution lock
         unchecked { // Infeasible overflow
             numExitingValidators += 1;
         }
@@ -451,7 +452,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     /// @param _withdrawal The withdrawal object from the beaconchain
     /// @param _slot The slot for which the supplied proof was generated for
     /// @param _proof Merkle proof of the withdraw object
-    function notifyFinalBalance(uint32 _validatorId, uint64 _withdrawalSlot, uint256 _withdrawalNum, Withdrawal calldata _withdrawal, uint64 _slot, bytes32[] calldata _proof) external {
+    function notifyFinalBalance(uint32 _validatorId, uint64 _withdrawalSlot, uint256 _withdrawalNum, Withdrawal calldata _withdrawal, uint64 _slot, bytes32[] calldata _proof) override external {
         _notifyFinalBalance(_validatorId, _withdrawalSlot, _withdrawalNum, _withdrawal, _slot, _proof);
         // If owner is calling, claim immediately
         bool nodeCalling = isNodeCalling();
@@ -508,7 +509,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             }
             uint256 toUser = withdrawalBalance - toNode;
             if (toUser < userShare) {
-                debt += userShare - toUser;
+                _increaseDebt(userShare - toUser);
             }
             // Send funds
             sendToRETH(toUser);
@@ -546,18 +547,31 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         _userShare = _value - _nodeShare;
     }
 
+    /// @notice Applies a penalty via increase debt (only callable from rocketMegapoolPenalties)
+    /// @param _amount Amount of the penalty
+    function applyPenalty(uint256 _amount) override external onlyLatestContract("rocketMegapoolPenalties", msg.sender) {
+        _increaseDebt(_amount);
+    }
+
+    /// @dev Increases debt of this minipool
+    function _increaseDebt(uint256 _amount) internal {
+        debt += _amount;
+        emit MegapoolDebtIncreased(_amount, block.timestamp);
+    }
+
+    /// @dev Reduces debt of this minipool
+    function _reduceDebt(uint256 _amount) internal {
+        debt -= _amount;
+        emit MegapoolDebtReduced(_amount, block.timestamp);
+    }
+
+    /// @dev Calculates the current epoch on the beacon chain
     function getCurrentEpoch() internal view returns (uint256) {
         unchecked {
             uint256 currentTime = block.timestamp;
             uint256 slotsPassed = (currentTime - genesisTime) / secondsPerSlot;
             return slotsPassed / slotsPerEpoch;
         }
-    }
-
-    function setDebt(uint256 _debt) external {
-        // TODO: Remove this function once proper functionality is in place
-        require(msg.sender == rocketStorage.getGuardian());
-        debt = _debt;
     }
 
     /// @dev Mirror deposit contract deposit data root calculation but with in-memory bytes instead of calldata

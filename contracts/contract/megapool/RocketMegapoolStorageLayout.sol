@@ -86,5 +86,7 @@ abstract contract RocketMegapoolStorageLayout {
     uint32 internal numExitingValidators;       // Number of validators currently exiting
     uint64 internal soonestWithdrawableEpoch;   // The soonest epoch which a validator will become withdrawable
 
+    mapping(uint256 => uint256) internal penalties;
+
     uint256 internal __version1Boundary;        // Unused full slot width boundary
 }

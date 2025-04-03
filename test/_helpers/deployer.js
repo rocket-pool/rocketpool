@@ -95,6 +95,7 @@ const contractNameMap = {
     rocketMegapoolProxy: 'RocketMegapoolProxy',
     rocketMegapoolManager: 'RocketMegapoolManager',
     rocketMegapoolDelegate: 'RocketMegapoolDelegate',
+    rocketMegapoolPenalties: 'RocketMegapoolPenalties',
     rocketNetworkRevenues: 'RocketNetworkRevenues',
     rocketVoterRewards: 'RocketVoterRewards',
     rocketDAOProtocolSettingsMegapool: 'RocketDAOProtocolSettingsMegapool',
