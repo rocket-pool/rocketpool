@@ -16,8 +16,8 @@ export async function applyPenalty(megapool, slot, amount, trustedNode) {
         let [voteCount, nodeDebt, currentMaxPenalty, currentPenaltyRunningTotal] = await Promise.all([
             rocketMegapoolPenalties.getVoteCount(megapool.target, slot, amount),
             megapool.getDebt(),
-            rocketMegapoolPenalties.getCurrentMaxPenalty(megapool.target),
-            rocketMegapoolPenalties.getCurrentPenaltyRunningTotal(megapool.target),
+            rocketMegapoolPenalties.getCurrentMaxPenalty(),
+            rocketMegapoolPenalties.getCurrentPenaltyRunningTotal(),
         ]);
         return { voteCount, nodeDebt, currentMaxPenalty, currentPenaltyRunningTotal };
     }

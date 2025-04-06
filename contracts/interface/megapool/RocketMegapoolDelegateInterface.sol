@@ -12,6 +12,7 @@ interface RocketMegapoolDelegateInterface is RocketMegapoolDelegateBaseInterface
 
     function newValidator(uint256 _bondAmount, bool _useExpressTicket, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external;
     function dequeue(uint32 _validatorId) external;
+    function reduceBond(uint256 _amount) external;
     function assignFunds(uint32 _validatorId) external payable;
     function stake(uint32 _validatorId, ValidatorProof calldata _proof) external;
     function dissolveValidator(uint32 _validatorId) external;

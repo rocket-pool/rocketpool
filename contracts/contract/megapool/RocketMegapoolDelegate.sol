@@ -37,6 +37,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     event MegapoolValidatorStaked(uint256 indexed validatorId, uint256 time);
     event MegapoolDebtIncreased(uint256 amount, uint256 time);
     event MegapoolDebtReduced(uint256 amount, uint256 time);
+    event MegapoolBondReduced(uint256 amount, uint256 time);
     event RewardsDistributed(uint256 nodeAmount, uint256 voterAmount, uint256 rethAmount, uint256 time);
     event RewardsClaimed(uint256 amount, uint256 time);
 
@@ -136,6 +137,31 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         validators[_validatorId] = validator;
         // Emit event
         emit MegapoolValidatorDequeued(_validatorId, block.timestamp);
+    }
+
+    /// @notice Reduces this megapool's bond and applies credit if current bond exceeds requirement
+    /// @param _amount Amount in ETH to reduce bond by
+    function reduceBond(uint256 _amount) override external onlyMegapoolOwner {
+        // Check pre-conditions
+        require(_amount > 0, "Invalid amount");
+        require(debt == 0, "Cannot reduce bond with debt");
+        RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
+        uint256 newBondRequirement = rocketNodeDeposit.getBondRequirement(getActiveValidatorCount());
+        require (nodeBond > newBondRequirement, "Bond is at minimum");
+        uint256 maxReduce = nodeBond - newBondRequirement;
+        require(_amount <= maxReduce, "New bond is too low");
+        // Force distribute at previous capital ratio
+        uint256 pendingRewards = getPendingRewards();
+        if (pendingRewards > 0) {
+            _distributeAmount(pendingRewards);
+        }
+        // Reduce node bond
+        nodeBond -= _amount;
+        // Apply credit
+        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+        rocketDepositPool.applyCredit(_amount);
+        // Emit event
+        emit MegapoolBondReduced(_amount, block.timestamp);
     }
 
     /// @notice Accepts requested funds from the deposit pool

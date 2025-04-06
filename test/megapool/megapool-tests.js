@@ -345,7 +345,7 @@ export default function() {
             await deployMegapool({ from: node });
 
             await applyPenalty(megapool, 0n, '301'.ether, trustedNode1);
-            await applyPenalty(megapool, 0n, '301'.ether, trustedNode2);
+            await shouldRevert(applyPenalty(megapool, 0n, '301'.ether, trustedNode2), 'Max penalty exceeded', 'Max penalty exceeded');
         });
 
         it(printTitle('trusted node', 'can apply another penalty only after 50400 blocks'), async () => {
@@ -357,12 +357,60 @@ export default function() {
             const megapoolDebtBefore = await megapool.getDebt();
             await helpers.mine(50397);
             await applyPenalty(megapool, 1n, '300'.ether, trustedNode1);
-            await shouldRevert(applyPenalty(megapool, 1n, '300'.ether, trustedNode2), 'Applied greater penalty', 'No penalty to apply');
+            await shouldRevert(applyPenalty(megapool, 1n, '300'.ether, trustedNode2), 'Applied greater penalty', 'Max penalty exceeded');
             await helpers.mine(3);
             await applyPenalty(megapool, 1n, '300'.ether, trustedNode2);
             const megapoolDebtAfter = await megapool.getDebt();
             const debtDelta = megapoolDebtAfter - megapoolDebtBefore;
             assertBN.equal(debtDelta, '300'.ether);
+        });
+
+        snapshotDescribe('With overbonded megapool', () => {
+            before(async () => {
+                // Deposit enough for 4 validators
+                await userDeposit({ from: random, value: ('32'.ether - '4'.ether) * 4n });
+                await nodeDeposit(node, '4'.ether);
+                await nodeDeposit(node, '4'.ether);
+                await nodeDeposit(node, '4'.ether);
+                // Reduce 'reduced.bond' to 2 ETH
+                await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
+                // Node is now overbonded by 2 ETH
+            });
+
+            it(printTitle('node', 'can not reduce bond below requirement'), async () => {
+                await shouldRevert(megapool.reduceBond('3'.ether), 'Reduced bond below requirement', 'New bond is too low');
+            });
+
+            it(printTitle('node', 'can partially reduce bond'), async () => {
+                await megapool.reduceBond('1'.ether);
+            });
+
+            it(printTitle('node', 'can not reduce bond while at minimum'), async () => {
+                await megapool.reduceBond('2'.ether);
+                await shouldRevert(megapool.reduceBond('1'.ether), 'Reduced bond below requirement', 'Bond is at minimum');
+            });
+
+            it(printTitle('node', 'can not reduce bond with debt'), async () => {
+                await applyPenalty(megapool, 0n, '1'.ether, trustedNode1);
+                await applyPenalty(megapool, 0n, '1'.ether, trustedNode2);
+                await shouldRevert(megapool.reduceBond('2'.ether), 'Reduced bond with debt', 'Cannot reduce bond with debt');
+            });
+
+            it(printTitle('node', 'can reduce bond to new requirement and use credit for another validator'), async () => {
+                await megapool.reduceBond('2'.ether);
+                await nodeDeposit(node, '2'.ether, false, '2'.ether);
+            });
+
+            it(printTitle('node', 'can reduce bond to new requirement and use credit to mint rETH'), async () => {
+                await megapool.reduceBond('2'.ether);
+                await withdrawCredit(node, '2'.ether);
+            });
+
+            it(printTitle('node', 'can reduce bond to new requirement and use some credit for another validator and some for rETH'), async () => {
+                await megapool.reduceBond('2'.ether);
+                await withdrawCredit(node, '1'.ether);
+                await nodeDeposit(node, '2'.ether, false, '1'.ether);
+            });
         });
 
         snapshotDescribe('With full deposit pool', () => {

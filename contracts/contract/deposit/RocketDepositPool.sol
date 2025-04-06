@@ -516,6 +516,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(msg.sender);
         address nodeAddress = megapool.getNodeAddress();
         addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", nodeAddress)), _amount);
+        addUint("deposit.pool.node.balance", _amount);
     }
 
     /// @notice Allows node operator to withdraw any ETH credit they have as rETH
