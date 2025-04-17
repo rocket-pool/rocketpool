@@ -390,51 +390,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         return count;
     }
 
-    /// @notice Convenience function to return all on-chain details about a given node
-    /// @param _nodeAddress Address of the node to query details for
-    function getNodeDetails(address _nodeAddress) override public view returns (NodeDetails memory nodeDetails) {
-        // Get contracts
-        RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
-        RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
-        RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory = RocketNodeDistributorFactoryInterface(getContractAddress("rocketNodeDistributorFactory"));
-        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        IERC20 rocketTokenRETH = IERC20(getContractAddress("rocketTokenRETH"));
-        IERC20 rocketTokenRPL = IERC20(getContractAddress("rocketTokenRPL"));
-        IERC20 rocketTokenRPLFixedSupply = IERC20(getContractAddress("rocketTokenRPLFixedSupply"));
-        // Node details
-        nodeDetails.nodeAddress = _nodeAddress;
-        nodeDetails.withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
-        nodeDetails.pendingWithdrawalAddress = rocketStorage.getNodePendingWithdrawalAddress(_nodeAddress);
-        nodeDetails.exists = getNodeExists(_nodeAddress);
-        nodeDetails.registrationTime = getNodeRegistrationTime(_nodeAddress);
-        nodeDetails.timezoneLocation = getNodeTimezoneLocation(_nodeAddress);
-        nodeDetails.feeDistributorInitialised = getFeeDistributorInitialised(_nodeAddress);
-        nodeDetails.rewardNetwork = getRewardNetwork(_nodeAddress);
-        // Staking details
-        nodeDetails.rplStake = rocketNodeStaking.getNodeRPLStake(_nodeAddress);
-        nodeDetails.effectiveRPLStake = rocketNodeStaking.getNodeEffectiveRPLStake(_nodeAddress);
-        nodeDetails.minimumRPLStake = rocketNodeStaking.getNodeMinimumRPLStake(_nodeAddress);
-        nodeDetails.maximumRPLStake = rocketNodeStaking.getNodeMaximumRPLStake(_nodeAddress);
-        nodeDetails.ethMatched = rocketNodeStaking.getNodeETHMatched(_nodeAddress);
-        nodeDetails.ethMatchedLimit = rocketNodeStaking.getNodeETHMatchedLimit(_nodeAddress);
-        // Distributor details
-        nodeDetails.feeDistributorAddress = rocketNodeDistributorFactory.getProxyAddress(_nodeAddress);
-        uint256 distributorBalance = nodeDetails.feeDistributorAddress.balance;
-        RocketNodeDistributorInterface distributor = RocketNodeDistributorInterface(nodeDetails.feeDistributorAddress);
-        nodeDetails.distributorBalanceNodeETH = distributor.getNodeShare();
-        nodeDetails.distributorBalanceUserETH = distributorBalance - nodeDetails.distributorBalanceNodeETH;
-        // Minipool details
-        nodeDetails.minipoolCount = rocketMinipoolManager.getNodeMinipoolCount(_nodeAddress);
-        // Balance details
-        nodeDetails.balanceETH = _nodeAddress.balance;
-        nodeDetails.balanceRETH = rocketTokenRETH.balanceOf(_nodeAddress);
-        nodeDetails.balanceRPL = rocketTokenRPL.balanceOf(_nodeAddress);
-        nodeDetails.balanceOldRPL = rocketTokenRPLFixedSupply.balanceOf(_nodeAddress);
-        nodeDetails.depositCreditBalance = rocketNodeDeposit.getNodeDepositCredit(_nodeAddress);
-        // Return
-        return nodeDetails;
-    }
-
     /// @notice Returns a slice of the node operator address set
     /// @param _offset The starting point into the slice
     /// @param _limit The maximum number of results to return
@@ -492,6 +447,18 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         require(tickets > 0, "No express tickets");
         tickets -= 1;
         setBool(keccak256(abi.encodePacked("node.express.provisioned", _nodeAddress)), true);
+        setUint(keccak256(abi.encodePacked("node.express.tickets", _nodeAddress)), tickets);
+    }
+
+    /// @notice Calculates a node operator's entitled express tickets and stores them
+    /// @param _nodeAddress Address of the node operator to provision
+    function provisionExpressTickets(address _nodeAddress) external override onlyLatestContract("rocketNodeManager", address(this)) onlyLatestContract("rocketDepositPool", msg.sender) {
+        bytes32 provisionedKey = keccak256(abi.encodePacked("node.express.provisioned", _nodeAddress));
+        if (getBool(provisionedKey)) {
+            return;
+        }
+        uint256 tickets = getExpressTicketCount(_nodeAddress);
+        setBool(provisionedKey, true);
         setUint(keccak256(abi.encodePacked("node.express.tickets", _nodeAddress)), tickets);
     }
 

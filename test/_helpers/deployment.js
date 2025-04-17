@@ -33,6 +33,11 @@ export async function deployRocketPool() {
         artifact: artifacts.require('MegapoolUpgradeHelper'),
     };
 
+    deployer.contractPlan['stakeHelper'] = {
+        constructorArgs: () => deployer.defaultConstructorArgs(),
+        artifact: artifacts.require('StakeHelper'),
+    };
+
     await deployer.deploy();
 
     // Deploy other utilities used in tests that aren't network contracts

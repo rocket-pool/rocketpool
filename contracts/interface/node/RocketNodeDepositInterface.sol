@@ -16,5 +16,4 @@ interface RocketNodeDepositInterface {
     function withdrawEth(address _nodeAddress, uint256 _amount) external;
     function deposit(uint256 _depositAmount, bool _useExpressTicket, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external payable;
     function depositWithCredit(uint256 _depositAmount, bool _useExpressTicket, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external payable;
-    function increaseEthMatched(address _nodeAddress, uint256 _amount) external;
 }

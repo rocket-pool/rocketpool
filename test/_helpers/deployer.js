@@ -161,7 +161,7 @@ export class RocketPoolDeployer {
                 ],
             );
         } else {
-            const abi = compressABI(loadABI('./contracts/contract/casper/compiled/Deposit.abi'));
+            const abi = loadABI('./contracts/contract/casper/compiled/Deposit.abi');
             this.addStage('Setup deposit contract', 10, [
                     async () => this.setNetworkContractAddress('casperDeposit', opts.depositAddress),
                     async () => this.setNetworkContractAbi('casperDeposit', abi),
@@ -320,7 +320,10 @@ export class RocketPoolDeployer {
     }
 
     async setNetworkContractAbi(name, abi) {
-        const compressedAbi = compressABI(abi);
+        let compressedAbi = abi;
+        if (Array.isArray(compressedAbi)) {
+            compressedAbi = compressABI(abi);
+        }
         this.log(`- Setting abi for "${name}" in storage to ${compressedAbi.substr(0, 40)}...`);
         // Compress and store the ABI by name
         await this.rocketStorageInstance.setString(

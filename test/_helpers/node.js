@@ -20,9 +20,9 @@ import { assertBN } from './bn';
 import * as assert from 'assert';
 
 // Get a node's RPL stake
-export async function getNodeRPLStake(nodeAddress) {
+export async function getNodeStakedRPL(nodeAddress) {
     const rocketNodeStaking = await RocketNodeStaking.deployed();
-    return rocketNodeStaking.getNodeRPLStake(nodeAddress);
+    return rocketNodeStaking.getNodeStakedRPL(nodeAddress);
 }
 
 // Get a node's effective RPL stake
@@ -115,9 +115,9 @@ export async function nodeStakeRPL(amount, txOptions) {
         RocketTokenRPL.deployed(),
     ]);
     await rocketTokenRPL.connect(txOptions.from).approve(rocketNodeStaking.target, amount);
-    const before = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
+    const before = await rocketNodeStaking.getNodeStakedRPL(txOptions.from);
     await rocketNodeStaking.connect(txOptions.from).stakeRPL(amount);
-    const after = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
+    const after = await rocketNodeStaking.getNodeStakedRPL(txOptions.from);
     assertBN.equal(after - before, amount, 'Staking balance did not increase by amount staked');
 }
 
@@ -136,9 +136,9 @@ export async function nodeStakeRPLFor(nodeAddress, amount, txOptions) {
         RocketTokenRPL.deployed(),
     ]);
     await rocketTokenRPL.connect(txOptions.from).approve(rocketNodeStaking.target, amount, txOptions);
-    const before = await rocketNodeStaking.getNodeRPLStake(nodeAddress);
+    const before = await rocketNodeStaking.getNodeMegapoolStakedRPL(nodeAddress);
     await rocketNodeStaking.connect(txOptions.from).stakeRPLFor(nodeAddress, amount, txOptions);
-    const after = await rocketNodeStaking.getNodeRPLStake(nodeAddress);
+    const after = await rocketNodeStaking.getNodeMegapoolStakedRPL(nodeAddress);
     assertBN.equal(after - before, amount, 'Staking balance did not increase by amount staked');
 }
 

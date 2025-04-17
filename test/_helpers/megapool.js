@@ -53,6 +53,7 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     const [
         rocketNodeDeposit,
         rocketNodeManager,
+        rocketNodeStaking,
         rocketMegapoolFactory,
         rocketDepositPool,
         rocketDAOProtocolSettingsDeposit,
@@ -60,6 +61,7 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     ] = await Promise.all([
         RocketNodeDeposit.deployed(),
         RocketNodeManager.deployed(),
+        RocketNodeStaking.deployed(),
         RocketMegapoolFactory.deployed(),
         RocketDepositPool.deployed(),
         RocketDAOProtocolSettingsDeposit.deployed(),
@@ -85,9 +87,16 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
             rocketDepositPool.getExpressQueueLength(),
             rocketDepositPool.getStandardQueueLength(),
             rocketDepositPool.getNodeBalance(),
+            rocketNodeStaking.getNodeETHMatched(node.address),
+            rocketNodeStaking.getNodeETHProvided(node.address),
+            rocketNodeStaking.getNodeMegapoolETHMatched(node.address),
+            rocketNodeStaking.getNodeMegapoolETHProvided(node.address),
         ]).then(
-            ([ deployed, numExpressTickets, numGlobalValidators, expressQueueLength, standardQueueLength, nodeBalance]) =>
-                ({ deployed, numExpressTickets, numGlobalValidators, expressQueueLength, standardQueueLength, nodeBalance, numValidators: 0n, assignedValue: 0n, nodeCapital: 0n, userCapital: 0n }),
+            ([ deployed, numExpressTickets, numGlobalValidators, expressQueueLength, standardQueueLength, nodeBalance,
+                 nodeEthMatched, nodeEthProvided, nodeMegapoolEthMatched, nodeMegapoolEthProvided]) =>
+                ({ deployed, numExpressTickets, numGlobalValidators, expressQueueLength, standardQueueLength, nodeBalance,
+                    nodeEthMatched, nodeEthProvided, nodeMegapoolEthMatched, nodeMegapoolEthProvided,
+                    numValidators: 0n, assignedValue: 0n, nodeCapital: 0n, userCapital: 0n }),
         );
 
         if (data.deployed) {
@@ -145,6 +154,14 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     const expressQueueLengthDelta = data2.expressQueueLength - data1.expressQueueLength;
     const standardQueueLengthDelta = data2.standardQueueLength - data1.standardQueueLength;
     const nodeBalanceDelta = data2.nodeBalance - data1.nodeBalance;
+    const nodeEthProvidedDelta = data2.nodeEthProvided - data1.nodeEthProvided;
+    const nodeEthMatchedDelta = data2.nodeEthMatched - data1.nodeEthMatched;
+
+    assertBN.equal(nodeEthMatchedDelta, bondAmount);
+    assertBN.equal(nodeEthProvidedDelta, '32'.ether - bondAmount);
+
+    assertBN.equal(data2.nodeCapital, data2.nodeMegapoolEthMatched);
+    assertBN.equal(data2.userCapital, data2.nodeMegapoolEthProvided);
 
     assertBN.equal(numValidatorsDelta, 1n, "Number of validators did not increase by 1");
     assertBN.equal(numGlobalValidatorsDelta, 1n, "Number of global validators did not increase by 1");

@@ -31,7 +31,7 @@ export async function getRethTotalSupply() {
 }
 
 // Mint RPL to an address
-export async function mintRPL(owner, toAddress, amount) {
+export async function mintRPL(owner, to, amount) {
     // Load contracts
     const [rocketTokenDummyRPL, rocketTokenRPL] = await Promise.all([
         RocketTokenDummyRPL.deployed(),
@@ -39,11 +39,11 @@ export async function mintRPL(owner, toAddress, amount) {
     ]);
 
     // Mint dummy RPL to address
-    await rocketTokenDummyRPL.connect(owner).mint(toAddress, amount);
+    await rocketTokenDummyRPL.connect(owner).mint(to, amount);
 
     // Swap dummy RPL for RPL
-    await rocketTokenDummyRPL.connect(toAddress).approve(rocketTokenRPL.target, amount);
-    await rocketTokenRPL.connect(toAddress).swapTokens(amount);
+    await rocketTokenDummyRPL.connect(to).approve(rocketTokenRPL.target, amount);
+    await rocketTokenRPL.connect(to).swapTokens(amount);
 }
 
 // Approve RPL to be spend by an address

@@ -122,6 +122,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         // Dequeue validator from the deposit pool and issue credit
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         rocketDepositPool.exitQueue(_validatorId, validator.expressUsed);
+        rocketDepositPool.fundsReturned(nodeShare, userShare);
         if (nodeShare > 0) {
             nodeBond -= nodeShare;
             rocketDepositPool.applyCredit(nodeShare);
@@ -157,9 +158,11 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         }
         // Reduce node bond
         nodeBond -= _amount;
+        userCapital += _amount;
         // Apply credit
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         rocketDepositPool.applyCredit(_amount);
+        rocketDepositPool.reduceBond(_amount);
         // Emit event
         emit MegapoolBondReduced(_amount, block.timestamp);
     }
@@ -554,6 +557,9 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         unchecked { // Infeasible overflow
             numInactiveValidators += 1;
         }
+        // Handle collateral change
+        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+        rocketDepositPool.fundsReturned(nodeShare, userShare);
         // Emit event
         emit MegapoolValidatorExited(_validatorId, block.timestamp);
     }

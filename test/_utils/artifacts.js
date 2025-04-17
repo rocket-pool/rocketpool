@@ -162,6 +162,7 @@ export const RocketMinipoolBondReducer = artifacts.require('RocketMinipoolBondRe
 export const RocketNetworkSnapshots = artifacts.require('RocketNetworkSnapshots');
 export const RocketNetworkVoting = artifacts.require('RocketNetworkVoting');
 export const MegapoolUpgradeHelper = artifacts.require('MegapoolUpgradeHelper');
+export const StakeHelper = artifacts.require('StakeHelper');
 export const BeaconStateVerifier = artifacts.require('BeaconStateVerifierMock');
 export const BlockRootsMock = artifacts.require('BlockRootsMock');
 export const RocketNetworkRevenues = artifacts.require('RocketNetworkRevenues');

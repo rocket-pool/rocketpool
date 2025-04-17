@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
+import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
 import {AddressQueueStorageInterface} from "../../interface/util/AddressQueueStorageInterface.sol";
 import {DepositQueueValue, DepositQueueKey, LinkedListStorageInterface} from "../../interface/util/LinkedListStorageInterface.sol";
 import {RocketBase} from "../RocketBase.sol";
@@ -443,9 +444,11 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         require(_amount % milliToWei == 0, "Invalid requested amount");
         // Use an express ticket if requested
         address nodeAddress = RocketMegapoolInterface(msg.sender).getNodeAddress();
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         if (_expressQueue) {
-            RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
             rocketNodeManager.useExpressTicket(nodeAddress);
+        } else {
+            rocketNodeManager.provisionExpressTickets(nodeAddress);
         }
         // Enqueue megapool
         bytes32 namespace = getQueueNamespace(_expressQueue);
@@ -470,6 +473,11 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             if (standardQueueLength == 1) {
                 setQueueMoved(false, true);
             }
+        }
+        {
+            // Update collateral balances
+            _increaseETHMatched(nodeAddress, _bondAmount);
+            _increaseETHProvided(nodeAddress, _amount - _bondAmount);
         }
         // Emit event
         emit FundsRequested(msg.sender, _validatorId, _amount, _expressQueue, block.timestamp);
@@ -508,10 +516,11 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             }
         }
         // Emit event
+        // TODO: msg.sender should be the node address?
         emit QueueExited(msg.sender, block.timestamp);
     }
 
-    function applyCredit(uint256 _amount) external onlyRegisteredMegapool(msg.sender) {
+    function applyCredit(uint256 _amount) override external onlyRegisteredMegapool(msg.sender) {
         // Add to node's credit for the amount supplied
         RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(msg.sender);
         address nodeAddress = megapool.getNodeAddress();
@@ -628,5 +637,53 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             return expressQueueNamespace;
         }
         return standardQueueNamespace;
+    }
+
+    // TODO: This stuff doesn't feel like it belongs here
+
+    function reduceBond(uint256 _amount) override external onlyRegisteredMegapool(msg.sender) {
+        // Add to node's credit for the amount supplied
+        RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(msg.sender);
+        address nodeAddress = megapool.getNodeAddress();
+        // Update collateral balances
+        _increaseETHProvided(nodeAddress, _amount);
+        _decreaseETHMatched(nodeAddress, _amount);
+    }
+
+    function fundsReturned(uint256 _nodeAmount, uint256 _userAmount) override external onlyRegisteredMegapool(msg.sender) {
+        // Add to node's credit for the amount supplied
+        RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(msg.sender);
+        address nodeAddress = megapool.getNodeAddress();
+        // Update collateral balances
+        _decreaseETHProvided(nodeAddress, _userAmount);
+        _decreaseETHMatched(nodeAddress, _nodeAmount);
+    }
+
+    /// @dev Increases the amount of ETH supplied by a node operator as bond
+    function _increaseETHProvided(address _nodeAddress, uint256 _amount) private {
+        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
+        bytes32 key = keccak256(abi.encodePacked("megapool.eth.provided.node.amount", _nodeAddress));
+        uint256 ethProvided = uint256(rocketNetworkSnapshots.latestValue(key)) + _amount;
+        rocketNetworkSnapshots.push(key, uint224(ethProvided));
+    }
+
+    /// @dev Increases the amount of ETH matched by a node operator
+    function _increaseETHMatched(address _nodeAddress, uint256 _amount) private {
+        bytes32 key = keccak256(abi.encodePacked("megapool.eth.matched.node.amount", _nodeAddress));
+        addUint(key, _amount);
+    }
+
+    /// @dev Decreases the amount of ETH supplied by a node operator as bond
+    function _decreaseETHProvided(address _nodeAddress, uint256 _amount) private {
+        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
+        bytes32 key = keccak256(abi.encodePacked("megapool.eth.provided.node.amount", _nodeAddress));
+        uint256 ethProvided = uint256(rocketNetworkSnapshots.latestValue(key)) - _amount;
+        rocketNetworkSnapshots.push(key, uint224(ethProvided));
+    }
+
+    /// @dev Decreases the amount of ETH matched by a node operator
+    function _decreaseETHMatched(address _nodeAddress, uint256 _amount) private {
+        bytes32 key = keccak256(abi.encodePacked("megapool.eth.matched.node.amount", _nodeAddress));
+        subUint(key, _amount);
     }
 }

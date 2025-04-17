@@ -12,4 +12,5 @@ interface RocketDAOProtocolSettingsNodeInterface {
     function getMaximumStakeForVotingPower() external view returns (uint256);
     function getReducedBond() external view returns (uint256);
     function getBaseBondArray() external view returns (uint256[] memory);
+    function getUnstakingPeriod() external view returns (uint256);
 }

@@ -35,7 +35,7 @@ export async function claimAndStakeRewards(nodeAddress, indices, rewards, stakeA
         return Promise.all([
             rocketRewardsPool.getClaimIntervalTimeStart(),
             rocketTokenRPL.balanceOf(nodeWithdrawalAddress),
-            rocketNodeStaking.getNodeRPLStake(nodeAddress),
+            rocketNodeStaking.getNodeStakedRPL(nodeAddress),
             ethers.provider.getBalance(nodeWithdrawalAddress),
             rocketMerkleDistributorMainnet.getOutstandingEth(nodeWithdrawalAddress),
         ]).then(

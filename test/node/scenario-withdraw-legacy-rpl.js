@@ -5,8 +5,8 @@ import {
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 
-// Withdraw unstaking megapool RPL
-export async function withdrawRpl(txOptions) {
+// Withdraw legacy RPL
+export async function withdrawLegacyRpl(amount, txOptions) {
     // Load contracts
     const [
         rocketNodeStaking,
@@ -40,7 +40,7 @@ export async function withdrawRpl(txOptions) {
     }
 
     const data1 = await getData();
-    await rocketNodeStaking.connect(txOptions.from).withdrawRPL(txOptions);
+    await rocketNodeStaking.connect(txOptions.from).withdrawLegacyRPL(amount, txOptions);
     const data2 = await getData();
 
     const deltas = {
@@ -53,20 +53,22 @@ export async function withdrawRpl(txOptions) {
         nodeStakedRpl: data2.nodeStakedRpl - data1.nodeStakedRpl,
         nodeMegapoolRpl: data2.nodeMegapoolRpl - data1.nodeMegapoolRpl,
         nodeLegacyRpl: data2.nodeLegacyRpl - data1.nodeLegacyRpl,
+        nodeUnstakingRpl: data2.nodeUnstakingRpl - data1.nodeUnstakingRpl,
     }
 
-    // Withdrawing should transfer RPL from vault to node
-    const amount = data1.nodeUnstakingRpl
-    assertBN.equal(data2.nodeUnstakingRpl, 0n);
+    // Withdrawing legacy should transfer RPL from vault to node
     assertBN.equal(deltas.nodeRpl, amount);
     assertBN.equal(deltas.vaultRpl, -amount);
     assertBN.equal(deltas.stakingRpl, -amount);
 
-    // Withdrawing has no affect on staking balances
-    assertBN.equal(deltas.totalStakedRpl, 0n);
+    // Withdrawing legacy reduces total
+    assertBN.equal(deltas.totalStakedRpl, -amount);
+    assertBN.equal(deltas.totalLegacyRpl, -amount);
+    assertBN.equal(deltas.nodeStakedRpl, -amount);
+    assertBN.equal(deltas.nodeLegacyRpl, -amount);
+
+    // No changes in megapool staked RPL
+    assertBN.equal(deltas.nodeUnstakingRpl, 0n);
     assertBN.equal(deltas.totalMegapoolRpl, 0n);
-    assertBN.equal(deltas.totalLegacyRpl, 0n);
-    assertBN.equal(deltas.nodeStakedRpl, 0n);
     assertBN.equal(deltas.nodeMegapoolRpl, 0n);
-    assertBN.equal(deltas.nodeLegacyRpl, 0n);
 }

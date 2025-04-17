@@ -1,7 +1,7 @@
 import { afterEach, before, beforeEach, describe, it } from 'mocha';
 import {
     artifacts,
-    RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsMegapool, RocketNetworkRevenues,
+    RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsMegapool, RocketNetworkRevenues, RocketNodeStaking,
     RocketStorage, RocketTokenDummyRPL,
     RocketUpgradeOneDotFour,
 } from '../test/_utils/artifacts';
@@ -133,5 +133,16 @@ describe('Test Upgrade', () => {
         assert.equal(validatorInfoAfter.staked, false);
         assert.equal(validatorInfoAfter.inPrestake, true);
         assert.equal(validatorInfoAfter.inQueue, false);
+    });
+
+    it.only(printTitle('node', 'can withdraw legacy RPL'), async () => {
+        await registerNode({ from: node });
+        await mintRPL(owner, node, minipoolRplStake);
+        await nodeStakeRPL('100'.ether, { from: node });
+        // Execute upgrade
+        await executeUpgrade();
+        // Withdraw
+        const rocketNodeStaking = await RocketNodeStaking.deployed();
+        await rocketNodeStaking.withdrawLegacyRPL('100'.ether)
     });
 });

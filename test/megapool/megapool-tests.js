@@ -31,6 +31,7 @@ import { distributeMegapool } from './scenario-distribute';
 import { withdrawCredit } from './scenario-withdraw-credit';
 import { notifyExitValidator, notifyFinalBalanceValidator } from './scenario-exit';
 import { applyPenalty } from './scenario-apply-penalty';
+import { reduceBond } from './scenario-reduce-bond';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -378,36 +379,36 @@ export default function() {
             });
 
             it(printTitle('node', 'can not reduce bond below requirement'), async () => {
-                await shouldRevert(megapool.reduceBond('3'.ether), 'Reduced bond below requirement', 'New bond is too low');
+                await shouldRevert(reduceBond(megapool, '3'.ether), 'Reduced bond below requirement', 'New bond is too low');
             });
 
             it(printTitle('node', 'can partially reduce bond'), async () => {
-                await megapool.reduceBond('1'.ether);
+                await reduceBond(megapool, '1'.ether);
             });
 
             it(printTitle('node', 'can not reduce bond while at minimum'), async () => {
-                await megapool.reduceBond('2'.ether);
-                await shouldRevert(megapool.reduceBond('1'.ether), 'Reduced bond below requirement', 'Bond is at minimum');
+                await reduceBond(megapool, '2'.ether);
+                await shouldRevert(reduceBond(megapool, '1'.ether), 'Reduced bond below requirement', 'Bond is at minimum');
             });
 
             it(printTitle('node', 'can not reduce bond with debt'), async () => {
                 await applyPenalty(megapool, 0n, '1'.ether, trustedNode1);
                 await applyPenalty(megapool, 0n, '1'.ether, trustedNode2);
-                await shouldRevert(megapool.reduceBond('2'.ether), 'Reduced bond with debt', 'Cannot reduce bond with debt');
+                await shouldRevert(reduceBond(megapool, '2'.ether), 'Reduced bond with debt', 'Cannot reduce bond with debt');
             });
 
             it(printTitle('node', 'can reduce bond to new requirement and use credit for another validator'), async () => {
-                await megapool.reduceBond('2'.ether);
+                await reduceBond(megapool, '2'.ether);
                 await nodeDeposit(node, '2'.ether, false, '2'.ether);
             });
 
             it(printTitle('node', 'can reduce bond to new requirement and use credit to mint rETH'), async () => {
-                await megapool.reduceBond('2'.ether);
+                await reduceBond(megapool, '2'.ether);
                 await withdrawCredit(node, '2'.ether);
             });
 
             it(printTitle('node', 'can reduce bond to new requirement and use some credit for another validator and some for rETH'), async () => {
-                await megapool.reduceBond('2'.ether);
+                await reduceBond(megapool, '2'.ether);
                 await withdrawCredit(node, '1'.ether);
                 await nodeDeposit(node, '2'.ether, false, '1'.ether);
             });

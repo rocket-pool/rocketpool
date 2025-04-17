@@ -1,24 +1,30 @@
 import {
+    RocketNodeManager,
     RocketNodeStaking,
     RocketTokenRPL,
     RocketVault,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 
-// Withdraw unstaking megapool RPL
-export async function withdrawRpl(txOptions) {
+const hre = require('hardhat');
+const ethers = hre.ethers;
+
+// Unstake megapool RPL
+export async function unstakeRpl(amount, txOptions) {
     // Load contracts
     const [
+        rocketNodeManager,
         rocketNodeStaking,
         rocketTokenRPL,
         rocketVault,
     ] = await Promise.all([
+        RocketNodeManager.deployed(),
         RocketNodeStaking.deployed(),
         RocketTokenRPL.deployed(),
         RocketVault.deployed(),
     ]);
 
-    const nodeAddress = txOptions.from.address;
+    const nodeAddress = await rocketNodeManager.getNodeRPLWithdrawalAddress(txOptions.from.address);
 
     async function getData(){
         return Promise.all([
@@ -40,7 +46,9 @@ export async function withdrawRpl(txOptions) {
     }
 
     const data1 = await getData();
-    await rocketNodeStaking.connect(txOptions.from).withdrawRPL(txOptions);
+    const tx = await rocketNodeStaking.connect(txOptions.from).unstakeRPL(amount, txOptions);
+    const block = await ethers.provider.getBlock(tx.blockNumber);
+    const txTimestamp = block.timestamp;
     const data2 = await getData();
 
     const deltas = {
@@ -53,20 +61,25 @@ export async function withdrawRpl(txOptions) {
         nodeStakedRpl: data2.nodeStakedRpl - data1.nodeStakedRpl,
         nodeMegapoolRpl: data2.nodeMegapoolRpl - data1.nodeMegapoolRpl,
         nodeLegacyRpl: data2.nodeLegacyRpl - data1.nodeLegacyRpl,
+        nodeUnstakingRpl: data2.nodeUnstakingRpl - data1.nodeUnstakingRpl,
     }
 
-    // Withdrawing should transfer RPL from vault to node
-    const amount = data1.nodeUnstakingRpl
-    assertBN.equal(data2.nodeUnstakingRpl, 0n);
-    assertBN.equal(deltas.nodeRpl, amount);
-    assertBN.equal(deltas.vaultRpl, -amount);
-    assertBN.equal(deltas.stakingRpl, -amount);
+    // Last unstake time should be set to transaction timestamp
+    assertBN.equal(data2.nodeLastUnstakeTime, txTimestamp)
 
-    // Withdrawing has no affect on staking balances
-    assertBN.equal(deltas.totalStakedRpl, 0n);
-    assertBN.equal(deltas.totalMegapoolRpl, 0n);
+    // Unstaking does not change any RPL token balances
+    assertBN.equal(deltas.nodeRpl, 0n);
+    assertBN.equal(deltas.vaultRpl, 0n);
+    assertBN.equal(deltas.stakingRpl, 0n);
+
+    // Unstaking immediately reduces "staked" RPL balances
+    assertBN.equal(deltas.totalStakedRpl, -amount);
+    assertBN.equal(deltas.totalMegapoolRpl, -amount);
     assertBN.equal(deltas.totalLegacyRpl, 0n);
-    assertBN.equal(deltas.nodeStakedRpl, 0n);
-    assertBN.equal(deltas.nodeMegapoolRpl, 0n);
+    assertBN.equal(deltas.nodeStakedRpl, -amount);
+    assertBN.equal(deltas.nodeMegapoolRpl, -amount);
     assertBN.equal(deltas.nodeLegacyRpl, 0n);
+
+    // Unstaking balance should increase
+    assertBN.equal(deltas.nodeUnstakingRpl, amount);
 }

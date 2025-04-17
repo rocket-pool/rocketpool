@@ -22,7 +22,8 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
             setSettingBool("node.vacant.minipools.enabled", false);
             _setSettingUint("node.per.minipool.stake.minimum", 0.1 ether);      // 10% of user ETH value (matched ETH)
             _setSettingUint("node.per.minipool.stake.maximum", 1.5 ether);      // 150% of node ETH value (provided ETH)
-            _setSettingUint("reduced.bond", 4 ether);                           // RPIP-42
+            _setSettingUint("reduced.bond", 4 ether);                           // 4 ETH (RPIP-42)
+            _setSettingUint("node.unstaking.period", 28 days);                  // 28 days (RPIP-30)
             // Update deployed flag
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -96,5 +97,9 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
         amounts[0] = 4 ether;
         amounts[1] = 8 ether;
         return amounts;
+    }
+
+    function getUnstakingPeriod() override external view returns (uint256) {
+        return getSettingUint("node.unstaking.period");
     }
 }

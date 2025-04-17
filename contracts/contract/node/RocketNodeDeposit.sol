@@ -180,7 +180,6 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
         validateBytes(_validatorPubkey, pubKeyLength);
         validateBytes(_validatorSignature, signatureLength);
         // Check pre-conditions
-        checkVotingInitialised();
         checkDepositsEnabled();
         // Emit deposit received event
         emit DepositReceived(msg.sender, _value, block.timestamp);
@@ -196,41 +195,6 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
         rocketDepositPool.nodeDeposit{value: _value}(_bondAmount);
         // Attempt to assign 1 minipool/megapool
         rocketDepositPool.maybeAssignDeposits(1);
-    }
-
-    /// @notice Called by minipools during bond reduction to increase the amount of ETH the node operator has
-    /// @param _nodeAddress The node operator's address to increase the ETH matched for
-    /// @param _amount The amount to increase the ETH matched
-    /// @dev Will revert if the new ETH matched amount exceeds the node operators limit
-    ///      Deprecated. Exists only for transition period to megapools
-    function increaseEthMatched(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeDeposit", address(this)) onlyLatestNetworkContract() {
-        // Check amount doesn't exceed limits
-        RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
-        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
-        uint256 ethMatched = rocketNodeStaking.getNodeETHMatched(_nodeAddress) + _amount;
-        require(
-            ethMatched <= rocketNodeStaking.getNodeETHMatchedLimit(_nodeAddress),
-            "ETH matched after deposit exceeds limit based on node RPL stake"
-        );
-        // Push the change to snapshot manager
-        bytes32 key = keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress));
-        rocketNetworkSnapshots.push(key, uint224(ethMatched));
-    }
-
-    /// @dev Increases the amount of ETH supplied by a node operator as bond
-    function _increaseEthProvided(address _nodeAddress, uint256 _amount) private {
-        RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
-        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
-        uint256 ethProvided = rocketNodeStaking.getNodeETHProvided(_nodeAddress) + _amount;
-        bytes32 key = keccak256(abi.encodePacked("eth.provided.node.amount", _nodeAddress));
-        rocketNetworkSnapshots.push(key, uint224(ethProvided));
-    }
-
-    /// @dev Initialises node's voting power if not already done
-    function checkVotingInitialised() private {
-        // Ensure voting has been initialised for this node
-        RocketNetworkVotingInterface rocketNetworkVoting = RocketNetworkVotingInterface(getContractAddress("rocketNetworkVoting"));
-        rocketNetworkVoting.initialiseVotingFor(msg.sender);
     }
 
     /// @dev Reverts if deposits are not enabled
