@@ -32,6 +32,12 @@ const chainOpts = {
         mintDRPL: true,
         setDefaults: true,
     },
+    'hardhat': {
+        deployer: { logging: false },
+        deployStorageHelper: false,
+        mintDRPL: false,
+        setDefaults: false,
+    },
 };
 
 injectBNHelpers();
