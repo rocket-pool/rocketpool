@@ -124,7 +124,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
         (bool success,) = withdrawalAddress.call{value: _amount}("");
         require(success, "Failed to withdraw ETH");
         // Log it
-        emit DepositFor(_nodeAddress, withdrawalAddress, _amount, block.timestamp);
+        emit Withdrawal(_nodeAddress, withdrawalAddress, _amount, block.timestamp);
     }
 
     /// @notice Accept a node deposit and create a new validator under the node. Only accepts calls from registered nodes
