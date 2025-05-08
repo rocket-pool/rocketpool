@@ -433,60 +433,60 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
 
     // TODO: This stuff feels out of place here now
 
-    function getNodeETHProvided(address _nodeAddress) public view returns (uint256) {
-        return getNodeMegapoolETHProvided(_nodeAddress) + getNodeMinipoolETHProvided(_nodeAddress);
+    function getNodeETHBonded(address _nodeAddress) public view returns (uint256) {
+        return getNodeMegapoolETHBonded(_nodeAddress) + getNodeMinipoolETHBonded(_nodeAddress);
     }
 
-    function getNodeMegapoolETHProvided(address _nodeAddress) public view returns (uint256) {
+    function getNodeMegapoolETHBonded(address _nodeAddress) public view returns (uint256) {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         bytes32 key = keccak256(abi.encodePacked("megapool.eth.provided.node.amount", _nodeAddress));
         (, , uint224 value) = rocketNetworkSnapshots.latest(key);
         return uint256(value);
     }
 
-    function getNodeMinipoolETHProvided(address _nodeAddress) public view returns (uint256) {
+    function getNodeMinipoolETHBonded(address _nodeAddress) public view returns (uint256) {
         // Get contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         uint256 activeMinipoolCount = rocketMinipoolManager.getNodeActiveMinipoolCount(_nodeAddress);
-        // Retrieve stored ETH matched value
-        uint256 ethMatched = getNodeMinipoolETHMatched(_nodeAddress);
-        // ETH provided is number of staking minipools * 32 - eth matched
+        // Retrieve stored ETH borrowed value
+        uint256 ethBorrowed = getNodeMinipoolETHBorrowed(_nodeAddress);
+        // ETH bonded is number of staking minipools * 32 - eth borrowed
         uint256 totalEthStaked = activeMinipoolCount * 32 ether;
-        return totalEthStaked - ethMatched;
+        return totalEthStaked - ethBorrowed;
     }
 
     /// @notice Returns a node's borrowed ETH amount
     /// @param _nodeAddress The address of the node operator to query
-    function getNodeMegapoolETHMatched(address _nodeAddress) public view returns (uint256) {
+    function getNodeMegapoolETHBorrowed(address _nodeAddress) public view returns (uint256) {
         bytes32 key = keccak256(abi.encodePacked("megapool.eth.matched.node.amount", _nodeAddress));
         return getUint(key);
     }
 
     /// @notice Returns a node's borrowed ETH amount
     /// @param _nodeAddress The address of the node operator to query
-    function getNodeMinipoolETHMatched(address _nodeAddress) public view returns (uint256) {
+    function getNodeMinipoolETHBorrowed(address _nodeAddress) public view returns (uint256) {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         bytes32 key = keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress));
         (,,uint224 value) = rocketNetworkSnapshots.latest(key);
         return value;
     }
 
-    function getNodeETHMatched(address _nodeAddress) public view returns (uint256) {
-        return getNodeMegapoolETHMatched(_nodeAddress) + getNodeMinipoolETHMatched(_nodeAddress);
+    function getNodeETHBorrowed(address _nodeAddress) public view returns (uint256) {
+        return getNodeMegapoolETHBorrowed(_nodeAddress) + getNodeMinipoolETHBorrowed(_nodeAddress);
     }
 
-    /// @notice Returns the ratio between capital taken from users and provided by a node operator for minipools
+    /// @notice Returns the ratio between capital taken from users and bonded by a node operator for minipools
     ///         The value is a 1e18 precision fixed point integer value of (node capital + user capital) / node capital.
     /// @param _nodeAddress The address of the node operator to query
     /// @dev Inconsistent naming for backwards compatibility
     function getNodeETHCollateralisationRatio(address _nodeAddress) public view returns (uint256) {
-        uint256 ethMatched = getNodeMinipoolETHMatched(_nodeAddress);
-        uint256 ethProvided = getNodeMinipoolETHProvided(_nodeAddress);
-        if (ethMatched == 0 || ethProvided == 0) {
+        uint256 borrowedETH = getNodeMinipoolETHBorrowed(_nodeAddress);
+        uint256 bondedETH = getNodeMinipoolETHBonded(_nodeAddress);
+        if (borrowedETH == 0 || bondedETH == 0) {
             return 0;
         }
-        uint256 ethTotal = ethMatched + ethProvided;
-        return (ethTotal * calcBase) / (ethTotal - ethMatched);
+        uint256 ethTotal = borrowedETH + bondedETH;
+        return (ethTotal * calcBase) / (ethTotal - borrowedETH);
     }
 
     /// @notice Returns a node's maximum RPL stake to fully collateralise their minipools
@@ -497,8 +497,8 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         // Retrieve variables
         uint256 maximumStakePercent = rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake();
-        uint256 providedETH = getNodeMinipoolETHProvided(_nodeAddress);
-        return providedETH * maximumStakePercent / rocketNetworkPrices.getRPLPrice();
+        uint256 bondedETH = getNodeMinipoolETHBonded(_nodeAddress);
+        return bondedETH * maximumStakePercent / rocketNetworkPrices.getRPLPrice();
     }
 
     /// @dev If legacy RPL balance has not been migrated, migrate it. Otherwise, do nothing

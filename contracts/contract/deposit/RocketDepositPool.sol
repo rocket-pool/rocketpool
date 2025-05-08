@@ -476,8 +476,8 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         }
         {
             // Update collateral balances
-            _increaseETHMatched(nodeAddress, _bondAmount);
-            _increaseETHProvided(nodeAddress, _amount - _bondAmount);
+            _increaseETHBonded(nodeAddress, _bondAmount);
+            _increaseETHBorrowed(nodeAddress, _amount - _bondAmount);
         }
         // Emit event
         emit FundsRequested(msg.sender, _validatorId, _amount, _expressQueue, block.timestamp);
@@ -646,8 +646,8 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(msg.sender);
         address nodeAddress = megapool.getNodeAddress();
         // Update collateral balances
-        _increaseETHProvided(nodeAddress, _amount);
-        _decreaseETHMatched(nodeAddress, _amount);
+        _increaseETHBorrowed(nodeAddress, _amount);
+        _decreaseETHBonded(nodeAddress, _amount);
     }
 
     function fundsReturned(uint256 _nodeAmount, uint256 _userAmount) override external onlyRegisteredMegapool(msg.sender) {
@@ -655,34 +655,34 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(msg.sender);
         address nodeAddress = megapool.getNodeAddress();
         // Update collateral balances
-        _decreaseETHProvided(nodeAddress, _userAmount);
-        _decreaseETHMatched(nodeAddress, _nodeAmount);
+        _decreaseETHBonded(nodeAddress, _nodeAmount);
+        _decreaseETHBorrowed(nodeAddress, _userAmount);
     }
 
     /// @dev Increases the amount of ETH supplied by a node operator as bond
-    function _increaseETHProvided(address _nodeAddress, uint256 _amount) private {
+    function _increaseETHBonded(address _nodeAddress, uint256 _amount) private {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         bytes32 key = keccak256(abi.encodePacked("megapool.eth.provided.node.amount", _nodeAddress));
-        uint256 ethProvided = uint256(rocketNetworkSnapshots.latestValue(key)) + _amount;
-        rocketNetworkSnapshots.push(key, uint224(ethProvided));
+        uint256 ethBonded = uint256(rocketNetworkSnapshots.latestValue(key)) + _amount;
+        rocketNetworkSnapshots.push(key, uint224(ethBonded));
     }
 
-    /// @dev Increases the amount of ETH matched by a node operator
-    function _increaseETHMatched(address _nodeAddress, uint256 _amount) private {
+    /// @dev Increases the amount of ETH borrowed by a node operator
+    function _increaseETHBorrowed(address _nodeAddress, uint256 _amount) private {
         bytes32 key = keccak256(abi.encodePacked("megapool.eth.matched.node.amount", _nodeAddress));
         addUint(key, _amount);
     }
 
-    /// @dev Decreases the amount of ETH supplied by a node operator as bond
-    function _decreaseETHProvided(address _nodeAddress, uint256 _amount) private {
+    /// @dev Decreases the amount of ETH bonded by a node operator as bond
+    function _decreaseETHBonded(address _nodeAddress, uint256 _amount) private {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         bytes32 key = keccak256(abi.encodePacked("megapool.eth.provided.node.amount", _nodeAddress));
-        uint256 ethProvided = uint256(rocketNetworkSnapshots.latestValue(key)) - _amount;
-        rocketNetworkSnapshots.push(key, uint224(ethProvided));
+        uint256 ethBonded = uint256(rocketNetworkSnapshots.latestValue(key)) - _amount;
+        rocketNetworkSnapshots.push(key, uint224(ethBonded));
     }
 
-    /// @dev Decreases the amount of ETH matched by a node operator
-    function _decreaseETHMatched(address _nodeAddress, uint256 _amount) private {
+    /// @dev Decreases the amount of ETH borrowed by a node operator
+    function _decreaseETHBorrowed(address _nodeAddress, uint256 _amount) private {
         bytes32 key = keccak256(abi.encodePacked("megapool.eth.matched.node.amount", _nodeAddress));
         subUint(key, _amount);
     }

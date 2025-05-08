@@ -433,8 +433,8 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
             expressTickets += 2;
             // Each node SHALL be provided additional express_queue_tickets equal to (bonded ETH in legacy minipools)/4
             RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
-            uint256 ethProvided = rocketNodeStaking.getNodeETHProvided(_nodeAddress);
-            expressTickets += ethProvided / 4 ether;
+            uint256 bondedETH = rocketNodeStaking.getNodeETHBonded(_nodeAddress);
+            expressTickets += bondedETH / 4 ether;
         }
         expressTickets += getUint(keccak256(abi.encodePacked("node.express.tickets", _nodeAddress)));
         return expressTickets;

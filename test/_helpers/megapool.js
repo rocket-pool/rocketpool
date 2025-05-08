@@ -87,15 +87,15 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
             rocketDepositPool.getExpressQueueLength(),
             rocketDepositPool.getStandardQueueLength(),
             rocketDepositPool.getNodeBalance(),
-            rocketNodeStaking.getNodeETHMatched(node.address),
-            rocketNodeStaking.getNodeETHProvided(node.address),
-            rocketNodeStaking.getNodeMegapoolETHMatched(node.address),
-            rocketNodeStaking.getNodeMegapoolETHProvided(node.address),
+            rocketNodeStaking.getNodeETHBorrowed(node.address),
+            rocketNodeStaking.getNodeETHBonded(node.address),
+            rocketNodeStaking.getNodeMegapoolETHBorrowed(node.address),
+            rocketNodeStaking.getNodeMegapoolETHBonded(node.address),
         ]).then(
             ([ deployed, numExpressTickets, numGlobalValidators, expressQueueLength, standardQueueLength, nodeBalance,
-                 nodeEthMatched, nodeEthProvided, nodeMegapoolEthMatched, nodeMegapoolEthProvided]) =>
+                 nodeEthBorrowed, nodeEthBonded, nodeMegapoolEthBorrowed, nodeMegapoolEthBonded]) =>
                 ({ deployed, numExpressTickets, numGlobalValidators, expressQueueLength, standardQueueLength, nodeBalance,
-                    nodeEthMatched, nodeEthProvided, nodeMegapoolEthMatched, nodeMegapoolEthProvided,
+                    nodeEthBorrowed, nodeEthBonded, nodeMegapoolEthBorrowed, nodeMegapoolEthBonded,
                     numValidators: 0n, assignedValue: 0n, nodeCapital: 0n, userCapital: 0n }),
         );
 
@@ -154,14 +154,14 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     const expressQueueLengthDelta = data2.expressQueueLength - data1.expressQueueLength;
     const standardQueueLengthDelta = data2.standardQueueLength - data1.standardQueueLength;
     const nodeBalanceDelta = data2.nodeBalance - data1.nodeBalance;
-    const nodeEthProvidedDelta = data2.nodeEthProvided - data1.nodeEthProvided;
-    const nodeEthMatchedDelta = data2.nodeEthMatched - data1.nodeEthMatched;
+    const nodeEthBondedDelta = data2.nodeEthBonded - data1.nodeEthBonded;
+    const nodeEthBorrowedDelta = data2.nodeEthBorrowed - data1.nodeEthBorrowed;
 
-    assertBN.equal(nodeEthMatchedDelta, bondAmount);
-    assertBN.equal(nodeEthProvidedDelta, '32'.ether - bondAmount);
+    assertBN.equal(nodeEthBondedDelta, bondAmount);
+    assertBN.equal(nodeEthBorrowedDelta, '32'.ether - bondAmount);
 
-    assertBN.equal(data2.nodeCapital, data2.nodeMegapoolEthMatched);
-    assertBN.equal(data2.userCapital, data2.nodeMegapoolEthProvided);
+    assertBN.equal(data2.nodeCapital, data2.nodeMegapoolEthBonded);
+    assertBN.equal(data2.userCapital, data2.nodeMegapoolEthBorrowed);
 
     assertBN.equal(numValidatorsDelta, 1n, "Number of validators did not increase by 1");
     assertBN.equal(numGlobalValidatorsDelta, 1n, "Number of global validators did not increase by 1");

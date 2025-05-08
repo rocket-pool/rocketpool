@@ -35,6 +35,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     event MegapoolValidatorExiting(uint256 indexed validatorId, uint256 time);
     event MegapoolValidatorDissolved(uint256 indexed validatorId, uint256 time);
     event MegapoolValidatorStaked(uint256 indexed validatorId, uint256 time);
+    event MegapoolPenaltyApplied(uint256 amount, uint256 time);
     event MegapoolDebtIncreased(uint256 amount, uint256 time);
     event MegapoolDebtReduced(uint256 amount, uint256 time);
     event MegapoolBondReduced(uint256 amount, uint256 time);
@@ -453,6 +454,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         // Check required state
         require(_withdrawableEpoch < farFutureEpoch, "Validator is not exiting");
         require(!validator.exiting, "Already notified");
+        require(!validator.exited, "Already exited");
         require(!validator.dissolved, "Validator dissolved");
         // Map the internal ID to the beacon chain index used for the proof
         uint64 validatorIndex = validator.validatorIndex;
@@ -583,6 +585,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     /// @param _amount Amount of the penalty
     function applyPenalty(uint256 _amount) override external onlyLatestContract("rocketMegapoolPenalties", msg.sender) {
         _increaseDebt(_amount);
+        emit MegapoolPenaltyApplied(_amount, block.timestamp);
     }
 
     /// @dev Increases debt of this minipool

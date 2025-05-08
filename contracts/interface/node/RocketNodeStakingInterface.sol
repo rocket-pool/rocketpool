@@ -28,13 +28,13 @@ interface RocketNodeStakingInterface {
     function getRPLLockingAllowed(address _nodeAddress) external view returns (bool);
     function setRPLLockingAllowed(address _nodeAddress, bool _allowed) external;
 
-    function getNodeETHProvided(address _nodeAddress) external view returns (uint256);
-    function getNodeMegapoolETHProvided(address _nodeAddress) external view returns (uint256);
-    function getNodeMinipoolETHProvided(address _nodeAddress) external view returns (uint256);
+    function getNodeETHBonded(address _nodeAddress) external view returns (uint256);
+    function getNodeMegapoolETHBonded(address _nodeAddress) external view returns (uint256);
+    function getNodeMinipoolETHBonded(address _nodeAddress) external view returns (uint256);
 
-    function getNodeETHMatched(address _nodeAddress) external view returns (uint256);
-    function getNodeMegapoolETHMatched(address _nodeAddress) external view returns (uint256);
-    function getNodeMinipoolETHMatched(address _nodeAddress) external view returns (uint256);
+    function getNodeETHBorrowed(address _nodeAddress) external view returns (uint256);
+    function getNodeMegapoolETHBorrowed(address _nodeAddress) external view returns (uint256);
+    function getNodeMinipoolETHBorrowed(address _nodeAddress) external view returns (uint256);
 
     function getNodeMaximumRPLStakeForMinipools(address _nodeAddress) external view returns (uint256);
     function getNodeETHCollateralisationRatio(address _nodeAddress) external view returns (uint256);

@@ -121,7 +121,7 @@ export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt =
     let withdrawalCredentials = '0x010000000000000000000000' + minipoolAddress;
 
     // Make node deposit
-    const ethMatched1 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
+    const ethBorrowed1 = await rocketNodeStaking.getNodeETHBorrowed(txOptions.from);
 
     // Get validator deposit data
     let depositData = {
@@ -139,10 +139,10 @@ export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt =
         await rocketNodeDeposit.connect(txOptions.from).depositWithCredit(bondAmount, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
     }
 
-    const ethMatched2 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
+    const ethBorrowed2 = await rocketNodeStaking.getNodeETHBorrowed(txOptions.from);
 
-    // Expect node's ETH matched to be increased by (32 - bondAmount)
-    assertBN.equal(ethMatched2 - ethMatched1, '32'.ether - bondAmount, 'Incorrect ETH matched');
+    // Expect node's ETH borrowed to be increased by (32 - bondAmount)
+    assertBN.equal(ethBorrowed2 - ethBorrowed1, '32'.ether - bondAmount, 'Incorrect ETH borrowed');
 
     return RocketMinipoolDelegate.at('0x' + minipoolAddress);
 }
@@ -170,12 +170,12 @@ export async function createVacantMinipool(bondAmount, txOptions, salt = null, c
 
     const minipoolAddress = (await rocketMinipoolFactory.getExpectedAddress(txOptions.from, salt)).substr(2);
 
-    const ethMatched1 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
+    const ethBorrowed1 = await rocketNodeStaking.getNodeETHBorrowed(txOptions.from);
     await rocketNodeDeposit.connect(txOptions.from).createVacantMinipool(bondAmount, '0'.ether, pubkey, salt, '0x' + minipoolAddress, currentBalance, txOptions);
-    const ethMatched2 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
+    const ethBorrowed2 = await rocketNodeStaking.getNodeETHBorrowed(txOptions.from);
 
-    // Expect node's ETH matched to be increased by (32 - bondAmount)
-    assertBN.equal(ethMatched2 - ethMatched1, '32'.ether - bondAmount, 'Incorrect ETH matched');
+    // Expect node's ETH borrowed to be increased by (32 - bondAmount)
+    assertBN.equal(ethBorrowed2 - ethBorrowed1, '32'.ether - bondAmount, 'Incorrect ETH borrowed');
 
     return RocketMinipoolDelegate.at('0x' + minipoolAddress);
 }

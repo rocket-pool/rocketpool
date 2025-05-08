@@ -13,15 +13,15 @@ export async function reduceBond(megapool, amount) {
 
     async function getData() {
         return await Promise.all([
-            rocketNodeStaking.getNodeETHMatched(nodeAddress),
-            rocketNodeStaking.getNodeETHProvided(nodeAddress),
-            rocketNodeStaking.getNodeMegapoolETHMatched(nodeAddress),
-            rocketNodeStaking.getNodeMegapoolETHProvided(nodeAddress),
+            rocketNodeStaking.getNodeETHBorrowed(nodeAddress),
+            rocketNodeStaking.getNodeETHBonded(nodeAddress),
+            rocketNodeStaking.getNodeMegapoolETHBorrowed(nodeAddress),
+            rocketNodeStaking.getNodeMegapoolETHBonded(nodeAddress),
             megapool.getNodeBond(),
             megapool.getUserCapital(),
         ]).then(
-            ([nodeEthMatched, nodeEthProvided, nodeMegapoolEthMatched, nodeMegapoolEthProvided, nodeBond, userCapital]) =>
-                ({ nodeEthMatched, nodeEthProvided, nodeMegapoolEthMatched, nodeMegapoolEthProvided, nodeBond, userCapital }),
+            ([nodeEthBorrowed, nodeEthBonded, nodeMegapoolEthBorrowed, nodeMegapoolEthBonded, nodeBond, userCapital]) =>
+                ({ nodeEthBorrowed, nodeEthBonded, nodeMegapoolEthBorrowed, nodeMegapoolEthBonded, nodeBond, userCapital }),
         );
     }
 
@@ -29,18 +29,18 @@ export async function reduceBond(megapool, amount) {
     await megapool.reduceBond(amount);
     const data2 = await getData();
 
-    const nodeEthProvidedDelta = data2.nodeEthProvided - data1.nodeEthProvided;
-    const nodeEthMatchedDelta = data2.nodeEthMatched - data1.nodeEthMatched;
-    const nodeMegapoolEthProvidedDelta = data2.nodeMegapoolEthProvided - data1.nodeMegapoolEthProvided;
-    const nodeMegapoolEthMatchedDelta = data2.nodeMegapoolEthMatched - data1.nodeMegapoolEthMatched;
+    const nodeEthBondedDelta = data2.nodeEthBonded - data1.nodeEthBonded;
+    const nodeEthBorrowedDelta = data2.nodeEthBorrowed - data1.nodeEthBorrowed;
+    const nodeMegapoolEthBondedDelta = data2.nodeMegapoolEthBonded - data1.nodeMegapoolEthBonded;
+    const nodeMegapoolEthBorrowedDelta = data2.nodeMegapoolEthBorrowed - data1.nodeMegapoolEthBorrowed;
     const nodeBondDelta = data2.nodeBond - data1.nodeBond;
     const userCapitalDelta = data2.userCapital - data1.userCapital;
 
     assertBN.equal(nodeBondDelta, -amount);
     assertBN.equal(userCapitalDelta, amount);
 
-    assertBN.equal(nodeEthProvidedDelta, amount);
-    assertBN.equal(nodeEthMatchedDelta, -amount);
-    assertBN.equal(nodeMegapoolEthProvidedDelta, amount);
-    assertBN.equal(nodeMegapoolEthMatchedDelta, -amount);
+    assertBN.equal(nodeEthBondedDelta, -amount);
+    assertBN.equal(nodeEthBorrowedDelta, amount);
+    assertBN.equal(nodeMegapoolEthBondedDelta, -amount);
+    assertBN.equal(nodeMegapoolEthBorrowedDelta, amount);
 }

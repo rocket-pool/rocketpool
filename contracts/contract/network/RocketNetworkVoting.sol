@@ -51,21 +51,21 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         // Setup
         bytes32 key;
 
-        // Get ETH matched (minipools)
+        // Get ETH borrowed (minipools)
         key = keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress));
-        uint256 ethMatched = uint256(rocketNetworkSnapshots.lookupRecent(key, _block, 5));
+        uint256 borrowedETH = uint256(rocketNetworkSnapshots.lookupRecent(key, _block, 5));
 
-        // Get active minipools to calculate ETH provided
+        // Get active minipools to calculate borrowed ETH
         key = keccak256(abi.encodePacked("minipools.active.count", _nodeAddress));
         uint256 activeMinipools = rocketNetworkSnapshots.lookupRecent(key, _block, 5);
 
-        // Get total megapool ETH provided
+        // Get total megapool bonded ETH
         key = keccak256(abi.encodePacked("megapool.eth.provided.node.amount", _nodeAddress));
-        uint256 megapoolEthProvided = rocketNetworkSnapshots.lookupRecent(key, _block, 5);
+        uint256 megapoolETHBonded = rocketNetworkSnapshots.lookupRecent(key, _block, 5);
 
-        // Calculate ETH provided
-        uint256 totalEthStaked = (activeMinipools * 32 ether);
-        uint256 ethProvided = totalEthStaked - ethMatched + megapoolEthProvided;
+        // Calculate total bonded ETH
+        uint256 totalETHStaked = (activeMinipools * 32 ether);
+        uint256 bondedETH = totalETHStaked - borrowedETH + megapoolETHBonded;
 
         // Get RPL price
         uint256 rplPrice = uint256(rocketNetworkSnapshots.lookupRecent(priceKey, _block, 14));
@@ -78,13 +78,13 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         key = keccak256(bytes("node.voting.power.stake.maximum"));
         uint256 maximumStakePercent = uint256(rocketNetworkSnapshots.lookupRecent(key, _block, 2));
 
-        return calculateVotingPower(rplStake, ethProvided, rplPrice, maximumStakePercent);
+        return calculateVotingPower(rplStake, bondedETH, rplPrice, maximumStakePercent);
     }
 
     /// @dev Calculates and returns a node's voting power based on the given inputs
-    function calculateVotingPower(uint256 _rplStake, uint256 _providedETH, uint256 _rplPrice, uint256 _maxStakePercent) internal pure returns (uint256) {
+    function calculateVotingPower(uint256 _rplStake, uint256 _bondedETH, uint256 _rplPrice, uint256 _maxStakePercent) internal pure returns (uint256) {
         // Get contracts
-        uint256 maximumStake = _providedETH * _maxStakePercent / _rplPrice;
+        uint256 maximumStake = _bondedETH * _maxStakePercent / _rplPrice;
         if (_rplStake > maximumStake) {
             _rplStake = maximumStake;
         }

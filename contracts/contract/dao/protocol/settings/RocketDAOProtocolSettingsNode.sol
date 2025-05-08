@@ -20,8 +20,8 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
             setSettingBool("node.smoothing.pool.registration.enabled", true);
             setSettingBool("node.deposit.enabled", false);
             setSettingBool("node.vacant.minipools.enabled", false);
-            _setSettingUint("node.per.minipool.stake.minimum", 0.1 ether);      // 10% of user ETH value (matched ETH)
-            _setSettingUint("node.per.minipool.stake.maximum", 1.5 ether);      // 150% of node ETH value (provided ETH)
+            _setSettingUint("node.per.minipool.stake.minimum", 0.1 ether);      // 10% of user ETH value (borrowed ETH)
+            _setSettingUint("node.per.minipool.stake.maximum", 1.5 ether);      // 150% of node ETH value (bonded ETH)
             _setSettingUint("reduced.bond", 4 ether);                           // 4 ETH (RPIP-42)
             _setSettingUint("node.unstaking.period", 28 days);                  // 28 days (RPIP-30)
             // Update deployed flag

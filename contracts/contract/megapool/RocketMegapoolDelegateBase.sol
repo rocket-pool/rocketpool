@@ -52,7 +52,6 @@ contract RocketMegapoolDelegateBase is RocketMegapoolStorageLayout, RocketMegapo
 
     /// @dev Reverts if caller is not the owner of the megapool
     modifier onlyMegapoolOwner() {
-        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
         require(isNodeCalling(), "Not allowed");
         _;
     }

@@ -15,9 +15,9 @@ export async function close(minipool, txOptions) {
     let nodeWithdrawalAddress = await rocketNodeManager.getNodeWithdrawalAddress(nodeAddress);
 
     // Get initial node balance & minipool balances
-    let [nodeBalance1, ethMatched1, minipoolBalance, userDepositBalance] = await Promise.all([
+    let [nodeBalance1, ethBorrowed1, minipoolBalance, userDepositBalance] = await Promise.all([
         ethers.provider.getBalance(nodeWithdrawalAddress),
-        rocketNodeStaking.getNodeETHMatched(txOptions.from),
+        rocketNodeStaking.getNodeETHBorrowed(txOptions.from),
         ethers.provider.getBalance(minipool.target),
         minipool.getUserDepositBalance(),
     ]);
@@ -32,9 +32,9 @@ export async function close(minipool, txOptions) {
     let txFee = gasPrice * txReceipt.gasUsed;
 
     // Get updated node balance & minipool contract code
-    let [nodeBalance2, ethMatched2] = await Promise.all([
+    let [nodeBalance2, ethBorrowed2] = await Promise.all([
         ethers.provider.getBalance(nodeWithdrawalAddress),
-        rocketNodeStaking.getNodeETHMatched(txOptions.from),
+        rocketNodeStaking.getNodeETHBorrowed(txOptions.from),
     ]);
 
     // Check balances
@@ -42,7 +42,7 @@ export async function close(minipool, txOptions) {
     if (nodeWithdrawalAddress === nodeAddress) expectedNodeBalance = expectedNodeBalance - txFee;
     assertBN.equal(nodeBalance2, expectedNodeBalance, 'Incorrect updated node nETH balance');
 
-    // Expect node's ETH matched to be decreased by userDepositBalance
-    assertBN.equal(ethMatched1 - ethMatched2, userDepositBalance, 'Incorrect ETH matched');
+    // Expect node's ETH borrowed to be decreased by userDepositBalance
+    assertBN.equal(ethBorrowed1 - ethBorrowed2, userDepositBalance, 'Incorrect ETH borrowed');
 }
 

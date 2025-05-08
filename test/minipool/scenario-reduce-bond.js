@@ -23,10 +23,10 @@ export async function reduceBond(minipool, txOptions = null) {
             minipool.getNodeDepositBalance(),
             minipool.getUserDepositBalance(),
             rocketNodeDeposit.getNodeDepositCredit(node),
-            rocketNodeStaking.getNodeETHMatched(node),
+            rocketNodeStaking.getNodeETHBorrowed(node),
         ]).then(
-            ([nodeDepositBalance, userDepositBalance, nodeDepositCredit, ethMatched]) =>
-                ({ nodeDepositBalance, userDepositBalance, nodeDepositCredit, ethMatched }),
+            ([nodeDepositBalance, userDepositBalance, nodeDepositCredit, ethBorrowed]) =>
+                ({ nodeDepositBalance, userDepositBalance, nodeDepositCredit, ethBorrowed }),
         );
     }
 
@@ -57,7 +57,7 @@ export async function reduceBond(minipool, txOptions = null) {
     assertBN.equal(balances2.nodeDepositBalance, delta);
     assertBN.equal(balances2.userDepositBalance - balances1.userDepositBalance, delta);
     assertBN.equal(balances2.nodeDepositCredit - balances1.nodeDepositCredit, delta);
-    assertBN.equal(balances2.ethMatched - balances1.ethMatched, delta);
+    assertBN.equal(balances2.ethBorrowed - balances1.ethBorrowed, delta);
 
     // Overall number of minipools shouldn't change
     assertBN.equal(details2.totalCount, details1.totalCount);

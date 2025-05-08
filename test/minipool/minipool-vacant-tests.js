@@ -100,8 +100,8 @@ export default function() {
             assertBN.equal(prelaunch16Status, minipoolStates.Prelaunch, 'Incorrect prelaunch minipool status');
             assertBN.equal(prelaunch8Status, minipoolStates.Prelaunch, 'Incorrect prelaunch minipool status');
 
-            // ETH matched for node should be 40 ETH (24 + 16)
-            assertBN.equal(await rocketNodeStaking.getNodeETHMatched(node), '40'.ether, 'Incorrect ETH matched');
+            // ETH borrowed for node should be 40 ETH (24 + 16)
+            assertBN.equal(await rocketNodeStaking.getNodeETHBorrowed(node), '40'.ether, 'Incorrect ETH borrowed');
         });
 
         //
@@ -181,16 +181,16 @@ export default function() {
             // 2 out of 3 should dissolve the minipool
             await voteScrub(prelaunchMinipool16, { from: trustedNode1 });
             await voteScrub(prelaunchMinipool16, { from: trustedNode2 });
-            // ETH matched should still be 40 ETH
-            assertBN.equal(await rocketNodeStaking.getNodeETHMatched(node), '40'.ether, 'Incorrect ETH matched');
-            // After closing ETH matched should drop by 16
+            // ETH borrowed should still be 40 ETH
+            assertBN.equal(await rocketNodeStaking.getNodeETHBorrowed(node), '40'.ether, 'Incorrect ETH borrowed');
+            // After closing ETH borrowed should drop by 16
             await closeMinipool(prelaunchMinipool16, { from: node });
-            assertBN.equal(await rocketNodeStaking.getNodeETHMatched(node), '24'.ether, 'Incorrect ETH matched');
+            assertBN.equal(await rocketNodeStaking.getNodeETHBorrowed(node), '24'.ether, 'Incorrect ETH borrowed');
             // 2 out of 3 should dissolve the minipool
             await voteScrub(prelaunchMinipool8, { from: trustedNode1 });
             await voteScrub(prelaunchMinipool8, { from: trustedNode2 });
             await closeMinipool(prelaunchMinipool8, { from: node });
-            assertBN.equal(await rocketNodeStaking.getNodeETHMatched(node), '0'.ether, 'Incorrect ETH matched');
+            assertBN.equal(await rocketNodeStaking.getNodeETHBorrowed(node), '0'.ether, 'Incorrect ETH borrowed');
         });
 
         it(printTitle('trusted node', 'can scrub a prelaunch minipool (no penalty applied even with scrub penalty active)'), async () => {
