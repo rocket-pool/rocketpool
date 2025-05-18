@@ -47,6 +47,11 @@ export async function deployUpgrade(rocketStorageAddress) {
     let addresses = {};
     let upgradeContract;
 
+    const genesisBlockTimestamp = 1695902400n;
+    const secondsPerSlot = 12n;
+    const beaconRootsHistoryBufferLength = 8191n;
+    const beaconRoots = '0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02';
+
     // Deploy other contracts
     for (let contract in networkContracts) {
         // Only deploy if it hasn't been deployed already like a precompiled
@@ -60,14 +65,15 @@ export async function deployUpgrade(rocketStorageAddress) {
                 addresses[contract] = instance.target;
                 break;
 
+            case 'rocketMegapoolDelegate':
+                instance = await networkContracts[contract].clone(rocketStorageAddress, genesisBlockTimestamp);
+                addresses[contract] = instance.target;
+                break;
+
             case 'blockRoots':
                 if (network.name === 'hardhat') {
                     instance = await networkContracts[contract].new();
                 } else {
-                    const genesisBlockTimestamp = 1695902400n;
-                    const secondsPerSlot = 12n;
-                    const beaconRootsHistoryBufferLength = 8191n;
-                    const beaconRoots = '0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02';
                     instance = await networkContracts[contract].new(genesisBlockTimestamp, secondsPerSlot, beaconRootsHistoryBufferLength, beaconRoots);
                 }
                 addresses[contract] = instance.target;

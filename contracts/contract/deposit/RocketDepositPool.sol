@@ -641,6 +641,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
     // TODO: This stuff doesn't feel like it belongs here
 
+    /// @dev Called by a megapool during a bond reduction to adjust its capital ratio
     function reduceBond(uint256 _amount) override external onlyRegisteredMegapool(msg.sender) {
         // Add to node's credit for the amount supplied
         RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(msg.sender);
@@ -650,6 +651,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         _decreaseETHBonded(nodeAddress, _amount);
     }
 
+    /// @dev Called by a megapool when exiting to handle change in capital ratio
     function fundsReturned(uint256 _nodeAmount, uint256 _userAmount) override external onlyRegisteredMegapool(msg.sender) {
         // Add to node's credit for the amount supplied
         RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(msg.sender);

@@ -16,8 +16,11 @@ interface RocketNodeStakingInterface {
     function stakeRPLFor(address _nodeAddress, uint256 _amount) external;
     function stakeRPL(uint256 _amount) external;
     function unstakeRPL(uint256 _amount) external;
+    function unstakeRPLFor(address _nodeAddress, uint256 _amount) external;
     function withdrawRPL() external;
+    function withdrawRPLFor(address _nodeAddress) external;
     function withdrawLegacyRPL(uint256 _amount) external;
+    function withdrawLegacyRPLFor(address _nodeAddress, uint256 _amount) external;
 
     function getNodeRPLStakedTime(address _nodeAddress) external view returns (uint256);
     function getNodeLastUnstakeTime(address _nodeAddress) external view returns (uint256);

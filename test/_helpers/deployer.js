@@ -29,7 +29,7 @@ const defaultOpts = {
     initialRevenueSplit: ['0.05'.ether, '0.09'.ether],
     depositAddress: null,
     fixedSupplyTokenAddress: null,
-    genesisBlockTimestamp: 1695902400n,
+    genesisBlockTimestamp: 1606824023n,
     secondsPerSlot: 12n,
     beaconRootsHistoryBufferLength: 8191n,
     beaconRoots: '0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02',
@@ -146,6 +146,7 @@ export class RocketPoolDeployer {
         this.contractPlan['rocketNodeDistributorDelegate'].constructorArgs = [];
         this.contractPlan['rocketMinipoolBase'].constructorArgs = [];
         this.contractPlan['blockRoots'].constructorArgs = [opts.genesisBlockTimestamp, opts.secondsPerSlot, opts.beaconRootsHistoryBufferLength, opts.beaconRoots];
+        this.contractPlan['rocketMegapoolDelegate'].constructorArgs = () => [this.rocketStorageInstance.target, opts.genesisBlockTimestamp];
 
         // Setup deployment
         this.addStage('Deploy storage', 0, [
@@ -274,7 +275,7 @@ export class RocketPoolDeployer {
     async setString(name, value) {
         this.log('- Setting string `' + name + '` to ' + value, 'white');
         await this.rocketStorageInstance.setString(
-            ethers.solidityPackedKeccak256(['string'], ['protocol.version']),
+            ethers.solidityPackedKeccak256(['string'], [name]),
             value,
         );
     }
@@ -282,7 +283,7 @@ export class RocketPoolDeployer {
     async setUint(name, value) {
         this.log('- Setting uint `' + name + '` to ' + value, 'white');
         await this.rocketStorageInstance.setUint(
-            ethers.solidityPackedKeccak256(['string'], ['protocol.version']),
+            ethers.solidityPackedKeccak256(['string'], [name]),
             value,
         );
     }

@@ -19,7 +19,7 @@ import {
     RocketDAOProtocolSettingsNode,
     RocketDepositPool,
     RocketMegapoolDelegate,
-    RocketMegapoolFactory, RocketNodeDeposit,
+    RocketMegapoolFactory, RocketNodeDeposit, RocketNodeStaking,
     RocketStorage,
 } from '../_utils/artifacts';
 import assert from 'assert';
@@ -32,10 +32,14 @@ import { withdrawCredit } from './scenario-withdraw-credit';
 import { notifyExitValidator, notifyFinalBalanceValidator } from './scenario-exit';
 import { applyPenalty } from './scenario-apply-penalty';
 import { reduceBond } from './scenario-reduce-bond';
+import { dissolveValidator } from './scenario-dissolve';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
 const ethers = hre.ethers;
+
+const farFutureEpoch = 2n ** 64n - 1n;
+const beaconGenesisTime = 1606824023;
 
 export default function() {
     describe('Megapools', () => {
@@ -48,9 +52,8 @@ export default function() {
             trustedNode2,
             trustedNode3;
 
-        let megapool;
+        let megapool = null;
 
-        const genesisTime = 1606824023;
         const secondsPerSlot = 12;
         const slotsPerEpoch = 32;
 
@@ -67,7 +70,7 @@ export default function() {
             const latestBlock = await ethers.provider.getBlock('latest');
             const currentTime = latestBlock.timestamp;
 
-            const slotsPassed = Math.floor((currentTime - genesisTime) / secondsPerSlot);
+            const slotsPassed = Math.floor((currentTime - beaconGenesisTime) / secondsPerSlot);
             return Math.floor(slotsPassed / slotsPerEpoch);
         }
 
@@ -495,7 +498,7 @@ export default function() {
             it(printTitle('random', 'can dissolve validator after dissolve period ends'), async () => {
                 await nodeDeposit(node);
                 await helpers.time.increase(dissolvePeriod + 1);
-                await megapool.connect(random).dissolveValidator(0);
+                await dissolveValidator(node, 0, random);
             });
 
             it(printTitle('node', 'can perform stake operation on pre-stake validator'), async () => {
@@ -583,7 +586,6 @@ export default function() {
                 });
 
                 it(printTitle('node', 'can not notify exit when withdrawable_epoch = FAR_FUTURE_EPOCH'), async () => {
-                    const farFutureEpoch = 2n ** 64n - 1n;
                     await shouldRevert(notifyExitValidator(megapool, 0, farFutureEpoch), 'Notified non-exiting validator', 'Validator is not exiting');
                 });
 
@@ -597,6 +599,13 @@ export default function() {
                     await notifyExitValidator(megapool, 0, await getCurrentEpoch());
                     await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner);
                     await shouldRevert(notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner), 'Notified final balance twice', 'Already exited');
+                });
+
+                it(printTitle('node', 'can not notify exit on exited validator'), async () => {
+                    const currentEpoch = await getCurrentEpoch();
+                    await notifyExitValidator(megapool, 0, await getCurrentEpoch());
+                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner);
+                    await shouldRevert(notifyExitValidator(megapool, 0, currentEpoch + 5), 'Notified exit twice', 'Already exited');
                 });
 
             });
@@ -730,7 +739,7 @@ export default function() {
                 const rocketStorage = await RocketStorage.deployed();
                 upgradeHelper = await MegapoolUpgradeHelper.deployed();
                 oldDelegate = await RocketMegapoolDelegate.deployed();
-                newDelegate = await RocketMegapoolDelegate.clone(rocketStorage.target);
+                newDelegate = await RocketMegapoolDelegate.clone(rocketStorage.target, beaconGenesisTime);
             });
 
             it(printTitle('random', 'can not upgrade non-expired delegate'), async () => {

@@ -1,33 +1,56 @@
 import { getMegapoolForNode } from '../_helpers/megapool';
 import assert from 'assert';
-import { RocketDepositPool, RocketNodeDeposit } from '../_utils/artifacts';
+import { RocketDepositPool, RocketNodeDeposit, RocketNodeStaking } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 
-const milliToWei = 1000000000000000n;
+export async function exitQueue(nodeAddress, validatorIndex) {
+    const megapool = await getMegapoolForNode(nodeAddress)
 
-export async function exitQueue(node, validatorIndex) {
-    const megapool = await getMegapoolForNode(node);
+    const rocketNodeStaking = await RocketNodeStaking.deployed();
     const rocketDepositPool = await RocketDepositPool.deployed();
     const rocketNodeDeposit = await RocketNodeDeposit.deployed();
 
-    const validatorInfoBefore = await megapool.getValidatorInfo(validatorIndex);
-    const bondBefore = await megapool.getNodeBond();
-    const creditBefore = await rocketDepositPool.getNodeCreditBalance(node.address);
+    async function getData() {
+        return await Promise.all([
+            rocketNodeStaking.getNodeETHBorrowed(nodeAddress),
+            rocketNodeStaking.getNodeETHBonded(nodeAddress),
+            rocketNodeStaking.getNodeMegapoolETHBorrowed(nodeAddress),
+            rocketNodeStaking.getNodeMegapoolETHBonded(nodeAddress),
+            megapool.getNodeBond(),
+            megapool.getUserCapital(),
+            megapool.getActiveValidatorCount(),
+            rocketDepositPool.getNodeCreditBalance(nodeAddress)
+        ]).then(
+            ([nodeEthBorrowed, nodeEthBonded, nodeMegapoolEthBorrowed, nodeMegapoolEthBonded, nodeBond, userCapital, validatorCount, nodeCredit]) =>
+                ({ nodeEthBorrowed, nodeEthBonded, nodeMegapoolEthBorrowed, nodeMegapoolEthBonded, nodeBond, userCapital, validatorCount, nodeCredit }),
+        );
+    }
+
+    const activeValidatorCountBefore = await megapool.getActiveValidatorCount();
+
+    // Dequeue the validator
+    const data1 = await getData();
+    await megapool.dequeue(validatorIndex);
+    const data2 = await getData();
 
     const activeValidatorCount = await megapool.getActiveValidatorCount();
 
-    // Dequeue the validator
-    await megapool.dequeue(validatorIndex);
-
-    // Calculate bond requirement
+    // Calculate new bond requirement
     let bondRequirement = 0n;
-    if (activeValidatorCount > 1n) {
-        bondRequirement = await rocketNodeDeposit.getBondRequirement(activeValidatorCount - 1n);
+    if (activeValidatorCountBefore > 1n) {
+        bondRequirement = await rocketNodeDeposit.getBondRequirement(activeValidatorCountBefore - 1n);
     }
 
+    // Calculate expected change in bond and capital
+    let expectedNodeBondChange = bondRequirement - data1.nodeBond;
+    if (expectedNodeBondChange < -'32'.ether) {
+        expectedNodeBondChange = -'32'.ether
+    }
+    const expectedUserCapitalChange = -'32'.ether - expectedNodeBondChange;
+
     let expectedCredit = 0n;
-    if (bondRequirement < bondBefore) {
-        expectedCredit = bondBefore - bondRequirement;
+    if (bondRequirement < data1.nodeBond) {
+        expectedCredit = data1.nodeBond - bondRequirement;
 
         if (expectedCredit > '32'.ether) {
             expectedCredit = '32'.ether;
@@ -39,8 +62,25 @@ export async function exitQueue(node, validatorIndex) {
     assert.equal(validatorInfoAfter.staked, false);
     assert.equal(validatorInfoAfter.inQueue, false);
 
-    // Check an ETH credit was applied
-    const creditAfter = await rocketDepositPool.getNodeCreditBalance(node.address);
-    const creditDelta = creditAfter - creditBefore;
-    assertBN.equal(creditDelta, expectedCredit);
+    const deltas = {
+        nodeEthBonded: data2.nodeEthBonded - data1.nodeEthBonded,
+        nodeEthBorrowed: data2.nodeEthBorrowed - data1.nodeEthBorrowed,
+        nodeMegapoolEthBonded: data2.nodeMegapoolEthBonded - data1.nodeMegapoolEthBonded,
+        nodeMegapoolEthBorrowed:data2.nodeMegapoolEthBorrowed - data1.nodeMegapoolEthBorrowed,
+        nodeBond:data2.nodeBond - data1.nodeBond,
+        userCapital: data2.userCapital - data1.userCapital,
+        nodeCredit: data2.nodeCredit - data1.nodeCredit,
+    }
+
+    assertBN.equal(deltas.nodeEthBonded, expectedNodeBondChange);
+    assertBN.equal(deltas.nodeEthBorrowed, expectedUserCapitalChange);
+    assertBN.equal(deltas.nodeMegapoolEthBonded, expectedNodeBondChange);
+    assertBN.equal(deltas.nodeMegapoolEthBorrowed, expectedUserCapitalChange);
+    assertBN.equal(deltas.nodeBond, expectedNodeBondChange);
+    assertBN.equal(deltas.userCapital, expectedUserCapitalChange);
+    assertBN.equal(data2.userCapital, data2.nodeMegapoolEthBorrowed);
+    assertBN.equal(data2.nodeBond, data2.nodeMegapoolEthBonded);
+    assertBN.equal(deltas.nodeBond + deltas.userCapital, -'32'.ether);
+    assertBN.equal(deltas.nodeCredit, expectedCredit);
+    assertBN.equal(activeValidatorCount, activeValidatorCountBefore - 1n);
 }
