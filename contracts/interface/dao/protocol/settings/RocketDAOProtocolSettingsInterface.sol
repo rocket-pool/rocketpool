@@ -9,4 +9,6 @@ interface RocketDAOProtocolSettingsInterface {
     function setSettingBool(string memory _settingPath, bool _value) external;
     function getSettingAddress(string memory _settingPath) external view returns (address);
     function setSettingAddress(string memory _settingPath, address _value) external;
+    function setSettingAddressList(string memory _settingPath, address[] calldata _value) external;
+    function getSettingAddressList(string memory _settingPath) external view returns (address[] memory);
 }

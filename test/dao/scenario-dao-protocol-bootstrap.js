@@ -12,7 +12,7 @@ import * as assert from 'assert';
 const hre = require('hardhat');
 const ethers = hre.ethers;
 
-// Change a trusted node DAO setting while bootstrap mode is enabled
+// Change a protocol DAO setting while bootstrap mode is enabled
 export async function setDAOProtocolBootstrapSetting(_settingContractInstance, _settingPath, _value, txOptions) {
 
     // Helper function
@@ -89,6 +89,29 @@ export async function setDAONetworkBootstrapRewardsClaimers(_trustedNodePerc, _p
     assertBN.equal(dataSet2.rewardsClaimerPerc[0], _trustedNodePerc, 'Claim percentage not updated correctly');
     assertBN.equal(dataSet2.rewardsClaimerPerc[1], _protocolPerc, 'Claim percentage not updated correctly');
     assertBN.equal(dataSet2.rewardsClaimerPerc[2], _nodePerc, 'Claim percentage not updated correctly');
+}
+
+// Change an address[] protocol dao parameter
+export async function setDAOProtocolBootstrapSettingAddressList(_settingContractInstance, _settingPath, _value, txOptions) {
+
+    String.prototype.lowerCaseFirstLetter = function() {
+        return this.charAt(0).toLowerCase() + this.slice(1);
+    };
+
+    // Load contracts
+    const rocketDAOProtocol = (await RocketDAOProtocol.deployed()).connect(txOptions.from);
+    const rocketDAOProtocolSettingsContract = await _settingContractInstance.deployed();
+
+    let contractName = _settingContractInstance.name.lowerCaseFirstLetter();
+    await (await rocketDAOProtocol.bootstrapSettingAddressList(contractName, _settingPath, _value, txOptions)).wait();
+
+    // Capture data
+    let valueAfter = await rocketDAOProtocolSettingsContract.getSettingAddressList(_settingPath);
+
+    // Check value was updated
+    for (let i = 0; i < _value.length; ++i) {
+        assert.equal(valueAfter[i].toLowerCase(), _value[i].toLowerCase());
+    }
 }
 
 /*** Rewards *******/

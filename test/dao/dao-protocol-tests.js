@@ -5,7 +5,7 @@ import {
     setDAOProtocolBootstrapEnableGovernance,
     setDaoProtocolBootstrapModeDisabled,
     setDAOProtocolBootstrapSecurityInvite,
-    setDAOProtocolBootstrapSetting,
+    setDAOProtocolBootstrapSetting, setDAOProtocolBootstrapSettingAddressList,
     setDAOProtocolBootstrapSettingMulti,
 } from './scenario-dao-protocol-bootstrap';
 import {
@@ -36,6 +36,9 @@ import {
     getDelegatedVotingPower,
     getPhase2VotingPower,
     getSubIndex,
+    setDaoProtocolNodeCommissionShare,
+    setDaoProtocolNodeShareSecurityCouncilAdder,
+    setDaoProtocolVoterShare,
 } from './scenario-dao-protocol';
 import {
     getNodeCount,
@@ -61,7 +64,9 @@ import { assertBN } from '../_helpers/bn';
 import { daoSecurityMemberJoin, getDAOSecurityMemberIsValid } from './scenario-dao-security';
 import { voteStates } from './scenario-dao-proposal';
 import * as assert from 'assert';
-import { globalSnapShot } from '../_utils/snapshotting';
+import { globalSnapShot, snapshotDescribe } from '../_utils/snapshotting';
+import { deployMegapool, nodeDeposit } from '../_helpers/megapool';
+import { stakeMegapoolValidator } from '../megapool/scenario-stake';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -70,7 +75,7 @@ const ethers = hre.ethers;
 export default function() {
     describe('RocketDAOProtocol', () => {
         // Accounts
-        let owner, random, proposer, node1, node2, securityMember1;
+        let owner, random, proposer, node1, node2, securityMember1, allowListed;
         let nodeMap = {};
 
         // Settings to retrieve
@@ -99,6 +104,7 @@ export default function() {
                 node1,
                 node2,
                 securityMember1,
+                allowListed,
             ] = await ethers.getSigners();
 
             // Add some ETH into the DP
@@ -1528,5 +1534,70 @@ export default function() {
                 });
             });
         });
+
+        describe('With allow listed controller', () => {
+            before(async () => {
+                await setDAOProtocolBootstrapSettingAddressList(RocketDAOProtocolSettingsNetwork, "network.allow.listed.controllers", [allowListed.address], { from: owner })
+            });
+
+            it(printTitle('random', 'fails to update UARS parameters when not on allow list'), async () => {
+                await shouldRevert(setDaoProtocolNodeShareSecurityCouncilAdder('0.005'.ether, {
+                    from: random,
+                }), 'Was able to update node share security council adder', 'Not on allow list');
+                await shouldRevert(setDaoProtocolNodeCommissionShare('0.15'.ether, {
+                    from: random,
+                }), 'Was able to update node commission share', 'Not on allow list');
+                await shouldRevert(setDaoProtocolVoterShare('0.15'.ether, {
+                    from: random,
+                }), 'Was able to update voter share', 'Not on allow list');
+            });
+
+            it(printTitle('allow listed', 'can update node share security council adder if on allow list'), async () => {
+                await setDaoProtocolNodeShareSecurityCouncilAdder('0.005'.ether, { from: allowListed });
+            });
+
+            it(printTitle('allow listed', 'fails to update UARS parameter if removed from allow list'), async () => {
+                await setDAOProtocolBootstrapSettingAddressList(RocketDAOProtocolSettingsNetwork, "network.allow.listed.controllers", [], { from: owner })
+                await shouldRevert(setDaoProtocolNodeShareSecurityCouncilAdder('0.005'.ether, {
+                    from: allowListed,
+                }), 'Was able to update node share security council adder', 'Not on allow list');
+            });
+
+            it(printTitle('allow listed', 'fails to set node share security council adder higher than max'), async () => {
+                const rocketDAOProtocolSettingsNetwork = await RocketDAOProtocolSettingsNetwork.deployed()
+                const maximum = await rocketDAOProtocolSettingsNetwork.getMaxNodeShareSecurityCouncilAdder();
+
+                // Set to max works
+                await setDaoProtocolNodeShareSecurityCouncilAdder(maximum, { from: allowListed });
+
+                // Set greater than max fails
+                await shouldRevert(setDaoProtocolNodeShareSecurityCouncilAdder(maximum + '0.00001'.ether, {
+                    from: allowListed,
+                }), 'Was able to update node share security council adder greater than max', 'Value must be <= max value');
+            });
+
+            it(printTitle('allow listed', 'fails to set voter share + node share > 100%'), async () => {
+                await setDAOProtocolBootstrapSettingAddressList(RocketDAOProtocolSettingsNetwork, "network.allow.listed.controllers", [allowListed.address], { from: owner })
+
+                // Set voter and node to 50%
+                await setDaoProtocolNodeCommissionShare('0.5'.ether, { from: allowListed });
+                await setDaoProtocolVoterShare('0.5'.ether, { from: allowListed });
+
+                // Fail to then set node to 51%
+                await shouldRevert(setDaoProtocolNodeCommissionShare('0.51'.ether, {
+                    from: allowListed,
+                }), 'Was able to set rETH commission grater than 100%', 'rETH Commission must be <= 100%');
+            });
+
+            it(printTitle('allow listed', 'can update node commission share if on allow list'), async () => {
+                await setDAOProtocolBootstrapSettingAddressList(RocketDAOProtocolSettingsNetwork, "network.allow.listed.controllers", [allowListed.address], { from: owner })
+                await setDaoProtocolNodeCommissionShare('0.10'.ether, { from: allowListed });
+            });
+
+            it(printTitle('allow listed', 'can update voter share if on allow list'), async () => {
+                await setDAOProtocolBootstrapSettingAddressList(RocketDAOProtocolSettingsNetwork, "network.allow.listed.controllers", [allowListed.address], { from: owner })
+                await setDaoProtocolVoterShare('0.20'.ether, { from: allowListed });
+            });
+        })
     });
 }

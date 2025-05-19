@@ -1,5 +1,5 @@
 import {
-    RocketDAOProtocolProposal,
+    RocketDAOProtocolProposal, RocketDAOProtocolSettingsNetwork,
     RocketDAOProtocolSettingsProposals,
     RocketDAOProtocolVerifier,
     RocketNetworkVoting,
@@ -754,4 +754,31 @@ export async function daoProtocolClaimBondChallenger(_proposalID, _indices, txOp
         locked: lockedBalanceAfter - lockedBalanceBefore,
         burned: supplyBefore - supplyAfter,
     };
+}
+
+export async function setDaoProtocolNodeShareSecurityCouncilAdder(_value, txOptions) {
+    const rocketDAOProtocolSettingsNetwork = await RocketDAOProtocolSettingsNetwork.deployed();
+    await rocketDAOProtocolSettingsNetwork.connect(txOptions.from).setNodeShareSecurityCouncilAdder(_value);
+
+    // Check value was updated
+    const valueAfter = await rocketDAOProtocolSettingsNetwork.getNodeShareSecurityCouncilAdder()
+    assertBN.equal(valueAfter, _value);
+}
+
+export async function setDaoProtocolNodeCommissionShare(_value, txOptions) {
+    const rocketDAOProtocolSettingsNetwork = await RocketDAOProtocolSettingsNetwork.deployed();
+    await rocketDAOProtocolSettingsNetwork.connect(txOptions.from).setNodeCommissionShare(_value);
+
+    // Check value was updated
+    const valueAfter = await rocketDAOProtocolSettingsNetwork.getNodeShare()
+    assertBN.equal(valueAfter, _value);
+}
+
+export async function setDaoProtocolVoterShare(_value, txOptions) {
+    const rocketDAOProtocolSettingsNetwork = await RocketDAOProtocolSettingsNetwork.deployed();
+    await rocketDAOProtocolSettingsNetwork.connect(txOptions.from).setVoterShare(_value);
+
+    // Check value was updated
+    const valueAfter = await rocketDAOProtocolSettingsNetwork.getVoterShare()
+    assertBN.equal(valueAfter, _value);
 }

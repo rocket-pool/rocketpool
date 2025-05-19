@@ -9,6 +9,7 @@ interface RocketDAOProtocolProposalsInterface {
     function proposalSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) external;
     function proposalSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) external;
     function proposalSettingAddress(string memory _settingContractName, string memory _settingPath, address _value) external;
+    function proposalSettingAddressList(string memory _settingContractName, string memory _settingPath, address[] calldata _value) external;
     function proposalSettingRewardsClaimers(uint256 _trustedNodePercent, uint256 _protocolPercent, uint256 _nodePercent) external;
 
     function proposalTreasuryOneTimeSpend(string memory _invoiceID, address _recipientAddress, uint256 _amount) external;

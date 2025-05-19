@@ -10,6 +10,11 @@ import {RocketDAOProtocolSettings} from "./RocketDAOProtocolSettings.sol";
 /// @notice Network auction settings
 contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDAOProtocolSettingsNetworkInterface {
 
+    modifier onlyAllowListedController() {
+        require(isAllowListedController(msg.sender), "Not on allow list");
+        _;
+    }
+
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "network") {
         version = 4;
         // Initialise settings on deployment
@@ -42,8 +47,6 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
         if (getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Some safety guards for certain settings
             bytes32 settingKey = keccak256(bytes(_settingPath));
-            bool voterShareModified = false;
-            bool nodeShareModified = false;
             if (settingKey == keccak256(bytes("network.consensus.threshold"))) {
                 require(_value >= 0.51 ether, "Consensus threshold must be 51% or higher");
             } else if (settingKey == keccak256(bytes("network.node.fee.minimum"))) {
@@ -55,32 +58,14 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             } else if (settingKey == keccak256(bytes("network.submit.balances.frequency"))) {
                 require(_value >= 1 hours, "The submit frequency must be >= 1 hour");
             } else if (settingKey == keccak256(bytes("network.node.commission.share.security.council.adder"))) {
-                uint256 maxAdderValue = getSettingUint("network.max.node.commission.share.council.adder");
-                require(_value <= maxAdderValue, "Value must be <= max value");
-                uint256 maxVoterValue = getSettingUint("network.voter.share");
-                require(_value <= maxVoterValue, "Value must be <= voter share");
-                voterShareModified = true;
-                nodeShareModified = true;
+                return _setNodeShareSecurityCouncilAdder(_value);
             } else if (settingKey == keccak256(bytes("network.node.commission.share"))) {
-                nodeShareModified = true;
+                return _setNodeCommissionShare(_value);
             } else if (settingKey == keccak256(bytes("network.voter.share"))) {
-                voterShareModified = true;
+                return _setVoterShare(_value);
             }
             // Update setting now
             _setSettingUint(_settingPath, _value);
-            // Check for changes to UARS parameters
-            if (voterShareModified || nodeShareModified) {
-                // Check rETH commission invariant
-                require(getRethCommission() <= 1 ether, "rETH Commission must be <= 100%");
-                // If one of the UARS parameters changed, notify RocketNetworkRevenues
-                RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
-                if (voterShareModified) {
-                    rocketNetworkRevenues.setVoterShare(getEffectiveVoterShare());
-                }
-                if (nodeShareModified) {
-                    rocketNetworkRevenues.setNodeShare(getEffectiveNodeShare());
-                }
-            }
         } else {
             // Update setting now
             _setSettingUint(_settingPath, _value);
@@ -98,7 +83,7 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
     }
 
     function getMaxNodeShareSecurityCouncilAdder() override public view returns (uint256) {
-        return getSettingUint("network.node.commission.share.security.council.adder");
+        return getSettingUint("network.max.node.commission.share.council.adder");
     }
 
     function getVoterShare() override public view returns (uint256) {
@@ -193,5 +178,77 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
     /// @notice Submit reward snapshots currently enabled (trusted nodes only)
     function getSubmitRewardsEnabled() override external view returns (bool) {
         return getSettingBool("network.submit.rewards.enabled");
+    }
+
+    /// @notice Returns a list of addresses allowed to update commission share parameters
+    function getAllowListedControllers() override public view returns (address[] memory) {
+        return getSettingAddressList("network.allow.listed.controllers");
+    }
+
+    /// @notice Returns true if the supplied address is one of the allow listed controllers
+    /// @param _address The address to check for on the allow list
+    function isAllowListedController(address _address) override public view returns (bool) {
+        address[] memory allowList = getAllowListedControllers();
+        for (uint256 i = 0; i < allowList.length; ++i) {
+            if (allowList[i] == _address) return true;
+        }
+        return false;
+    }
+
+    /// @notice Called by an explicitly allowed address to modify the security council adder parameter
+    /// @param _value New value for the parameter
+    function setNodeShareSecurityCouncilAdder(uint256 _value) override external onlyAllowListedController {
+        _setNodeShareSecurityCouncilAdder(_value);
+    }
+
+    /// @notice Called by an explicitly allowed address to modify the node commission share parameter
+    /// @param _value New value for the parameter
+    function setNodeCommissionShare(uint256 _value) override external onlyAllowListedController {
+        _setNodeCommissionShare(_value);
+    }
+
+    /// @notice Called by an explicitly allowed address to modify the voter share parameter
+    /// @param _value New value for the parameter
+    function setVoterShare(uint256 _value) override external onlyAllowListedController {
+        _setVoterShare(_value);
+    }
+
+    /// @dev Internal implementation of setting the node share security council adder parameter
+    function _setNodeShareSecurityCouncilAdder(uint256 _value) internal {
+        // Validate input
+        uint256 maxAdderValue = getSettingUint("network.max.node.commission.share.council.adder");
+        require(_value <= maxAdderValue, "Value must be <= max value");
+        uint256 maxVoterValue = getSettingUint("network.voter.share");
+        require(_value <= maxVoterValue, "Value must be <= voter share");
+        // Make setting change
+        _setSettingUint("network.node.commission.share.security.council.adder", _value);
+        // Sanity check value
+        require(getRethCommission() <= 1 ether, "rETH Commission must be <= 100%");
+        // Notify change of UARS parameter for snapshot
+        RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
+        rocketNetworkRevenues.setVoterShare(getEffectiveVoterShare());
+        rocketNetworkRevenues.setNodeShare(getEffectiveNodeShare());
+    }
+
+    /// @dev Internal implementation of setting the node commission share parameter
+    function _setNodeCommissionShare(uint256 _value) internal {
+        // Make setting change
+        _setSettingUint("network.node.commission.share", _value);
+        // Sanity check value
+        require(getRethCommission() <= 1 ether, "rETH Commission must be <= 100%");
+        // Notify change of UARS parameter for snapshot
+        RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
+        rocketNetworkRevenues.setNodeShare(getEffectiveNodeShare());
+    }
+
+    /// @dev Internal implementation of setting the voter share parameter
+    function _setVoterShare(uint256 _value) internal {
+        // Make setting change
+        _setSettingUint("network.voter.share", _value);
+        // Sanity check value
+        require(getRethCommission() <= 1 ether, "rETH Commission must be <= 100%");
+        // Notify change of UARS parameter for snapshot
+        RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
+        rocketNetworkRevenues.setVoterShare(getEffectiveVoterShare());
     }
 }

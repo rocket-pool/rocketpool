@@ -24,4 +24,9 @@ interface RocketDAOProtocolSettingsNetworkInterface {
     function getRethCommission() external view returns (uint256);
     function getEffectiveVoterShare() external view returns (uint256);
     function getEffectiveNodeShare() external view returns (uint256);
+    function getAllowListedControllers() external view returns (address[] memory);
+    function isAllowListedController(address _address) external view returns (bool);
+    function setNodeShareSecurityCouncilAdder(uint256 _value) external;
+    function setNodeCommissionShare(uint256 _value) external;
+    function setVoterShare(uint256 _value) external;
 }

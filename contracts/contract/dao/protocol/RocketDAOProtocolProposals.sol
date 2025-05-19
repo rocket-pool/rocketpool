@@ -23,6 +23,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     event ProposalSettingUint(string settingContractName, string settingPath, uint256 value, uint256 time);
     event ProposalSettingBool(string settingContractName, string settingPath, bool value, uint256 time);
     event ProposalSettingAddress(string settingContractName, string settingPath, address value, uint256 time);
+    event ProposalSettingAddressList(string settingContractName, string settingPath, address[] value, uint256 time);
     event ProposalSettingRewardsClaimers(uint256 trustedNodePercent, uint256 protocolPercent, uint256 nodePercent, uint256 time);
     event ProposalSecurityInvite(string id, address memberAddress, uint256 time);
     event ProposalSecurityKick(address memberAddress, uint256 time);
@@ -95,6 +96,16 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         RocketDAOProtocolSettingsInterface rocketDAOProtocolSettings = RocketDAOProtocolSettingsInterface(getContractAddress(_settingContractName));
         rocketDAOProtocolSettings.setSettingAddress(_settingPath, _value);
         emit ProposalSettingAddress(_settingContractName, _settingPath, _value, block.timestamp);
+    }
+
+    /// @notice Change one of the current address[] settings of the protocol DAO
+    /// @param _settingContractName Contract name of the setting to change
+    /// @param _settingPath Setting path to change
+    /// @param _value[] New setting value
+    function proposalSettingAddressList(string memory _settingContractName, string memory _settingPath, address[] calldata _value) override public onlyExecutingContracts() {
+        RocketDAOProtocolSettingsInterface rocketDAOProtocolSettings = RocketDAOProtocolSettingsInterface(getContractAddress(_settingContractName));
+        rocketDAOProtocolSettings.setSettingAddressList(_settingPath, _value);
+        emit ProposalSettingAddressList(_settingContractName, _settingPath, _value, block.timestamp);
     }
 
     /// @notice Updates the percentages the trusted nodes use when calculating RPL reward trees. Percentages must add up to 100%

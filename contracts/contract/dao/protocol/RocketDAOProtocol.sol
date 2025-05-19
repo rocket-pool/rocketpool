@@ -15,6 +15,7 @@ contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
     event BootstrapSettingUint(string settingContractName, string settingPath, uint256 value, uint256 time);
     event BootstrapSettingBool(string settingContractName, string settingPath, bool value, uint256 time);
     event BootstrapSettingAddress(string settingContractName, string settingPath, address value, uint256 time);
+    event BootstrapSettingAddressList(string settingContractName, string settingPath, address[] value, uint256 time);
     event BootstrapSettingClaimers(uint256 trustedNodePercent, uint256 protocolPercent, uint256 nodePercent, uint256 time);
     event BootstrapSpendTreasury(string invoiceID, address recipientAddress, uint256 amount, uint256 time);
     event BootstrapTreasuryNewContract(string contractName, address recipientAddress, uint256 amountPerPeriod, uint256 periodLength, uint256 startTime, uint256 numPeriods, uint256 time);
@@ -74,6 +75,12 @@ contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
     function bootstrapSettingAddress(string memory _settingContractName, string memory _settingPath, address _value) override external onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
         RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals")).proposalSettingAddress(_settingContractName, _settingPath, _value);
         emit BootstrapSettingAddress(_settingContractName, _settingPath, _value, block.timestamp);
+    }
+
+    /// @notice Bootstrap mode - Address list Setting
+    function bootstrapSettingAddressList(string memory _settingContractName, string memory _settingPath, address[] calldata _value) override external onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
+        RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals")).proposalSettingAddressList(_settingContractName, _settingPath, _value);
+        emit BootstrapSettingAddressList(_settingContractName, _settingPath, _value, block.timestamp);
     }
 
     /// @notice Bootstrap mode - Set a claiming contract to receive a % of RPL inflation rewards
