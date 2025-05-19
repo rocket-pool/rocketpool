@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
 
-import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
+import "../../interface/network/RocketNetworkBalancesInterface.sol";
 import {AddressQueueStorageInterface} from "../../interface/util/AddressQueueStorageInterface.sol";
 import {DepositQueueValue, DepositQueueKey, LinkedListStorageInterface} from "../../interface/util/LinkedListStorageInterface.sol";
 import {RocketBase} from "../RocketBase.sol";
 import {RocketDAOProtocolSettingsDepositInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
 import {RocketDAOProtocolSettingsMinipoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import {RocketDAOProtocolSettingsNetworkInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 import {RocketDepositPoolInterface} from "../../interface/deposit/RocketDepositPoolInterface.sol";
 import {RocketMegapoolDelegateInterface} from "../../interface/megapool/RocketMegapoolDelegateInterface.sol";
 import {RocketMegapoolInterface} from "../../interface/megapool/RocketMegapoolInterface.sol";
 import {RocketMinipoolInterface} from "../../interface/minipool/RocketMinipoolInterface.sol";
 import {RocketMinipoolQueueInterface} from "../../interface/minipool/RocketMinipoolQueueInterface.sol";
+import {RocketNetworkSnapshotsInterface} from "../../interface/network/RocketNetworkSnapshotsInterface.sol";
 import {RocketNodeManagerInterface} from "../../interface/node/RocketNodeManagerInterface.sol";
 import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 import {RocketTokenRETHInterface} from "../../interface/token/RocketTokenRETHInterface.sol";
@@ -84,15 +86,19 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         return getUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress)));
     }
 
-    /// @notice Excess deposit pool balance (in excess of minipool queue capacity)
+    /// @notice Excess deposit pool balance (in excess of validator queue)
     function getExcessBalance() override public view returns (uint256) {
         // Get minipool queue capacity
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
-        uint256 minipoolCapacity = rocketMinipoolQueue.getEffectiveCapacity();
+        uint256 capacity = rocketMinipoolQueue.getEffectiveCapacity();
+        capacity += getUint(keccak256("deposit.pool.requested.total"));
         uint256 balance = getBalance();
         // Calculate and return
-        if (minipoolCapacity >= balance) {return 0;}
-        else {return balance - minipoolCapacity;}
+        if (capacity >= balance) {
+            return 0;
+        } else {
+            return balance - capacity;
+        }
     }
 
     /// @dev Callback required to receive ETH withdrawal from the vault
@@ -135,7 +141,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         unchecked { // depositFee < msg.value
             uint256 depositFee = msg.value * rocketDAOProtocolSettingsDeposit.getDepositFee() / calcBase;
             uint256 depositNet = msg.value - depositFee;
-            // Mint rETH to user account
+        // Mint rETH to user account
             rocketTokenRETH.mint(depositNet, msg.sender);
         }
         // Emit deposit received event
@@ -202,12 +208,39 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         processDeposit();
     }
 
-    /// @dev Deposits incoming funds into vault and performs assignment
+    /// @dev Deposits incoming funds into rETH buffer and excess into vault then performs assignment
     function processDeposit() internal {
-        // Transfer ETH to vault
-        rocketVault.depositEther{value: msg.value}();
+        // Direct deposit ETH to rETH until target collateral is reached
+        uint256 toReth = getRethCollateralShortfall();
+        if (toReth > msg.value) {
+            toReth = msg.value;
+        }
+        uint256 toVault = msg.value - toReth;
+        if (toReth > 0) {
+            rocketTokenRETH.depositExcess{value: toReth}();
+        }
+        if (toVault > 0) {
+            rocketVault.depositEther{value: toVault}();
+        }
         // Assign deposits if enabled
         _assignByDeposit();
+    }
+
+    /// @dev Returns the shortfall in ETH from the target collateral rate of rETH
+    function getRethCollateralShortfall() internal returns (uint256) {
+        // Load contracts
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
+        RocketNetworkBalancesInterface rocketNetworkBalances = RocketNetworkBalancesInterface(getContractAddress("rocketNetworkBalances"));
+        // Calculate target collateral
+        uint256 targetCollateralRate = rocketDAOProtocolSettingsNetwork.getTargetRethCollateralRate();
+        uint256 rocketTokenRETHBalance = address(rocketTokenRETH).balance;
+        uint256 totalCollateral = rocketNetworkBalances.getTotalETHBalance();
+        uint256 targetCollateral = totalCollateral * targetCollateralRate / calcBase;
+        // Calculate shortfall
+        if (targetCollateral > rocketTokenRETHBalance) {
+            return targetCollateral - rocketTokenRETHBalance;
+        }
+        return 0;
     }
 
     /// @notice If deposit assignments are enabled, assigns up to specified number of minipools/megapools
@@ -394,7 +427,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             unchecked { // Infeasible overflows and impossible underflows
                 nodeBalanceUsed += head.suppliedValue * milliToWei;
                 totalSent += ethRequired;
-                // Update counts for next iteration
+            // Update counts for next iteration
                 queueIndex += 1;
                 if (express) {
                     expressQueueLength -= 1;

@@ -3,18 +3,19 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getDepositExcessBalance, userDeposit } from '../_helpers/deposit';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
-import { depositExcessCollateral, getRethBalance, getRethCollateralRate } from '../_helpers/tokens';
+import { depositExcessCollateral, getRethBalance, getRethCollateralRate, getRethTotalSupply } from '../_helpers/tokens';
 import { burnReth } from './scenario-reth-burn';
 import { transferReth } from './scenario-reth-transfer';
 import {
     RocketDAOProtocolSettingsDeposit,
-    RocketDAOProtocolSettingsNetwork,
+    RocketDAOProtocolSettingsNetwork, RocketDepositPool,
     RocketTokenRETH,
 } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { assertBN } from '../_helpers/bn';
 import { globalSnapShot } from '../_utils/snapshotting';
 import { getMegapoolForNode, nodeDeposit } from '../_helpers/megapool';
+import { submitBalances } from '../_helpers/network';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -47,7 +48,7 @@ export default function() {
             ] = await ethers.getSigners();
 
             // Set settings
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', rethCollateralRate, { from: owner });
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', '0'.ether, { from: owner });
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.frequency', submitPricesFrequency, { from: owner });
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.fee', depositFeePerc, { from: owner });
         });
@@ -138,7 +139,6 @@ export default function() {
                 // Register node and create a validator
                 await registerNode({ from: node });
                 await nodeDeposit(node);
-                await getMegapoolForNode(node);
             });
 
             it(printTitle('rETH holder', 'can burn rETH for excess deposit pool ETH'), async () => {
@@ -151,6 +151,39 @@ export default function() {
                 await burnReth(rethBalance, {
                     from: staker1,
                 });
+            });
+
+            it(printTitle('rETH holder', 'deposit below target collateral funds rETH contract'), async () => {
+                // Set target collateral rate to 10%
+                await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', '0.1'.ether, { from: owner });
+                // Submit balances so target collateral can be calculated
+                let rethSupply = await getRethTotalSupply();
+                let slotTimestamp = '1600000000';
+                await submitBalances(1, slotTimestamp, '28'.ether, '28'.ether, rethSupply, { from: trustedNode });
+                // A deposit of 1 ETH should fund rETH with the full 1 ETH as it's below the 2.8 ETH target
+                await userDeposit({ from: staker2, value: '1'.ether });
+                // Check result
+                const rocketTokenRETH = await RocketTokenRETH.deployed();
+                const rETHBalance = await ethers.provider.getBalance(rocketTokenRETH.target);
+                assertBN.equal(rETHBalance, '1'.ether);
+            });
+
+            it(printTitle('rETH holder', 'deposit above target collateral funds deposit pool'), async () => {
+                // Set target collateral rate to 10%
+                await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', '0.1'.ether, { from: owner });
+                // Submit balances so target collateral can be calculated
+                let rethSupply = await getRethTotalSupply();
+                let slotTimestamp = '1600000000';
+                await submitBalances(1, slotTimestamp, '28'.ether, '28'.ether, rethSupply, { from: trustedNode });
+                // A deposit of 56 ETH should fund rETH with 2.8 ETH to hit target collateral and remainder to deposit pool
+                await userDeposit({ from: staker2, value: '56'.ether });
+                // Check result
+                const rocketTokenRETH = await RocketTokenRETH.deployed();
+                const rETHBalance = await ethers.provider.getBalance(rocketTokenRETH.target);
+                const rocketDepositPool = await RocketDepositPool.deployed();
+                const depositPoolBalance = await rocketDepositPool.getBalance();
+                assertBN.equal(rETHBalance, '2.8'.ether);
+                assertBN.equal(depositPoolBalance, '56'.ether - '2.8'.ether);
             });
 
             it(printTitle('rETH holder', 'cannot burn rETH with insufficient collateral'), async () => {

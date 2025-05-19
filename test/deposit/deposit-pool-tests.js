@@ -8,7 +8,11 @@ import { nodeStakeRPL, registerNode, setNodeTrusted } from '../_helpers/node';
 import { getRethExchangeRate, getRethTotalSupply, mintRPL } from '../_helpers/tokens';
 import { getDepositSetting } from '../_helpers/settings';
 import { deposit } from './scenario-deposit';
-import { RocketDAOProtocolSettingsDeposit, RocketDepositPool } from '../_utils/artifacts';
+import {
+    RocketDAOProtocolSettingsDeposit,
+    RocketDAOProtocolSettingsNetwork,
+    RocketDepositPool,
+} from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { assignDeposits } from './scenario-assign-deposits';
 import { assertBN } from '../_helpers/bn';
@@ -47,6 +51,8 @@ export default function() {
         //
 
         it(printTitle('staker', 'can make a deposit'), async () => {
+            // Set target collateral rate to 0% to avoid deposits sending ETH to rETH instead of deposit pool
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', '0'.ether, { from: owner });
             // Deposit
             await deposit({
                 from: staker,
