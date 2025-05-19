@@ -35,7 +35,7 @@ contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
     }
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 2;
+        version = 3;
     }
 
     /**** DAO Properties **************/
