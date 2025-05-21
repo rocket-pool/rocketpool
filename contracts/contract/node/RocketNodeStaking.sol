@@ -117,11 +117,6 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         return getUint(keccak256(abi.encodePacked("rpl.megapool.unstake.time", _nodeAddress)));
     }
 
-    /// @notice Returns the timestamp at which a node last unstaked megapool staked RPL
-    function getNodeUnstakingRpl(address _nodeAddress) public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked("rpl.megapool.unstaking.amount", _nodeAddress)));
-    }
-
     /// @notice Returns the timestamp at which a node last staked RPL
     function getNodeRPLStakedTime(address _nodeAddress) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("rpl.staked.node.time", _nodeAddress)));
