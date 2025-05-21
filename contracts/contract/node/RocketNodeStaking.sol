@@ -176,8 +176,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
 
     /// @notice Increases the calling node operator's megapool staked RPL by transferring RPL from msg.sender
     function stakeRPL(uint256 _amount) override external onlyRegisteredNode(msg.sender) {
-        // Check caller here and skip `stakeRPLFor` to avoid unnecessary check for rocketMerkleDistributorMainnet caller
-        require(callerAllowedFor(msg.sender), "Not allowed to stake for");
+        // Caller is the node address. Skip `stakeRPLFor` to avoid unnecessary checks
         _stakeRPLFor(msg.sender, _amount);
     }
 
