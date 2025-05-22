@@ -37,6 +37,7 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             _setSettingUint("network.node.commission.share.security.council.adder", 0 ether);    // 0% (RPIP-46)
             _setSettingUint("network.voter.share", 0.09 ether);                                  // 9% (RPIP-46)
             _setSettingUint("network.max.node.commission.share.council.adder", 0.01 ether);      // 1% (RPIP-46)
+            _setSettingUint("network.max.reth.balance.delta", 0.02 ether);                       // 2% (RPIP-61)
             // Set deploy flag
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -57,6 +58,9 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
                 require(_value >= 0.05 ether && _value <= 0.2 ether, "The node fee maximum must be a value between 5% and 20%");
             } else if (settingKey == keccak256(bytes("network.submit.balances.frequency"))) {
                 require(_value >= 1 hours, "The submit frequency must be >= 1 hour");
+            } else if (settingKey == keccak256(bytes("network.max.reth.balance.delta"))) {
+                // RPIP-61 guardrail
+                require(_value >= 0.01 ether, "The max rETH balance delta must be >= 1%");
             } else if (settingKey == keccak256(bytes("network.node.commission.share.security.council.adder"))) {
                 return _setNodeShareSecurityCouncilAdder(_value);
             } else if (settingKey == keccak256(bytes("network.node.commission.share"))) {
@@ -183,6 +187,11 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
     /// @notice Returns a list of addresses allowed to update commission share parameters
     function getAllowListedControllers() override public view returns (address[] memory) {
         return getSettingAddressList("network.allow.listed.controllers");
+    }
+
+    /// @notice Returns the maximum amount rETH balance deltas can be changed per submission (as a percentage of 1e18)
+    function getMaxRethDelta() override external view returns (uint256) {
+        return getSettingUint("network.max.reth.balance.delta");
     }
 
     /// @notice Returns true if the supplied address is one of the allow listed controllers

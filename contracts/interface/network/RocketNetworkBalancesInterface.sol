@@ -3,6 +3,7 @@ pragma abicoder v2;
 // SPDX-License-Identifier: GPL-3.0-only
 
 interface RocketNetworkBalancesInterface {
+    function getBalancesTimestamp() external view returns (uint256);
     function getBalancesBlock() external view returns (uint256);
     function getTotalETHBalance() external view returns (uint256);
     function getStakingETHBalance() external view returns (uint256);

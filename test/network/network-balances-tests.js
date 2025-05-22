@@ -36,6 +36,7 @@ export default function() {
         // Constants
         const proposalCooldown = 10;
         const proposalVoteBlocks = 10;
+        const submitBalancesFrequency = 3600;
 
         // Setup
         before(async () => {
@@ -67,8 +68,15 @@ export default function() {
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: owner });
             // Set a small vote delay
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.delay.blocks', 4, { from: owner });
-
+            // Set a smaller submission frequency
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.balances.frequency', submitBalancesFrequency, { from: owner });
         });
+
+        async function submitAll(block, slotTimestamp, totalBalance, stakingBalance, rethSupply) {
+            await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, { from: trustedNode1 });
+            await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, { from: trustedNode2 });
+            await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, { from: trustedNode3 });
+        }
 
         async function trustedNode4JoinDao() {
             await registerNode({ from: trustedNode4 });
@@ -210,6 +218,41 @@ export default function() {
             await submitBalances(block, slotTimestamp, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode3,
             });
+        });
+
+        it(printTitle('trusted nodes', 'cannot submit network balances until 95% of submission frequency has passed'), async () => {
+            // First submission is fine
+            await submitAll(2, '1600000000', '10'.ether, '9'.ether, '8'.ether);
+            // Wait only a brief period
+            await helpers.time.increase(1);
+            await helpers.mine();
+            // Submitting should now fail
+            await shouldRevert(
+                submitAll(3, '1600000001', '10.1'.ether, '9.1'.ether, '8.1'.ether),
+                'Was able to submit balances too soon',
+                'Not enough time has passed',
+            );
+            // Wait enough time
+            await helpers.time.increase(submitBalancesFrequency);
+            await helpers.mine();
+            // Submitting should now work
+            await submitAll(4, '1600000001', '10.1'.ether, '9.1'.ether, '8.1'.ether);
+        });
+
+        it(printTitle('trusted nodes', 'cannot submit network balance change that exceeds 2%'), async () => {
+            // First submission is fine
+            await submitAll(2, '1600000000', '10'.ether, '9'.ether, '8'.ether);
+            // Wait enough time
+            await helpers.time.increase(submitBalancesFrequency);
+            await helpers.mine();
+            // Submitting an increase of 2.1% should fail
+            await shouldRevert(
+                submitAll(3, '1600000001', '10.21'.ether, '9.1'.ether, '8.1'.ether),
+                'Was able to submit balance greater than allowed',
+                'Change exceeds allowed range'
+            );
+            // Submitting a change of 2% should work
+            await submitAll(3, '1600000001', '10.2'.ether, '9.1'.ether, '8.1'.ether);
         });
 
         it(printTitle('trusted nodes', 'cannot submit the same network balances twice'), async () => {

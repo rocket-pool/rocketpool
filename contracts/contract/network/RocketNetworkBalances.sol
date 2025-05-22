@@ -15,7 +15,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     event BalancesUpdated(uint256 indexed block, uint256 slotTimestamp, uint256 totalEth, uint256 stakingEth, uint256 rethSupply, uint256 blockTimestamp);
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 3;
+        version = 4;
     }
 
     /// @notice The block number which balances are current for
@@ -26,6 +26,16 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     /// @notice Sets the block number which balances are current for
     function setBalancesBlock(uint256 _value) private {
         setUint(keccak256("network.balances.updated.block"), _value);
+    }
+
+    /// @notice Get the timestamp for the last balance update
+    function getBalancesTimestamp() override public view returns (uint256) {
+        return getUint(keccak256("network.balances.updated.timestamp"));
+    }
+
+    /// @notice Sets the timestamp of the last balance update
+    function setBalancesTimestamp(uint256 _value) private {
+        setUint(keccak256("network.balances.updated.timestamp"), _value);
     }
 
     /// @notice The current RP network total ETH balance
@@ -122,6 +132,27 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
 
     /// @dev Internal method to update network balances
     function updateBalances(uint256 _block, uint256 _slotTimestamp, uint256 _totalEth, uint256 _stakingEth, uint256 _rethSupply) private {
+        // Check enough time has passed (RPIP-61)
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
+        uint256 frequency = rocketDAOProtocolSettingsNetwork.getSubmitBalancesFrequency();
+        uint256 lastTimestamp = getBalancesTimestamp();
+        uint256 minimumTimestamp = lastTimestamp + (frequency * 95 / 100);
+        require(block.timestamp >= minimumTimestamp, "Not enough time has passed");
+        setBalancesTimestamp(block.timestamp);
+        // Check rETH delta is within allowed range (RPIP-61)
+        uint256 currentTotalEthBalance = getTotalETHBalance();
+        // Bypass the delta restriction on first balance update
+        if (currentTotalEthBalance > 0) {
+            uint256 maxChangePercent = rocketDAOProtocolSettingsNetwork.getMaxRethDelta();
+            uint256 maxChange = currentTotalEthBalance * maxChangePercent / calcBase;
+            // TODO: RPIP-61 states "If an update would lead to an rETH exchange rate change of more than Maximum rETH Delta, the oDAO SHALL submit an update of Maximum rETH Delta instead."
+            // TODO: Determine whether this should be performed off chain or applied here
+            if (_totalEth > currentTotalEthBalance) {
+                require(_totalEth - currentTotalEthBalance <= maxChange, "Change exceeds allowed range");
+            } else {
+                require(currentTotalEthBalance - _totalEth <= maxChange, "Change exceeds allowed range");
+            }
+        }
         // Update balances
         setBalancesBlock(_block);
         setTotalETHBalance(_totalEth);
