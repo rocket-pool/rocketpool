@@ -450,12 +450,16 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Check amount does not exceed amount staked
         bytes32 legacyKey = keccak256(abi.encodePacked("rpl.legacy.staked.node.amount", _nodeAddress));
         uint256 legacyStakedRPL = getUint(legacyKey);
-        require (_amount <= legacyStakedRPL, "Insufficient legacy staked RPL");
-        // Check amount after decrease does not exceed minimum requirement
+        // Check amount after decrease does not fall below minimum requirement for minipool bond
         uint256 maximumStakedRPL = getNodeMaximumRPLStakeForMinipools(_nodeAddress);
-        uint256 lockedRPL = getNodeLockedRPL(_nodeAddress);
         require (
-            uint256(totalStakedRPL) >= maximumStakedRPL + lockedRPL + _amount,
+            legacyStakedRPL >= _amount + maximumStakedRPL,
+            "Insufficient legacy staked RPL"
+        );
+        uint256 lockedRPL = getNodeLockedRPL(_nodeAddress);
+        // Check node has enough unlocked RPL for the reduction
+        require (
+            uint256(totalStakedRPL) >= _amount + lockedRPL,
             "Insufficient RPL stake to reduce"
         );
         // Store new values
