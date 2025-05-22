@@ -279,21 +279,20 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @param _amount The amount of RPL to withdraw
     function withdrawLegacyRPLFor(address _nodeAddress, uint256 _amount) override public onlyRegisteredNode(_nodeAddress) {
         require(callerAllowedFor(_nodeAddress), "Not allowed to withdraw for");
-        _withdrawLegacyRPLFor(msg.sender, _amount);
+        _withdrawLegacyRPLFor(_nodeAddress, _amount);
     }
 
     /// @dev Internal implementation for legacy withdraw process
     function _withdrawLegacyRPLFor(address _nodeAddress, uint256 _amount) internal {
-        address nodeAddress = msg.sender;
         // Load contracts
         RocketDAOProtocolSettingsRewardsInterface rocketDAOProtocolSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
         // Check cooldown period (one claim period) has passed since RPL last staked
-        require(block.timestamp - getNodeRPLStakedTime(nodeAddress) >= rocketDAOProtocolSettingsRewards.getRewardsClaimIntervalTime(), "The withdrawal cooldown period has not passed");
+        require(block.timestamp - getNodeRPLStakedTime(_nodeAddress) >= rocketDAOProtocolSettingsRewards.getRewardsClaimIntervalTime(), "The withdrawal cooldown period has not passed");
         // Update RPL stake amounts
-        decreaseNodeLegacyRPLStake(nodeAddress, _amount);
+        decreaseNodeLegacyRPLStake(_nodeAddress, _amount);
         // Transfer RPL tokens to node's RPL withdrawal address (if unset, defaults to primary withdrawal address)
-        transferRPLOut(nodeAddress, _amount);
-        emit RPLLegacyWithdrawn(nodeAddress, _amount, block.timestamp);
+        transferRPLOut(_nodeAddress, _amount);
+        emit RPLLegacyWithdrawn(_nodeAddress, _amount, block.timestamp);
     }
 
     /// @notice Locks an amount of RPL from being withdrawn even if the node operator is over capitalised
