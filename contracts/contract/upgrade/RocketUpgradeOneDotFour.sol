@@ -41,6 +41,7 @@ contract RocketUpgradeOneDotFour is RocketBase {
     address public rocketVoterRewards;
     address public blockRoots;
     address public beaconStateVerifier;
+    address public rocketNodeDistributorDelegate;
 
     // Upgrade ABIs
     string public rocketMegapoolDelegateAbi;
@@ -65,6 +66,7 @@ contract RocketUpgradeOneDotFour is RocketBase {
     string public rocketVoterRewardsAbi;
     string public blockRootsAbi;
     string public beaconStateVerifierAbi;
+    string public rocketNodeDistributorDelegateAbi;
 
     // Save deployer to limit access to set functions
     address immutable deployer;
@@ -110,6 +112,7 @@ contract RocketUpgradeOneDotFour is RocketBase {
         rocketVoterRewards = _addresses[19];
         blockRoots = _addresses[20];
         beaconStateVerifier = _addresses[21];
+        rocketNodeDistributorDelegate = _addresses[22];
 
         // Set ABIs
         rocketMegapoolDelegateAbi = _abis[0];
@@ -134,6 +137,7 @@ contract RocketUpgradeOneDotFour is RocketBase {
         rocketVoterRewardsAbi = _abis[19];
         blockRootsAbi = _abis[20];
         beaconStateVerifierAbi = _abis[21];
+        rocketNodeDistributorDelegateAbi = _abis[22];
     }
 
     /// @notice Prevents further changes from being applied
@@ -171,6 +175,7 @@ contract RocketUpgradeOneDotFour is RocketBase {
         _upgradeContract("rocketDAOProtocolSettingsNetwork", rocketDAOProtocolSettingsNetwork, rocketDAOProtocolSettingsNetworkAbi);
         _upgradeContract("rocketDAOProtocolSettingsSecurity", rocketDAOProtocolSettingsSecurity, rocketDAOProtocolSettingsSecurityAbi);
         _upgradeContract("rocketDAOSecurityProposals", rocketDAOSecurityProposals, rocketDAOSecurityProposalsAbi);
+        _upgradeContract("rocketNodeDistributorDelegate", rocketNodeDistributorDelegate, rocketNodeDistributorDelegateAbi);
 
         // Init the megapool factory
         InitialiseInterface(rocketMegapoolFactory).initialise();

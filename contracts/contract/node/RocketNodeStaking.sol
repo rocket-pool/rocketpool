@@ -525,7 +525,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         uint256 borrowedETH = getNodeMinipoolETHBorrowed(_nodeAddress);
         uint256 bondedETH = getNodeMinipoolETHBonded(_nodeAddress);
         if (borrowedETH == 0 || bondedETH == 0) {
-            return 0;
+            return calcBase * 2;
         }
         uint256 ethTotal = borrowedETH + bondedETH;
         return (ethTotal * calcBase) / (ethTotal - borrowedETH);

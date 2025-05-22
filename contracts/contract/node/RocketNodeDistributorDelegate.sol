@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-
-import "./RocketNodeDistributorStorageLayout.sol";
-import "../../interface/RocketStorageInterface.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
-import "../../interface/node/RocketNodeDistributorInterface.sol";
-import "../../interface/node/RocketNodeStakingInterface.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
+import {RocketNodeDistributorInterface} from "../../interface/node/RocketNodeDistributorInterface.sol";
+import {RocketNodeManagerInterface} from "../../interface/node/RocketNodeManagerInterface.sol";
+import {RocketNodeStakingInterface} from "../../interface/node/RocketNodeStakingInterface.sol";
+import {RocketNodeDistributorStorageLayout} from "./RocketNodeDistributorStorageLayout.sol";
+import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 
 /// @dev Contains the logic for RocketNodeDistributors
 contract RocketNodeDistributorDelegate is RocketNodeDistributorStorageLayout, RocketNodeDistributorInterface {
@@ -18,7 +17,7 @@ contract RocketNodeDistributorDelegate is RocketNodeDistributorStorageLayout, Ro
     event FeesDistributed(address _nodeAddress, uint256 _userAmount, uint256 _nodeAmount, uint256 _time);
 
     // Constants
-    uint8 public constant version = 2;
+    uint8 public constant version = 3;
     uint256 constant calcBase = 1 ether;
 
     uint256 private constant NOT_ENTERED = 1;
@@ -73,8 +72,12 @@ contract RocketNodeDistributorDelegate is RocketNodeDistributorStorageLayout, Ro
         uint256 nodeShare = getNodeShare();
         // Transfer node share
         address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
-        (bool success,) = withdrawalAddress.call{value : nodeShare}("");
-        require(success);
+        (bool success,) = withdrawalAddress.call{value: nodeShare}("");
+        if (!success) {
+            // If transfer to withdrawal address fails, add it to "unclaimed" rewards for claiming later
+            RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(rocketStorage.getAddress(rocketNodeManagerKey));
+            rocketNodeManager.addUnclaimedRewards{value: nodeShare}(nodeAddress);
+        }
         // Transfer user share
         uint256 userShare = address(this).balance;
         address rocketTokenRETH = rocketStorage.getAddress(rocketTokenRETHKey);
@@ -82,5 +85,4 @@ contract RocketNodeDistributorDelegate is RocketNodeDistributorStorageLayout, Ro
         // Emit event
         emit FeesDistributed(nodeAddress, userShare, nodeShare, block.timestamp);
     }
-
 }

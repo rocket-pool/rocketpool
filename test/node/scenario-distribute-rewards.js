@@ -74,9 +74,10 @@ export async function distributeRewards(nodeAddress, txOptions) {
         return Promise.all([
             ethers.provider.getBalance(withdrawalAddress),
             ethers.provider.getBalance(rocketTokenRETH.target),
+            rocketNodeManager.getUnclaimedRewards(nodeAddress),
         ]).then(
-            ([nodeEth, userEth]) =>
-                ({ nodeEth, userEth }),
+            ([nodeEth, userEth, unclaimedEth]) =>
+                ({ nodeEth, userEth, unclaimedEth }),
         );
     }
 
@@ -87,7 +88,7 @@ export async function distributeRewards(nodeAddress, txOptions) {
     // Get balance after distribute
     const balances2 = await getBalances();
     // Check results
-    const nodeEthChange = balances2.nodeEth - balances1.nodeEth;
+    const nodeEthChange = (balances2.nodeEth + balances2.unclaimedEth) - (balances1.nodeEth + balances1.unclaimedEth);
     const userEthChange = balances2.userEth - balances1.userEth;
     assertBN.equal(nodeEthChange, expectedNodeAmount, 'Node ETH balance not correct');
     assertBN.equal(userEthChange, expectedUserAmount, 'User ETH balance not correct');
