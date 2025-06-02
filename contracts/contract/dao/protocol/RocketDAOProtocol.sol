@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity 0.8.18;
+pragma solidity 0.8.30;
 pragma abicoder v2;
 
 import "../../RocketBase.sol";

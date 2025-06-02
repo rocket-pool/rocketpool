@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity 0.8.18;
+pragma solidity 0.8.30;
 
 interface RocketNetworkRevenuesInterface {
     function initialise(uint256 _initialNodeShare, uint256 _initialVoterShare) external;

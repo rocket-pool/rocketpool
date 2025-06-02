@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity 0.8.18;
+pragma solidity 0.8.30;
 
 /// @notice Helper contract to simulate malicious node withdrawal address or withdrawal address
 contract RevertOnTransfer {

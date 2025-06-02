@@ -22,7 +22,7 @@ module.exports = Object.assign(common, {
                 },
             },
             {
-                version: '0.8.18',
+                version: '0.8.30',
                 settings: {
                     viaIR: true,
                     optimizer: {
@@ -34,7 +34,7 @@ module.exports = Object.assign(common, {
         ],
     },
     networks: {
-        testnet: {
+        custom: {
             url: `${providerUrl}`,
             accounts: {
                 mnemonic: mnemonicPhrase,
