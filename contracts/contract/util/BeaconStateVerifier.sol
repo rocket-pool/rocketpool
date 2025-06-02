@@ -10,6 +10,7 @@ import {BeaconStateVerifierInterface, ValidatorProof, Withdrawal} from "../../in
 contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
     // TODO: Decide how to supply these required beacon chain constants
     uint256 internal constant SLOTS_PER_HISTORICAL_ROOT = 8192;
+    uint256 internal constant HISTORICAL_ROOT_OFFSET = 758; // CAPELLA_FORK_EPOCH * 32 / SLOTS_PER_HISTORICAL_ROOT
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
@@ -52,7 +53,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         SSZ.Path memory path = SSZ.from(3, 3); // 0b011 (BeaconBlockHeader -> state_root)
         if (isHistorical) {
             path = SSZ.concat(path, SSZ.from(27, 6)); // 0b001011 (BeaconState -> historical_summaries)
-            path = SSZ.concat(path, SSZ.intoVector(uint256(_withdrawalSlot) / SLOTS_PER_HISTORICAL_ROOT, 24)); // historical_summaries -> historical_summaries[n]
+            path = SSZ.concat(path, SSZ.intoVector(uint256(_withdrawalSlot) / SLOTS_PER_HISTORICAL_ROOT - HISTORICAL_ROOT_OFFSET, 24)); // historical_summaries -> historical_summaries[n]
             path = SSZ.concat(path, SSZ.from(0, 1)); // 0b0 (HistoricalSummary -> block_summary_root)
         } else {
             path = SSZ.concat(path, SSZ.from(5, 6)); // 0b000101 (BeaconState -> block_roots)
@@ -78,7 +79,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
 
     function isHistoricalProof(uint64 proofSlot, uint64 targetSlot) internal view returns (bool) {
         require(proofSlot > targetSlot, "Invalid slot for proof");
-        return proofSlot + SLOTS_PER_HISTORICAL_ROOT <= targetSlot;
+        return targetSlot + SLOTS_PER_HISTORICAL_ROOT < proofSlot;
     }
 
     function merkleiseWithdrawal(Withdrawal calldata withdrawal) internal view returns (bytes32) {
