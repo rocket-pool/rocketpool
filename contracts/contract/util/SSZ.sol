@@ -25,6 +25,10 @@ library SSZ {
         return Path((uint256(index) << 8) | uint256(log2Len + 1));
     }
 
+    function intoList(uint256 index, uint8 log2Len) internal pure returns (Path memory) {
+        return Path((uint256(index) << 8) | uint256(log2Len));
+    }
+
     function concat(Path memory a, Path memory b) internal pure returns (Path memory) {
         uint8 lenA = uint8(a._data);
         uint8 lenB = uint8(b._data);

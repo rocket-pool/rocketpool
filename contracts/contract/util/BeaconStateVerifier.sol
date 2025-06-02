@@ -18,7 +18,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
     function verifyValidator(ValidatorProof calldata _proof) override external view returns(bool) {
         // TODO: Extract this out into a parameterised system for updating the gindices alongside hardforks
         SSZ.Path memory path = SSZ.from(3, 3); // 0b011 (BeaconBlockHeader -> state_root)
-        path = SSZ.concat(path, SSZ.from(11, 5)); // 0b01011 (BeaconState -> validators)
+        path = SSZ.concat(path, SSZ.from(11, 6)); // 0b001011 (BeaconState -> validators)
         path = SSZ.concat(path, SSZ.intoVector(_proof.validatorIndex, 40)); // validators -> validators[n]
         path = SSZ.concat(path, SSZ.from(0, 2)); // 0b00 (Validator -> pubkey/withdrawal_credentials)
         // Compute the withdrawal credential / pubkey branch root
@@ -34,7 +34,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
     function verifyExit(uint256 _validatorIndex, uint256 _withdrawableEpoch, uint64 _slot, bytes32[] calldata _proof) override external view returns(bool) {
         // TODO: Extract this out into a parameterised system for updating the gindices alongside hardforks
         SSZ.Path memory path = SSZ.from(3, 3); // 0b011 (BeaconBlockHeader -> state_root)
-        path = SSZ.concat(path, SSZ.from(11, 5)); // 0b01011 (BeaconState -> validators)
+        path = SSZ.concat(path, SSZ.from(11, 6)); // 0b001011 (BeaconState -> validators)
         path = SSZ.concat(path, SSZ.intoVector(_validatorIndex, 40)); // validators -> validators[n]
         path = SSZ.concat(path, SSZ.from(7, 3)); // 0b111 (Validator -> withdrawable_epoch)
         // Compute the withdrawable epoch leaf
@@ -51,17 +51,17 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         // TODO: Extract this out into a parameterised system for updating the gindices alongside hardforks
         SSZ.Path memory path = SSZ.from(3, 3); // 0b011 (BeaconBlockHeader -> state_root)
         if (isHistorical) {
-            path = SSZ.concat(path, SSZ.from(27, 5)); // 0b01011 (BeaconState -> historical_summaries)
+            path = SSZ.concat(path, SSZ.from(27, 6)); // 0b001011 (BeaconState -> historical_summaries)
             path = SSZ.concat(path, SSZ.intoVector(uint256(_withdrawalSlot) / SLOTS_PER_HISTORICAL_ROOT, 24)); // historical_summaries -> historical_summaries[n]
             path = SSZ.concat(path, SSZ.from(0, 1)); // 0b0 (HistoricalSummary -> block_summary_root)
         } else {
-            path = SSZ.concat(path, SSZ.from(5, 5)); // 0b00101 (BeaconState -> block_roots)
+            path = SSZ.concat(path, SSZ.from(5, 6)); // 0b000101 (BeaconState -> block_roots)
         }
-        path = SSZ.concat(path, SSZ.intoVector(uint256(_withdrawalSlot) % SLOTS_PER_HISTORICAL_ROOT, 13)); // block_roots -> block_roots[n]
+        path = SSZ.concat(path, SSZ.intoList(uint256(_withdrawalSlot) % SLOTS_PER_HISTORICAL_ROOT, 13)); // block_roots -> block_roots[n]
         path = SSZ.concat(path, SSZ.from(4, 3)); // 0b100 (BeaconBlockHeader -> body_root)
         path = SSZ.concat(path, SSZ.from(9, 4)); // 0b1001 (BeaconBlockBody -> execution_payload)
-        path = SSZ.concat(path, SSZ.from(14, 4)); // 0b1110 (ExecutionPayload -> withdrawals)
-        path = SSZ.concat(path, SSZ.intoVector(_withdrawalNum, 5)); // withdrawals -> withdrawals[n]
+        path = SSZ.concat(path, SSZ.from(14, 5)); // 0b01110 (ExecutionPayload -> withdrawals)
+        path = SSZ.concat(path, SSZ.intoList(_withdrawalNum, 5)); // withdrawals -> withdrawals[n]
         // Merkleise the withdrawal struct
         bytes32 leaf = merkleiseWithdrawal(_withdrawal);
         // Restore the block root for the supplied slot
