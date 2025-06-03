@@ -18,6 +18,6 @@ struct ValidatorProof {
 
 interface BeaconStateVerifierInterface {
     function verifyValidator(ValidatorProof calldata _proof) external view returns(bool);
-    function verifyExit(uint256 _validatorIndex, uint256 _withdrawableEpoch, uint64 _slot, bytes32[] calldata _proof) external view returns(bool);
-    function verifyWithdrawal(uint256 _validatorIndex, uint64 _withdrawalSlot, uint256 _withdrawalNum, Withdrawal calldata _withdrawal, uint64 _slot, bytes32[] calldata _proof) external view returns(bool);
+    function verifyWithdrawableEpoch(uint256 _validatorIndex, uint256 _withdrawableEpoch, uint64 _slot, bytes32[] calldata _proof) external view returns(bool);
+    function verifyWithdrawal(uint64 _withdrawalSlot, uint256 _withdrawalNum, Withdrawal calldata _withdrawal, uint64 _slot, bytes32[] calldata _proof) external view returns(bool);
 }

@@ -463,7 +463,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         uint64 validatorIndex = validator.validatorIndex;
         // Verify the proof
         BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
-        require(beaconStateVerifier.verifyExit(validatorIndex, _withdrawableEpoch, _slot, _proof), "Invalid proof");
+        require(beaconStateVerifier.verifyWithdrawableEpoch(validatorIndex, _withdrawableEpoch, _slot, _proof), "Invalid proof");
         // Update validator state to exiting
         validator.exiting = true;
         validator.withdrawableEpoch = _withdrawableEpoch;
@@ -506,10 +506,11 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     function _notifyFinalBalance(uint32 _validatorId, uint64 _withdrawalSlot, uint256 _withdrawalNum, Withdrawal calldata _withdrawal, uint64 _slot, bytes32[] calldata _proof) internal {
         BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
         ValidatorInfo memory validator = validators[_validatorId];
+        // Check validator index in withdrawal matches internal value
         uint64 validatorIndex = validator.validatorIndex;
-        // Verify proof
         require(_withdrawal.validatorIndex == validatorIndex, "Invalid validator index");
-        require(beaconStateVerifier.verifyWithdrawal(validatorIndex, _withdrawalSlot, _withdrawalNum, _withdrawal, _slot, _proof), "Invalid proof");
+        // Verify proof
+        require(beaconStateVerifier.verifyWithdrawal(_withdrawalSlot, _withdrawalNum, _withdrawal, _slot, _proof), "Invalid proof");
         require(!validator.exited, "Already exited");
         require(validator.exiting, "Validator is not exiting");
         require(!validator.dissolved, "Validator dissolved");

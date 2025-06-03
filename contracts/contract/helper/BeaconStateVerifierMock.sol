@@ -12,7 +12,7 @@ contract BeaconStateVerifierMock is BeaconStateVerifierInterface {
     BeaconStateVerifierInterface private immutable verifier;
 
     constructor(RocketStorageInterface _rocketStorageAddress) {
-        verifier = new BeaconStateVerifier(_rocketStorageAddress);
+        verifier = new BeaconStateVerifier(_rocketStorageAddress, 8192, 758);
     }
 
     function setDisabled(bool _disabled) external {
@@ -26,17 +26,17 @@ contract BeaconStateVerifierMock is BeaconStateVerifierInterface {
         return verifier.verifyValidator(_proof);
     }
 
-    function verifyExit(uint256 _validatorIndex, uint256 _withdrawableEpoch, uint64 _slot, bytes32[] calldata _proof) override external view returns(bool) {
+    function verifyWithdrawableEpoch(uint256 _validatorIndex, uint256 _withdrawableEpoch, uint64 _slot, bytes32[] calldata _proof) override external view returns(bool) {
         if (disabled) {
             return true;
         }
-        return verifier.verifyExit(_validatorIndex, _withdrawableEpoch, _slot, _proof);
+        return verifier.verifyWithdrawableEpoch(_validatorIndex, _withdrawableEpoch, _slot, _proof);
     }
 
-    function verifyWithdrawal(uint256 _validatorIndex, uint64 _withdrawalSlot, uint256 _withdrawalNum, Withdrawal calldata _withdrawal, uint64 _slot, bytes32[] calldata _proof) override external view returns(bool) {
+    function verifyWithdrawal(uint64 _withdrawalSlot, uint256 _withdrawalNum, Withdrawal calldata _withdrawal, uint64 _slot, bytes32[] calldata _proof) override external view returns(bool) {
         if (disabled) {
             return true;
         }
-        return verifier.verifyWithdrawal(_validatorIndex, _withdrawalSlot, _withdrawalNum, _withdrawal, _slot, _proof);
+        return verifier.verifyWithdrawal(_withdrawalSlot, _withdrawalNum, _withdrawal, _slot, _proof);
     }
 }

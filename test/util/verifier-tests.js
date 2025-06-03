@@ -8,7 +8,7 @@ const hre = require('hardhat');
 const ethers = hre.ethers;
 
 export default function() {
-    describe.only('BeaconStateVerifier', () => {
+    describe('BeaconStateVerifier', () => {
         let owner,
             node,
             random;
@@ -62,7 +62,7 @@ export default function() {
             const slot = 11834166;
             await blockRoots.setBlockRoot(slot, blockRoot);
 
-            const result = await beaconStateVerifier.verifyExit(405782, farFutureEpoch, slot, proof);
+            const result = await beaconStateVerifier.verifyWithdrawableEpoch(405782, farFutureEpoch, slot, proof);
             assert.equal(result, true, 'Verification failed');
         });
 
@@ -104,7 +104,7 @@ export default function() {
             const slot = 11834166;
             await blockRoots.setBlockRoot(slot, blockRoot);
 
-            const result = await beaconStateVerifier.verifyExit(405782, farFutureEpoch - 1n, slot, proof);
+            const result = await beaconStateVerifier.verifyWithdrawableEpoch(405782, farFutureEpoch - 1n, slot, proof);
             assert.equal(result, false, 'Verification succeeded');
         });
 
@@ -261,7 +261,7 @@ export default function() {
                 amountInGwei: 19165416n,
             }
 
-            const result = await beaconStateVerifier.verifyWithdrawal(1308840n, 11825974n, 0n, withdrawal, 11834166n, proof);
+            const result = await beaconStateVerifier.verifyWithdrawal(11825974n, 0n, withdrawal, 11834166n, proof);
             assert.equal(result, true, 'Verification failed');
         });
 
@@ -314,7 +314,7 @@ export default function() {
                 amountInGwei: 999999999n, // Invalid amount
             }
 
-            const result = await beaconStateVerifier.verifyWithdrawal(1308840n, 11825974n, 0n, withdrawal, 11834166n, proof);
+            const result = await beaconStateVerifier.verifyWithdrawal(11825974n, 0n, withdrawal, 11834166n, proof);
             assert.equal(result, false, 'Verification succeeded');
         });
 
@@ -369,7 +369,7 @@ export default function() {
                 amountInGwei: 19212998n,
             }
 
-            const result = await beaconStateVerifier.verifyWithdrawal(688322n, 11813956n, 0n, withdrawal, 11834166n, proof);
+            const result = await beaconStateVerifier.verifyWithdrawal(11813956n, 0n, withdrawal, 11834166n, proof);
             assert.equal(result, true, 'Verification failed');
         });
 
@@ -424,7 +424,7 @@ export default function() {
                 amountInGwei: 999999999n, // Invalid amount
             }
 
-            const result = await beaconStateVerifier.verifyWithdrawal(688322n, 11813956n, 0n, withdrawal, 11834166n, proof);
+            const result = await beaconStateVerifier.verifyWithdrawal(11813956n, 0n, withdrawal, 11834166n, proof);
             assert.equal(result, false, 'Verification succeeded');
         });
     });
