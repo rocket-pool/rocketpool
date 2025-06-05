@@ -31,7 +31,8 @@ const defaultOpts = {
     fixedSupplyTokenAddress: null,
     genesisBlockTimestamp: 1606824023n,
     secondsPerSlot: 12n,
-    beaconRootsHistoryBufferLength: 8192n,
+    slotsPerHistoricalRoot: 8192n,
+    beaconRootsHistoryBufferLength: 8191n,
     historicalRootOffset: 758n, // Mainnet value: CAPELLA_FORK_EPOCH * SLOTS_PER_EPOCH / SLOTS_PER_HISTORICAL_ROOT = 758
     beaconRoots: '0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02',
     logging: true,
@@ -147,7 +148,7 @@ export class RocketPoolDeployer {
         this.contractPlan['rocketNodeDistributorDelegate'].constructorArgs = [];
         this.contractPlan['rocketMinipoolBase'].constructorArgs = [];
         this.contractPlan['blockRoots'].constructorArgs = [opts.genesisBlockTimestamp, opts.secondsPerSlot, opts.beaconRootsHistoryBufferLength, opts.beaconRoots];
-        this.contractPlan['beaconStateVerifier'].constructorArgs = () => [this.rocketStorageInstance.target, opts.beaconRootsHistoryBufferLength, opts.historicalRootOffset];
+        this.contractPlan['beaconStateVerifier'].constructorArgs = () => [this.rocketStorageInstance.target, opts.slotsPerHistoricalRoot, opts.historicalRootOffset];
         this.contractPlan['rocketMegapoolDelegate'].constructorArgs = () => [this.rocketStorageInstance.target, opts.genesisBlockTimestamp];
 
         // Setup deployment
