@@ -15,12 +15,13 @@ import {
 } from '../_helpers/node';
 import { approveRPL, mintRPL } from '../_helpers/tokens';
 import { stakeRpl } from './scenario-stake-rpl';
-import { withdrawRpl } from './scenario-withdraw-rpl';
+import { withdrawRpl, withdrawRplFor } from './scenario-withdraw-rpl';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { globalSnapShot, snapshotDescribe } from '../_utils/snapshotting';
-import { unstakeRpl } from './scenario-unstake-rpl';
+import { unstakeRpl, unstakeRplFor } from './scenario-unstake-rpl';
 import { assertBN } from '../_helpers/bn';
-import { withdrawLegacyRpl } from './scenario-withdraw-legacy-rpl';
+import { withdrawLegacyRpl, withdrawLegacyRplFor } from './scenario-withdraw-legacy-rpl';
+import { randomAddress } from 'hardhat/internal/hardhat-network/provider/utils/random';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -179,6 +180,32 @@ export default function() {
             await assertBalances(node, 0n, 0n);
         });
 
+        it(printTitle('node operator', 'can unstake RPL from RPL withdrawal address'), async () => {
+            // Stake 10,000 megapool RPL
+            const rplAmount = '10000'.ether;
+            await nodeStakeRPL(rplAmount, { from: node });
+            // Withdraw staked megapool RPL
+            await setNodeRPLWithdrawalAddress(node, rplWithdrawalAddress, { from: node });
+            await unstakeRplFor(rplAmount, node.address, rplWithdrawalAddress);
+            // Assert balances
+            await assertBalances(node, 0n, 0n);
+        });
+
+        it(printTitle('random', 'can not unstake RPL for node operator'), async () => {
+            // Stake 10,000 megapool RPL
+            const rplAmount = '10000'.ether;
+            await nodeStakeRPL(rplAmount, { from: node });
+            // Withdraw staked megapool RPL
+            await setNodeRPLWithdrawalAddress(node, rplWithdrawalAddress, { from: node });
+            await shouldRevert(
+                unstakeRplFor(rplAmount, node.address, random),
+                'Unstaked with random account',
+                'Not allowed to unstake for'
+            );
+            // Assert balances
+            await assertBalances(rplWithdrawalAddress.address, 0n, 0n);
+        });
+
         it(printTitle('node operator', 'can withdraw unstaked RPL after waiting 28 days'), async () => {
             // Stake 10,000 megapool RPL
             await nodeStakeRPL('10000'.ether, { from: node });
@@ -196,6 +223,28 @@ export default function() {
             await helpers.time.increase(60 * 60 * 24 * 28 + 1);
             // Can now withdraw the 500 megapool RPL
             await withdrawRpl({ from: node });
+            // Assert balances
+            await assertBalances(node, 0n, '10000'.ether - '500'.ether);
+        });
+
+        it(printTitle('node operator', 'can withdraw unstaked RPL from RPL withdrawal address after waiting 28 days'), async () => {
+            // Stake 10,000 megapool RPL
+            await nodeStakeRPL('10000'.ether, { from: node });
+            // Unstake 500 megapool RPL
+            await unstakeRpl('500'.ether, {
+                from: node,
+            });
+            // Fail to withdraw immediately
+            await setNodeRPLWithdrawalAddress(node, rplWithdrawalAddress, { from: node });
+            await shouldRevert(
+                withdrawRplFor(node, rplWithdrawalAddress),
+                'Was able to immediately withdraw RPL',
+                'No available unstaking RPL to withdraw',
+            );
+            // Wait 28 days
+            await helpers.time.increase(60 * 60 * 24 * 28 + 1);
+            // Can now withdraw the 500 megapool RPL
+            await withdrawRplFor(node, rplWithdrawalAddress, { from: node });
             // Assert balances
             await assertBalances(node, 0n, '10000'.ether - '500'.ether);
         });
@@ -352,6 +401,19 @@ export default function() {
 
             it(printTitle('node operator', 'can withdraw legacy RPL'), async () => {
                 await withdrawLegacyRpl(legacyAmount, { from: node });
+            });
+
+            it(printTitle('node operator', 'can withdraw legacy RPL from RPL withdrawal address'), async () => {
+                await setNodeRPLWithdrawalAddress(node, rplWithdrawalAddress, { from: node });
+                await withdrawLegacyRplFor(legacyAmount, node.address, rplWithdrawalAddress);
+            });
+
+            it(printTitle('random', 'can not withdraw legacy RPL for node operator'), async () => {
+                await shouldRevert(
+                    withdrawLegacyRplFor(legacyAmount, node.address, random),
+                    'Was able to withdraw from random account',
+                    'Not allowed to withdraw for'
+                );
             });
 
             it(printTitle('node operator', 'cannot unstake legacy staked RPL'), async () => {

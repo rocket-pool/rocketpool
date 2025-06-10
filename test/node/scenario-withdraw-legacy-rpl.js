@@ -1,28 +1,36 @@
 import {
+    RocketNodeManager,
     RocketNodeStaking,
     RocketTokenRPL,
     RocketVault,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 
-// Withdraw legacy RPL
+// Withdraw legacy RPL for
 export async function withdrawLegacyRpl(amount, txOptions) {
+    return withdrawLegacyRplFor(amount, txOptions.from.address, txOptions.from)
+}
+
+// Withdraw legacy RPL
+export async function withdrawLegacyRplFor(amount, nodeAddress, from) {
     // Load contracts
     const [
         rocketNodeStaking,
         rocketTokenRPL,
         rocketVault,
+        rocketNodeManager,
     ] = await Promise.all([
         RocketNodeStaking.deployed(),
         RocketTokenRPL.deployed(),
         RocketVault.deployed(),
+        RocketNodeManager.deployed(),
     ]);
 
-    const nodeAddress = txOptions.from.address;
+    const rplWithdrawalAddress = await rocketNodeManager.getNodeRPLWithdrawalAddress(nodeAddress);
 
     async function getData(){
         return Promise.all([
-            rocketTokenRPL.balanceOf(nodeAddress),
+            rocketTokenRPL.balanceOf(rplWithdrawalAddress),
             rocketTokenRPL.balanceOf(rocketVault.target),
             rocketVault.balanceOfToken('rocketNodeStaking', rocketTokenRPL.target),
             rocketNodeStaking.getTotalStakedRPL(),
@@ -40,7 +48,11 @@ export async function withdrawLegacyRpl(amount, txOptions) {
     }
 
     const data1 = await getData();
-    await rocketNodeStaking.connect(txOptions.from).withdrawLegacyRPL(amount, txOptions);
+    if (from.address === nodeAddress) {
+        await rocketNodeStaking.connect(from).withdrawLegacyRPL(amount);
+    } else {
+        await rocketNodeStaking.connect(from).withdrawLegacyRPLFor(nodeAddress, amount);
+    }
     const data2 = await getData();
 
     const deltas = {

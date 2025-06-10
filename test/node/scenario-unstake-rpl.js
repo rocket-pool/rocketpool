@@ -9,8 +9,12 @@ import { assertBN } from '../_helpers/bn';
 const hre = require('hardhat');
 const ethers = hre.ethers;
 
-// Unstake megapool RPL
 export async function unstakeRpl(amount, txOptions) {
+    return unstakeRplFor(amount, txOptions.from.address, txOptions.from)
+}
+
+// Unstake megapool RPL
+export async function unstakeRplFor(amount, nodeAddress, from) {
     // Load contracts
     const [
         rocketNodeManager,
@@ -24,11 +28,11 @@ export async function unstakeRpl(amount, txOptions) {
         RocketVault.deployed(),
     ]);
 
-    const nodeAddress = await rocketNodeManager.getNodeRPLWithdrawalAddress(txOptions.from.address);
+    const rplWithdrawalAddress = await rocketNodeManager.getNodeRPLWithdrawalAddress(nodeAddress);
 
     async function getData(){
         return Promise.all([
-            rocketTokenRPL.balanceOf(nodeAddress),
+            rocketTokenRPL.balanceOf(rplWithdrawalAddress),
             rocketTokenRPL.balanceOf(rocketVault.target),
             rocketVault.balanceOfToken('rocketNodeStaking', rocketTokenRPL.target),
             rocketNodeStaking.getTotalStakedRPL(),
@@ -46,7 +50,12 @@ export async function unstakeRpl(amount, txOptions) {
     }
 
     const data1 = await getData();
-    const tx = await rocketNodeStaking.connect(txOptions.from).unstakeRPL(amount, txOptions);
+    let tx
+    if (from.address === nodeAddress) {
+        tx = await rocketNodeStaking.connect(from).unstakeRPL(amount);
+    } else {
+        tx = await rocketNodeStaking.connect(from).unstakeRPLFor(nodeAddress, amount);
+    }
     const block = await ethers.provider.getBlock(tx.blockNumber);
     const txTimestamp = block.timestamp;
     const data2 = await getData();
