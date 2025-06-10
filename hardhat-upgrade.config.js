@@ -7,7 +7,7 @@ const providerUrl = process.env.PROVIDER_URL || 'http://localhost:8545';
 
 module.exports = Object.assign(common, {
     networks: {
-        testnet: {
+        custom: {
             url: `${providerUrl}`,
             accounts: {
                 mnemonic: mnemonicPhrase,

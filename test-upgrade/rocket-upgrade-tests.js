@@ -1,13 +1,12 @@
 import { afterEach, before, beforeEach, describe, it } from 'mocha';
 import {
     artifacts,
-    RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsMegapool, RocketNetworkRevenues, RocketNodeStaking,
-    RocketStorage, RocketTokenDummyRPL,
-    RocketUpgradeOneDotFour,
+    RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsMegapool, RocketNetworkRevenues,
+    RocketStorage, RocketUpgradeOneDotFour,
 } from '../test/_utils/artifacts';
 import { assertBN, injectBNHelpers } from '../test/_helpers/bn';
 import { endSnapShot, globalSnapShot, startSnapShot } from '../test/_utils/snapshotting';
-import { nodeStakeRPL, registerNode } from '../test/_helpers/node';
+import { registerNode } from '../test/_helpers/node';
 import { printTitle } from '../test/_utils/formatting';
 import { setDefaultParameters } from '../test/_helpers/defaults';
 import { deployMegapool, getMegapoolForNode, getValidatorInfo, nodeDeposit } from '../test/_helpers/megapool';
@@ -15,8 +14,11 @@ import { deployUpgrade } from './_helpers/upgrade';
 import { setDaoNodeTrustedBootstrapUpgrade } from '../test/dao/scenario-dao-node-trusted-bootstrap';
 import { userDeposit } from '../test/_helpers/deposit';
 import assert from 'assert';
-import { createMinipool, getMinipoolMinimumRPLStake } from '../test/_helpers/minipool';
+import { getMinipoolMinimumRPLStake } from '../test/_helpers/minipool';
 import { mintRPL } from '../test/_helpers/tokens';
+import { withdrawLegacyRpl } from '../test/node/scenario-withdraw-legacy-rpl';
+import { createMinipool } from './_helpers/minipool';
+import { stakeRPL } from './_helpers/stake';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -26,7 +28,7 @@ injectBNHelpers();
 beforeEach(startSnapShot);
 afterEach(endSnapShot);
 
-const rocketStorageAddress = process.env.ROCKET_STORAGE || '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
+const rocketStorageAddress = process.env.ROCKET_STORAGE || '0x5FbDB2315678afecb367f032d93F642f64180aa3';
 
 describe('Test Upgrade', () => {
     let owner,
@@ -114,7 +116,7 @@ describe('Test Upgrade', () => {
         await registerNode({ from: node });
         const minipoolRplStake = await getMinipoolMinimumRPLStake();
         await mintRPL(owner, node, minipoolRplStake);
-        await nodeStakeRPL(minipoolRplStake, { from: node });
+        await stakeRPL(node, minipoolRplStake);
         const minipool = await createMinipool({ from: node, value: '16'.ether });
         assertBN.equal(await minipool.getStatus(), 0n); // Initialised
         // Execute upgrade
@@ -135,14 +137,17 @@ describe('Test Upgrade', () => {
         assert.equal(validatorInfoAfter.inQueue, false);
     });
 
-    it.only(printTitle('node', 'can withdraw legacy RPL'), async () => {
+    it(printTitle('node', 'can withdraw legacy RPL'), async () => {
+        // Register node
         await registerNode({ from: node });
-        await mintRPL(owner, node, minipoolRplStake);
-        await nodeStakeRPL('100'.ether, { from: node });
+        // Mint RPL and stake
+        await mintRPL(owner, node, '100'.ether);
+        await stakeRPL(node, '100'.ether);
         // Execute upgrade
         await executeUpgrade();
+        // Wait 28 days
+        await helpers.time.increase(60 * 60 * 24 * 28 + 1);
         // Withdraw
-        const rocketNodeStaking = await RocketNodeStaking.deployed();
-        await rocketNodeStaking.withdrawLegacyRPL('100'.ether)
+        await withdrawLegacyRpl('100'.ether, { from: node });
     });
 });

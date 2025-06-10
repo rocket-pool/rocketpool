@@ -4,7 +4,8 @@
 export PROVIDER_URL=http://localhost:8545
 export MNEMONIC="test test test test test test test test test test test junk"
 export MNEMONIC_PASSWORD=
-export ROCKET_STORAGE=0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+export ROCKET_STORAGE=0x5FbDB2315678afecb367f032d93F642f64180aa3
+export CHAIN=hardhat
 
 # Start local hardhat node
 trap 'kill $(lsof -t -i:8545)' EXIT
@@ -20,10 +21,10 @@ cd old
 npx hardhat compile
 
 # Deploy the old version
-npx hardhat run scripts/deploy.js --network testnet
+npx hardhat run scripts/deploy.js --network custom
 
 # Move to project root
 cd ..
 
 # Run upgrade test suite
-npx hardhat test --network testnet --config hardhat-upgrade.config.js --bail
+npx hardhat test --network custom --config hardhat-upgrade.config.js --bail

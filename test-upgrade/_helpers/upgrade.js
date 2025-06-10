@@ -1,9 +1,7 @@
-import { artifacts, RocketStorage } from '../../test/_utils/artifacts';
+import { artifacts } from '../../test/_utils/artifacts';
 import pako from 'pako';
 
 const hre = require('hardhat');
-
-const network = hre.network;
 
 const networkContracts = {
     rocketMegapoolDelegate: artifacts.require('RocketMegapoolDelegate'),
@@ -24,15 +22,17 @@ const networkContracts = {
     rocketDAOProtocolSettingsMegapool: artifacts.require('RocketDAOProtocolSettingsMegapool'),
     rocketDAOSecurityProposals: artifacts.require('RocketDAOSecurityProposals'),
     rocketNetworkRevenues: artifacts.require('RocketNetworkRevenues'),
+    rocketNetworkBalances: artifacts.require('RocketNetworkBalances'),
     rocketNetworkSnapshots: artifacts.require('RocketNetworkSnapshots'),
     rocketVoterRewards: artifacts.require('RocketVoterRewards'),
     blockRoots: artifacts.require('BlockRoots'),
     beaconStateVerifier: artifacts.require('BeaconStateVerifier'),
+    rocketNodeDistributorDelegate: artifacts.require('RocketNodeDistributorDelegate'),
 
     rocketUpgradeOneDotFour: artifacts.require('RocketUpgradeOneDotFour'),
 };
 
-if (network.name === 'hardhat') {
+if (process.env.CHAIN === 'hardhat') {
     // Unit test helper contracts
     networkContracts.beaconStateVerifier = artifacts.require('BeaconStateVerifierMock');
     networkContracts.blockRoots = artifacts.require('BlockRootsMock');
@@ -50,7 +50,15 @@ export async function deployUpgrade(rocketStorageAddress) {
     const genesisBlockTimestamp = 1695902400n;
     const secondsPerSlot = 12n;
     const beaconRootsHistoryBufferLength = 8191n;
+    const slotsPerHistoricalRoot = 8192n;
     const beaconRoots = '0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02';
+    const forkSlots = [
+        74240n * 32n,   // Altair
+        144896n * 32n,  // Bellatrix
+        194048n * 32n,  // Capella
+        269568n * 32n,  // Deneb
+        364032n * 32n,  // Electra
+    ]
 
     // Deploy other contracts
     for (let contract in networkContracts) {
@@ -61,6 +69,7 @@ export async function deployUpgrade(rocketStorageAddress) {
         switch (contract) {
             // Contracts with no constructor args
             case 'rocketMinipoolDelegate':
+            case 'rocketNodeDistributorDelegate':
                 instance = await networkContracts[contract].clone();
                 addresses[contract] = instance.target;
                 break;
@@ -70,8 +79,17 @@ export async function deployUpgrade(rocketStorageAddress) {
                 addresses[contract] = instance.target;
                 break;
 
+            case 'beaconStateVerifier':
+                if (process.env.CHAIN === 'hardhat') {
+                    instance = await networkContracts[contract].new(rocketStorageAddress);
+                } else {
+                    instance = await networkContracts[contract].clone(rocketStorageAddress, slotsPerHistoricalRoot, forkSlots);
+                }
+                addresses[contract] = instance.target;
+                break;
+
             case 'blockRoots':
-                if (network.name === 'hardhat') {
+                if (process.env.CHAIN === 'hardhat') {
                     instance = await networkContracts[contract].new();
                 } else {
                     instance = await networkContracts[contract].new(genesisBlockTimestamp, secondsPerSlot, beaconRootsHistoryBufferLength, beaconRoots);
@@ -82,6 +100,7 @@ export async function deployUpgrade(rocketStorageAddress) {
             // Upgrade contract
             case 'rocketUpgradeOneDotFour':
                 instance = await networkContracts[contract].new(rocketStorageAddress);
+
                 const args = [
                     [
                         addresses.rocketMegapoolDelegate,
@@ -102,10 +121,12 @@ export async function deployUpgrade(rocketStorageAddress) {
                         addresses.rocketDAOProtocolSettingsMegapool,
                         addresses.rocketDAOSecurityProposals,
                         addresses.rocketNetworkRevenues,
+                        addresses.rocketNetworkBalances,
                         addresses.rocketNetworkSnapshots,
                         addresses.rocketVoterRewards,
                         addresses.blockRoots,
                         addresses.beaconStateVerifier,
+                        addresses.rocketNodeDistributorDelegate,
                     ],
                     [
                         compressABI(networkContracts.rocketMegapoolDelegate.abi),
@@ -126,10 +147,12 @@ export async function deployUpgrade(rocketStorageAddress) {
                         compressABI(networkContracts.rocketDAOProtocolSettingsMegapool.abi),
                         compressABI(networkContracts.rocketDAOSecurityProposals.abi),
                         compressABI(networkContracts.rocketNetworkRevenues.abi),
+                        compressABI(networkContracts.rocketNetworkBalances.abi),
                         compressABI(networkContracts.rocketNetworkSnapshots.abi),
                         compressABI(networkContracts.rocketVoterRewards.abi),
                         compressABI(networkContracts.blockRoots.abi),
                         compressABI(networkContracts.beaconStateVerifier.abi),
+                        compressABI(networkContracts.rocketNodeDistributorDelegate.abi),
                     ],
                 ];
                 await instance.set(...args);
@@ -149,8 +172,6 @@ export async function deployUpgrade(rocketStorageAddress) {
             abi: abi,
         };
     }
-
-    console.log(addresses);
 
     return upgradeContract;
 }
