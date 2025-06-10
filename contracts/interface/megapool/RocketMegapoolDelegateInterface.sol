@@ -14,15 +14,15 @@ interface RocketMegapoolDelegateInterface is RocketMegapoolDelegateBaseInterface
     function dequeue(uint32 _validatorId) external;
     function reduceBond(uint256 _amount) external;
     function assignFunds(uint32 _validatorId) external payable;
-    function stake(uint32 _validatorId, ValidatorProof calldata _proof) external;
+    function stake(uint32 _validatorId, uint64 _validatorIndex) external;
     function dissolveValidator(uint32 _validatorId) external;
     function getNodeAddress() external returns (address);
     function distribute() external;
     function claim() external;
     function repayDebt() external payable;
 
-    function notifyExit(uint32 _validatorId, uint64 _withdrawableEpoch, uint64 _slot, bytes32[] calldata _proof) external;
-    function notifyFinalBalance(uint32 _validatorId, uint64 _withdrawalSlot, uint256 _withdrawalNum, Withdrawal calldata _withdrawal, uint64 _slot, bytes32[] calldata _proof) external;
+    function notifyExit(uint32 _validatorId, uint64 _withdrawableEpoch) external;
+    function notifyFinalBalance(uint32 _validatorId, uint64 _amountInGwei, address _caller) external;
     function applyPenalty(uint256 _amount) external;
 
     function getValidatorCount() external view returns (uint32);

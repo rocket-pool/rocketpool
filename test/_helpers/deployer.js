@@ -33,9 +33,15 @@ const defaultOpts = {
     secondsPerSlot: 12n,
     slotsPerHistoricalRoot: 8192n,
     beaconRootsHistoryBufferLength: 8191n,
-    historicalRootOffset: 758n, // Mainnet value: CAPELLA_FORK_EPOCH * SLOTS_PER_EPOCH / SLOTS_PER_HISTORICAL_ROOT = 758
     beaconRoots: '0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02',
     logging: true,
+    forkSlots: [
+        74240n * 32n,   // Altair
+        144896n * 32n,  // Bellatrix
+        194048n * 32n,  // Capella
+        269568n * 32n,  // Deneb
+        364032n * 32n,  // Electra
+    ]
 };
 
 const contractNameMap = {
@@ -148,7 +154,7 @@ export class RocketPoolDeployer {
         this.contractPlan['rocketNodeDistributorDelegate'].constructorArgs = [];
         this.contractPlan['rocketMinipoolBase'].constructorArgs = [];
         this.contractPlan['blockRoots'].constructorArgs = [opts.genesisBlockTimestamp, opts.secondsPerSlot, opts.beaconRootsHistoryBufferLength, opts.beaconRoots];
-        this.contractPlan['beaconStateVerifier'].constructorArgs = () => [this.rocketStorageInstance.target, opts.slotsPerHistoricalRoot, opts.historicalRootOffset];
+        this.contractPlan['beaconStateVerifier'].constructorArgs = () => [this.rocketStorageInstance.target, opts.slotsPerHistoricalRoot, opts.forkSlots];
         this.contractPlan['rocketMegapoolDelegate'].constructorArgs = () => [this.rocketStorageInstance.target, opts.genesisBlockTimestamp];
 
         // Setup deployment

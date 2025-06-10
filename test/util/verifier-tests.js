@@ -2,8 +2,8 @@ import { before, describe, it } from 'mocha';
 import { printTitle } from '../_utils/formatting';
 import { BeaconStateVerifier, BlockRootsMock } from '../_utils/artifacts';
 import * as assert from 'assert';
+import { shouldRevert } from '../_utils/testing';
 
-const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
 const ethers = hre.ethers;
 
@@ -24,201 +24,149 @@ export default function() {
             ] = await ethers.getSigners();
         });
 
-        it(printTitle('BeaconStateVerifier', 'Can verify withdrawal_epoch on validator'), async () => {
+        it(printTitle('BeaconStateVerifier', 'Can verify validator with state proof'), async () => {
             const beaconStateVerifier = await BeaconStateVerifier.deployed();
             const blockRoots = await BlockRootsMock.deployed();
 
-            const proof = [
-                "0xffffffffffffffff000000000000000000000000000000000000000000000000", "0xd36369eb7ffeceacc83d0161d3cce7d8aa1c8e71d4801a0fae7fc5e81d4fe646",
-                "0xa0bced902ed1d2f2040c17ed0ca3f2c74725266f51686074fc9d7b3582afdb0e", "0x8abe1b18eaaa49e04e986bd5fb44ad90c08d1df57eabea9e26796a961fe1b762",
-                "0x972d643714dddffdde5e935588249fb04be277ad32fa43aa72e6325c4d826b02", "0xa73fde132b956a530446ee8b3e3eda7f1cf2ecdd7b77cbebe74720bd5d507018",
-                "0x797802b8fb8765a4453bb8e57f88e56a7384d9f8f2c12bf3d391f8c6b8f1b777", "0x90c14e71e4b5219f2a9a7af09dc2e12816d17e61fe496037915abab076bf4936",
-                "0xabf67b0094566967984cc1e541465ffb493fb2a774ee9fc5f8d622f6fc727dee", "0x929aae93bf2b43db4db1932837b4585bef8fe8da088dcd61363909c6960334c3",
-                "0xe038b9683fabd5e5cd4c121b17b495063b09ebe7ccbbe8e4e974eb19a1c7d08a", "0x89329a752384ca7165bc8e3dca463900e063fa7552e7b7986c8baebea9c54926",
-                "0x09a339f9c227fd48deca618e84c605142d96d9e25b0f0d23e609a62015ae7e8c", "0xca9fd8ff36f7b97c756c9fcc1769e8b6db24012351c4869c3886522698ac2b17",
-                "0xb62be1079338e91e9892a925451c9ac2b7d2a85c4f7ebb074a9769dfa73ede6d", "0x683a8d8f5179dc40cc6804e06643ca14c5d70b1f6c3d4672dc363bd0586552ff",
-                "0xca87d13aea33620e59c29d78f1f1994f09387c60cc984e542ad68969d946b882", "0x80ae04c90543e470964302881d5add8916d082aeeb3ec6e8852dbfc307ad0db8",
-                "0xa69e27736ede3c377bc4cb98d017208307f36180cb4d9f23d4ef8792972bad8c", "0x00f0fd7a0a88a8ab00d5004d16120884d75bbf40c7dda9b4d8eb1785fc5f3bd7",
-                "0x6256f55a4f4174a0e592eb8433557a3abbbdf054b224a1d325a163ff810683d7", "0xf9868e385850e2963ac9223742870dab32d3e04697c0fc43849a6bfd9812a934",
-                "0x22eed4dca7fb4a33b5aba488d4d0a5f527399638fb7ec837643b08307cf520f7", "0x9a613b0ae0422e33063e253e78178c4802a5188848b6105d6830091f7c92ee24",
-                "0x8a8d7fe3af8caa085a7639a832001457dfb9128a8061142ad0335629ff23ff9c", "0xfeb3c337d7a51a6fbf00b9e34c52e1c9195c969bd4e7a0bfd51d5c5bed9c1167",
-                "0xe71f0aa83cc32edfbefa9f4d3e0174ca85182eec9f3a09f6a6c0df6377a510d7", "0x31206fa80a50bb6abe29085058f16212212a60eec8f049fecb92d8c8e0a84bc0",
-                "0x21352bfecbeddde993839f614c3dac0a3ee37543f9b412b16199dc158e23b544", "0x619e312724bb6d7c3153ed9de791d764a366b389af13c58bf8a8d90481a46765",
-                "0x7cdd2986268250628d0c10e385c58c6191e6fbe05191bcc04f133f2cea72c1c4", "0x848930bd7ba8cac54661072113fb278869e07bb8587f91392933374d017bcbe1",
-                "0x8869ff2c22b28cc10510d9853292803328be4fb0e80495e8bb8d271f5b889636", "0xb5fe28e79f1b850f8658246ce9b6a1e7b49fc06db7143e8fe0b4f2b0c5523a5c",
-                "0x985e929f70af28d0bdd1a90a808f977f597c7c778c489e98d3bd8910d31ac0f7", "0xc6f67e02e6e4e1bdefb994c6098953f34636ba2b6ca20a4721d2b26a886722ff",
-                "0x1c9a7e5ff1cf48b4ad1582d3f4e4a1004f3b20d8c5a2b71387a4254ad933ebc5", "0x2f075ae229646b6f6aed19a5e372cf295081401eb893ff599b3f9acc0c0d3e7d",
-                "0x328921deb59612076801e8cd61592107b5c67c79b846595cc6320c395b46362c", "0xbfb909fdb236ad2411b4e4883810a074b840464689986c3f8a8091827e17c327",
-                "0x55d8fb3687ba3ba49f342c77f5a1f89bec83d811446e1a467139213d640b6a74", "0xf7210d4f8e7e1039790e7bf4efa207555a10a6db1dd4b95da313aaa88b88fe76",
-                "0xad21b516cbc645ffe34ab5de1c8aef8cd4e7f8d2b51e8e1456adc7563cda206f", "0x609d1d0000000000000000000000000000000000000000000000000000000000",
-                "0xc6341f0000000000000000000000000000000000000000000000000000000000", "0x681c6d64aba47a084f8f2d7bf1f6208b0e18287b94d3ee0a44314ca1cf307b36",
-                "0x584cf95f07685553e071414dcde96eb936a40ae41ff16251d6dad1938aa1fb9d", "0xa10b34eeb909d7ad2efdae3344aeb210032d09e0e8edf1c03bd6807e24c9d199",
-                "0xa61ec140c4dee2bec895af537f2ef19376fac4ddb292ad7352809d7d5926461e", "0x2395c64f50239f14feea5dbe13c65d405e0d4be2d25e8995d8f64b94f83014fc",
-                "0x032ffdac4b987092a708a481a6aa53c66aa874fe96a9f689031715ffa726fee4", "0xbe6d4ac575061b5182c9112451fdc189c2d3dc3a882b4c06c365e0acded0d600",
-                "0x6cb1b243918374de6252a32aa24a34e0e40f3df71b7b51e6a59d0e99e9109d2d"
+            const witnesses = [
+                "0xdac075cf29676e5da6a30cb2c2fab90b2661e0b921c599b384399380ae9ab5ab",
+                "0x0e79aad03eedbd72563db50550bb4066abe422407b4f6edddce9ae47ae87e15b",
+                "0xebdf30ee31c84aea37daf85c65c905719264e88f506188080d60ee4beb0a6bca",
+                "0x5a768ecc1dceded186826a1ca61d3959ae00465f36040b5ab02d6385dd6ee3fa",
+                "0xf845231c6cca9c053e7830ad67927bd1a7364f3ee01b209456b24db1cc0fa98f",
+                "0xc22694f4ffe34e813350e4fa3fedeeba4ad118860b84d45447701472606ec9d1",
+                "0xdeb26ad6b414dd628c2b3392ebe5ba3d41fc7104e9b563fc154ea002a5a95e31",
+                "0x2c22e317222b49318ab555c08b5e1d0e7e226515fe5e4797887c9b3a609700be",
+                "0x9f80e99e8d1ba1b236466a03f3f59015dfabe3b6d35e566993dcc959e5824ee3",
+                "0x73e279452b714583a3bf38d7c37e7ea275e28cd09abe60b11f941a12e64f4241",
+                "0x28394ea21c79ad3b29d7fbb8b252d96150b211b60900517b012eed8afdb92a3f",
+                "0xd7ec1342a5f06b9f60fdc95761c1dbdf01f31f5a28d326652dc2d9f879c297c8",
+                "0x3823b57415d99bba0a6089026e692c2e9817c750e42e2517511ef5cf29070d05",
+                "0x6a7886b5f8716f0e12f359d9025b51d764130c235b1115c9faee188cecc99df6",
+                "0x3f7ec07faa352ae9d48eb0d48d65dc952eedf590bac5cff6484ae43504170716",
+                "0x7be17af70e96360a0cde54b7eac5e0850e3a55f13995494006b052fda415fd9c",
+                "0x50cb128a7ee63948dc8a8959609f24e19cc5d4dd48ba1d02bbb5fd61ed938dad",
+                "0xff99326be45cd5416caf569a7562acaaf63a74d40b66d2f33a0738846e3366a5",
+                "0x2fe03ec77e9a4653a29520320269fd0e44622efd0bd5c114a84b5ad3d476341f",
+                "0xfb40cfe24c512cf2df420be3204f1c60e882d27f3ea63280c4b7c03c691a9a7f",
+                "0xee50bfe01d2ea4bdf323be746769cc44afff7457aea078483382c5c33ddc4230",
+                "0x8a8d7fe3af8caa085a7639a832001457dfb9128a8061142ad0335629ff23ff9c",
+                "0xfeb3c337d7a51a6fbf00b9e34c52e1c9195c969bd4e7a0bfd51d5c5bed9c1167",
+                "0xe71f0aa83cc32edfbefa9f4d3e0174ca85182eec9f3a09f6a6c0df6377a510d7",
+                "0x31206fa80a50bb6abe29085058f16212212a60eec8f049fecb92d8c8e0a84bc0",
+                "0x21352bfecbeddde993839f614c3dac0a3ee37543f9b412b16199dc158e23b544",
+                "0x619e312724bb6d7c3153ed9de791d764a366b389af13c58bf8a8d90481a46765",
+                "0x7cdd2986268250628d0c10e385c58c6191e6fbe05191bcc04f133f2cea72c1c4",
+                "0x848930bd7ba8cac54661072113fb278869e07bb8587f91392933374d017bcbe1",
+                "0x8869ff2c22b28cc10510d9853292803328be4fb0e80495e8bb8d271f5b889636",
+                "0xb5fe28e79f1b850f8658246ce9b6a1e7b49fc06db7143e8fe0b4f2b0c5523a5c",
+                "0x985e929f70af28d0bdd1a90a808f977f597c7c778c489e98d3bd8910d31ac0f7",
+                "0xc6f67e02e6e4e1bdefb994c6098953f34636ba2b6ca20a4721d2b26a886722ff",
+                "0x1c9a7e5ff1cf48b4ad1582d3f4e4a1004f3b20d8c5a2b71387a4254ad933ebc5",
+                "0x2f075ae229646b6f6aed19a5e372cf295081401eb893ff599b3f9acc0c0d3e7d",
+                "0x328921deb59612076801e8cd61592107b5c67c79b846595cc6320c395b46362c",
+                "0xbfb909fdb236ad2411b4e4883810a074b840464689986c3f8a8091827e17c327",
+                "0x55d8fb3687ba3ba49f342c77f5a1f89bec83d811446e1a467139213d640b6a74",
+                "0xf7210d4f8e7e1039790e7bf4efa207555a10a6db1dd4b95da313aaa88b88fe76",
+                "0xad21b516cbc645ffe34ab5de1c8aef8cd4e7f8d2b51e8e1456adc7563cda206f",
+                "0xaf911d0000000000000000000000000000000000000000000000000000000000",
+                "0xc6341f0000000000000000000000000000000000000000000000000000000000",
+                "0x5aaa91f9944dda3f57d531e52f4127e134092e1e57350e5980dd654eee511488",
+                "0xf99a074fcb6bb2a5b79601d206ab4700e897f0515626aaf30957aea3271b47b9",
+                "0xdb4fe5420f82e43be50d01801979113267495914c66b45e9dff78c2ce393d27e",
+                "0x4a1cdba46459907ad2e90e7781f1d6073cf605c7606449342b50a8eb9e5b137a",
+                "0xfd0a4ea0112343eba60ae9a15bef34084e4df95fb5d34166a722f94edde023d2",
+                "0xfcfc159f32c11dda7e315ff5d981cb1a247e4d26b3c2dc0f2aa3b842c5262a4f",
+                "0xed688fdbfba04ce68e541cd09db8ea609fd951dd06b7dc171f337dcfb4e7774c",
+                "0xd3b4850ac5f8ec9a4cc48295f972656a9b2ba8d35e665cd53c51a8bb448f9a63"
             ];
 
-            const blockRoot = '0xe39be859f0aaa98d1c269252388115284366451b58ed082801593dbbfccd1876';
-            const slot = 11834166;
+            const blockRoot = '0x26e397dd184ab83558a241a65847bf02406e26835b5a186fb0a2e05690958ad2';
+            const slot = 11821055;
             await blockRoots.setBlockRoot(slot, blockRoot);
 
-            const result = await beaconStateVerifier.verifyWithdrawableEpoch(405782, farFutureEpoch, slot, proof);
-            assert.equal(result, true, 'Verification failed');
-        });
-
-        it(printTitle('BeaconStateVerifier', 'Fails to verify invalid withdrawal_epoch proof'), async () => {
-            const beaconStateVerifier = await BeaconStateVerifier.deployed();
-            const blockRoots = await BlockRootsMock.deployed();
-
-            const proof = [
-                "0xffffffffffffffff000000000000000000000000000000000000000000000000", "0xd36369eb7ffeceacc83d0161d3cce7d8aa1c8e71d4801a0fae7fc5e81d4fe646",
-                "0xa0bced902ed1d2f2040c17ed0ca3f2c74725266f51686074fc9d7b3582afdb0e", "0x8abe1b18eaaa49e04e986bd5fb44ad90c08d1df57eabea9e26796a961fe1b762",
-                "0x972d643714dddffdde5e935588249fb04be277ad32fa43aa72e6325c4d826b02", "0xa73fde132b956a530446ee8b3e3eda7f1cf2ecdd7b77cbebe74720bd5d507018",
-                "0x797802b8fb8765a4453bb8e57f88e56a7384d9f8f2c12bf3d391f8c6b8f1b777", "0x90c14e71e4b5219f2a9a7af09dc2e12816d17e61fe496037915abab076bf4936",
-                "0xabf67b0094566967984cc1e541465ffb493fb2a774ee9fc5f8d622f6fc727dee", "0x929aae93bf2b43db4db1932837b4585bef8fe8da088dcd61363909c6960334c3",
-                "0xe038b9683fabd5e5cd4c121b17b495063b09ebe7ccbbe8e4e974eb19a1c7d08a", "0x89329a752384ca7165bc8e3dca463900e063fa7552e7b7986c8baebea9c54926",
-                "0x09a339f9c227fd48deca618e84c605142d96d9e25b0f0d23e609a62015ae7e8c", "0xca9fd8ff36f7b97c756c9fcc1769e8b6db24012351c4869c3886522698ac2b17",
-                "0xb62be1079338e91e9892a925451c9ac2b7d2a85c4f7ebb074a9769dfa73ede6d", "0x683a8d8f5179dc40cc6804e06643ca14c5d70b1f6c3d4672dc363bd0586552ff",
-                "0xca87d13aea33620e59c29d78f1f1994f09387c60cc984e542ad68969d946b882", "0x80ae04c90543e470964302881d5add8916d082aeeb3ec6e8852dbfc307ad0db8",
-                "0xa69e27736ede3c377bc4cb98d017208307f36180cb4d9f23d4ef8792972bad8c", "0x00f0fd7a0a88a8ab00d5004d16120884d75bbf40c7dda9b4d8eb1785fc5f3bd7",
-                "0x6256f55a4f4174a0e592eb8433557a3abbbdf054b224a1d325a163ff810683d7", "0xf9868e385850e2963ac9223742870dab32d3e04697c0fc43849a6bfd9812a934",
-                "0x22eed4dca7fb4a33b5aba488d4d0a5f527399638fb7ec837643b08307cf520f7", "0x9a613b0ae0422e33063e253e78178c4802a5188848b6105d6830091f7c92ee24",
-                "0x8a8d7fe3af8caa085a7639a832001457dfb9128a8061142ad0335629ff23ff9c", "0xfeb3c337d7a51a6fbf00b9e34c52e1c9195c969bd4e7a0bfd51d5c5bed9c1167",
-                "0xe71f0aa83cc32edfbefa9f4d3e0174ca85182eec9f3a09f6a6c0df6377a510d7", "0x31206fa80a50bb6abe29085058f16212212a60eec8f049fecb92d8c8e0a84bc0",
-                "0x21352bfecbeddde993839f614c3dac0a3ee37543f9b412b16199dc158e23b544", "0x619e312724bb6d7c3153ed9de791d764a366b389af13c58bf8a8d90481a46765",
-                "0x7cdd2986268250628d0c10e385c58c6191e6fbe05191bcc04f133f2cea72c1c4", "0x848930bd7ba8cac54661072113fb278869e07bb8587f91392933374d017bcbe1",
-                "0x8869ff2c22b28cc10510d9853292803328be4fb0e80495e8bb8d271f5b889636", "0xb5fe28e79f1b850f8658246ce9b6a1e7b49fc06db7143e8fe0b4f2b0c5523a5c",
-                "0x985e929f70af28d0bdd1a90a808f977f597c7c778c489e98d3bd8910d31ac0f7", "0xc6f67e02e6e4e1bdefb994c6098953f34636ba2b6ca20a4721d2b26a886722ff",
-                "0x1c9a7e5ff1cf48b4ad1582d3f4e4a1004f3b20d8c5a2b71387a4254ad933ebc5", "0x2f075ae229646b6f6aed19a5e372cf295081401eb893ff599b3f9acc0c0d3e7d",
-                "0x328921deb59612076801e8cd61592107b5c67c79b846595cc6320c395b46362c", "0xbfb909fdb236ad2411b4e4883810a074b840464689986c3f8a8091827e17c327",
-                "0x55d8fb3687ba3ba49f342c77f5a1f89bec83d811446e1a467139213d640b6a74", "0xf7210d4f8e7e1039790e7bf4efa207555a10a6db1dd4b95da313aaa88b88fe76",
-                "0xad21b516cbc645ffe34ab5de1c8aef8cd4e7f8d2b51e8e1456adc7563cda206f", "0x609d1d0000000000000000000000000000000000000000000000000000000000",
-                "0xc6341f0000000000000000000000000000000000000000000000000000000000", "0x681c6d64aba47a084f8f2d7bf1f6208b0e18287b94d3ee0a44314ca1cf307b36",
-                "0x584cf95f07685553e071414dcde96eb936a40ae41ff16251d6dad1938aa1fb9d", "0xa10b34eeb909d7ad2efdae3344aeb210032d09e0e8edf1c03bd6807e24c9d199",
-                "0xa61ec140c4dee2bec895af537f2ef19376fac4ddb292ad7352809d7d5926461e", "0x2395c64f50239f14feea5dbe13c65d405e0d4be2d25e8995d8f64b94f83014fc",
-                "0x032ffdac4b987092a708a481a6aa53c66aa874fe96a9f689031715ffa726fee4", "0xbe6d4ac575061b5182c9112451fdc189c2d3dc3a882b4c06c365e0acded0d600",
-                "0x6cb1b243918374de6252a32aa24a34e0e40f3df71b7b51e6a59d0e99e9109d2d"
-            ];
-
-            const blockRoot = '0xe39be859f0aaa98d1c269252388115284366451b58ed082801593dbbfccd1876';
-            const slot = 11834166;
-            await blockRoots.setBlockRoot(slot, blockRoot);
-
-            const result = await beaconStateVerifier.verifyWithdrawableEpoch(405782, farFutureEpoch - 1n, slot, proof);
-            assert.equal(result, false, 'Verification succeeded');
-        });
-
-        it(printTitle('BeaconStateVerifier', 'Can verify pubkey/withdrawal_credentials on validator'), async () => {
-            const beaconStateVerifier = await BeaconStateVerifier.deployed();
-            const blockRoots = await BlockRootsMock.deployed();
-
-            const proof = [
-                "0x19327cb9763c96e00332bde93bdbb1032c4b796dda73e515c8c5f7ede9a419be", "0xf7002d928230a591b4a878899957e68a3d5cd73f487a8c1a5140319ca4c6c874",
-                "0x8abe1b18eaaa49e04e986bd5fb44ad90c08d1df57eabea9e26796a961fe1b762", "0x972d643714dddffdde5e935588249fb04be277ad32fa43aa72e6325c4d826b02",
-                "0xa73fde132b956a530446ee8b3e3eda7f1cf2ecdd7b77cbebe74720bd5d507018", "0x797802b8fb8765a4453bb8e57f88e56a7384d9f8f2c12bf3d391f8c6b8f1b777",
-                "0x90c14e71e4b5219f2a9a7af09dc2e12816d17e61fe496037915abab076bf4936", "0xabf67b0094566967984cc1e541465ffb493fb2a774ee9fc5f8d622f6fc727dee",
-                "0x929aae93bf2b43db4db1932837b4585bef8fe8da088dcd61363909c6960334c3", "0xe038b9683fabd5e5cd4c121b17b495063b09ebe7ccbbe8e4e974eb19a1c7d08a",
-                "0x89329a752384ca7165bc8e3dca463900e063fa7552e7b7986c8baebea9c54926", "0x09a339f9c227fd48deca618e84c605142d96d9e25b0f0d23e609a62015ae7e8c",
-                "0xca9fd8ff36f7b97c756c9fcc1769e8b6db24012351c4869c3886522698ac2b17", "0xb62be1079338e91e9892a925451c9ac2b7d2a85c4f7ebb074a9769dfa73ede6d",
-                "0x683a8d8f5179dc40cc6804e06643ca14c5d70b1f6c3d4672dc363bd0586552ff", "0xca87d13aea33620e59c29d78f1f1994f09387c60cc984e542ad68969d946b882",
-                "0x80ae04c90543e470964302881d5add8916d082aeeb3ec6e8852dbfc307ad0db8", "0xa69e27736ede3c377bc4cb98d017208307f36180cb4d9f23d4ef8792972bad8c",
-                "0x00f0fd7a0a88a8ab00d5004d16120884d75bbf40c7dda9b4d8eb1785fc5f3bd7", "0x6256f55a4f4174a0e592eb8433557a3abbbdf054b224a1d325a163ff810683d7",
-                "0xf9868e385850e2963ac9223742870dab32d3e04697c0fc43849a6bfd9812a934", "0x22eed4dca7fb4a33b5aba488d4d0a5f527399638fb7ec837643b08307cf520f7",
-                "0x9a613b0ae0422e33063e253e78178c4802a5188848b6105d6830091f7c92ee24", "0x8a8d7fe3af8caa085a7639a832001457dfb9128a8061142ad0335629ff23ff9c",
-                "0xfeb3c337d7a51a6fbf00b9e34c52e1c9195c969bd4e7a0bfd51d5c5bed9c1167", "0xe71f0aa83cc32edfbefa9f4d3e0174ca85182eec9f3a09f6a6c0df6377a510d7",
-                "0x31206fa80a50bb6abe29085058f16212212a60eec8f049fecb92d8c8e0a84bc0", "0x21352bfecbeddde993839f614c3dac0a3ee37543f9b412b16199dc158e23b544",
-                "0x619e312724bb6d7c3153ed9de791d764a366b389af13c58bf8a8d90481a46765", "0x7cdd2986268250628d0c10e385c58c6191e6fbe05191bcc04f133f2cea72c1c4",
-                "0x848930bd7ba8cac54661072113fb278869e07bb8587f91392933374d017bcbe1", "0x8869ff2c22b28cc10510d9853292803328be4fb0e80495e8bb8d271f5b889636",
-                "0xb5fe28e79f1b850f8658246ce9b6a1e7b49fc06db7143e8fe0b4f2b0c5523a5c", "0x985e929f70af28d0bdd1a90a808f977f597c7c778c489e98d3bd8910d31ac0f7",
-                "0xc6f67e02e6e4e1bdefb994c6098953f34636ba2b6ca20a4721d2b26a886722ff", "0x1c9a7e5ff1cf48b4ad1582d3f4e4a1004f3b20d8c5a2b71387a4254ad933ebc5",
-                "0x2f075ae229646b6f6aed19a5e372cf295081401eb893ff599b3f9acc0c0d3e7d", "0x328921deb59612076801e8cd61592107b5c67c79b846595cc6320c395b46362c",
-                "0xbfb909fdb236ad2411b4e4883810a074b840464689986c3f8a8091827e17c327", "0x55d8fb3687ba3ba49f342c77f5a1f89bec83d811446e1a467139213d640b6a74",
-                "0xf7210d4f8e7e1039790e7bf4efa207555a10a6db1dd4b95da313aaa88b88fe76", "0xad21b516cbc645ffe34ab5de1c8aef8cd4e7f8d2b51e8e1456adc7563cda206f",
-                "0x609d1d0000000000000000000000000000000000000000000000000000000000", "0xc6341f0000000000000000000000000000000000000000000000000000000000",
-                "0x681c6d64aba47a084f8f2d7bf1f6208b0e18287b94d3ee0a44314ca1cf307b36", "0x584cf95f07685553e071414dcde96eb936a40ae41ff16251d6dad1938aa1fb9d",
-                "0xa10b34eeb909d7ad2efdae3344aeb210032d09e0e8edf1c03bd6807e24c9d199", "0xa61ec140c4dee2bec895af537f2ef19376fac4ddb292ad7352809d7d5926461e",
-                "0x2395c64f50239f14feea5dbe13c65d405e0d4be2d25e8995d8f64b94f83014fc", "0x032ffdac4b987092a708a481a6aa53c66aa874fe96a9f689031715ffa726fee4",
-                "0xbe6d4ac575061b5182c9112451fdc189c2d3dc3a882b4c06c365e0acded0d600", "0x6cb1b243918374de6252a32aa24a34e0e40f3df71b7b51e6a59d0e99e9109d2d"
-            ];
-
-            const blockRoot = '0xe39be859f0aaa98d1c269252388115284366451b58ed082801593dbbfccd1876';
-            const slot = 11834166;
-            await blockRoots.setBlockRoot(slot, blockRoot);
-
-            const pubkey = '0xac40921dc9996570db336ef7d6a8cece00a0363c67d13bbdcb0f995c8d50c9b733a5c568f8fcfdc768137d1041ab0f23';
-            const withdrawalCredentials = '0x010000000000000000000000a328075616c6351790a9ac1391c4b7b2c1dbf728';
-
-            const proofData = {
-                validatorIndex: 405782,
-                pubkey: pubkey,
-                withdrawalCredentials: withdrawalCredentials,
+            const correctProof = {
                 slot: slot,
-                witnesses: proof,
+                validatorIndex: 1060378,
+                validator: {
+                    pubkey: "0xb6544b67c27a9d9f460bd839b1a42d4edf4fedd2567a631ffe473f047acd539257dd326e5c969a08a5ae07db6fd8616c",
+                    withdrawalCredentials: "0x010000000000000000000000b9d7934878b5fb9610b3fe8a5e441e8fad7e293f",
+                    effectiveBalance: 32000000000n,
+                    slashed: false,
+                    activationEligibilityEpoch: 246886n,
+                    activationEpoch: 247130n,
+                    exitEpoch: farFutureEpoch,
+                    withdrawableEpoch: farFutureEpoch,
+                },
+                witnesses: witnesses,
             };
 
-            const result = await beaconStateVerifier.verifyValidator(proofData);
-            assert.equal(result, true, 'Verification failed');
-        });
-
-        it(printTitle('BeaconStateVerifier', 'Fails on invalid withdrawal credentials proof'), async () => {
-            const beaconStateVerifier = await BeaconStateVerifier.deployed();
-            const blockRoots = await BlockRootsMock.deployed();
-
-            const proof = [
-                "0x19327cb9763c96e00332bde93bdbb1032c4b796dda73e515c8c5f7ede9a419be", "0xf7002d928230a591b4a878899957e68a3d5cd73f487a8c1a5140319ca4c6c874",
-                "0x8abe1b18eaaa49e04e986bd5fb44ad90c08d1df57eabea9e26796a961fe1b762", "0x972d643714dddffdde5e935588249fb04be277ad32fa43aa72e6325c4d826b02",
-                "0xa73fde132b956a530446ee8b3e3eda7f1cf2ecdd7b77cbebe74720bd5d507018", "0x797802b8fb8765a4453bb8e57f88e56a7384d9f8f2c12bf3d391f8c6b8f1b777",
-                "0x90c14e71e4b5219f2a9a7af09dc2e12816d17e61fe496037915abab076bf4936", "0xabf67b0094566967984cc1e541465ffb493fb2a774ee9fc5f8d622f6fc727dee",
-                "0x929aae93bf2b43db4db1932837b4585bef8fe8da088dcd61363909c6960334c3", "0xe038b9683fabd5e5cd4c121b17b495063b09ebe7ccbbe8e4e974eb19a1c7d08a",
-                "0x89329a752384ca7165bc8e3dca463900e063fa7552e7b7986c8baebea9c54926", "0x09a339f9c227fd48deca618e84c605142d96d9e25b0f0d23e609a62015ae7e8c",
-                "0xca9fd8ff36f7b97c756c9fcc1769e8b6db24012351c4869c3886522698ac2b17", "0xb62be1079338e91e9892a925451c9ac2b7d2a85c4f7ebb074a9769dfa73ede6d",
-                "0x683a8d8f5179dc40cc6804e06643ca14c5d70b1f6c3d4672dc363bd0586552ff", "0xca87d13aea33620e59c29d78f1f1994f09387c60cc984e542ad68969d946b882",
-                "0x80ae04c90543e470964302881d5add8916d082aeeb3ec6e8852dbfc307ad0db8", "0xa69e27736ede3c377bc4cb98d017208307f36180cb4d9f23d4ef8792972bad8c",
-                "0x00f0fd7a0a88a8ab00d5004d16120884d75bbf40c7dda9b4d8eb1785fc5f3bd7", "0x6256f55a4f4174a0e592eb8433557a3abbbdf054b224a1d325a163ff810683d7",
-                "0xf9868e385850e2963ac9223742870dab32d3e04697c0fc43849a6bfd9812a934", "0x22eed4dca7fb4a33b5aba488d4d0a5f527399638fb7ec837643b08307cf520f7",
-                "0x9a613b0ae0422e33063e253e78178c4802a5188848b6105d6830091f7c92ee24", "0x8a8d7fe3af8caa085a7639a832001457dfb9128a8061142ad0335629ff23ff9c",
-                "0xfeb3c337d7a51a6fbf00b9e34c52e1c9195c969bd4e7a0bfd51d5c5bed9c1167", "0xe71f0aa83cc32edfbefa9f4d3e0174ca85182eec9f3a09f6a6c0df6377a510d7",
-                "0x31206fa80a50bb6abe29085058f16212212a60eec8f049fecb92d8c8e0a84bc0", "0x21352bfecbeddde993839f614c3dac0a3ee37543f9b412b16199dc158e23b544",
-                "0x619e312724bb6d7c3153ed9de791d764a366b389af13c58bf8a8d90481a46765", "0x7cdd2986268250628d0c10e385c58c6191e6fbe05191bcc04f133f2cea72c1c4",
-                "0x848930bd7ba8cac54661072113fb278869e07bb8587f91392933374d017bcbe1", "0x8869ff2c22b28cc10510d9853292803328be4fb0e80495e8bb8d271f5b889636",
-                "0xb5fe28e79f1b850f8658246ce9b6a1e7b49fc06db7143e8fe0b4f2b0c5523a5c", "0x985e929f70af28d0bdd1a90a808f977f597c7c778c489e98d3bd8910d31ac0f7",
-                "0xc6f67e02e6e4e1bdefb994c6098953f34636ba2b6ca20a4721d2b26a886722ff", "0x1c9a7e5ff1cf48b4ad1582d3f4e4a1004f3b20d8c5a2b71387a4254ad933ebc5",
-                "0x2f075ae229646b6f6aed19a5e372cf295081401eb893ff599b3f9acc0c0d3e7d", "0x328921deb59612076801e8cd61592107b5c67c79b846595cc6320c395b46362c",
-                "0xbfb909fdb236ad2411b4e4883810a074b840464689986c3f8a8091827e17c327", "0x55d8fb3687ba3ba49f342c77f5a1f89bec83d811446e1a467139213d640b6a74",
-                "0xf7210d4f8e7e1039790e7bf4efa207555a10a6db1dd4b95da313aaa88b88fe76", "0xad21b516cbc645ffe34ab5de1c8aef8cd4e7f8d2b51e8e1456adc7563cda206f",
-                "0x609d1d0000000000000000000000000000000000000000000000000000000000", "0xc6341f0000000000000000000000000000000000000000000000000000000000",
-                "0x681c6d64aba47a084f8f2d7bf1f6208b0e18287b94d3ee0a44314ca1cf307b36", "0x584cf95f07685553e071414dcde96eb936a40ae41ff16251d6dad1938aa1fb9d",
-                "0xa10b34eeb909d7ad2efdae3344aeb210032d09e0e8edf1c03bd6807e24c9d199", "0xa61ec140c4dee2bec895af537f2ef19376fac4ddb292ad7352809d7d5926461e",
-                "0x2395c64f50239f14feea5dbe13c65d405e0d4be2d25e8995d8f64b94f83014fc", "0x032ffdac4b987092a708a481a6aa53c66aa874fe96a9f689031715ffa726fee4",
-                "0xbe6d4ac575061b5182c9112451fdc189c2d3dc3a882b4c06c365e0acded0d600", "0x6cb1b243918374de6252a32aa24a34e0e40f3df71b7b51e6a59d0e99e9109d2d"
-            ];
-
-            const blockRoot = '0xe39be859f0aaa98d1c269252388115284366451b58ed082801593dbbfccd1876';
-            const slot = 11834166;
-            await blockRoots.setBlockRoot(slot, blockRoot);
-
-            const pubkey = '0xac40921dc9996570db336ef7d6a8cece00a0363c67d13bbdcb0f995c8d50c9b733a5c568f8fcfdc768137d1041ab0f23';
-            const withdrawalCredentials = '0x010000000000000000000000a328075616c6351790a9ac1391c4b7b2c1dbf729'; // Invalid withdrawal credentials
-
-            const proofData = {
-                validatorIndex: 405782,
-                pubkey: pubkey,
-                withdrawalCredentials: withdrawalCredentials,
+            const incorrectProof = {
                 slot: slot,
-                witnesses: proof,
+                validatorIndex: 1060378,
+                validator: {
+                    pubkey: "0xb6544b67c27a9d9f460bd839b1a42d4edf4fedd2567a631ffe473f047acd539257dd326e5c969a08a5ae07db6fd8616c",
+                    withdrawalCredentials: "0x010000000000000000000000b9d7934878b5fb9610b3fe8a5e441e8fad7e293f",
+                    effectiveBalance: 32000000000n,
+                    slashed: false,
+                    activationEligibilityEpoch: 246886n,
+                    activationEpoch: 247130n,
+                    exitEpoch: farFutureEpoch,
+                    withdrawableEpoch: farFutureEpoch,
+                },
+                witnesses: [
+                    '0x0000000000000000000000000000000000000000000000000000000000000000',
+                    ...witnesses.slice(1)
+                ],
             };
 
-            const result = await beaconStateVerifier.verifyValidator(proofData);
-            assert.equal(result, false, 'Verification succeeded');
+            const invalidCredentialsProof = {
+                slot: slot,
+                validatorIndex: 1060378,
+                validator: {
+                    pubkey: "0xb6544b67c27a9d9f460bd839b1a42d4edf4fedd2567a631ffe473f047acd539257dd326e5c969a08a5ae07db6fd8616c",
+                    withdrawalCredentials: "0x010000000000000000000000b9d7934878b5fb9610b3fe8a5e441e8fad7e293e",
+                    effectiveBalance: 32000000000n,
+                    slashed: false,
+                    activationEligibilityEpoch: 246886n,
+                    activationEpoch: 247130n,
+                    exitEpoch: farFutureEpoch,
+                    withdrawableEpoch: farFutureEpoch,
+                },
+                witnesses: witnesses,
+            };
+
+            const tooOldProof = {
+                slot: 100000n,
+                validatorIndex: 1060378,
+                validator: {
+                    pubkey: "0xb6544b67c27a9d9f460bd839b1a42d4edf4fedd2567a631ffe473f047acd539257dd326e5c969a08a5ae07db6fd8616c",
+                    withdrawalCredentials: "0x010000000000000000000000b9d7934878b5fb9610b3fe8a5e441e8fad7e293f",
+                    effectiveBalance: 32000000000n,
+                    slashed: false,
+                    activationEligibilityEpoch: 246886n,
+                    activationEpoch: 247130n,
+                    exitEpoch: farFutureEpoch,
+                    withdrawableEpoch: farFutureEpoch,
+                },
+                witnesses: witnesses,
+            };
+
+            await shouldRevert(
+                beaconStateVerifier.verifyValidator(tooOldProof),
+                'Accepted pre-electra proof',
+                'Invalid proof'
+            );
+            assert.equal(await beaconStateVerifier.verifyValidator(incorrectProof), false);
+            assert.equal(await beaconStateVerifier.verifyValidator(invalidCredentialsProof), false);
+            assert.equal(await beaconStateVerifier.verifyValidator(correctProof), true);
         });
 
-        it(printTitle('BeaconStateVerifier', 'Can verify withdrawal'), async () => {
+        it(printTitle('BeaconStateVerifier', 'Can verify withdrawal with state proof'), async () => {
             const beaconStateVerifier = await BeaconStateVerifier.deployed();
             const blockRoots = await BlockRootsMock.deployed();
 
-            const proof = [
-                // BeaconBlockBody -> execution_payload.withdrawals[0]
-
+            const witnesses = [
                 "0x56ebcae55f5161bd71226301b4c751ef433864c820c8d09361ca1a74758dd72c", "0x162cc35aa31a7cf1790ca34860c7e7a63f1ab2529f66d99fa1a872aea0bcf529",
                 "0x60df1c1e8c19fa3de668e029902080838b9dd7ab7fec07697512023010f94d8e", "0x2096b4b750bdd7e22648c95e859efbf140e3da2ddd9ccdd95f3eba97d8fc121b",
                 "0x1000000000000000000000000000000000000000000000000000000000000000", "0x0000080000000000000000000000000000000000000000000000000000000000",
@@ -226,14 +174,8 @@ export default function() {
                 "0xd85a7f6d61f27841b359f9d59db3adddd1208a0ea924ffbc9c229220f5a23c5a", "0x536d98837f2dd165a55d5eeae91485954472d56f246df256bf3cae19352a123c",
                 "0xfd243838556ef257a4f3fd56272677a294c981de157694a3908dc9c08ca75d7a", "0xbd44a705c5063628996d4655f67571bcb9feadccab563f32235b08f8d52e9c7d",
                 "0x6dd3b9955d892d92338b19976fd07084bfe88a76c3063482b7f30ee60feb2a58", "0x0a08a05a0b40226edaf0b2f1283eef98aca4b4cbe11e5a5add681fb78a15e807",
-
-                // BeaconBlockHeader -> body_root
-
                 "0x0000000000000000000000000000000000000000000000000000000000000000", "0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
                 "0xa5f81459647ffebe8131ca4450ab282041ee9392788322920d6c6453e0d3703b",
-
-                // BeaconState -> block_roots[4918]
-
                 "0x7fa5e2df1bc7aa2f1530cd0bf1d3eab30ab12c4c1759429be374f5ed5bbbe43f", "0x409b0b10e9827ef913ad8961fc41b5dd5a01958c74e216fcde0d41e4738cd35c",
                 "0xde3665f1b9e597580bb07de60cea574c5979a7e004d3b32e374a6350cce8fac5", "0xe7be85faefef9065463ec965fc39cfca593eb821ab779ea554f75524c9f60a5a",
                 "0x9aab9f93f2e6677e57dd7050f31c9f98a35b8a43baca479a7bcb19c2eda73dee", "0x9e81de4708be5491b91ac6063e8ddd6fdd337ee4e0a0cba3d514645f096455c8",
@@ -244,8 +186,6 @@ export default function() {
                 "0xbef846d51e9bc2f7d07e91d4ef8c723e086a7df6e046fcea4bd477628c19e8a7", "0x542dea61bd1defaed4819d65ead85d75d6d940a3d2dded3749e725536acd8a4b",
                 "0x3e177dc62135a265fafb6040763bf023d30f7540828b152d3473604a9e887eef", "0xa61ec140c4dee2bec895af537f2ef19376fac4ddb292ad7352809d7d5926461e",
                 "0x2395c64f50239f14feea5dbe13c65d405e0d4be2d25e8995d8f64b94f83014fc",
-
-                // BeaconBlock -> state_root
                 "0x032ffdac4b987092a708a481a6aa53c66aa874fe96a9f689031715ffa726fee4",
                 "0xbe6d4ac575061b5182c9112451fdc189c2d3dc3a882b4c06c365e0acded0d600", "0x6cb1b243918374de6252a32aa24a34e0e40f3df71b7b51e6a59d0e99e9109d2d"
             ];
@@ -254,178 +194,88 @@ export default function() {
             const slot = 11834166;
             await blockRoots.setBlockRoot(slot, blockRoot);
 
-            const withdrawal = {
-                index: 89138507n,
-                validatorIndex: 1060378,
-                withdrawalCredentials: '0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f',
-                amountInGwei: 19165416n,
+            const correctProof = {
+                slot: slot,
+                withdrawalSlot: 11825974n,
+                withdrawalNum: 0n,
+                withdrawal: {
+                    index: 89138507n,
+                    validatorIndex: 1060378,
+                    withdrawalCredentials: '0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f',
+                    amountInGwei: 19165416n,
+                },
+                witnesses: witnesses
             }
 
-            const result = await beaconStateVerifier.verifyWithdrawal(11825974n, 0n, withdrawal, 11834166n, proof);
-            assert.equal(result, true, 'Verification failed');
-        });
-
-        it(printTitle('BeaconStateVerifier', 'Fails to verify invalid withdrawal'), async () => {
-            const beaconStateVerifier = await BeaconStateVerifier.deployed();
-            const blockRoots = await BlockRootsMock.deployed();
-
-            const proof = [
-                // BeaconBlockBody -> execution_payload.withdrawals[0]
-
-                "0x56ebcae55f5161bd71226301b4c751ef433864c820c8d09361ca1a74758dd72c", "0x162cc35aa31a7cf1790ca34860c7e7a63f1ab2529f66d99fa1a872aea0bcf529",
-                "0x60df1c1e8c19fa3de668e029902080838b9dd7ab7fec07697512023010f94d8e", "0x2096b4b750bdd7e22648c95e859efbf140e3da2ddd9ccdd95f3eba97d8fc121b",
-                "0x1000000000000000000000000000000000000000000000000000000000000000", "0x0000080000000000000000000000000000000000000000000000000000000000",
-                "0x61f017d3d8dee5ba8c68636e51a096ed3f523bbf29209fdb88711ff91a013c00", "0x268dfefa9d9326b73496fceb1f0a5ef42c8186889d0e3afd04c96ea87438120c",
-                "0xd85a7f6d61f27841b359f9d59db3adddd1208a0ea924ffbc9c229220f5a23c5a", "0x536d98837f2dd165a55d5eeae91485954472d56f246df256bf3cae19352a123c",
-                "0xfd243838556ef257a4f3fd56272677a294c981de157694a3908dc9c08ca75d7a", "0xbd44a705c5063628996d4655f67571bcb9feadccab563f32235b08f8d52e9c7d",
-                "0x6dd3b9955d892d92338b19976fd07084bfe88a76c3063482b7f30ee60feb2a58", "0x0a08a05a0b40226edaf0b2f1283eef98aca4b4cbe11e5a5add681fb78a15e807",
-
-                // BeaconBlockHeader -> body_root
-
-                "0x0000000000000000000000000000000000000000000000000000000000000000", "0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
-                "0xa5f81459647ffebe8131ca4450ab282041ee9392788322920d6c6453e0d3703b",
-
-                // BeaconState -> block_roots[4918]
-
-                "0x7fa5e2df1bc7aa2f1530cd0bf1d3eab30ab12c4c1759429be374f5ed5bbbe43f", "0x409b0b10e9827ef913ad8961fc41b5dd5a01958c74e216fcde0d41e4738cd35c",
-                "0xde3665f1b9e597580bb07de60cea574c5979a7e004d3b32e374a6350cce8fac5", "0xe7be85faefef9065463ec965fc39cfca593eb821ab779ea554f75524c9f60a5a",
-                "0x9aab9f93f2e6677e57dd7050f31c9f98a35b8a43baca479a7bcb19c2eda73dee", "0x9e81de4708be5491b91ac6063e8ddd6fdd337ee4e0a0cba3d514645f096455c8",
-                "0x66e126f270d3a2e25f45a07f376e99d8d337294ae07881402b4559f6ab4aa196", "0x1a49505aca09512fe47c707f8e904b230c91f691ec5e740d56b4f114897f41d3",
-                "0x7bf09154ce4ecb3b37e79aab07747b10daebf5beef9ea8bf21dabf19c1882ef4", "0xc66785fa60eea935ffd8f68b04add1c62ef58e38e981a9531a7dd0278efcd26b",
-                "0xf3c3f22873777b958507460c3537f0bd918c418e5addf3a03430cff26ee07d9e", "0x687f364236011235b2b4e40731cca0162739608af0294a6d4b576b5aecf51e57",
-                "0x4fbd98fec8d190f77e452402b07aa8bf65847a2e2377f2e37065be5a9fa265e9", "0xd24aa06a0c8898472fa28ae9b982d7e392936e02d8cb53c48197e2edf3ba9ad5",
-                "0xbef846d51e9bc2f7d07e91d4ef8c723e086a7df6e046fcea4bd477628c19e8a7", "0x542dea61bd1defaed4819d65ead85d75d6d940a3d2dded3749e725536acd8a4b",
-                "0x3e177dc62135a265fafb6040763bf023d30f7540828b152d3473604a9e887eef", "0xa61ec140c4dee2bec895af537f2ef19376fac4ddb292ad7352809d7d5926461e",
-                "0x2395c64f50239f14feea5dbe13c65d405e0d4be2d25e8995d8f64b94f83014fc",
-
-                // BeaconBlock -> state_root
-                "0x032ffdac4b987092a708a481a6aa53c66aa874fe96a9f689031715ffa726fee4",
-                "0xbe6d4ac575061b5182c9112451fdc189c2d3dc3a882b4c06c365e0acded0d600", "0x6cb1b243918374de6252a32aa24a34e0e40f3df71b7b51e6a59d0e99e9109d2d"
-            ];
-
-            const blockRoot = '0xe39be859f0aaa98d1c269252388115284366451b58ed082801593dbbfccd1876';
-            const slot = 11834166;
-            await blockRoots.setBlockRoot(slot, blockRoot);
-
-            const withdrawal = {
-                index: 89138507n,
-                validatorIndex: 1060378,
-                withdrawalCredentials: '0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f',
-                amountInGwei: 999999999n, // Invalid amount
+            const invalidProof = {
+                slot: slot,
+                withdrawalSlot: 11825974n,
+                withdrawalNum: 0n,
+                withdrawal: {
+                    index: 89138507n,
+                    validatorIndex: 1060378,
+                    withdrawalCredentials: '0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f',
+                    amountInGwei: 19165416n,
+                },
+                witnesses: [
+                    '0x0000000000000000000000000000000000000000000000000000000000000000',
+                    ...witnesses.slice(1)
+                ]
             }
 
-            const result = await beaconStateVerifier.verifyWithdrawal(11825974n, 0n, withdrawal, 11834166n, proof);
-            assert.equal(result, false, 'Verification succeeded');
-        });
-
-        it(printTitle('BeaconStateVerifier', 'Can verify historical withdrawal'), async () => {
-            const beaconStateVerifier = await BeaconStateVerifier.deployed();
-            const blockRoots = await BlockRootsMock.deployed();
-
-            const proof = [
-                "0x74cfc71c3b83d9ebf5efd08392c92a9dda42503dcad6803c73891d9053a70320", "0x93c4b29ead59124360480d4caa9654a5b0fdd65db4ea7a86b16e4b7b83bda95e",
-                "0xe7fe50fcdea47e2a2f5a3fc124aa511e3509f7a15ba069b1ad498bbbe95b720d", "0x5deacc1ef4e1ce7209c023fec1ef703b2614c01be007c9d840ae16d5fd4a02db",
-                "0x1000000000000000000000000000000000000000000000000000000000000000", "0x00000c0000000000000000000000000000000000000000000000000000000000",
-                "0x468ac3f202e83aa85fc823833d1dd7e4c068247229ca20c93e03e09eec71b1f2", "0xdb4a3d44ad1639a5a33df330dacb43b1e9ffae933b39777284cc267cfb3b5e23",
-                "0x554d7982fbf2b551698286f263c15bac3dab59aec4dad9ab151d65f87d2cebe3", "0x536d98837f2dd165a55d5eeae91485954472d56f246df256bf3cae19352a123c",
-                "0x78b61adb7dabe11b361c00c4d0ce8bc65ba5b25e986d53dd6c5f384c61407893", "0x969cccd23584b6103d59d51cce0c05c509f3c1c6388dee057aa797464fc156c2",
-                "0x6dd3b9955d892d92338b19976fd07084bfe88a76c3063482b7f30ee60feb2a58", "0xade691acdbbfaad0986c3207cace76269ccfcbb43a7e7235e5c73034d922ce7b",
-                "0x0000000000000000000000000000000000000000000000000000000000000000", "0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
-                "0x6f09091e8b0c43ba767483032e44b9f7d188b5ccde3934bc34a13f25025a44fb", "0xdeb1cb883675e814da9c601b922023255ce1ada869d9094b29c63e4ac96cc439",
-                "0x1a9b340cae67f6d4e0a710df062a1d60c35952905a1159a3e900a854cebb0cd3", "0x65df01553a531d51917456384133ddf678c6c889ce6162de9ea7dbe835564823",
-                "0x9bdf14859c294df8627ca673abe55e5801b721ce4badb277e234b036439cc8a2", "0x9f980cdfbfaed8bd6dbc14b0e58eea9a78188bee1841289e61b2cb2b9b22e135",
-                "0x04a9a49769c78c902f06bac0f0f4ab1d20a6f6a963e17d09f8bc8967a8a533c2", "0x9845c6e05b93d780abec431be46ed8693b206d12f826236710a0ab204c15d407",
-                "0x223fbfd99ba532434d7a901e9571a02ce9abbe7ff8605e098f0377835126298b", "0xaf26da67d02d6cff9fb740177f937f8aa9254f72b1113e22dfe01b7bc32ef2e9",
-                "0xd3163825b7a6359405907912a8deb6bf9367ce842fe7e84e43d87f331779f816", "0x64f656b7890973e7d6f1a52d2a9965662c6e4d7a70da5b8ea4a719bfbe7221a9",
-                "0xf4e1a264be26a17650d3135f871c1fa481bdd5b0aec7e23385ea945e32357a88", "0x7c5fe548aa993a78739b599b58480c5e12cdf4ca1ece180d2f98af468bf4ee8b",
-                "0x678bc097998c1ab127329d2416aa2149f9d61f3e174813f2fcc1c5f3f82dfbbe", "0xa908558027c3e780730442c080ea5e51310bb79f55ea7d65544bc821fff01b9d",
-                "0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b", "0xdc4b1fb0c6da070776aff72f3cabdd69fe1bc80b17510e8389f0fe7b99ec13b4",
-                "0x45bc0e84058bf2d6e40391a50d54957c151ab001f998119a4a5815b008a0b2de", "0x536d98837f2dd165a55d5eeae91485954472d56f246df256bf3cae19352a123c",
-                "0x42ac8905f23f1485ab055f9e45c206724a7dfbefc879f6b884f9e0f952a3bfc1", "0xd88ddfeed400a8755596b21942c1497e114c302e6118290f91e6772976041fa1",
-                "0x02fc550c3883e5fa2c1337af5d47a1ab421de5b139ecd19f16c7e8dcb76a1955", "0x26846476fd5fc54a5d43385167c95144f2643f533cc85bb9d16b782f8d7db193",
-                "0xbc3c027ad6604c5f99c79faa8fb0756a92f9a23af6eda520d99f6fec48f6cce3", "0xffff0ad7e659772f9534c195c815efc4014ef1e1daed4404c06385d11192e92b",
-                "0x6cf04127db05441cd833107a52be852868890e4317e6a02ab47683aa75964220", "0xb7d05f875f140027ef5118a2247bbb84ce8f2f0f1123623085daf7960c329f5f",
-                "0xdf6af5f5bbdb6be9ef8aa618e4bf8073960867171e29676f8b284dea6a08a85e", "0xb58d900f5e182e3c50ef74969ea16c7726c549757cc23523c369587da7293784",
-                "0xd49a7502ffcfb0340b1d7885688500ca308161a7f96b62df9d083b71fcc8f2bb", "0x8fe6b1689256c0d385f42f5bbe2027a22c1996e110ba97c171d3e5948de92beb",
-                "0x8d0d63c39ebade8509e0ae3c9c3876fb5fa112be18f905ecacfecb92057603ab", "0x95eec8b2e541cad4e91de38385f2e046619f54496c2382cb6cacd5b98c26f5a4",
-                "0xf893e908917775b62bff23294dbbe3a1cd8e6cc1c35b4801887b646a6f81f17f", "0xcddba7b592e3133393c16194fac7431abf2f5485ed711db282183c819e08ebaa",
-                "0x8a8d7fe3af8caa085a7639a832001457dfb9128a8061142ad0335629ff23ff9c", "0xfeb3c337d7a51a6fbf00b9e34c52e1c9195c969bd4e7a0bfd51d5c5bed9c1167",
-                "0xe71f0aa83cc32edfbefa9f4d3e0174ca85182eec9f3a09f6a6c0df6377a510d7", "0xae02000000000000000000000000000000000000000000000000000000000000",
-                "0xccf8130000000000000000000000000000000000000000000000000000000000", "0x93293d640cd7e57999f2add8910dd15145c57166082acd081ca2fbbec5cd2cbf",
-                "0xe1be7bbc04e914d5555f015e7518c9db4668d32be20256b25f54a6094f82c759", "0xc431c70147e808fa3bbd66145251d3678b97f68913d011f0adedb116498ff7ba",
-                "0x54649e50d85164e2d61f38905ea2f507e51812db6b9582e87d1db86c071b9983", "0x2395c64f50239f14feea5dbe13c65d405e0d4be2d25e8995d8f64b94f83014fc",
-                "0x032ffdac4b987092a708a481a6aa53c66aa874fe96a9f689031715ffa726fee4", "0xbe6d4ac575061b5182c9112451fdc189c2d3dc3a882b4c06c365e0acded0d600",
-                "0x6cb1b243918374de6252a32aa24a34e0e40f3df71b7b51e6a59d0e99e9109d2d"
-            ];
-
-            const blockRoot = '0xe39be859f0aaa98d1c269252388115284366451b58ed082801593dbbfccd1876';
-            const slot = 11834166;
-            await blockRoots.setBlockRoot(slot, blockRoot);
-
-            const withdrawal = {
-                index: 88947435n,
-                validatorIndex: 688322n,
-                withdrawalCredentials: '0x42a93a9f5cfda54716c414b6eaf07cf512f46ead',
-                amountInGwei: 19212998n,
+            const incorrectAmountProof = {
+                slot: slot,
+                withdrawalSlot: 11825974n,
+                withdrawalNum: 0n,
+                withdrawal: {
+                    index: 89138507n,
+                    validatorIndex: 1060378,
+                    withdrawalCredentials: '0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f',
+                    amountInGwei: 19165415n,
+                },
+                witnesses: witnesses
             }
 
-            const result = await beaconStateVerifier.verifyWithdrawal(11813956n, 0n, withdrawal, 11834166n, proof);
-            assert.equal(result, true, 'Verification failed');
-        });
-
-        it(printTitle('BeaconStateVerifier', 'Fails to verify invalid historical proof'), async () => {
-            const beaconStateVerifier = await BeaconStateVerifier.deployed();
-            const blockRoots = await BlockRootsMock.deployed();
-
-            const proof = [
-                "0x74cfc71c3b83d9ebf5efd08392c92a9dda42503dcad6803c73891d9053a70320", "0x93c4b29ead59124360480d4caa9654a5b0fdd65db4ea7a86b16e4b7b83bda95e",
-                "0xe7fe50fcdea47e2a2f5a3fc124aa511e3509f7a15ba069b1ad498bbbe95b720d", "0x5deacc1ef4e1ce7209c023fec1ef703b2614c01be007c9d840ae16d5fd4a02db",
-                "0x1000000000000000000000000000000000000000000000000000000000000000", "0x00000c0000000000000000000000000000000000000000000000000000000000",
-                "0x468ac3f202e83aa85fc823833d1dd7e4c068247229ca20c93e03e09eec71b1f2", "0xdb4a3d44ad1639a5a33df330dacb43b1e9ffae933b39777284cc267cfb3b5e23",
-                "0x554d7982fbf2b551698286f263c15bac3dab59aec4dad9ab151d65f87d2cebe3", "0x536d98837f2dd165a55d5eeae91485954472d56f246df256bf3cae19352a123c",
-                "0x78b61adb7dabe11b361c00c4d0ce8bc65ba5b25e986d53dd6c5f384c61407893", "0x969cccd23584b6103d59d51cce0c05c509f3c1c6388dee057aa797464fc156c2",
-                "0x6dd3b9955d892d92338b19976fd07084bfe88a76c3063482b7f30ee60feb2a58", "0xade691acdbbfaad0986c3207cace76269ccfcbb43a7e7235e5c73034d922ce7b",
-                "0x0000000000000000000000000000000000000000000000000000000000000000", "0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
-                "0x6f09091e8b0c43ba767483032e44b9f7d188b5ccde3934bc34a13f25025a44fb", "0xdeb1cb883675e814da9c601b922023255ce1ada869d9094b29c63e4ac96cc439",
-                "0x1a9b340cae67f6d4e0a710df062a1d60c35952905a1159a3e900a854cebb0cd3", "0x65df01553a531d51917456384133ddf678c6c889ce6162de9ea7dbe835564823",
-                "0x9bdf14859c294df8627ca673abe55e5801b721ce4badb277e234b036439cc8a2", "0x9f980cdfbfaed8bd6dbc14b0e58eea9a78188bee1841289e61b2cb2b9b22e135",
-                "0x04a9a49769c78c902f06bac0f0f4ab1d20a6f6a963e17d09f8bc8967a8a533c2", "0x9845c6e05b93d780abec431be46ed8693b206d12f826236710a0ab204c15d407",
-                "0x223fbfd99ba532434d7a901e9571a02ce9abbe7ff8605e098f0377835126298b", "0xaf26da67d02d6cff9fb740177f937f8aa9254f72b1113e22dfe01b7bc32ef2e9",
-                "0xd3163825b7a6359405907912a8deb6bf9367ce842fe7e84e43d87f331779f816", "0x64f656b7890973e7d6f1a52d2a9965662c6e4d7a70da5b8ea4a719bfbe7221a9",
-                "0xf4e1a264be26a17650d3135f871c1fa481bdd5b0aec7e23385ea945e32357a88", "0x7c5fe548aa993a78739b599b58480c5e12cdf4ca1ece180d2f98af468bf4ee8b",
-                "0x678bc097998c1ab127329d2416aa2149f9d61f3e174813f2fcc1c5f3f82dfbbe", "0xa908558027c3e780730442c080ea5e51310bb79f55ea7d65544bc821fff01b9d",
-                "0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b", "0xdc4b1fb0c6da070776aff72f3cabdd69fe1bc80b17510e8389f0fe7b99ec13b4",
-                "0x45bc0e84058bf2d6e40391a50d54957c151ab001f998119a4a5815b008a0b2de", "0x536d98837f2dd165a55d5eeae91485954472d56f246df256bf3cae19352a123c",
-                "0x42ac8905f23f1485ab055f9e45c206724a7dfbefc879f6b884f9e0f952a3bfc1", "0xd88ddfeed400a8755596b21942c1497e114c302e6118290f91e6772976041fa1",
-                "0x02fc550c3883e5fa2c1337af5d47a1ab421de5b139ecd19f16c7e8dcb76a1955", "0x26846476fd5fc54a5d43385167c95144f2643f533cc85bb9d16b782f8d7db193",
-                "0xbc3c027ad6604c5f99c79faa8fb0756a92f9a23af6eda520d99f6fec48f6cce3", "0xffff0ad7e659772f9534c195c815efc4014ef1e1daed4404c06385d11192e92b",
-                "0x6cf04127db05441cd833107a52be852868890e4317e6a02ab47683aa75964220", "0xb7d05f875f140027ef5118a2247bbb84ce8f2f0f1123623085daf7960c329f5f",
-                "0xdf6af5f5bbdb6be9ef8aa618e4bf8073960867171e29676f8b284dea6a08a85e", "0xb58d900f5e182e3c50ef74969ea16c7726c549757cc23523c369587da7293784",
-                "0xd49a7502ffcfb0340b1d7885688500ca308161a7f96b62df9d083b71fcc8f2bb", "0x8fe6b1689256c0d385f42f5bbe2027a22c1996e110ba97c171d3e5948de92beb",
-                "0x8d0d63c39ebade8509e0ae3c9c3876fb5fa112be18f905ecacfecb92057603ab", "0x95eec8b2e541cad4e91de38385f2e046619f54496c2382cb6cacd5b98c26f5a4",
-                "0xf893e908917775b62bff23294dbbe3a1cd8e6cc1c35b4801887b646a6f81f17f", "0xcddba7b592e3133393c16194fac7431abf2f5485ed711db282183c819e08ebaa",
-                "0x8a8d7fe3af8caa085a7639a832001457dfb9128a8061142ad0335629ff23ff9c", "0xfeb3c337d7a51a6fbf00b9e34c52e1c9195c969bd4e7a0bfd51d5c5bed9c1167",
-                "0xe71f0aa83cc32edfbefa9f4d3e0174ca85182eec9f3a09f6a6c0df6377a510d7", "0xae02000000000000000000000000000000000000000000000000000000000000",
-                "0xccf8130000000000000000000000000000000000000000000000000000000000", "0x93293d640cd7e57999f2add8910dd15145c57166082acd081ca2fbbec5cd2cbf",
-                "0xe1be7bbc04e914d5555f015e7518c9db4668d32be20256b25f54a6094f82c759", "0xc431c70147e808fa3bbd66145251d3678b97f68913d011f0adedb116498ff7ba",
-                "0x54649e50d85164e2d61f38905ea2f507e51812db6b9582e87d1db86c071b9983", "0x2395c64f50239f14feea5dbe13c65d405e0d4be2d25e8995d8f64b94f83014fc",
-                "0x032ffdac4b987092a708a481a6aa53c66aa874fe96a9f689031715ffa726fee4", "0xbe6d4ac575061b5182c9112451fdc189c2d3dc3a882b4c06c365e0acded0d600",
-                "0x6cb1b243918374de6252a32aa24a34e0e40f3df71b7b51e6a59d0e99e9109d2d"
-            ];
-
-            const blockRoot = '0xe39be859f0aaa98d1c269252388115284366451b58ed082801593dbbfccd1876';
-            const slot = 11834166;
-            await blockRoots.setBlockRoot(slot, blockRoot);
-
-            const withdrawal = {
-                index: 88947435n,
-                validatorIndex: 688322n,
-                withdrawalCredentials: '0x42a93a9f5cfda54716c414b6eaf07cf512f46ead',
-                amountInGwei: 999999999n, // Invalid amount
+            const tooOldProof = {
+                slot: 100000n,
+                withdrawalSlot: 11825974n,
+                withdrawalNum: 0n,
+                withdrawal: {
+                    index: 89138507n,
+                    validatorIndex: 1060378,
+                    withdrawalCredentials: '0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f',
+                    amountInGwei: 19165416n,
+                },
+                witnesses: witnesses
             }
 
-            const result = await beaconStateVerifier.verifyWithdrawal(11813956n, 0n, withdrawal, 11834166n, proof);
-            assert.equal(result, false, 'Verification succeeded');
+            const tooOldWithdrawalProof = {
+                slot: slot,
+                withdrawalSlot: 1000000n,
+                withdrawalNum: 0n,
+                withdrawal: {
+                    index: 89138507n,
+                    validatorIndex: 1060378,
+                    withdrawalCredentials: '0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f',
+                    amountInGwei: 19165416n,
+                },
+                witnesses: witnesses
+            }
+
+            await shouldRevert(
+                beaconStateVerifier.verifyWithdrawal(tooOldProof),
+                'Accepted pre-electra proof',
+                'Invalid proof'
+            );
+            await shouldRevert(
+                beaconStateVerifier.verifyWithdrawal(tooOldWithdrawalProof),
+                'Accepted pre-electra proof',
+                'Invalid proof'
+            );
+            assert.equal(await beaconStateVerifier.verifyWithdrawal(invalidProof), false);
+            assert.equal(await beaconStateVerifier.verifyWithdrawal(incorrectAmountProof), false);
+            assert.equal(await beaconStateVerifier.verifyWithdrawal(correctProof), true);
         });
+
     });
 }

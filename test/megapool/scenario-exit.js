@@ -1,4 +1,10 @@
-import { RocketStorage, RocketTokenRETH, RocketVault, RocketVoterRewards } from '../_utils/artifacts';
+import {
+    RocketMegapoolManager,
+    RocketStorage,
+    RocketTokenRETH,
+    RocketVault,
+    RocketVoterRewards,
+} from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 import { getValidatorInfo } from '../_helpers/megapool';
 import assert from 'assert';
@@ -9,6 +15,8 @@ const ethers = hre.ethers;
 // Nofiy megapool of exiting validator
 export async function notifyExitValidator(megapool, validatorId, withdrawalEpoch) {
 
+    const rocketMegapoolManager = await RocketMegapoolManager.deployed();
+
     async function getData() {
         let [activeValidatorCount, exitingValidatorCount, soonestWithdrawableEpoch] = await Promise.all([
             megapool.getActiveValidatorCount(),
@@ -18,8 +26,27 @@ export async function notifyExitValidator(megapool, validatorId, withdrawalEpoch
         return { activeValidatorCount, exitingValidatorCount, soonestWithdrawableEpoch };
     }
 
+    const withdrawalCredentials = await megapool.getWithdrawalCredentials();
+
+    // Construct a fake proof
+    const proof = {
+        slot: 0,
+        validatorIndex: 0,
+        validator: {
+            pubkey: '0x00',
+            withdrawalCredentials: withdrawalCredentials,
+            effectiveBalance: 0n,
+            slashed: false,
+            activationEligibilityEpoch: 0n,
+            activationEpoch: 0n,
+            exitEpoch: 0n,
+            withdrawableEpoch: withdrawalEpoch,
+        },
+        witnesses: [],
+    };
+
     const dataBefore = await getData();
-    await megapool.notifyExit(validatorId, withdrawalEpoch, 0n, []);
+    await rocketMegapoolManager.notifyExit(megapool.target, validatorId, proof);
     const dataAfter = await getData();
 
     const info = await getValidatorInfo(megapool, validatorId);
@@ -54,6 +81,7 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
 
     const rocketStorage = await RocketStorage.deployed();
     const rocketTokenRETH = await RocketTokenRETH.deployed();
+    const rocketMegapoolManager = await RocketMegapoolManager.deployed();
 
     const nodeAddress = await megapool.getNodeAddress();
     const withdrawalAddress = await rocketStorage.getNodeWithdrawalAddress(nodeAddress);
@@ -80,7 +108,21 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
 
     const withdrawalCredentials = Buffer.from(megapool.target.substr(2), 'hex');
     const amountInGwei = finalBalance / '1'.gwei;
-    await megapool.notifyFinalBalance(validatorId, 0n, 0n, [0n, 0n, withdrawalCredentials, amountInGwei], 0n, []);
+
+    const proof = {
+        slot: 0n,
+        withdrawalSlot: 0n,
+        withdrawalNum: 0n,
+        withdrawal: {
+            index: 0n,
+            validatorIndex: 0n,
+            withdrawalCredentials: withdrawalCredentials,
+            amountInGwei: amountInGwei,
+        },
+        witnesses: []
+    }
+
+    await rocketMegapoolManager.connect(megapool.runner).notifyFinalBalance(megapool.target, validatorId, proof);
     const balancesAfter = await getBalances();
 
     const balanceDeltas = {

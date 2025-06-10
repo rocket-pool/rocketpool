@@ -22,8 +22,14 @@ const chainOpts = {
             secondsPerSlot: 12n,
             slotsPerHistoricalRoot: 8192n,
             beaconRootsHistoryBufferLength: 8191n,
-            historicalRootOffset: 758n,
             beaconRoots: '0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02',
+            forkSlots: [
+                74240n * 32n,   // Altair
+                144896n * 32n,  // Bellatrix
+                194048n * 32n,  // Capella
+                269568n * 32n,  // Deneb
+                364032n * 32n,  // Electra
+            ]
         },
         deployStorageHelper: false,
         mintDRPL: false,
@@ -37,8 +43,14 @@ const chainOpts = {
             secondsPerSlot: 12n,
             slotsPerHistoricalRoot: 8192n,
             beaconRootsHistoryBufferLength: 8191n,
-            historicalRootOffset: 0n,
             beaconRoots: '0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02',
+            forkSlots: [
+                0n,             // Altair
+                0n,             // Bellatrix
+                0n,             // Capella
+                0n,             // Deneb
+                2048n * 32n,    // Electra
+            ]
         },
         deployStorageHelper: true,
         mintDRPL: true,

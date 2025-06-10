@@ -10,7 +10,6 @@ import {RocketMegapoolDelegateInterface} from "../../interface/megapool/RocketMe
 import {RocketNetworkRevenuesInterface} from "../../interface/network/RocketNetworkRevenuesInterface.sol";
 import {RocketNetworkSnapshotsInterface} from "../../interface/network/RocketNetworkSnapshotsInterface.sol";
 import {RocketNodeDepositInterface} from "../../interface/node/RocketNodeDepositInterface.sol";
-import {ValidatorProof, BeaconStateVerifierInterface, Withdrawal} from "../../interface/util/BeaconStateVerifierInterface.sol";
 import {RocketMegapoolDelegateBase} from "./RocketMegapoolDelegateBase.sol";
 import {RocketMegapoolStorageLayout} from "./RocketMegapoolStorageLayout.sol";
 
@@ -21,7 +20,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     uint256 constant internal fullDepositValue = 32 ether;
     uint256 constant internal milliToWei = 10 ** 15;
     uint256 constant internal calcBase = 1 ether;
-    uint256 constant internal farFutureEpoch = 2 ** 64 - 1;
     uint256 constant internal secondsPerSlot = 12;
     uint256 constant internal slotsPerEpoch = 32;
 
@@ -259,16 +257,12 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
 
     /// @notice Performs the remaining ETH deposit on the Beacon Chain
     /// @param _validatorId The validator ID
-    /// @param _proof A proof struct proving the withdrawal credentials of the validator
-    function stake(uint32 _validatorId, ValidatorProof calldata _proof) external {
+    /// @param _validatorIndex The validator's index on the beacon chain
+    function stake(uint32 _validatorId, uint64 _validatorIndex) external onlyLatestContract("rocketMegapoolManager", msg.sender) {
         // Retrieve validator from storage
         ValidatorInfo memory validator = validators[_validatorId];
         // Validate validator status
         require(validator.inPrestake, "Validator must be pre-staked");
-        // Verify proof data
-        bytes32 withdrawalCredentials = getWithdrawalCredentials();
-        require(_proof.withdrawalCredentials == withdrawalCredentials, "Invalid withdrawal credentials");
-        require(keccak256(_proof.pubkey) == keccak256(validator.pubKey));
         // Store last requested value for later
         uint32 lastRequestedValue = validator.lastRequestedValue;
         // If this is the first validator, then set the last distribution block
@@ -284,17 +278,14 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         validator.lastAssignmentTime = 0;
         validator.lastRequestedBond = 0;
         validator.lastRequestedValue = 0;
-        validator.validatorIndex = _proof.validatorIndex;
+        validator.validatorIndex = _validatorIndex;
         validator.depositValue += uint32(lastRequestedValue - prestakeValue / milliToWei);
         validators[_validatorId] = validator;
-        // Verify state proof to ensure validator has correct withdrawal credentials
-        BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
-        require(beaconStateVerifier.verifyValidator(_proof), "Invalid proof");
         // Perform remaining 31 ETH stake onto beaconchain
         DepositInterface casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
         bytes memory signature = hex"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
         bytes32 depositDataRoot = computeDepositDataRoot(validator.pubKey, signature, uint64(assignedUsed / 1 gwei));
-        casperDeposit.deposit{value: assignedUsed}(validator.pubKey, abi.encodePacked(withdrawalCredentials), signature, depositDataRoot);
+        casperDeposit.deposit{value: assignedUsed}(validator.pubKey, abi.encodePacked(getWithdrawalCredentials()), signature, depositDataRoot);
         // Emit event
         emit MegapoolValidatorStaked(_validatorId, block.timestamp);
     }
@@ -355,7 +346,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         }
         _distributeAmount(rewards);
         // If owner is calling, claim immediately
-        if (isNodeCalling()) {
+        if (isNodeCalling(msg.sender)) {
             _claim();
         }
     }
@@ -448,22 +439,12 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     }
 
     /// @notice Used to notify the megapool that one of its validators is exiting the beaconchain
-    /// @param _validatorId Internal ID of the validator which is exiting
-    /// @param _withdrawableEpoch The validator's `withdrawable_epoch` value
-    /// @param _slot The slot for which the supplied proof was generated for
-    /// @param _proof Merkle proof for the withdrawal_epoch value
-    function notifyExit(uint32 _validatorId, uint64 _withdrawableEpoch, uint64 _slot, bytes32[] calldata _proof) override external {
+    function notifyExit(uint32 _validatorId, uint64 _withdrawableEpoch) override external onlyLatestContract("rocketMegapoolManager", msg.sender) {
         ValidatorInfo memory validator = validators[_validatorId];
         // Check required state
-        require(_withdrawableEpoch < farFutureEpoch, "Validator is not exiting");
         require(!validator.exiting, "Already notified");
         require(!validator.exited, "Already exited");
         require(!validator.dissolved, "Validator dissolved");
-        // Map the internal ID to the beacon chain index used for the proof
-        uint64 validatorIndex = validator.validatorIndex;
-        // Verify the proof
-        BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
-        require(beaconStateVerifier.verifyWithdrawableEpoch(validatorIndex, _withdrawableEpoch, _slot, _proof), "Invalid proof");
         // Update validator state to exiting
         validator.exiting = true;
         validator.withdrawableEpoch = _withdrawableEpoch;
@@ -480,17 +461,11 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     }
 
     /// @notice Used to notify the megapool of the final balance of an exited validator
-    /// @param _validatorId Internal ID of the exited validator
-    /// @param _withdrawalSlot The slot which contains the execution payload with the withdrawal entry
-    /// @param _withdrawalNum Index into withdrawal array for the relevant entry
-    /// @param _withdrawal The withdrawal object from the beaconchain
-    /// @param _slot The slot for which the supplied proof was generated for
-    /// @param _proof Merkle proof of the withdraw object
-    function notifyFinalBalance(uint32 _validatorId, uint64 _withdrawalSlot, uint256 _withdrawalNum, Withdrawal calldata _withdrawal, uint64 _slot, bytes32[] calldata _proof) override external {
+    function notifyFinalBalance(uint32 _validatorId, uint64 _amountInGwei, address _caller) override external onlyLatestContract("rocketMegapoolManager", msg.sender) {
         // Perform notification process
-        _notifyFinalBalance(_validatorId, _withdrawalSlot, _withdrawalNum, _withdrawal, _slot, _proof);
+        _notifyFinalBalance(_validatorId, _amountInGwei);
         // If owner is calling, claim immediately
-        if (isNodeCalling()) {
+        if (isNodeCalling(_caller)) {
             _claim();
         } else {
             // Permissionless distribute requires a wait time
@@ -503,22 +478,16 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     }
 
     /// @dev Internal implementation of final balance notification process
-    function _notifyFinalBalance(uint32 _validatorId, uint64 _withdrawalSlot, uint256 _withdrawalNum, Withdrawal calldata _withdrawal, uint64 _slot, bytes32[] calldata _proof) internal {
-        BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
+    function _notifyFinalBalance(uint32 _validatorId, uint64 _amountInGwei) internal {
         ValidatorInfo memory validator = validators[_validatorId];
-        // Check validator index in withdrawal matches internal value
-        uint64 validatorIndex = validator.validatorIndex;
-        require(_withdrawal.validatorIndex == validatorIndex, "Invalid validator index");
-        // Verify proof
-        require(beaconStateVerifier.verifyWithdrawal(_withdrawalSlot, _withdrawalNum, _withdrawal, _slot, _proof), "Invalid proof");
         require(!validator.exited, "Already exited");
         require(validator.exiting, "Validator is not exiting");
         require(!validator.dissolved, "Validator dissolved");
         // Mark as exited
         validator.exited = true;
         validator.exiting = false;
-        validator.exitBalance = uint64(_withdrawal.amountInGwei);
-        uint256 withdrawalBalance = uint256(_withdrawal.amountInGwei) * 1 gwei;
+        validator.exitBalance = uint64(_amountInGwei);
+        uint256 withdrawalBalance = uint256(_amountInGwei) * 1 gwei;
         validators[_validatorId] = validator;
         // Handle dissolved recovery
         if (validator.dissolved) {

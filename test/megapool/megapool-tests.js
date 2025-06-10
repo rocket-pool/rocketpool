@@ -19,7 +19,7 @@ import {
     RocketDAOProtocolSettingsNode,
     RocketDepositPool,
     RocketMegapoolDelegate,
-    RocketMegapoolFactory, RocketNodeDeposit, RocketNodeStaking,
+    RocketMegapoolFactory, RocketMegapoolManager, RocketNodeDeposit, RocketNodeStaking,
     RocketStorage,
 } from '../_utils/artifacts';
 import assert from 'assert';
@@ -513,18 +513,27 @@ export default function() {
             });
 
             it(printTitle('node', 'can not stake with invalid withdrawal credentials'), async () => {
+                const rocketMegapoolManager = await RocketMegapoolManager.deployed();
                 await nodeDeposit(node);
                 const validatorInfo = await getValidatorInfo(megapool, 0);
                 const withdrawalCredentials = Buffer.from('0100000000000000000000000000000000000000000000000000000000000000', 'hex');
                 // Construct a fake proof
                 const proof = {
-                    slot: 0,
-                    validatorIndex: 0,
-                    pubkey: validatorInfo.pubkey,
-                    withdrawalCredentials: withdrawalCredentials,
+                    slot: 0n,
+                    validatorIndex: 0n,
+                    validator: {
+                        pubkey: validatorInfo.pubkey,
+                        withdrawalCredentials: withdrawalCredentials,
+                        effectiveBalance: 0n,
+                        slashed: false,
+                        activationEligibilityEpoch: 0n,
+                        activationEpoch: 0n,
+                        exitEpoch: 0n,
+                        withdrawableEpoch: 0n,
+                    },
                     witnesses: []
                 }
-                await shouldRevert(megapool.stake(0, proof), 'Staked with invalid credentials', 'Invalid withdrawal credentials');
+                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, proof), 'Staked with invalid credentials', 'Invalid withdrawal credentials');
             });
 
             it(printTitle('node', 'can perform a second stake operation with no rewards available'), async () => {
