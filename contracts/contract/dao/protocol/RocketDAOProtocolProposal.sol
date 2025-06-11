@@ -222,7 +222,7 @@ contract RocketDAOProtocolProposal is RocketBase, RocketDAOProtocolProposalInter
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.veto", _proposalID)));
     }
 
-    /// @notice Get the against voteing power count of this proposal
+    /// @notice Get the against voting power count of this proposal
     /// @param _proposalID The ID of the proposal to query
     function getVotingPowerAbstained(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.abstained", _proposalID)));
