@@ -19,30 +19,30 @@ contract RocketUpgradeOneDotFour is RocketBase {
     bool public locked;
 
     // Upgrade contracts
-    address public rocketMegapoolDelegate;
-    address public rocketMegapoolFactory;
-    address public rocketMegapoolProxy;
-    address public rocketMegapoolManager;
-    address public rocketNodeManager;
-    address public rocketNodeDeposit;
-    address public rocketNodeStaking;
-    address public rocketDepositPool;
-    address public linkedListStorage;
-    address public rocketDAOProtocol;
-    address public rocketDAOProtocolProposals;
-    address public rocketDAOProtocolSettingsNode;
-    address public rocketDAOProtocolSettingsDeposit;
-    address public rocketDAOProtocolSettingsNetwork;
-    address public rocketDAOProtocolSettingsSecurity;
-    address public rocketDAOProtocolSettingsMegapool;
-    address public rocketDAOSecurityProposals;
-    address public rocketNetworkRevenues;
-    address public rocketNetworkBalances;
-    address public rocketNetworkSnapshots;
-    address public rocketVoterRewards;
-    address public blockRoots;
-    address public beaconStateVerifier;
-    address public rocketNodeDistributorDelegate;
+    address public immutable rocketMegapoolDelegate;
+    address public immutable rocketMegapoolFactory;
+    address public immutable rocketMegapoolProxy;
+    address public immutable rocketMegapoolManager;
+    address public immutable rocketNodeManager;
+    address public immutable rocketNodeDeposit;
+    address public immutable rocketNodeStaking;
+    address public immutable rocketDepositPool;
+    address public immutable linkedListStorage;
+    address public immutable rocketDAOProtocol;
+    address public immutable rocketDAOProtocolProposals;
+    address public immutable rocketDAOProtocolSettingsNode;
+    address public immutable rocketDAOProtocolSettingsDeposit;
+    address public immutable rocketDAOProtocolSettingsNetwork;
+    address public immutable rocketDAOProtocolSettingsSecurity;
+    address public immutable rocketDAOProtocolSettingsMegapool;
+    address public immutable rocketDAOSecurityProposals;
+    address public immutable rocketNetworkRevenues;
+    address public immutable rocketNetworkBalances;
+    address public immutable rocketNetworkSnapshots;
+    address public immutable rocketVoterRewards;
+    address public immutable blockRoots;
+    address public immutable beaconStateVerifier;
+    address public immutable rocketNodeDistributorDelegate;
 
     // Upgrade ABIs
     string public rocketMegapoolDelegateAbi;
@@ -75,21 +75,13 @@ contract RocketUpgradeOneDotFour is RocketBase {
 
     // Construct
     constructor(
-        RocketStorageInterface _rocketStorageAddress
+        RocketStorageInterface _rocketStorageAddress,
+        address[] memory _addresses,
+        string[] memory _abis
     ) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
         deployer = msg.sender;
-    }
-
-    /// @notice Returns the address of the RocketStorage contract
-    function getRocketStorageAddress() external view returns (address) {
-        return address(rocketStorage);
-    }
-
-    function set(address[] memory _addresses, string[] memory _abis) external {
-        require(msg.sender == deployer, "Only deployer");
-        require(!locked, "Contract locked");
 
         // Set contract addresses
         rocketMegapoolDelegate = _addresses[0];
@@ -142,6 +134,11 @@ contract RocketUpgradeOneDotFour is RocketBase {
         blockRootsAbi = _abis[21];
         beaconStateVerifierAbi = _abis[22];
         rocketNodeDistributorDelegateAbi = _abis[23];
+    }
+
+    /// @notice Returns the address of the RocketStorage contract
+    function getRocketStorageAddress() external view returns (address) {
+        return address(rocketStorage);
     }
 
     /// @notice Prevents further changes from being applied

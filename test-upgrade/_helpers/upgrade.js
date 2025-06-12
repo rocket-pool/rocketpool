@@ -99,8 +99,6 @@ export async function deployUpgrade(rocketStorageAddress) {
 
             // Upgrade contract
             case 'rocketUpgradeOneDotFour':
-                instance = await networkContracts[contract].new(rocketStorageAddress);
-
                 const args = [
                     [
                         addresses.rocketMegapoolDelegate,
@@ -155,7 +153,7 @@ export async function deployUpgrade(rocketStorageAddress) {
                         compressABI(networkContracts.rocketNodeDistributorDelegate.abi),
                     ],
                 ];
-                await instance.set(...args);
+                instance = await networkContracts[contract].new(rocketStorageAddress, ...args);
                 upgradeContract = instance;
                 break;
 
