@@ -107,6 +107,7 @@ const contractNameMap = {
     rocketNetworkRevenues: 'RocketNetworkRevenues',
     rocketVoterRewards: 'RocketVoterRewards',
     rocketDAOProtocolSettingsMegapool: 'RocketDAOProtocolSettingsMegapool',
+    rocketDAOSecurityUpgrade: 'RocketDAOSecurityUpgrade',
     addressQueueStorage: 'AddressQueueStorage',
     addressSetStorage: 'AddressSetStorage',
     beaconStateVerifier: 'BeaconStateVerifier',

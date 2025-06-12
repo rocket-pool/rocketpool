@@ -37,13 +37,14 @@ import {
     RocketDAONodeTrustedActions, RocketDAONodeTrustedProposals,
     RocketDAONodeTrustedSettingsMembers,
     RocketDAONodeTrustedSettingsProposals,
-    RocketDAONodeTrustedUpgrade,
+    RocketDAONodeTrustedUpgrade, RocketDAOProtocolSettingsSecurity,
     RocketMinipoolManager,
     RocketStorage,
     RocketTokenRPL,
 } from '../_utils/artifacts';
 import * as assert from 'assert';
 import { globalSnapShot } from '../_utils/snapshotting';
+import { setDAOProtocolBootstrapSetting } from './scenario-dao-protocol-bootstrap';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -93,6 +94,8 @@ export default function() {
         let rocketMinipoolManagerNew;
         let rocketDAONodeTrustedUpgradeNew;
 
+        const upgradeDelay = 60n * 60n * 24n; // 1 day
+
         before(async () => {
             await globalSnapShot();
 
@@ -127,6 +130,8 @@ export default function() {
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.cooldown', 10, { from: guardian });
             // Set a small vote delay
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.delay.blocks', 4, { from: guardian });
+            // Set upgrade delay
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsSecurity, 'upgrade.delay', upgradeDelay, { from: guardian });
         });
 
         //
@@ -837,7 +842,33 @@ export default function() {
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
             // Proposal has passed, lets execute it now and upgrade the contract
             await daoNodeTrustedExecute(proposalID, { from: registeredNode1 });
-            // Lets check if the address matches the upgraded one now
+            // Check the upgrade proposal is now pending
+            const rocketDAONodeTrustedUpgrade = await RocketDAONodeTrustedUpgrade.deployed();
+            const count = await rocketDAONodeTrustedUpgrade.getTotal();
+            assertBN.equal(count, 1n);
+            // Fetch upgrade proposal details
+            const type = await rocketDAONodeTrustedUpgrade.getType(1n);
+            const name = await rocketDAONodeTrustedUpgrade.getName(1n);
+            const address = await rocketDAONodeTrustedUpgrade.getUpgradeAddress(1n);
+            const expectedType = ethers.solidityPackedKeccak256(['string'], ['upgradeContract']);
+            assert.equal(address, rocketMinipoolManagerNew.target);
+            assert.equal(type, expectedType)
+            assert.equal(name, 'rocketNodeManager')
+            // Upgrade should fail before delay
+            await shouldRevert(
+                rocketDAONodeTrustedUpgrade.connect(registeredNodeTrusted1).execute(1n),
+                'Was able to upgrade immediately',
+                'Proposal has not succeeded or has been vetoed or executed');
+            // Wait for the upgrade delay
+            await helpers.time.increase(upgradeDelay + 1n);
+            // Upgrade should fail from non oDAO member
+            await shouldRevert(
+                rocketDAONodeTrustedUpgrade.connect(userOne).execute(1n),
+                'Was able to upgrade with non trusted member',
+                'Invalid trusted node');
+            // Execute the upgrade
+            await rocketDAONodeTrustedUpgrade.connect(registeredNodeTrusted1).execute(1n);
+            // Check upgrade worked
             assert.equal(await rocketStorage['getAddress(bytes32)'](ethers.solidityPackedKeccak256(['string', 'string'], ['contract.address', 'rocketNodeManager'])), rocketMinipoolManagerNew.target, 'Contract address was not successfully upgraded');
             assert.equal(await rocketStorage.getBool(ethers.solidityPackedKeccak256(['string', 'address'], ['contract.exists', rocketMinipoolManagerNew.target])), true, 'Contract address was not successfully upgraded');
         });

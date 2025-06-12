@@ -45,7 +45,7 @@ contract RocketDAOSecurityProposals is RocketBase, RocketDAOSecurityProposalsInt
     }
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 1;
+        version = 2;
     }
 
     /// @notice Creates a new proposal for this DAO
