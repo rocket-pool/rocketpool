@@ -122,6 +122,11 @@ async function deploy() {
     // Perform deployment
     const contracts = await deployer.deploy();
 
+    // Skip save and verify when deploying to hardhat
+    if (chain === 'hardhat') {
+        return;
+    }
+
     // Compile deployment information for saving
     const deploymentData = {
         deployer: signer.address,
