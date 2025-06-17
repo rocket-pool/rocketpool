@@ -36,7 +36,7 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
             // Some safety guards for certain settings
             bytes32 settingKey = keccak256(abi.encodePacked(_settingPath));
             if (settingKey == keccak256(abi.encodePacked("megapool.time.before.dissolve"))) {
-                require(_value >= 28 days, "Time must be greater than 48 hours");
+                require(_value >= 10 days, "Time must be greater than 10 days");
             } else if (settingKey == keccak256(abi.encodePacked("maximum.megapool.eth.penalty"))) {
                 // Per RPIP-42
                 // TODO: This is a placeholder value

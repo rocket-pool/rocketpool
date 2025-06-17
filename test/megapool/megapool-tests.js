@@ -408,7 +408,7 @@ export default function() {
         });
 
         snapshotDescribe('With full deposit pool', () => {
-            const dissolvePeriod = (60 * 60 * 48); // 24 hours
+            const dissolvePeriod = (60 * 60 * 24 * 10); // 10 Days
 
             before(async () => {
                 // Deposit ETH into deposit pool
