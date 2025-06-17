@@ -16,9 +16,10 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
     bytes32 constant internal penaltyKey = keccak256(abi.encodePacked("megapool.running.penalty"));
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
+        version = 1;
     }
 
-    /// @dev Returns the number of votes in favour of the given penalty
+    /// @notice Returns the number of votes in favour of the given penalty
     /// @param _megapool Address of the accused megapool
     /// @param _block Block that the theft occurred (used for uniqueness)
     /// @param _amount Amount in ETH of the penalty
@@ -27,16 +28,13 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
         return getUint(submissionCountKey);
     }
 
-    /// @dev Votes to penalise a megapool for MEV theft (only callable by oDAO)
+    /// @notice Votes to penalise a megapool for MEV theft (only callable by oDAO)
     /// @param _megapool Address of the accused megapool
     /// @param _block Block that the theft occurred (used for uniqueness)
     /// @param _amount Amount in ETH of the penalty
     function penalise(address _megapool, uint256 _block, uint256 _amount) override external onlyTrustedNode(msg.sender) onlyRegisteredMegapool(_megapool) {
         require(_amount > 0, "Invalid penalty amount");
         require(_block < block.number, "Invalid block number");
-        // Check this penalty hasn't already reach majority and been applied
-        bytes32 penaltyAppliedKey = keccak256(abi.encodePacked("megapool.penalty.submission.applied", _megapool, _block, _amount));
-        require(!getBool(penaltyAppliedKey), "Penalty already applied");
         // Get submission keys
         bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("megapool.penalty.submission", msg.sender, _megapool, _block, _amount));
         bytes32 submissionCountKey = keccak256(abi.encodePacked("megapool.penalty.submission", _megapool, _block, _amount));
@@ -46,47 +44,37 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
         // Increment submission count
         uint256 submissionCount = getUint(submissionCountKey) + 1;
         setUint(submissionCountKey, submissionCount);
-        // Check for majority
-        RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        if (calcBase * submissionCount / rocketDAONodeTrusted.getMemberCount() > 0.5 ether) {
-            // Apply penalty and mark as applied
-            applyPenalty(_megapool, _amount);
-            setBool(penaltyAppliedKey, true);
-        }
+        // Maybe execute
+        maybeApplyPenalty(_megapool, _block, _amount, submissionCount);
     }
 
-    /// @dev Manually execute a penalty that has hit majority vote
+    /// @notice Manually execute a penalty that has hit majority vote
     /// @param _megapool Address of the accused megapool
     /// @param _block Block that the theft occurred (used for uniqueness)
     /// @param _amount Amount in ETH of the penalty
     function executePenalty(address _megapool, uint256 _block, uint256 _amount) override external {
-        // Check this penalty hasn't already reach majority and been applied
-        bytes32 penaltyAppliedKey = keccak256(abi.encodePacked("megapool.penalty.submission.applied", _megapool, _block, _amount));
-        require(!getBool(penaltyAppliedKey), "Penalty already applied");
-        // Get submission keys
+        // Get submission count
         bytes32 submissionCountKey = keccak256(abi.encodePacked("megapool.penalty.submission", _megapool, _block, _amount));
-        // Increment submission count
         uint256 submissionCount = getUint(submissionCountKey);
-        // Check for majority
-        RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        if (calcBase * submissionCount / rocketDAONodeTrusted.getMemberCount() > 0.5 ether) {
-            // Apply penalty and mark as applied
-            applyPenalty(_megapool, _amount);
-            setBool(penaltyAppliedKey, true);
-        }
+        // Apply penalty if relevant conditions are met
+        maybeApplyPenalty(_megapool, _block, _amount, submissionCount);
     }
 
+    /// @notice Returns the running total of penalties at a given block
+    /// @param _block The block to compute running total for
     function getPenaltyRunningTotalAtBlock(uint32 _block) override external view returns (uint256) {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         return rocketNetworkSnapshots.lookup(penaltyKey, _block);
     }
 
+    /// @notice Returns the running total of penalties at the current block
     function getCurrentPenaltyRunningTotal() override external view returns (uint256) {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         (,,uint224 value) =  rocketNetworkSnapshots.latest(penaltyKey);
         return uint256(value);
     }
 
+    /// @notice Returns the current maximum penalty based on the running total limitation
     function getCurrentMaxPenalty() override external view returns (uint256) {
         // Get contracts
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
@@ -100,9 +88,26 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
         }
         uint256 earlierRunningTotal = uint256(rocketNetworkSnapshots.lookup(penaltyKey, uint32(earlierBlock)));
         // Get current running total
-        (bool exists,, uint224 currentTotal) = rocketNetworkSnapshots.latest(penaltyKey);
+        (,, uint224 currentTotal) = rocketNetworkSnapshots.latest(penaltyKey);
         // Cap the penalty at the maximum amount based on past 50400 blocks
         return maxPenalty - (uint256(currentTotal) - earlierRunningTotal);
+    }
+
+    /// @dev If a penalty has not been applied and hit majority, execute the penalty
+    /// @param _megapool Address of the accused megapool
+    /// @param _block Block that the theft occurred (used for uniqueness)
+    /// @param _amount Amount in ETH of the penalty
+    function maybeApplyPenalty(address _megapool, uint256 _block, uint256 _amount, uint256 _submissionCount) internal {
+        // Check this penalty hasn't already reach majority and been applied
+        bytes32 penaltyAppliedKey = keccak256(abi.encodePacked("megapool.penalty.submission.applied", _megapool, _block, _amount));
+        require(!getBool(penaltyAppliedKey), "Penalty already applied");
+        // Check for majority
+        RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+        if (calcBase * _submissionCount / rocketDAONodeTrusted.getMemberCount() > 0.5 ether) {
+            // Apply penalty and mark as applied
+            applyPenalty(_megapool, _amount);
+            setBool(penaltyAppliedKey, true);
+        }
     }
 
     /// @dev Applies a penalty up to given amount, honouring the max penalty parameter
@@ -120,7 +125,7 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
         uint256 earlierRunningTotal = rocketNetworkSnapshots.lookup(penaltyKey, uint32(earlierBlock));
         // Get current running total
         (,, uint224 currentTotal) = rocketNetworkSnapshots.latest(penaltyKey);
-        // Cap the penalty at the maximum amount based on past 50400 blocks
+        // Prevent the running penalty total from exceeding the maximum amount
         uint256 maxCurrentPenalty = maxPenalty - (uint256(currentTotal) - earlierRunningTotal);
         require(_amount <= maxCurrentPenalty, "Max penalty exceeded");
         // Insert new running total

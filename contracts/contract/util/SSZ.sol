@@ -33,8 +33,8 @@ library SSZ {
         uint8 lenA = uint8(a._data);
         uint8 lenB = uint8(b._data);
         unchecked {
-        // Prevent overflow of length into path
-            require(uint256(lenA) + uint256(lenB) <= type(uint8).max);
+            // Prevent overflow of length into path
+            require(uint256(lenA) + uint256(lenB) <= type(uint8).max, "Path too long");
             a._data = (a._data - lenA) << lenB;
             a._data += b._data + lenA;
         }
@@ -55,7 +55,7 @@ library SSZ {
     }
 
     function merkleisePubkey(bytes memory pubkey) internal view returns (bytes32 ret) {
-        require(pubkey.length == 48);
+        require(pubkey.length == 48, "Invalid pubkey length");
         assembly {
             mstore(0x00, mload(add(0x20, pubkey)))
             let right := and(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000000000000000000000, mload(add(0x40, pubkey)))
@@ -86,7 +86,7 @@ library SSZ {
 
     function restoreMerkleRoot(bytes32 leaf, uint256 index, bytes32[] memory proof) internal view returns (bytes32) {
         // Check for correct number of witnesses
-        require(2 ** (proof.length + 1) > index);
+        require(2 ** (proof.length + 1) > index, "Invalid witness length");
         bytes32 value = leaf;
         uint256 i = 0;
         while (index != 1) {
