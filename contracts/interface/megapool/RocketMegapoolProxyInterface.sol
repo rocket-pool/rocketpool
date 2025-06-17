@@ -10,4 +10,5 @@ interface RocketMegapoolProxyInterface {
     function getUseLatestDelegate() external view returns (bool);
     function getDelegate() external view returns (address);
     function getEffectiveDelegate() external view returns (address);
+    function getDelegateExpired() external view returns (bool);
 }
