@@ -4,23 +4,13 @@ import { nodeDepositEthFor, registerNode, setNodeTrusted, setNodeWithdrawalAddre
 import { snapshotDescribe, globalSnapShot } from '../_utils/snapshotting';
 import { userDeposit } from '../_helpers/deposit';
 import {
-    calculatePositionInQueue,
-    deployMegapool,
-    getMegapoolForNode,
-    getValidatorInfo,
-    nodeDeposit,
+    calculatePositionInQueue, deployMegapool, getMegapoolForNode, getValidatorInfo, nodeDeposit,
 } from '../_helpers/megapool';
 import { shouldRevert } from '../_utils/testing';
 import {
-    BeaconStateVerifier,
-    MegapoolUpgradeHelper,
-    RocketDAOProtocolSettingsDeposit,
-    RocketDAOProtocolSettingsMegapool,
-    RocketDAOProtocolSettingsNode,
-    RocketDepositPool,
-    RocketMegapoolDelegate,
-    RocketMegapoolFactory, RocketMegapoolManager, RocketNodeDeposit, RocketNodeStaking,
-    RocketStorage,
+    BeaconStateVerifier, MegapoolUpgradeHelper, RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsMegapool,
+    RocketDAOProtocolSettingsNode, RocketDepositPool, RocketMegapoolDelegate, RocketMegapoolFactory,
+    RocketMegapoolManager, RocketNodeDeposit, RocketStorage,
 } from '../_utils/artifacts';
 import assert from 'assert';
 import { stakeMegapoolValidator } from './scenario-stake';
@@ -499,6 +489,77 @@ export default function() {
                 await nodeDeposit(node);
                 await helpers.time.increase(dissolvePeriod + 1);
                 await dissolveValidator(node, 0, random);
+            });
+
+            it(printTitle('random', 'can dissolve validator immediately with a state proof'), async () => {
+                await nodeDeposit(node);
+                const info = await getValidatorInfo(megapool, 0);
+                const incorrectCredentials = {
+                    slot: 0n,
+                    validatorIndex: 0n,
+                    validator: {
+                        pubkey: info.pubkey,
+                        withdrawalCredentials: '0x0100000000000000000000000000000000000000000000000000000000000000',
+                        effectiveBalance: 0n,
+                        slashed: false,
+                        activationEligibilityEpoch: 0n,
+                        activationEpoch: 0n,
+                        exitEpoch: 0n,
+                        withdrawableEpoch: 0n,
+                    },
+                    witnesses: [],
+                };
+                await dissolveValidator(node, 0, random, incorrectCredentials);
+            });
+
+            it(printTitle('random', 'can not dissolve validator immediately with correct credentials'), async () => {
+                await nodeDeposit(node);
+                const info = await getValidatorInfo(megapool, 0);
+                const withdrawalCredentials = await megapool.getWithdrawalCredentials();
+                const correctCredentials = {
+                    slot: 0n,
+                    validatorIndex: 0n,
+                    validator: {
+                        pubkey: info.pubkey,
+                        withdrawalCredentials: withdrawalCredentials,
+                        effectiveBalance: 0n,
+                        slashed: false,
+                        activationEligibilityEpoch: 0n,
+                        activationEpoch: 0n,
+                        exitEpoch: 0n,
+                        withdrawableEpoch: 0n,
+                    },
+                    witnesses: [],
+                };
+                await shouldRevert(
+                    dissolveValidator(node, 0, random, correctCredentials),
+                    'Was able to dissolve validator',
+                    'Valid withdrawal credentials'
+                )
+            });
+
+            it(printTitle('random', 'can not dissolve a validator immediately with non-matching pubkey'), async () => {
+                await nodeDeposit(node);
+                const incorrectPubkey = {
+                    slot: 0n,
+                    validatorIndex: 0n,
+                    validator: {
+                        pubkey: '0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+                        withdrawalCredentials: '0x0100000000000000000000000000000000000000000000000000000000000000',
+                        effectiveBalance: 0n,
+                        slashed: false,
+                        activationEligibilityEpoch: 0n,
+                        activationEpoch: 0n,
+                        exitEpoch: 0n,
+                        withdrawableEpoch: 0n,
+                    },
+                    witnesses: [],
+                };
+                await shouldRevert(
+                    dissolveValidator(node, 0, random, incorrectPubkey),
+                    'Was able to dissolve validator',
+                    'Pubkey does not match'
+                );
             });
 
             it(printTitle('node', 'can perform stake operation on pre-stake validator'), async () => {

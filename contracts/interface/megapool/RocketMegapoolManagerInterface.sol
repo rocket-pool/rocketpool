@@ -10,6 +10,7 @@ interface RocketMegapoolManagerInterface {
     function addValidator(address _megapoolAddress, uint32 _validatorId) external;
     function getValidatorInfo(uint256 _index) external view returns (RocketMegapoolStorageLayout.ValidatorInfo memory validatorInfo, address megapool, uint32 validatorId);
     function stake(RocketMegapoolInterface megapool, uint32 _validatorId, ValidatorProof calldata _proof) external;
+    function dissolve(RocketMegapoolInterface megapool, uint32 _validatorId, ValidatorProof calldata _proof) external;
     function notifyExit(RocketMegapoolInterface megapool, uint32 _validatorId, ValidatorProof calldata _proof) external;
     function notifyFinalBalance(RocketMegapoolInterface megapool, uint32 _validatorId, WithdrawalProof calldata _proof) external;
 }

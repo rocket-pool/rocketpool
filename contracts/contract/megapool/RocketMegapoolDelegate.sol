@@ -292,15 +292,18 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
 
     /// @notice Dissolves a validator that has not staked within the required period
     /// @param _validatorId the validator ID to dissolve
+    /// @dev "Time before dissolve" parameter must be respected if not called from RocketMegapoolManager
     function dissolveValidator(uint32 _validatorId) override external {
         // Retrieve validator from storage
         ValidatorInfo memory validator = validators[_validatorId];
         // Check current status
         require(validator.inPrestake, "Validator not prestaked");
         // Ensure scrub period has passed before allowing dissolution
-        RocketDAOProtocolSettingsMegapoolInterface rocketDAOProtocolSettingsMegapool = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
-        uint256 timeBeforeDissolve = rocketDAOProtocolSettingsMegapool.getTimeBeforeDissolve();
-        require(block.timestamp > validator.lastAssignmentTime + timeBeforeDissolve, "Not enough time has passed");
+        if (msg.sender != getContractAddress("rocketMegapoolManager")) {
+            RocketDAOProtocolSettingsMegapoolInterface rocketDAOProtocolSettingsMegapool = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
+            uint256 timeBeforeDissolve = rocketDAOProtocolSettingsMegapool.getTimeBeforeDissolve();
+            require(block.timestamp > validator.lastAssignmentTime + timeBeforeDissolve, "Not enough time has passed");
+        }
         // Update validator info
         validator.inPrestake = false;
         validator.dissolved = true;

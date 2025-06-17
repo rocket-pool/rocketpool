@@ -20,7 +20,8 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
     /// @notice Called during deployment or upgrade to set initial values for settings
     function initialise() override public {
         // Set defaults
-        _setSettingUint("megapool.time.before.dissolve", 2 weeks);               // 2 weeks (RPIP-59)
+        _setSettingUint("megapool.time.before.dissolve", 28 days);               // 28 days (RPIP-59)
+        // TODO: This is a placeholder value
         _setSettingUint("maximum.megapool.eth.penalty", 612 ether);              // RPIP-42
         // Update deploy flag
         require (!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed"))), "Already initialised");
@@ -35,8 +36,7 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
             // Some safety guards for certain settings
             bytes32 settingKey = keccak256(abi.encodePacked(_settingPath));
             if (settingKey == keccak256(abi.encodePacked("megapool.time.before.dissolve"))) {
-                // TODO: No guardrail is specified in RPIP-59 but there should probably be a minimum?
-                require(_value >= 48 hours, "Time must be greater than 48 hours");
+                require(_value >= 28 days, "Time must be greater than 48 hours");
             } else if (settingKey == keccak256(abi.encodePacked("maximum.megapool.eth.penalty"))) {
                 // Per RPIP-42
                 // TODO: This is a placeholder value

@@ -1,8 +1,8 @@
 import { getMegapoolForNode } from '../_helpers/megapool';
-import { RocketNodeStaking } from '../_utils/artifacts';
+import { RocketMegapoolManager, RocketNodeStaking } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 
-export async function dissolveValidator(node, validatorIndex, from = node) {
+export async function dissolveValidator(node, validatorIndex, from = node, proof = null) {
     const megapool = await getMegapoolForNode(node)
 
     const [
@@ -43,7 +43,12 @@ export async function dissolveValidator(node, validatorIndex, from = node) {
     const expectedUserCapitalChange = -'32'.ether - expectedNodeBondChange;
 
     const data1 = await getData();
-    await megapool.connect(from).dissolveValidator(0);
+    if (proof === null) {
+        await megapool.connect(from).dissolveValidator(validatorIndex);
+    } else {
+        const rocketMegapoolManager = await RocketMegapoolManager.deployed();
+        await rocketMegapoolManager.connect(from).dissolve(megapool.target, validatorIndex, proof)
+    }
     const data2 = await getData();
 
     const deltas = {
