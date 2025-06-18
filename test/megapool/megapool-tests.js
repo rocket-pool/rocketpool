@@ -666,15 +666,26 @@ export default function() {
                 });
 
                 it(printTitle('node', 'can not notify final balance twice'), async () => {
-                    await notifyExitValidator(megapool, 0, await getCurrentEpoch());
-                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner);
-                    await shouldRevert(notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner), 'Notified final balance twice', 'Already exited');
+                    const withdrawalEpoch = await getCurrentEpoch();
+                    await notifyExitValidator(megapool, 0, withdrawalEpoch);
+                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner, withdrawalEpoch * 32);
+                    await shouldRevert(notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner, withdrawalEpoch * 32), 'Notified final balance twice', 'Already exited');
+                });
+
+                it(printTitle('node', 'can not notify final balance from before withdrawal epoch'), async () => {
+                    const withdrawalEpoch = await getCurrentEpoch();
+                    await notifyExitValidator(megapool, 0, withdrawalEpoch);
+                    await shouldRevert(
+                        notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner, withdrawalEpoch * 32 - 1),
+                        'Was able to notify final balance prior to withdrawal',
+                        'Not full withdrawal'
+                    );
                 });
 
                 it(printTitle('node', 'can not notify exit on exited validator'), async () => {
                     const currentEpoch = await getCurrentEpoch();
                     await notifyExitValidator(megapool, 0, await getCurrentEpoch());
-                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner);
+                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner, currentEpoch * 32);
                     await shouldRevert(notifyExitValidator(megapool, 0, currentEpoch + 5), 'Notified exit twice', 'Already exited');
                 });
 
@@ -692,8 +703,9 @@ export default function() {
 
                 it(printTitle('node', 'can distribute capital after full exit'), async () => {
                     // Notify exit and final balance
-                    await notifyExitValidator(megapool, 0, await getCurrentEpoch());
-                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner);
+                    const currentEpoch = await getCurrentEpoch();
+                    await notifyExitValidator(megapool, 0, currentEpoch);
+                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner, currentEpoch * 32);
                     // Can distribute
                     await mockRewards(megapool, '1'.ether);
                     await distributeMegapool(megapool);
@@ -701,13 +713,14 @@ export default function() {
 
                 it(printTitle('random', 'can permissionlessly notify final balance and distribute a validator after user distribute window'), async () => {
                     // Notify exit and final balance
+                    const currentEpoch = await getCurrentEpoch();
                     const megapoolWithRandom = megapool.connect(random);
-                    await notifyExitValidator(megapoolWithRandom, 0, await getCurrentEpoch());
-                    await shouldRevert(notifyFinalBalanceValidator(megapoolWithRandom, 0, '32'.ether, owner), 'Was able to distribute', 'Not enough time has passed');
+                    await notifyExitValidator(megapoolWithRandom, 0, currentEpoch);
+                    await shouldRevert(notifyFinalBalanceValidator(megapoolWithRandom, 0, '32'.ether, owner, currentEpoch * 32), 'Was able to distribute', 'Not enough time has passed');
                     // Wait the window
                     await helpers.time.increase(userDistributeTime + slotsPerEpoch * secondsPerSlot + 1);
                     // Should work now
-                    await notifyFinalBalanceValidator(megapoolWithRandom, 0, '32'.ether, owner);
+                    await notifyFinalBalanceValidator(megapoolWithRandom, 0, '32'.ether, owner, currentEpoch * 32);
                     // Can distribute
                     await mockRewards(megapoolWithRandom, '1'.ether);
                     await distributeMegapool(megapoolWithRandom);
@@ -717,9 +730,10 @@ export default function() {
                     // Adjust `reduced_bond` to 2 ETH
                     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
                     // Notify exit in 5 epochs
-                    await notifyExitValidator(megapool, 0, await getCurrentEpoch());
+                    const currentEpoch = await getCurrentEpoch();
+                    await notifyExitValidator(megapool, 0, currentEpoch);
                     const nodeBalanceBefore = await ethers.provider.getBalance(nodeWithdrawalAddress);
-                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner);
+                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner, currentEpoch * 32);
                     const nodeBalanceAfter = await ethers.provider.getBalance(nodeWithdrawalAddress);
                     /*
                         NO started with 5 validators
@@ -736,9 +750,10 @@ export default function() {
                     // Adjust `reduced_bond` to 2 ETH
                     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
                     // Notify exit in 5 epochs
-                    await notifyExitValidator(megapool, 0, await getCurrentEpoch());
+                    const currentEpoch = await getCurrentEpoch();
+                    await notifyExitValidator(megapool, 0, currentEpoch);
                     const nodeBalanceBefore = await ethers.provider.getBalance(nodeWithdrawalAddress);
-                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether - '7'.ether, owner);
+                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether - '7'.ether, owner, currentEpoch * 32);
                     const nodeBalanceAfter = await ethers.provider.getBalance(nodeWithdrawalAddress);
                     /*
                         NO should receive 8 ETH bond on exit, but lost 7 ETH capital so bond should reduce by 8 ETH
@@ -753,8 +768,9 @@ export default function() {
                     // Adjust `reduced_bond` to 2 ETH
                     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
                     // Notify exit in 5 epochs
-                    await notifyExitValidator(megapool, 0, await getCurrentEpoch());
-                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether - '9'.ether, owner);
+                    const currentEpoch = await getCurrentEpoch();
+                    await notifyExitValidator(megapool, 0, currentEpoch);
+                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether - '9'.ether, owner, currentEpoch * 32);
                     /*
                         NO should receive 8 ETH bond on exit, but lost 9 ETH capital so bond should reduce by 8 ETH
                         but NO should accrue a 1 ETH debt
@@ -772,8 +788,9 @@ export default function() {
                         /*
                             Exit the validator with 5 ETH capital loss will result in a debt of 1 ETH
                          */
-                        await notifyExitValidator(megapool, 0, await getCurrentEpoch());
-                        await notifyFinalBalanceValidator(megapool, 0, '32'.ether - '5'.ether, owner);
+                        const currentEpoch = await getCurrentEpoch();
+                        await notifyExitValidator(megapool, 0, currentEpoch);
+                        await notifyFinalBalanceValidator(megapool, 0, '32'.ether - '5'.ether, owner, currentEpoch * 32);
                         const nodeDebt = await megapool.getDebt();
                         assertBN.equal(nodeDebt, '1'.ether);
                     });

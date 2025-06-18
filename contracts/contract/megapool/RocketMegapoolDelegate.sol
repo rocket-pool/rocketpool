@@ -464,9 +464,9 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     }
 
     /// @notice Used to notify the megapool of the final balance of an exited validator
-    function notifyFinalBalance(uint32 _validatorId, uint64 _amountInGwei, address _caller) override external onlyLatestContract("rocketMegapoolManager", msg.sender) {
+    function notifyFinalBalance(uint32 _validatorId, uint64 _amountInGwei, address _caller, uint64 _withdrawalSlot) override external onlyLatestContract("rocketMegapoolManager", msg.sender) {
         // Perform notification process
-        _notifyFinalBalance(_validatorId, _amountInGwei);
+        _notifyFinalBalance(_validatorId, _amountInGwei, _withdrawalSlot);
         // If owner is calling, claim immediately
         if (isNodeCalling(_caller)) {
             _claim();
@@ -481,11 +481,12 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     }
 
     /// @dev Internal implementation of final balance notification process
-    function _notifyFinalBalance(uint32 _validatorId, uint64 _amountInGwei) internal {
+    function _notifyFinalBalance(uint32 _validatorId, uint64 _amountInGwei, uint64 _withdrawalSlot) internal {
         ValidatorInfo memory validator = validators[_validatorId];
         require(!validator.exited, "Already exited");
         require(validator.exiting, "Validator is not exiting");
         require(!validator.dissolved, "Validator dissolved");
+        require(_withdrawalSlot >= validator.withdrawableEpoch * slotsPerEpoch, "Not full withdrawal");
         // Mark as exited
         validator.exited = true;
         validator.exiting = false;

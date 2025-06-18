@@ -108,6 +108,6 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         RocketMegapoolStorageLayout.ValidatorInfo memory validatorInfo = _megapool.getValidatorInfo(_validatorId);
         require(_proof.withdrawal.validatorIndex == validatorInfo.validatorIndex, "Invalid proof");
         // Notify megapool
-        _megapool.notifyFinalBalance(_validatorId, _proof.withdrawal.amountInGwei, msg.sender);
+        _megapool.notifyFinalBalance(_validatorId, _proof.withdrawal.amountInGwei, msg.sender, _proof.withdrawalSlot);
     }
 }

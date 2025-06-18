@@ -77,7 +77,7 @@ export async function notifyExitValidator(megapool, validatorId, withdrawalEpoch
 }
 
 // Notify validator of final balance
-export async function notifyFinalBalanceValidator(megapool, validatorId, finalBalance, funder) {
+export async function notifyFinalBalanceValidator(megapool, validatorId, finalBalance, funder, withdrawalSlot) {
 
     const rocketStorage = await RocketStorage.deployed();
     const rocketTokenRETH = await RocketTokenRETH.deployed();
@@ -110,8 +110,8 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
     const amountInGwei = finalBalance / '1'.gwei;
 
     const proof = {
-        slot: 0n,
-        withdrawalSlot: 0n,
+        slot: withdrawalSlot,
+        withdrawalSlot: withdrawalSlot,
         withdrawalNum: 0n,
         withdrawal: {
             index: 0n,
