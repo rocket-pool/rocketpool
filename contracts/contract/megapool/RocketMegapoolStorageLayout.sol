@@ -36,6 +36,7 @@ abstract contract RocketMegapoolStorageLayout {
         bool expressUsed;   // Whether the last request for funds consumed an express ticket
         bool dissolved;     // Whether the validator failed to prestake their initial deposit in time
         bool exiting;       // Whether the validator is queued to exit on the beaconchain
+        bool locked;        // Whether the validator has been locked by the oDAO for not exiting
 
         uint64 validatorIndex;      // Index of the validator on the beaconchain
         uint64 exitBalance;         // Final balance of the validator at withdrawable_epoch in gwei (amount returned to EL)
@@ -83,6 +84,7 @@ abstract contract RocketMegapoolStorageLayout {
     mapping(uint32 => ValidatorInfo) internal validators;
     mapping(uint32 => PrestakeData) internal prestakeData;
 
+    uint32 internal numLockedValidators;        // Number of validators currently locked
     uint32 internal numExitingValidators;       // Number of validators currently exiting
     uint64 internal soonestWithdrawableEpoch;   // The soonest epoch which a validator will become withdrawable
 
