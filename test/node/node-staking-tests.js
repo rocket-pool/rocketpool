@@ -83,6 +83,11 @@ export default function() {
             assertBN.equal(megapoolStakedRPL, megapool);
         }
 
+        async function assertUnstakingBalance(node, amount) {
+            const unstakingRPL = await rocketNodeStaking.getNodeUnstakingRPL(node);
+            assertBN.equal(unstakingRPL, amount);
+        }
+
         it(printTitle('node operator', 'can stake RPL'), async () => {
             // Set parameters
             const rplAmount = '5000'.ether;
@@ -178,6 +183,23 @@ export default function() {
             await unstakeRpl(rplAmount, { from: node });
             // Assert balances
             await assertBalances(node, 0n, 0n);
+        });
+
+        it(printTitle('node operator', 'can withdraw RPL during unstake if unstaking period has passed'), async () => {
+            // Stake 5,000 megapool RPL
+            await nodeStakeRPL('5000'.ether, { from: node });
+            // Unstake 1,000 RPL
+            await unstakeRpl('1000'.ether, { from: node });
+            // Assert balances
+            await assertBalances(node, 0n, '4000'.ether);
+            await assertUnstakingBalance(node, '1000'.ether);
+            // Wait 28 days
+            await helpers.time.increase(60 * 60 * 24 * 28 + 1);
+            // Unstake another 1,000 RPL
+            await unstakeRpl('1000'.ether, { from: node });
+            // Assert balances
+            await assertBalances(node, 0n, '3000'.ether);
+            await assertUnstakingBalance(node, '1000'.ether);
         });
 
         it(printTitle('node operator', 'can unstake RPL from RPL withdrawal address'), async () => {

@@ -113,16 +113,13 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     }
 
     /// @notice Gets the time the the given node operator's previous unstake
+    /// @param _nodeAddress The address of the node operator to query for
     function getNodeLastUnstakeTime(address _nodeAddress) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("rpl.megapool.unstake.time", _nodeAddress)));
     }
 
-    /// @notice Returns the timestamp at which a node last unstaked megapool staked RPL
-    function getNodeUnstakingRpl(address _nodeAddress) public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked("rpl.megapool.unstaking.amount", _nodeAddress)));
-    }
-
     /// @notice Returns the timestamp at which a node last staked RPL
+    /// @param _nodeAddress The address of the node operator to query for
     function getNodeRPLStakedTime(address _nodeAddress) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("rpl.staked.node.time", _nodeAddress)));
     }
@@ -219,9 +216,14 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
 
     /// @dev Internal implementation for unstaking process
     function _unstakeRPLFor(address _nodeAddress, uint256 _amount) internal {
+        // Withdraw any RPL that has been unstaking long enough
+        _withdrawUnstakingRPL(_nodeAddress);
+        // Move RPL from staking to unstaking
         decreaseNodeMegapoolRPLStake(_nodeAddress, _amount);
         addUint(keccak256(abi.encodePacked("rpl.megapool.unstaking.amount", _nodeAddress)), _amount);
+        // Reset the unstake time
         setNodeLastUnstakeTime(_nodeAddress);
+        // Emit event
         emit RPLUnstaked(_nodeAddress, _amount, block.timestamp);
     }
 

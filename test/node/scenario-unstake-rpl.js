@@ -76,10 +76,16 @@ export async function unstakeRplFor(amount, nodeAddress, from) {
     // Last unstake time should be set to transaction timestamp
     assertBN.equal(data2.nodeLastUnstakeTime, txTimestamp)
 
-    // Unstaking does not change any RPL token balances
-    assertBN.equal(deltas.nodeRpl, 0n);
-    assertBN.equal(deltas.vaultRpl, 0n);
-    assertBN.equal(deltas.stakingRpl, 0n);
+    // If last unstake was longer than 28 days ago, it should trigger a withdrawal
+    let expectedWithdrawAmount = 0n
+    if (txTimestamp - Number(data1.nodeLastUnstakeTime) > (60 * 60 * 24 * 28)) {
+        expectedWithdrawAmount = data1.nodeUnstakingRpl
+    }
+
+    // Check RPL balances
+    assertBN.equal(deltas.nodeRpl, expectedWithdrawAmount);
+    assertBN.equal(deltas.vaultRpl, -expectedWithdrawAmount);
+    assertBN.equal(deltas.stakingRpl, -expectedWithdrawAmount);
 
     // Unstaking immediately reduces "staked" RPL balances
     assertBN.equal(deltas.totalStakedRpl, -amount);
@@ -90,5 +96,5 @@ export async function unstakeRplFor(amount, nodeAddress, from) {
     assertBN.equal(deltas.nodeLegacyRpl, 0n);
 
     // Unstaking balance should increase
-    assertBN.equal(deltas.nodeUnstakingRpl, amount);
+    assertBN.equal(deltas.nodeUnstakingRpl, amount - expectedWithdrawAmount);
 }
