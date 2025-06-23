@@ -22,13 +22,23 @@ import {
 } from './scenario-dao-security';
 import { getDepositSetting } from '../_helpers/settings';
 import {
-    RocketDAOProtocolSettingsNetwork,
-    RocketDAOSecurityProposals,
-    RocketNetworkRevenues,
+    RocketDAONodeTrustedProposals, RocketDAONodeTrustedUpgrade,
+    RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsSecurity,
+    RocketDAOSecurityProposals, RocketMinipoolManager,
+    RocketNetworkRevenues, RocketStorage,
 } from '../_utils/artifacts';
 import * as assert from 'assert';
 import { globalSnapShot } from '../_utils/snapshotting';
 import { assertBN } from '../_helpers/bn';
+import { compressABI } from '../_utils/contract';
+import { daoNodeTrustedExecute, daoNodeTrustedPropose, daoNodeTrustedVote } from './scenario-dao-node-trusted';
+import { getDAOProposalStartTime } from './scenario-dao-proposal';
+import { registerNode, setNodeTrusted } from '../_helpers/node';
+import {
+    daoSecurityProposeVeto,
+    daoSecurityUpgradeExecute,
+    daoSecurityUpgradeVote,
+} from './scenario-dao-security-upgrade';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -40,6 +50,9 @@ export default function() {
             securityMember1,
             securityMember2,
             securityMember3,
+            registeredNodeTrusted1,
+            registeredNodeTrusted2,
+            registeredNodeTrusted3,
             random;
 
         let voteDelayTime;
@@ -55,6 +68,9 @@ export default function() {
                 securityMember1,
                 securityMember2,
                 securityMember3,
+                registeredNodeTrusted1,
+                registeredNodeTrusted2,
+                registeredNodeTrusted3,
                 random,
             ] = await ethers.getSigners();
 
@@ -187,6 +203,59 @@ export default function() {
                 assertBN.equal(effectiveVoterShare, '0.09'.ether - adder);
                 const voterShare = await rocketNetworkRevenues.getCurrentVoterShare();
                 assertBN.equal(voterShare, '0.09'.ether - adder);
+            });
+
+            it(printTitle('security council', 'can veto a contract upgrade'), async () => {
+                // Get contracts
+                const rocketDAONodeTrustedProposals = await RocketDAONodeTrustedProposals.deployed();
+                const rocketDAONodeTrustedUpgrade = await RocketDAONodeTrustedUpgrade.deployed();
+                // Set upgrade delay
+                const upgradeDelay = 60n * 60n * 24n;
+                await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsSecurity, 'upgrade.delay', upgradeDelay, { from: owner });
+                // Add trusted DAO members
+                await registerNode({ from: registeredNodeTrusted1 });
+                await registerNode({ from: registeredNodeTrusted2 });
+                await registerNode({ from: registeredNodeTrusted3 });
+                await setNodeTrusted(registeredNodeTrusted1, 'rocketpool-1', 'http://rocketpool.net', owner);
+                await setNodeTrusted(registeredNodeTrusted2, 'rocketpool-2', 'http://rocketpool.net', owner);
+                await setNodeTrusted(registeredNodeTrusted3, 'rocketpool-3', 'http://rocketpool.net', owner);
+                await helpers.time.increase(60);
+                // Encode the calldata for the proposal
+                const rocketStorage = await RocketStorage.deployed();
+                const rocketMinipoolManagerNew = await RocketMinipoolManager.clone(rocketStorage.target);
+                const proposalCalldata = rocketDAONodeTrustedProposals.interface.encodeFunctionData('proposalUpgrade', ['upgradeContract', 'rocketNodeManager', compressABI(RocketMinipoolManager.abi), rocketMinipoolManagerNew.target]);
+                // Add the proposal
+                const proposalID = await daoNodeTrustedPropose('hey guys, this is a totally safe upgrade', proposalCalldata, {
+                    from: registeredNodeTrusted1,
+                });
+                // Current time
+                const timeCurrent = await helpers.time.latest();
+                // Now increase time until the proposal is 'active' and can be voted on
+                await helpers.time.increase((await getDAOProposalStartTime(proposalID) - timeCurrent) + 2);
+                // Now lets vote
+                await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
+                await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
+                // Proposal has passed, we can now execute it and start the upgrade delay
+                await daoNodeTrustedExecute(proposalID, { from: registeredNodeTrusted1 });
+                // Veto the upgrade
+                let proposalId = await daoSecurityProposeVeto('veto that malicious upgrade', 1n, {
+                    from: securityMember1,
+                });
+                // Vote in favour (only need 1 vote because quorum is 33% for veto)
+                await daoSecurityUpgradeVote(proposalId, true, { from: securityMember1 });
+                // Execute
+                await daoSecurityUpgradeExecute(proposalId, { from: securityMember2 });
+                // Check
+                const vetoed = await rocketDAONodeTrustedUpgrade.getVetoed(1n);
+                assert.equal(vetoed, true);
+                // Wait for the upgrade delay
+                await helpers.time.increase(upgradeDelay + 1n);
+                // Executing the upgrade should fail
+                await shouldRevert(
+                    rocketDAONodeTrustedUpgrade.connect(registeredNodeTrusted1).execute(1n),
+                    'Was able to execute vetoed upgrade',
+                    'Proposal has not succeeded or has been vetoed or executed'
+                );
             });
         });
     });

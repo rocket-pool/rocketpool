@@ -122,6 +122,7 @@ export const RocketDAOProtocolVerifier = artifacts.require('RocketDAOProtocolVer
 export const RocketDAOProposal = artifacts.require('RocketDAOProposal');
 export const RocketDAOSecurityActions = artifacts.require('RocketDAOSecurityActions');
 export const RocketDAOSecurityProposals = artifacts.require('RocketDAOSecurityProposals');
+export const RocketDAOSecurityUpgrade = artifacts.require('RocketDAOSecurityUpgrade');
 export const RocketDAOSecurity = artifacts.require('RocketDAOSecurity');
 export const RocketMinipoolPenalty = artifacts.require('RocketMinipoolPenalty');
 export const RocketMinipoolManager = artifacts.require('RocketMinipoolManager');

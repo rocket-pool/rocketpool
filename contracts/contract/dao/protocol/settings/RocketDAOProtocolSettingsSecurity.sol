@@ -18,6 +18,8 @@ contract RocketDAOProtocolSettingsSecurity is RocketDAOProtocolSettings, RocketD
             _setSettingUint("proposal.vote.time", 2 weeks);      // How long a proposal can be voted on
             _setSettingUint("proposal.execute.time", 4 weeks);   // How long a proposal can be executed after its voting period is finished
             _setSettingUint("proposal.action.time", 4 weeks);    // Certain proposals require a secondary action to be run after the proposal is successful (joining, leaving etc). This is how long until that action expires
+            _setSettingUint("upgradeveto.quorum", 0.33 ether);   // RPIP-60: Member quorum threshold to veto a protocol upgrade (33%)
+            _setSettingUint("upgrade.delay", 7 days);            // RPIP-60: Amount of time after an upgrade proposal passes that the security has to veto it
             // Default permissions for security council
             setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "deposit", "deposit.enabled")), true);
             setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "deposit", "deposit.assign.enabled")), true);
@@ -91,5 +93,15 @@ contract RocketDAOProtocolSettingsSecurity is RocketDAOProtocolSettings, RocketD
     /// @notice Certain proposals require a secondary action to be run after the proposal is successful (joining, leaving etc). This is how long until that action expires
     function getActionTime() override external view returns (uint256) {
         return getSettingUint("proposal.action.time");
+    }
+
+    /// @notice The quorum required by the security council to veto an upgrade
+    function getUpgradeVetoQuorum() override external view returns (uint256) {
+        return getSettingUint("upgradeveto.quorum");
+    }
+
+    /// @notice The amount of time that must be waited after an upgrade before executing
+    function getUpgradeDelay() override external view returns (uint256) {
+        return getSettingUint("upgrade.delay");
     }
 }

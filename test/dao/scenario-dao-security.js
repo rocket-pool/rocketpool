@@ -2,7 +2,7 @@ import {
     RocketDAOProposal,
     RocketDAOSecurity,
     RocketDAOSecurityActions,
-    RocketDAOSecurityProposals,
+    RocketDAOSecurityProposals, RocketDAOSecurityUpgrade,
 } from '../_utils/artifacts';
 import { getDAOProposalState, proposalStates } from './scenario-dao-proposal';
 import { assertBN } from '../_helpers/bn';

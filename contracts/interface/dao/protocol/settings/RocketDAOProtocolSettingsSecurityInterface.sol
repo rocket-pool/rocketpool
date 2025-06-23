@@ -7,4 +7,6 @@ interface RocketDAOProtocolSettingsSecurityInterface {
     function getVoteTime() external view returns(uint256);
     function getExecuteTime() external view returns(uint256);
     function getActionTime() external view returns (uint256);
+    function getUpgradeVetoQuorum() external view returns (uint256);
+    function getUpgradeDelay() external view returns (uint256);
 }

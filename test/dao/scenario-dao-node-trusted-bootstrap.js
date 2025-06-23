@@ -1,8 +1,15 @@
-import { RocketDAONodeTrusted, RocketStorage, RocketTokenRPL, RocketVault } from '../_utils/artifacts';
-import { compressABI, decompressABI } from '../_utils/contract';
+import {
+    RocketDAONodeTrusted,
+    RocketDAONodeTrustedUpgrade,
+    RocketStorage,
+    RocketTokenRPL,
+    RocketVault,
+} from '../_utils/artifacts';
+import { compressABI } from '../_utils/contract';
 import { assertBN } from '../_helpers/bn';
 import * as assert from 'assert';
 
+const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
 const ethers = hre.ethers;
 
@@ -137,7 +144,8 @@ export async function setDaoNodeTrustedBootstrapUpgrade(_type, _name, _abi, _con
     let contract1 = await getContractData();
 
     // Upgrade contract
-    await (await rocketDAONodeTrusted.connect(txOptions.from).bootstrapUpgrade(_type, _name, compressedAbi, _contractAddress, txOptions)).wait();
+    const rocketDAONodeTrustedUpgrade = await RocketDAONodeTrustedUpgrade.deployed();
+    await (await rocketDAONodeTrustedUpgrade.connect(txOptions.from).bootstrapUpgrade(_type, _name, compressedAbi, _contractAddress, txOptions)).wait();
 
     // Get updated contract data
     let contract2 = await getContractData();
