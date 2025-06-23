@@ -569,7 +569,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @dev Transfers RPL from msg.sender into vault
     function transferRPLIn(address _nodeAddress, uint256 _amount) internal {
         // Transfer RPL tokens
-        require(rplToken.transferFrom(msg.sender, address(this), _amount), "Could not transfer RPL to staking contract");
+        require(rplToken.transferFrom(_nodeAddress, address(this), _amount), "Could not transfer RPL to staking contract");
         // Deposit RPL tokens to vault
         require(rplToken.approve(address(rocketVault), _amount), "Could not approve vault RPL deposit");
         rocketVault.depositToken("rocketNodeStaking", rplToken, _amount);
