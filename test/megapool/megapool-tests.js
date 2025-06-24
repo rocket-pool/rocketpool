@@ -359,6 +359,23 @@ export default function() {
             assertBN.equal(debtDelta, '300'.ether);
         });
 
+        it(printTitle('misc', 'should calculate rewards on an empty megapool'), async () => {
+            await deployMegapool({ from: node });
+            {
+                const rewards = await megapool.calculatePendingRewards();
+                assertBN.equal(rewards[0], 0n);
+                assertBN.equal(rewards[1], 0n);
+                assertBN.equal(rewards[2], 0n);
+            }
+            await mockRewards(megapool, '1'.ether);
+            {
+                const rewards = await megapool.calculatePendingRewards();
+                assertBN.equal(rewards[0], '1'.ether);
+                assertBN.equal(rewards[1], 0n);
+                assertBN.equal(rewards[2], 0n);
+            }
+        });
+
         snapshotDescribe('With overbonded megapool', () => {
             before(async () => {
                 // Deposit enough for 4 validators

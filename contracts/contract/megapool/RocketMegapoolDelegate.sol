@@ -431,6 +431,11 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
 
     /// @dev Internal implementation of reward split calculation
     function _calculateRewards(uint256 _rewards) internal view returns (uint256 nodeRewards, uint256 voterRewards, uint256 rethRewards) {
+        // Early out for edge cases
+        if (_rewards == 0) return (0, 0, 0);
+        uint256 totalCapital = nodeBond + userCapital;
+        if (totalCapital == 0) return (_rewards, 0, 0);
+        // Calculate split based on capital ratio and average commission since last distribute
         RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
         (, uint256 voterShare, uint256 rethShare) = rocketNetworkRevenues.calculateSplit(lastDistributionBlock);
         unchecked {
