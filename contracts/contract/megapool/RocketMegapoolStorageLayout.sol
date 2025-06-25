@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.30;
 
-import "../../interface/RocketStorageInterface.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 
 // ******************************************************
 // Note: This contract MUST only be appended to. All
@@ -22,8 +22,6 @@ abstract contract RocketMegapoolStorageLayout {
 
     // Information about individual validators
     struct ValidatorInfo {
-        bytes pubKey;   // Pubkey of this validator
-
         uint32 lastAssignmentTime;  // Timestamp of when the last fund assignment took place
         uint32 lastRequestedValue;  // Value in milliether last requested
         uint32 lastRequestedBond;   // Value in milliether of the bond supplied for last request for funds
@@ -41,11 +39,7 @@ abstract contract RocketMegapoolStorageLayout {
         uint64 validatorIndex;      // Index of the validator on the beaconchain
         uint64 exitBalance;         // Final balance of the validator at withdrawable_epoch in gwei (amount returned to EL)
         uint64 withdrawableEpoch;   // The epoch this validator is withdrawable
-    }
-
-    // Extra data temporarily stored for prestake operation
-    struct PrestakeData {
-        bytes _signature;
+        uint64 lockedSlot;          // The slot this validator was challenged about its exit status
     }
 
     //
@@ -82,7 +76,8 @@ abstract contract RocketMegapoolStorageLayout {
     uint256 internal lastDistributionBlock; // The block of the last time a distribution of rewards was executed
 
     mapping(uint32 => ValidatorInfo) internal validators;
-    mapping(uint32 => PrestakeData) internal prestakeData;
+    mapping(uint32 => bytes) internal prestakeSignatures;
+    mapping(uint32 => bytes) internal pubkeys;
 
     uint32 internal numLockedValidators;        // Number of validators currently locked
     uint32 internal numExitingValidators;       // Number of validators currently exiting

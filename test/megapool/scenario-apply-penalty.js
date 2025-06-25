@@ -5,7 +5,7 @@ const hre = require('hardhat');
 const ethers = hre.ethers;
 
 // Vote to apply a penalty to a megapool
-export async function applyPenalty(megapool, slot, amount, trustedNode) {
+export async function votePenalty(megapool, slot, amount, trustedNode) {
 
     const rocketMegapoolPenalties = await RocketMegapoolPenalties.deployed();
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();

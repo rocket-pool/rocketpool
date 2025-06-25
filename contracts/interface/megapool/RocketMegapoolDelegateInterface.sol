@@ -21,6 +21,8 @@ interface RocketMegapoolDelegateInterface is RocketMegapoolDelegateBaseInterface
     function claim() external;
     function repayDebt() external payable;
 
+    function challengeExit(uint32 _validatorId) external;
+    function notifyNotExit(uint32 _validatorId, uint64 _slot) external;
     function notifyExit(uint32 _validatorId, uint64 _withdrawableEpoch) external;
     function notifyFinalBalance(uint32 _validatorId, uint64 _amountInGwei, address _caller, uint64 _withdrawalSlot) external;
     function applyPenalty(uint256 _amount) external;
@@ -28,8 +30,11 @@ interface RocketMegapoolDelegateInterface is RocketMegapoolDelegateBaseInterface
     function getValidatorCount() external view returns (uint32);
     function getActiveValidatorCount() external view returns (uint32);
     function getExitingValidatorCount() external view returns (uint32);
+    function getLockedValidatorCount() external view returns (uint32);
     function getSoonestWithdrawableEpoch() external view returns (uint64);
     function getValidatorInfo(uint32 _validatorId) external view returns (RocketMegapoolStorageLayout.ValidatorInfo memory);
+    function getValidatorPubkey(uint32 _validatorId) external view returns (bytes memory);
+    function getValidatorInfoAndPubkey(uint32 _validatorId) external view returns (RocketMegapoolStorageLayout.ValidatorInfo memory info, bytes memory pubkey);
     function getAssignedValue() external view returns (uint256);
     function getDebt() external view returns (uint256);
     function getRefundValue() external view returns (uint256);

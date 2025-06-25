@@ -11,10 +11,15 @@ import {BeaconStateVerifierInterface, ValidatorProof, Withdrawal, WithdrawalProo
 /// @notice Handles protocol-level megapool functionality
 contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
 
+    bytes32 immutable internal challengerKey;
+
     uint256 constant internal farFutureEpoch = 2 ** 64 - 1;
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
+
+        // Precompute static storage keys
+        challengerKey = keccak256("last.trusted.node.megapool.challenger");
     }
 
     /// @notice Returns the total number validators across all megapools
@@ -55,8 +60,8 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         bytes32 withdrawalCredentials = _megapool.getWithdrawalCredentials();
         require(_proof.validator.withdrawalCredentials == withdrawalCredentials, "Invalid withdrawal credentials");
         // Verify matching pubkey
-        RocketMegapoolStorageLayout.ValidatorInfo memory validatorInfo = _megapool.getValidatorInfo(_validatorId);
-        require(keccak256(_proof.validator.pubkey) == keccak256(validatorInfo.pubKey), "Pubkey does not match");
+        bytes memory pubkey = _megapool.getValidatorPubkey(_validatorId);
+        require(keccak256(_proof.validator.pubkey) == keccak256(pubkey), "Pubkey does not match");
         // Perform the stake
         _megapool.stake(_validatorId, _proof.validatorIndex);
     }
@@ -73,8 +78,8 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         bytes32 withdrawalCredentials = _megapool.getWithdrawalCredentials();
         require(_proof.validator.withdrawalCredentials != withdrawalCredentials, "Valid withdrawal credentials");
         // Verify matching pubkey
-        RocketMegapoolStorageLayout.ValidatorInfo memory validatorInfo = _megapool.getValidatorInfo(_validatorId);
-        require(keccak256(_proof.validator.pubkey) == keccak256(validatorInfo.pubKey), "Pubkey does not match");
+        bytes memory pubkey = _megapool.getValidatorPubkey(_validatorId);
+        require(keccak256(_proof.validator.pubkey) == keccak256(pubkey), "Pubkey does not match");
         // Perform the stake
         _megapool.dissolveValidator(_validatorId);
     }
@@ -94,6 +99,42 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         require(_proof.validatorIndex == validatorInfo.validatorIndex, "Invalid proof");
         // Notify megapool
         _megapool.notifyExit(_validatorId, _proof.validator.withdrawableEpoch);
+    }
+
+    /// @notice Verifies a validator state proof then notifies megapool that this validator was not exiting at given slot
+    /// @param _megapool Address of the megapool which the validator belongs to
+    /// @param _validatorId Internal ID of the validator within the megapool
+    /// @param _proof State proof of the validator
+    function notifyNotExit(RocketMegapoolInterface _megapool, uint32 _validatorId, ValidatorProof calldata _proof) override external {
+        // Verify state proof
+        BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
+        require(beaconStateVerifier.verifyValidator(_proof), "Invalid proof");
+        // Verify correct withdrawable_epoch
+        require(_proof.validator.withdrawableEpoch == farFutureEpoch, "Validator is exiting");
+        // Verify matching validator index
+        RocketMegapoolStorageLayout.ValidatorInfo memory validatorInfo = _megapool.getValidatorInfo(_validatorId);
+        require(_proof.validatorIndex == validatorInfo.validatorIndex, "Invalid proof");
+        // Notify the megapool that the specified validator was not exiting at the proven slot
+        _megapool.notifyNotExit(_validatorId, _proof.slot);
+    }
+
+    /// @notice Asserts that a megapool validator is exiting but a proof has not been supplied by the node operator
+    /// @param _challenges List of challenges to submit
+    function challengeExit(ExitChallenge[] calldata _challenges) override external onlyTrustedNode(msg.sender) {
+        // Check if this member was the previous one to challenge
+        address lastSubmitter = getAddress(challengerKey);
+        require(msg.sender != lastSubmitter, "Member was last to challenge");
+        setAddress(challengerKey, msg.sender);
+        // Deliver challenges
+        uint256 totalChallenges = 0;
+        for (uint256 i = 0; i < _challenges.length; ++i) {
+            for (uint256 j = 0; j < _challenges[i].validatorIds.length; ++j) {
+                _challenges[i].megapool.challengeExit(_challenges[i].validatorIds[j]);
+                totalChallenges += 1;
+            }
+        }
+        // TODO: Hardcoded or parameter?
+        require(totalChallenges < 50, "Too many challenges");
     }
 
     /// @notice Verifies a withdrawal state proof then notifies megapool of the final balance

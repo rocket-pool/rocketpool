@@ -20,7 +20,7 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import { distributeMegapool } from './scenario-distribute';
 import { withdrawCredit } from './scenario-withdraw-credit';
 import { notifyExitValidator, notifyFinalBalanceValidator } from './scenario-exit';
-import { applyPenalty } from './scenario-apply-penalty';
+import { votePenalty } from './scenario-apply-penalty';
 import { reduceBond } from './scenario-reduce-bond';
 import { dissolveValidator } from './scenario-dissolve';
 
@@ -47,7 +47,7 @@ export default function() {
         const secondsPerSlot = 12;
         const slotsPerEpoch = 32;
 
-        const userDistributeTime = (90 * 24 * 60 * 60); // 90 days
+        const userDistributeTime = (30 * 24 * 60 * 60); // 90 days
 
         async function mockRewards(megapool, amount = '1'.ether) {
             await owner.sendTransaction({
@@ -101,6 +101,9 @@ export default function() {
             // Disable proof verification
             const beaconStateVerifier = await BeaconStateVerifier.deployed();
             await beaconStateVerifier.setDisabled(true);
+
+            // Set params
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMegapool, 'user.distribute.window.length', userDistributeTime, { from: owner });
         });
 
         //
@@ -327,36 +330,36 @@ export default function() {
         it(printTitle('trusted node', 'can apply a penalty to a megapool'), async () => {
             await deployMegapool({ from: node });
 
-            await applyPenalty(megapool, 0n, '1'.ether, trustedNode1);
-            await applyPenalty(megapool, 0n, '1'.ether, trustedNode2);
-            await shouldRevert(applyPenalty(megapool, 0n, '1'.ether, trustedNode3), 'Applied penalty past majority', 'Penalty already applied');
+            await votePenalty(megapool, 0n, '1'.ether, trustedNode1);
+            await votePenalty(megapool, 0n, '1'.ether, trustedNode2);
+            await shouldRevert(votePenalty(megapool, 0n, '1'.ether, trustedNode3), 'Applied penalty past majority', 'Penalty already applied');
         });
 
         it(printTitle('trusted node', 'can not apply penalty greater than max'), async () => {
-            const maxPenaltyAmount = '300'.ether;
+            const maxPenaltyAmount = '2500'.ether;
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMegapool, 'maximum.megapool.eth.penalty', maxPenaltyAmount, { from: owner });
 
             await deployMegapool({ from: node });
 
-            await applyPenalty(megapool, 0n, '301'.ether, trustedNode1);
-            await shouldRevert(applyPenalty(megapool, 0n, '301'.ether, trustedNode2), 'Max penalty exceeded', 'Max penalty exceeded');
+            await votePenalty(megapool, 0n, '2501'.ether, trustedNode1);
+            await shouldRevert(votePenalty(megapool, 0n, '2501'.ether, trustedNode2), 'Max penalty exceeded', 'Max penalty exceeded');
         });
 
         it(printTitle('trusted node', 'can apply another penalty only after 50400 blocks'), async () => {
-            const maxPenaltyAmount = '300'.ether;
+            const maxPenaltyAmount = '2500'.ether;
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMegapool, 'maximum.megapool.eth.penalty', maxPenaltyAmount, { from: owner });
             await deployMegapool({ from: node });
-            await applyPenalty(megapool, 0n, '300'.ether, trustedNode1);
-            await applyPenalty(megapool, 0n, '300'.ether, trustedNode2);
+            await votePenalty(megapool, 0n, '2500'.ether, trustedNode1);
+            await votePenalty(megapool, 0n, '2500'.ether, trustedNode2);
             const megapoolDebtBefore = await megapool.getDebt();
             await helpers.mine(50397);
-            await applyPenalty(megapool, 1n, '300'.ether, trustedNode1);
-            await shouldRevert(applyPenalty(megapool, 1n, '300'.ether, trustedNode2), 'Applied greater penalty', 'Max penalty exceeded');
+            await votePenalty(megapool, 1n, '2500'.ether, trustedNode1);
+            await shouldRevert(votePenalty(megapool, 1n, '2500'.ether, trustedNode2), 'Applied greater penalty', 'Max penalty exceeded');
             await helpers.mine(3);
-            await applyPenalty(megapool, 1n, '300'.ether, trustedNode2);
+            await votePenalty(megapool, 1n, '2500'.ether, trustedNode2);
             const megapoolDebtAfter = await megapool.getDebt();
             const debtDelta = megapoolDebtAfter - megapoolDebtBefore;
-            assertBN.equal(debtDelta, '300'.ether);
+            assertBN.equal(debtDelta, '2500'.ether);
         });
 
         it(printTitle('misc', 'should calculate rewards on an empty megapool'), async () => {
@@ -402,8 +405,8 @@ export default function() {
             });
 
             it(printTitle('node', 'can not reduce bond with debt'), async () => {
-                await applyPenalty(megapool, 0n, '1'.ether, trustedNode1);
-                await applyPenalty(megapool, 0n, '1'.ether, trustedNode2);
+                await votePenalty(megapool, 0n, '1'.ether, trustedNode1);
+                await votePenalty(megapool, 0n, '1'.ether, trustedNode2);
                 await shouldRevert(reduceBond(megapool, '2'.ether), 'Reduced bond with debt', 'Cannot reduce bond with debt');
             });
 
@@ -467,8 +470,8 @@ export default function() {
 
             it(printTitle('node', 'can not create a new validator while debt is present'), async () => {
                 await deployMegapool({ from: node });
-                await applyPenalty(megapool, 0n, '1'.ether, trustedNode1);
-                await applyPenalty(megapool, 0n, '1'.ether, trustedNode2);
+                await votePenalty(megapool, 0n, '1'.ether, trustedNode1);
+                await votePenalty(megapool, 0n, '1'.ether, trustedNode2);
                 await shouldRevert(nodeDeposit(node), 'Created validator', 'Cannot create validator while debt exists');
             });
 
@@ -784,10 +787,11 @@ export default function() {
                 it(printTitle('node', 'accrues debt when exit balance is too low and bond has been reduced'), async () => {
                     // Adjust `reduced_bond` to 2 ETH
                     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
-                    // Notify exit in 5 epochs
+                    // Notify exit in 113+1 epochs to avoid late penalty
                     const currentEpoch = await getCurrentEpoch();
-                    await notifyExitValidator(megapool, 0, currentEpoch);
-                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether - '9'.ether, owner, currentEpoch * 32);
+                    await notifyExitValidator(megapool, 0, currentEpoch + 114);
+                    await helpers.time.increase(12 * 32 * 114);
+                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether - '9'.ether, owner, await getCurrentEpoch() * 32);
                     /*
                         NO should receive 8 ETH bond on exit, but lost 9 ETH capital so bond should reduce by 8 ETH
                         but NO should accrue a 1 ETH debt
@@ -800,14 +804,38 @@ export default function() {
                     assertBN.equal(nodeDebt, '1'.ether);
                 });
 
+                it(printTitle('node', 'accrues penalty via debt with late notify exit submission'), async () => {
+                    // Set fine to 0.01 ETH
+                    const fineAmount = '0.01'.ether;
+                    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMegapool, 'late.notify.fine', fineAmount, { from: owner });
+                    // Adjust `reduced_bond` to 2 ETH
+                    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
+                    // Notify exit in 112 epochs (1 epoch too late)
+                    const currentEpoch = await getCurrentEpoch();
+                    await notifyExitValidator(megapool, 0, currentEpoch + 112);
+                    // Increase time to beyond withdrawalbe_epoch
+                    await helpers.time.increase(12 * 32 * 112);
+                    // Increase time to beyond user distribute window
+                    await helpers.time.increase(userDistributeTime + 1);
+                    // Submit the final balance from a random account to prevent immediate claim
+                    const randomMegapoolRunner = megapool.connect(random);
+                    await notifyFinalBalanceValidator(randomMegapoolRunner, 0, '32'.ether, owner, await getCurrentEpoch() * 32);
+                    /*
+                        NO should receive a 0.01 ETH penalty for submitting late
+                     */
+                    const nodeDebt = await megapool.getDebt();
+                    assertBN.equal(nodeDebt, fineAmount);
+                });
+
                 snapshotDescribe('With debt', () => {
                     before(async () => {
                         /*
                             Exit the validator with 5 ETH capital loss will result in a debt of 1 ETH
                          */
                         const currentEpoch = await getCurrentEpoch();
-                        await notifyExitValidator(megapool, 0, currentEpoch);
-                        await notifyFinalBalanceValidator(megapool, 0, '32'.ether - '5'.ether, owner, currentEpoch * 32);
+                        await notifyExitValidator(megapool, 0, currentEpoch + 114);
+                        await helpers.time.increase(12 * 32 * 114);
+                        await notifyFinalBalanceValidator(megapool, 0, '32'.ether - '5'.ether, owner, await getCurrentEpoch() * 32);
                         const nodeDebt = await megapool.getDebt();
                         assertBN.equal(nodeDebt, '1'.ether);
                     });

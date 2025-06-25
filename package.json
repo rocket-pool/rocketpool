@@ -31,7 +31,7 @@
     "dotenv": "^16.0.3",
     "ethers": "^6.13.3",
     "hardhat": "2.22.12",
-    "hardhat-gas-reporter": "^2.2.1",
+    "hardhat-gas-reporter": "^2.3.0",
     "mocha": "^10.1.0",
     "pako": "^1.0.6",
     "solidity-coverage": "^0.8.13"

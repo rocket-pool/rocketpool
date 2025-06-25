@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.30;
 
-import "../../interface/network/RocketNetworkBalancesInterface.sol";
+import {RocketNetworkBalancesInterface} from "../../interface/network/RocketNetworkBalancesInterface.sol";
 import {AddressQueueStorageInterface} from "../../interface/util/AddressQueueStorageInterface.sol";
-import {DepositQueueValue, DepositQueueKey, LinkedListStorageInterface} from "../../interface/util/LinkedListStorageInterface.sol";
+import {LinkedListStorageInterface} from "../../interface/util/LinkedListStorageInterface.sol";
 import {RocketBase} from "../RocketBase.sol";
 import {RocketDAOProtocolSettingsDepositInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
 import {RocketDAOProtocolSettingsMinipoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
@@ -410,7 +410,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             }
             // Get the entry
             bytes32 namespace = getQueueNamespace(express);
-            DepositQueueValue memory head = linkedListStorage.peekItem(namespace);
+            LinkedListStorageInterface.DepositQueueValue memory head = linkedListStorage.peekItem(namespace);
             uint256 ethRequired = head.requestedValue * milliToWei;
             // Check if we have enough available to assign
             if (vaultBalance < ethRequired) {
@@ -485,7 +485,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         }
         // Enqueue megapool
         bytes32 namespace = getQueueNamespace(_expressQueue);
-        DepositQueueValue memory value = DepositQueueValue({
+        LinkedListStorageInterface.DepositQueueValue memory value = LinkedListStorageInterface.DepositQueueValue({
             receiver: msg.sender,                             // Megapool address
             validatorId: _validatorId,                        // Incrementing id per validator in a megapool
             suppliedValue: uint32(_bondAmount / milliToWei),  // NO bond amount
@@ -521,13 +521,13 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     /// @param _expressQueue Whether the entry is in the express queue or not
     function exitQueue(uint32 _validatorId, bool _expressQueue) external onlyRegisteredMegapool(msg.sender) {
         LinkedListStorageInterface linkedListStorage = LinkedListStorageInterface(getContractAddress("linkedListStorage"));
-        DepositQueueKey memory key = DepositQueueKey({
+        LinkedListStorageInterface.DepositQueueKey memory key = LinkedListStorageInterface.DepositQueueKey({
             receiver: msg.sender,
             validatorId: _validatorId
         });
         bytes32 namespace = getQueueNamespace(_expressQueue);
         uint256 index = linkedListStorage.getIndexOf(namespace, key);
-        DepositQueueValue memory value = linkedListStorage.getItem(namespace, index);
+        LinkedListStorageInterface.DepositQueueValue memory value = linkedListStorage.getItem(namespace, index);
         bool isAtHead = linkedListStorage.getHeadIndex(namespace) == index;
         linkedListStorage.removeItem(namespace, key);
         // Perform balance accounting
@@ -553,11 +553,9 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         emit QueueExited(msg.sender, block.timestamp);
     }
 
-    function applyCredit(uint256 _amount) override external onlyRegisteredMegapool(msg.sender) {
+    function applyCredit(address _nodeAddress, uint256 _amount) override external onlyRegisteredMegapool(msg.sender) {
         // Add to node's credit for the amount supplied
-        RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(msg.sender);
-        address nodeAddress = megapool.getNodeAddress();
-        addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", nodeAddress)), _amount);
+        addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress)), _amount);
         addUint("deposit.pool.node.balance", _amount);
     }
 
@@ -617,7 +615,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
         // Check if enough value is in the deposit pool to assign the requested value
         bytes32 namespace = getQueueNamespace(express);
-        DepositQueueValue memory head = linkedListStorage.peekItem(namespace);
+        LinkedListStorageInterface.DepositQueueValue memory head = linkedListStorage.peekItem(namespace);
         assignmentPossible = rocketVault.balanceOf("rocketDepositPool") >= head.requestedValue;
 
         // Check assignments are enabled
@@ -675,23 +673,17 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     // TODO: This stuff doesn't feel like it belongs here
 
     /// @dev Called by a megapool during a bond reduction to adjust its capital ratio
-    function reduceBond(uint256 _amount) override external onlyRegisteredMegapool(msg.sender) {
-        // Add to node's credit for the amount supplied
-        RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(msg.sender);
-        address nodeAddress = megapool.getNodeAddress();
+    function reduceBond(address _nodeAddress, uint256 _amount) override external onlyRegisteredMegapool(msg.sender) {
         // Update collateral balances
-        _increaseETHBorrowed(nodeAddress, _amount);
-        _decreaseETHBonded(nodeAddress, _amount);
+        _increaseETHBorrowed(_nodeAddress, _amount);
+        _decreaseETHBonded(_nodeAddress, _amount);
     }
 
     /// @dev Called by a megapool when exiting to handle change in capital ratio
-    function fundsReturned(uint256 _nodeAmount, uint256 _userAmount) override external onlyRegisteredMegapool(msg.sender) {
-        // Add to node's credit for the amount supplied
-        RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(msg.sender);
-        address nodeAddress = megapool.getNodeAddress();
+    function fundsReturned(address _nodeAddress, uint256 _nodeAmount, uint256 _userAmount) override external onlyRegisteredMegapool(msg.sender) {
         // Update collateral balances
-        _decreaseETHBonded(nodeAddress, _nodeAmount);
-        _decreaseETHBorrowed(nodeAddress, _userAmount);
+        _decreaseETHBonded(_nodeAddress, _nodeAmount);
+        _decreaseETHBorrowed(_nodeAddress, _userAmount);
     }
 
     /// @dev Increases the amount of ETH supplied by a node operator as bond

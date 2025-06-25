@@ -3,8 +3,9 @@ pragma solidity 0.8.30;
 
 import {RocketBase} from "../RocketBase.sol";
 import {RocketMegapoolDelegateBaseInterface} from "../../interface/megapool/RocketMegapoolDelegateBaseInterface.sol";
-import "./RocketMegapoolStorageLayout.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
+import {RocketMegapoolStorageLayout} from "./RocketMegapoolStorageLayout.sol";
+import {RocketNodeManagerInterface} from "../../interface/node/RocketNodeManagerInterface.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 
 /// @dev All megapool delegate contracts should extend this base to include the expected deprecation functionality
 contract RocketMegapoolDelegateBase is RocketMegapoolStorageLayout, RocketMegapoolDelegateBaseInterface {

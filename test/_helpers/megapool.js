@@ -15,25 +15,29 @@ const ethers = hre.ethers;
 const milliToWei = 1000000000000000n;
 
 export async function getValidatorInfo(megapool, index) {
-    const validatorInfo = await megapool.getValidatorInfo(index);
+    const [validatorInfo, pubkey] = await megapool.getValidatorInfoAndPubkey(index);
 
     return {
-        pubkey: validatorInfo[0],
-        lastAssignmentTime: validatorInfo[1],
-        lastRequestedValue: validatorInfo[2],
-        lastRequestedBond: validatorInfo[3],
-        depositValue: validatorInfo[4],
+        pubkey,
 
-        staked: validatorInfo[5],
-        exited: validatorInfo[6],
-        inQueue: validatorInfo[7],
-        inPrestake: validatorInfo[8],
-        expressUsed: validatorInfo[9],
-        dissolved: validatorInfo[10],
-        exiting: validatorInfo[11],
+        lastAssignmentTime: validatorInfo[0],
+        lastRequestedValue: validatorInfo[1],
+        lastRequestedBond: validatorInfo[2],
+        depositValue: validatorInfo[3],
+
+        staked: validatorInfo[4],
+        exited: validatorInfo[5],
+        inQueue: validatorInfo[6],
+        inPrestake: validatorInfo[7],
+        expressUsed: validatorInfo[8],
+        dissolved: validatorInfo[9],
+        exiting: validatorInfo[10],
+        locked: validatorInfo[11],
 
         validatorIndex: validatorInfo[12],
         exitBalance: validatorInfo[13],
+        withdrawableEpoch: validatorInfo[14],
+        lockedSlot: validatorInfo[15],
     }
 }
 

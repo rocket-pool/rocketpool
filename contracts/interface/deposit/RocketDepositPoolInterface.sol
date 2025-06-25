@@ -19,9 +19,9 @@ interface RocketDepositPoolInterface {
     function withdrawExcessBalance(uint256 _amount) external;
     function requestFunds(uint256 _bondAmount, uint32 _validatorId, uint256 _amount, bool _useExpressTicket) external;
     function exitQueue(uint32 _validatorId, bool _expressQueue) external;
-    function applyCredit(uint256 _amount) external;
-    function reduceBond(uint256 _amount) external;
-    function fundsReturned(uint256 _nodeAmount, uint256 _userAmount) external;
+    function applyCredit(address _nodeAddress, uint256 _amount) external;
+    function reduceBond(address _nodeAddress, uint256 _amount) external;
+    function fundsReturned(address _nodeAddress, uint256 _nodeAmount, uint256 _userAmount) external;
     function withdrawCredit(uint256 _amount) external;
     function getQueueTop() external view returns (address receiver, bool assignmentPossible, uint256 headMovedBlock);
     function getQueueIndex() external view returns (uint256);

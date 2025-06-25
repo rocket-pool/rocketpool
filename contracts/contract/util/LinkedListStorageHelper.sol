@@ -3,7 +3,7 @@ pragma solidity 0.8.30;
 pragma abicoder v2;
 
 import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
-import {LinkedListStorage, DepositQueueValue, DepositQueueKey} from "./LinkedListStorage.sol";
+import {LinkedListStorage} from "./LinkedListStorage.sol";
 
 /// @notice A linked list storage helper to test internal functions
 contract LinkedListStorageHelper is LinkedListStorage {
@@ -29,7 +29,7 @@ contract LinkedListStorageHelper is LinkedListStorage {
     /// @notice Removes an item from a queue. Requires that the item exists in the queue
     /// @param _namespace to be used
     /// @param _key to be removed from the queue
-    function removeItem(bytes32 _namespace, DepositQueueKey memory _key) public virtual override {
+    function removeItem(bytes32 _namespace,  DepositQueueKey memory _key) public virtual override {
         return _removeItem(_namespace, _key);
     }
 

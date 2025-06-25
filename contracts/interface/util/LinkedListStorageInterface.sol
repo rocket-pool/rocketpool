@@ -2,19 +2,19 @@
 pragma solidity >0.5.0 <0.9.0;
 pragma abicoder v2;
 
-struct DepositQueueValue {
-    address receiver;      // the address that will receive the requested value
-    uint32 validatorId;    // internal validator id
-    uint32 suppliedValue;  // in milliether
-    uint32 requestedValue; // in milliether
-}
-
-struct DepositQueueKey {
-    address receiver;      // the address that will receive the requested value
-    uint32 validatorId;    // internal validator id
-}
-
 interface LinkedListStorageInterface {
+    struct DepositQueueValue {
+        address receiver;      // the address that will receive the requested value
+        uint32 validatorId;    // internal validator id
+        uint32 suppliedValue;  // in milliether
+        uint32 requestedValue; // in milliether
+    }
+
+    struct DepositQueueKey {
+        address receiver;      // the address that will receive the requested value
+        uint32 validatorId;    // internal validator id
+    }
+
     function getLength(bytes32 _namespace) external view returns (uint256);
     function getItem(bytes32 _namespace, uint256 _index) external view returns (DepositQueueValue memory);
     function peekItem(bytes32 _namespace) external view returns (DepositQueueValue memory);
