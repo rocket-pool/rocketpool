@@ -37,6 +37,11 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         setUint(keccak256(abi.encodePacked("megapool.validator.set", index)), encoded);
     }
 
+    /// @notice Returns the last trusted member to execute a challenge
+    function getLastChallenger() override external view returns (address) {
+        return getAddress(challengerKey);
+    }
+
     /// @notice Returns validator info for the given global megapool validator index
     /// @param _index The index of the validator to query
     function getValidatorInfo(uint256 _index) override external view returns (RocketMegapoolStorageLayout.ValidatorInfo memory validatorInfo, address megapool, uint32 validatorId) {
@@ -93,7 +98,7 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
         require(beaconStateVerifier.verifyValidator(_proof), "Invalid proof");
         // Verify correct withdrawable_epoch
-        require(_proof.validator.withdrawableEpoch < farFutureEpoch, "Validator is not exiting");
+        require(_proof.validator.withdrawableEpoch < farFutureEpoch, "Validator not exiting");
         // Verify matching validator index
         RocketMegapoolStorageLayout.ValidatorInfo memory validatorInfo = _megapool.getValidatorInfo(_validatorId);
         require(_proof.validatorIndex == validatorInfo.validatorIndex, "Invalid proof");

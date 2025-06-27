@@ -8,6 +8,8 @@ const milliToWei = 1000000000000000n;
 
 const hre = require('hardhat');
 
+let validatorIndex = 0
+
 // Stake a megapool validator
 export async function stakeMegapoolValidator(megapool, index) {
     const rocketMegapoolManager = await RocketMegapoolManager.deployed();
@@ -19,7 +21,7 @@ export async function stakeMegapoolValidator(megapool, index) {
     // Construct a fake proof
     const proof = {
         slot: 0,
-        validatorIndex: 0,
+        validatorIndex: validatorIndex ++,
         validator: {
             pubkey: validatorInfo.pubkey,
             withdrawalCredentials: withdrawalCredentials,

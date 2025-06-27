@@ -28,10 +28,12 @@ export async function notifyExitValidator(megapool, validatorId, withdrawalEpoch
 
     const withdrawalCredentials = await megapool.getWithdrawalCredentials();
 
+    const infoBefore = await getValidatorInfo(megapool, validatorId)
+
     // Construct a fake proof
     const proof = {
         slot: 0,
-        validatorIndex: 0,
+        validatorIndex: infoBefore.validatorIndex,
         validator: {
             pubkey: '0x00',
             withdrawalCredentials: withdrawalCredentials,
@@ -108,6 +110,7 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
 
     const withdrawalCredentials = Buffer.from(megapool.target.substr(2), 'hex');
     const amountInGwei = finalBalance / '1'.gwei;
+    const infoBefore = await getValidatorInfo(megapool, validatorId);
 
     const proof = {
         slot: withdrawalSlot,
@@ -115,7 +118,7 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
         withdrawalNum: 0n,
         withdrawal: {
             index: 0n,
-            validatorIndex: 0n,
+            validatorIndex: infoBefore.validatorIndex,
             withdrawalCredentials: withdrawalCredentials,
             amountInGwei: amountInGwei,
         },

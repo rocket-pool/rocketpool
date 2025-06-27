@@ -508,7 +508,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     function notifyNotExit(uint32 _validatorId, uint64 _slot) override external onlyRocketMegapoolManager {
         ValidatorInfo memory validator = validators[_validatorId];
         // Check required state
-        require(validator.locked, "Validator is not locked");
+        require(validator.locked, "Validator not locked");
         require(_slot >= validator.lockedSlot, "Proof is older than challenge");
         // Update validator state to exiting/locked
         validator.locked = false;
@@ -580,7 +580,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     function _notifyFinalBalance(uint32 _validatorId, uint64 _amountInGwei, uint64 _withdrawalSlot) internal {
         ValidatorInfo memory validator = validators[_validatorId];
         require(!validator.exited, "Already exited");
-        require(validator.exiting, "Validator is not exiting");
+        require(validator.exiting, "Validator not exiting");
         require(!validator.dissolved, "Validator dissolved");
         require(_withdrawalSlot >= validator.withdrawableEpoch * slotsPerEpoch, "Not full withdrawal");
         // Mark as exited
