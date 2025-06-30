@@ -437,24 +437,41 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     /// @dev Internal implementation of claim process
     function _claim() internal {
         uint256 amountToSend = refundValue;
+        // If node operator has a debt, pay that off first
         if (debt > 0) {
             if (debt > amountToSend) {
-                _reduceDebt(amountToSend);
-                refundValue = 0;
-                return;
+                _repayDebt(amountToSend);
+                amountToSend = 0;
             } else {
-                _reduceDebt(debt);
                 amountToSend -= debt;
+                _repayDebt(debt);
             }
         }
-        // Zero out refund
+        // Zero out refund value
         refundValue = 0;
-        // Send to withdrawal address
-        address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
-        (bool success,) = nodeWithdrawalAddress.call{value: amountToSend}("");
-        require(success, "Failed to send ETH");
+        // If there is still an amount to send after debt, do so now
+        if (amountToSend > 0) {
+            address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
+            (bool success,) = nodeWithdrawalAddress.call{value: amountToSend}("");
+            require(success, "Failed to send ETH");
+        }
         // Emit event
         emit RewardsClaimed(amountToSend, block.timestamp);
+    }
+
+    /// @dev Repays a debt from refund balance
+    function _claimDebt() internal {
+        // Nothing to do with no debt
+        if (debt == 0) return;
+        // Calculate how much to repay
+        uint256 amountToClaim = refundValue;
+        if (amountToClaim > debt) {
+            amountToClaim = debt;
+        }
+        // Send to rETH
+        _repayDebt(amountToClaim);
+        // Reduce refund balance
+        refundValue -= amountToClaim;
     }
 
     /// @notice Returns the calculated split of pending rewards
@@ -573,6 +590,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             uint256 withdrawableEpoch = uint256(validators[_validatorId].withdrawableEpoch);
             uint256 distributableTime = (withdrawableEpoch * secondsPerSlot * slotsPerEpoch + genesisTime) + distributeWindowStart;
             require(block.timestamp > distributableTime, "Not enough time has passed");
+            _claimDebt();
         }
     }
 

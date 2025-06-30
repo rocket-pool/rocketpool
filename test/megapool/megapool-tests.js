@@ -22,7 +22,7 @@ import {
     RocketMegapoolFactory,
     RocketMegapoolManager,
     RocketNodeDeposit,
-    RocketStorage,
+    RocketStorage, RocketTokenRETH,
 } from '../_utils/artifacts';
 import assert from 'assert';
 import { stakeMegapoolValidator } from './scenario-stake';
@@ -36,6 +36,7 @@ import { votePenalty } from './scenario-apply-penalty';
 import { reduceBond } from './scenario-reduce-bond';
 import { dissolveValidator } from './scenario-dissolve';
 import { challengeValidator } from './scenario-challenge';
+import { repayDebt } from './scenario-repay-debt';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -984,9 +985,11 @@ export default function() {
                     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
                     // Notify exit in 5 epochs
                     const currentEpoch = await getCurrentEpoch();
-                    await notifyExitValidator(megapool, 0, currentEpoch);
+                    await notifyExitValidator(megapool, 0, currentEpoch + 114);
+                    // Increase time to beyond withdrawable_epoch
+                    await helpers.time.increase(12 * 32 * 114);
                     const nodeBalanceBefore = await ethers.provider.getBalance(nodeWithdrawalAddress);
-                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner, currentEpoch * 32);
+                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner, await getCurrentEpoch() * 32);
                     const nodeBalanceAfter = await ethers.provider.getBalance(nodeWithdrawalAddress);
                     /*
                         NO started with 5 validators
@@ -1002,11 +1005,13 @@ export default function() {
                 it(printTitle('node', 'can bond reduce on exit with balance < 32 ETH'), async () => {
                     // Adjust `reduced_bond` to 2 ETH
                     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
-                    // Notify exit in 5 epochs
+                    // Notify exit enough into the future to avoid fine
                     const currentEpoch = await getCurrentEpoch();
-                    await notifyExitValidator(megapool, 0, currentEpoch);
+                    await notifyExitValidator(megapool, 0, currentEpoch + 114);
                     const nodeBalanceBefore = await ethers.provider.getBalance(nodeWithdrawalAddress);
-                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether - '7'.ether, owner, currentEpoch * 32);
+                    // Increase time to beyond withdrawable_epoch
+                    await helpers.time.increase(12 * 32 * 114);
+                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether - '7'.ether, owner, await getCurrentEpoch() * 32);
                     const nodeBalanceAfter = await ethers.provider.getBalance(nodeWithdrawalAddress);
                     /*
                         NO should receive 8 ETH bond on exit, but lost 7 ETH capital so bond should reduce by 8 ETH
@@ -1046,18 +1051,21 @@ export default function() {
                     // Notify exit in 112 epochs (1 epoch too late)
                     const currentEpoch = await getCurrentEpoch();
                     await notifyExitValidator(megapool, 0, currentEpoch + 112);
-                    // Increase time to beyond withdrawalbe_epoch
+                    /*
+                        NO should receive a 0.01 ETH penalty for submitting late
+                     */
+                    const nodeDebt = await megapool.getDebt();
+                    assertBN.equal(nodeDebt, fineAmount);
+                    // Increase time to beyond withdrawable_epoch
                     await helpers.time.increase(12 * 32 * 112);
                     // Increase time to beyond user distribute window
                     await helpers.time.increase(userDistributeTime + 1);
                     // Submit the final balance from a random account to prevent immediate claim
                     const randomMegapoolRunner = megapool.connect(random);
                     await notifyFinalBalanceValidator(randomMegapoolRunner, 0, '32'.ether, owner, await getCurrentEpoch() * 32);
-                    /*
-                        NO should receive a 0.01 ETH penalty for submitting late
-                     */
-                    const nodeDebt = await megapool.getDebt();
-                    assertBN.equal(nodeDebt, fineAmount);
+                    // Debt should be paid on exit
+                    const nodeDebtAfter = await megapool.getDebt();
+                    assertBN.equal(nodeDebtAfter, 0n);
                 });
 
                 snapshotDescribe('With debt', () => {
@@ -1074,11 +1082,7 @@ export default function() {
                     });
 
                     it(printTitle('node', 'can manually pay down debt'), async () => {
-                        const debtBefore = await megapool.getDebt();
-                        assertBN.isAbove(debtBefore, 0n);
-                        await megapool.repayDebt({ value: debtBefore });
-                        const debtAfter = await megapool.getDebt();
-                        assertBN.equal(debtAfter, '0'.ether);
+                        await repayDebt(megapool, '1'.ether)
                     });
 
                     it(printTitle('node', 'can use rewards to partially pay down debt'), async () => {
