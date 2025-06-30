@@ -64,6 +64,7 @@ export async function distributeMegapool(megapool) {
     }
 
     assertBN.equal(balanceDeltas.nodeDebt, expectedDebtDelta);
+    assertBN.equal(balanceDeltas.rethBalance, -expectedDebtDelta + expectedRethRewards);
     assertBN.equal(balanceDeltas.voterBalance, expectedVoterRewards);
     assertBN.equal(balanceDeltas.rethBalance + balanceDeltas.nodeDebt, expectedRethRewards);
     assertBN.equal(balancesAfter.pendingRewards, 0n);
