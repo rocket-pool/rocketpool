@@ -1069,14 +1069,28 @@ export default function() {
                 });
 
                 snapshotDescribe('With debt', () => {
+                    async function getData() {
+                        const rocketTokenRETH = await RocketTokenRETH.deployed()
+                        const [ rethBalance, debt, nodeBalance ] = await Promise.all([
+                            ethers.provider.getBalance(rocketTokenRETH.target),
+                            megapool.getDebt(),
+                            ethers.provider.getBalance(nodeWithdrawalAddress),
+                        ])
+                        return { rethBalance, debt, nodeBalance };
+                    }
+
+                    async function exitValidator(megapool, index, finalBalance) {
+                        const currentEpoch = await getCurrentEpoch();
+                        await notifyExitValidator(megapool, index, currentEpoch + 114);
+                        await helpers.time.increase(12 * 32 * 114);
+                        await notifyFinalBalanceValidator(megapool, index, finalBalance, owner, await getCurrentEpoch() * 32);
+                    }
+
                     before(async () => {
                         /*
                             Exit the validator with 5 ETH capital loss will result in a debt of 1 ETH
                          */
-                        const currentEpoch = await getCurrentEpoch();
-                        await notifyExitValidator(megapool, 0, currentEpoch + 114);
-                        await helpers.time.increase(12 * 32 * 114);
-                        await notifyFinalBalanceValidator(megapool, 0, '32'.ether - '5'.ether, owner, await getCurrentEpoch() * 32);
+                        await exitValidator(megapool, 0, '32'.ether - '5'.ether)
                         const nodeDebt = await megapool.getDebt();
                         assertBN.equal(nodeDebt, '1'.ether);
                     });
@@ -1093,6 +1107,24 @@ export default function() {
                     it(printTitle('node', 'can use rewards to fully pay down debt'), async () => {
                         await mockRewards(megapool, '20'.ether);
                         await distributeMegapool(megapool);
+                    });
+
+                    it(printTitle('node', 'will use exit balance to pay down debt'), async () => {
+                        const data1 = await getData();
+                        await exitValidator(megapool, 1, '32'.ether)
+                        const data2 = await getData();
+                        assertBN.equal(data2.nodeBalance - data1.nodeBalance, '3'.ether); // 3 ETH returned to node
+                        assertBN.equal(data2.debt, 0n); // Debt cleared
+                        assertBN.equal(data2.rethBalance - data1.rethBalance, '28'.ether + '1'.ether); // User capital + 1 ETH debt returned to rETH
+                    });
+
+                    it(printTitle('node', 'will increase debt further on slashed exit'), async () => {
+                        const data1 = await getData();
+                        await exitValidator(megapool, 1, '27'.ether)
+                        const data2 = await getData();
+                        assertBN.equal(data2.nodeBalance - data1.nodeBalance, '0'.ether); // No change
+                        assertBN.equal(data2.debt - data1.debt, '1'.ether); // 1 ETH more debt added
+                        assertBN.equal(data2.rethBalance - data1.rethBalance, '27'.ether); // Entire balance sent to rETH
                     });
                 });
             });

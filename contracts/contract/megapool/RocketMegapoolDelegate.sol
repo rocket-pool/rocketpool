@@ -437,8 +437,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     /// @dev Internal implementation of claim process
     function _claim() internal {
         uint256 amountToSend = refundValue;
-        // Nothing to do if no refund value to claim
-        if (amountToSend == 0) return;
         // If node operator has a debt, pay that off first
         if (debt > 0) {
             if (debt > amountToSend) {
@@ -616,28 +614,18 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             }
             uint256 toUser = withdrawalBalance - toNode;
             // Pay off any existing debt and any new debt introduced by this exit
-            uint256 existingDebt = debt;
-            uint256 newDebt = existingDebt;
             if (toUser < userShare) {
-                newDebt += userShare - toUser;
+                _increaseDebt(userShare - toUser);
             }
-            if (toNode > 0 && newDebt > 0) {
-                if (toNode > newDebt) {
-                    toNode -= newDebt;
-                    toUser += newDebt;
-                    newDebt = 0;
+            if (toNode > 0 && debt > 0) {
+                if (toNode > debt) {
+                    toNode -= debt;
+                    toUser += debt;
+                    debt = 0;
                 } else {
-                    newDebt -= toNode;
                     toUser += toNode;
                     toNode = 0;
-                }
-            }
-            // Handle any changes to debt balance
-            if (newDebt != existingDebt) {
-                if (newDebt > existingDebt) {
-                    _increaseDebt(newDebt - existingDebt);
-                } else {
-                    _reduceDebt(existingDebt - newDebt);
+                    _reduceDebt(toNode);
                 }
             }
             // Send funds
