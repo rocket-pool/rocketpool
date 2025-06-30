@@ -12,7 +12,7 @@ import assert from 'assert';
 const hre = require('hardhat');
 const ethers = hre.ethers;
 
-// Nofiy megapool of exiting validator
+// Notify megapool of exiting validator
 export async function notifyExitValidator(megapool, validatorId, withdrawalEpoch) {
 
     const rocketMegapoolManager = await RocketMegapoolManager.deployed();
@@ -153,7 +153,7 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
     if (nodeCalling) {
         assertBN.equal(balanceDeltas.rethBalance + balanceDeltas.nodeBalance + balanceDeltas.nodeRefund, finalBalance);
     } else {
-        assertBN.equal(balanceDeltas.rethBalance + balanceDeltas.nodeBalance + balanceDeltas.nodeRefund, finalBalance);
+        assertBN.equal(balanceDeltas.rethBalance + balanceDeltas.nodeRefund, finalBalance);
     }
 
     if (!info.dissolved) {

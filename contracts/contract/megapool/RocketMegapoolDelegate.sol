@@ -437,6 +437,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     /// @dev Internal implementation of claim process
     function _claim() internal {
         uint256 amountToSend = refundValue;
+        // Nothing to do if no refund value to claim
+        if (amountToSend == 0) return;
         // If node operator has a debt, pay that off first
         if (debt > 0) {
             if (debt > amountToSend) {
@@ -457,21 +459,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         }
         // Emit event
         emit RewardsClaimed(amountToSend, block.timestamp);
-    }
-
-    /// @dev Repays a debt from refund balance
-    function _claimDebt() internal {
-        // Nothing to do with no debt
-        if (debt == 0) return;
-        // Calculate how much to repay
-        uint256 amountToClaim = refundValue;
-        if (amountToClaim > debt) {
-            amountToClaim = debt;
-        }
-        // Send to rETH
-        _repayDebt(amountToClaim);
-        // Reduce refund balance
-        refundValue -= amountToClaim;
     }
 
     /// @notice Returns the calculated split of pending rewards
@@ -590,7 +577,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             uint256 withdrawableEpoch = uint256(validators[_validatorId].withdrawableEpoch);
             uint256 distributableTime = (withdrawableEpoch * secondsPerSlot * slotsPerEpoch + genesisTime) + distributeWindowStart;
             require(block.timestamp > distributableTime, "Not enough time has passed");
-            _claimDebt();
         }
     }
 
@@ -629,8 +615,30 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
                 }
             }
             uint256 toUser = withdrawalBalance - toNode;
+            // Pay off any existing debt and any new debt introduced by this exit
+            uint256 existingDebt = debt;
+            uint256 newDebt = existingDebt;
             if (toUser < userShare) {
-                _increaseDebt(userShare - toUser);
+                newDebt += userShare - toUser;
+            }
+            if (toNode > 0 && newDebt > 0) {
+                if (toNode > newDebt) {
+                    toNode -= newDebt;
+                    toUser += newDebt;
+                    newDebt = 0;
+                } else {
+                    newDebt -= toNode;
+                    toUser += toNode;
+                    toNode = 0;
+                }
+            }
+            // Handle any changes to debt balance
+            if (newDebt != existingDebt) {
+                if (newDebt > existingDebt) {
+                    _increaseDebt(newDebt - existingDebt);
+                } else {
+                    _reduceDebt(existingDebt - newDebt);
+                }
             }
             // Send funds
             sendToRETH(toUser);
