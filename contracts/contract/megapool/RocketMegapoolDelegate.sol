@@ -527,6 +527,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     function notifyExit(uint32 _validatorId, uint64 _withdrawableEpoch) override external onlyRocketMegapoolManager {
         ValidatorInfo memory validator = validators[_validatorId];
         // Check required state
+        require(validator.staked, "Not staking");
         require(!validator.exiting, "Already notified");
         require(!validator.exited, "Already exited");
         require(!validator.dissolved, "Validator dissolved");
