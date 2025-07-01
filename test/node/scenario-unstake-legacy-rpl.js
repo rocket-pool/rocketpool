@@ -6,13 +6,16 @@ import {
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 
+const hre = require('hardhat');
+const ethers = hre.ethers;
+
 // Withdraw legacy RPL for
-export async function withdrawLegacyRpl(amount, txOptions) {
-    return withdrawLegacyRplFor(amount, txOptions.from.address, txOptions.from)
+export async function unstakeLegacyRpl(amount, txOptions) {
+    return unstakeLegacyRplFor(amount, txOptions.from.address, txOptions.from)
 }
 
 // Withdraw legacy RPL
-export async function withdrawLegacyRplFor(amount, nodeAddress, from) {
+export async function unstakeLegacyRplFor(amount, nodeAddress, from) {
     // Load contracts
     const [
         rocketNodeStaking,
@@ -48,11 +51,14 @@ export async function withdrawLegacyRplFor(amount, nodeAddress, from) {
     }
 
     const data1 = await getData();
+    let tx
     if (from.address === nodeAddress) {
-        await rocketNodeStaking.connect(from).withdrawLegacyRPL(amount);
+        tx = await rocketNodeStaking.connect(from).unstakeLegacyRPL(amount);
     } else {
-        await rocketNodeStaking.connect(from).withdrawLegacyRPLFor(nodeAddress, amount);
+        tx = await rocketNodeStaking.connect(from).unstakeLegacyRPLFor(nodeAddress, amount);
     }
+    const block = await ethers.provider.getBlock(tx.blockNumber);
+    const txTimestamp = block.timestamp;
     const data2 = await getData();
 
     const deltas = {
@@ -68,19 +74,28 @@ export async function withdrawLegacyRplFor(amount, nodeAddress, from) {
         nodeUnstakingRpl: data2.nodeUnstakingRpl - data1.nodeUnstakingRpl,
     }
 
-    // Withdrawing legacy should transfer RPL from vault to node
-    assertBN.equal(deltas.nodeRpl, amount);
-    assertBN.equal(deltas.vaultRpl, -amount);
-    assertBN.equal(deltas.stakingRpl, -amount);
+    // Last unstake time should be set to transaction timestamp
+    assertBN.equal(data2.nodeLastUnstakeTime, txTimestamp)
 
-    // Withdrawing legacy reduces total
+    // If last unstake was longer than 28 days ago, it should trigger a withdrawal
+    let expectedWithdrawAmount = 0n
+    if (txTimestamp - Number(data1.nodeLastUnstakeTime) > (60 * 60 * 24 * 28)) {
+        expectedWithdrawAmount = data1.nodeUnstakingRpl
+    }
+
+    // Check RPL balances
+    assertBN.equal(deltas.nodeRpl, expectedWithdrawAmount);
+    assertBN.equal(deltas.vaultRpl, -expectedWithdrawAmount);
+    assertBN.equal(deltas.stakingRpl, -expectedWithdrawAmount);
+
+    // Unstaking immediately reduces "staked" RPL balances
     assertBN.equal(deltas.totalStakedRpl, -amount);
+    assertBN.equal(deltas.totalMegapoolRpl, 0n);
     assertBN.equal(deltas.totalLegacyRpl, -amount);
     assertBN.equal(deltas.nodeStakedRpl, -amount);
+    assertBN.equal(deltas.nodeMegapoolRpl, 0n);
     assertBN.equal(deltas.nodeLegacyRpl, -amount);
 
-    // No changes in megapool staked RPL
-    assertBN.equal(deltas.nodeUnstakingRpl, 0n);
-    assertBN.equal(deltas.totalMegapoolRpl, 0n);
-    assertBN.equal(deltas.nodeMegapoolRpl, 0n);
+    // Unstaking balance should increase
+    assertBN.equal(deltas.nodeUnstakingRpl, amount - expectedWithdrawAmount);
 }

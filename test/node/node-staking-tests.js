@@ -20,8 +20,7 @@ import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trus
 import { globalSnapShot, snapshotDescribe } from '../_utils/snapshotting';
 import { unstakeRpl, unstakeRplFor } from './scenario-unstake-rpl';
 import { assertBN } from '../_helpers/bn';
-import { withdrawLegacyRpl, withdrawLegacyRplFor } from './scenario-withdraw-legacy-rpl';
-import { randomAddress } from 'hardhat/internal/hardhat-network/provider/utils/random';
+import { unstakeLegacyRpl, unstakeLegacyRplFor } from './scenario-unstake-legacy-rpl';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -127,14 +126,14 @@ export default function() {
             await assertBalances(node, 0n, rplAmount);
         });
 
-        it(printTitle('node operator', 'cannot withdraw megapool RPL as legacy RPL'), async () => {
+        it(printTitle('node operator', 'cannot unstake megapool RPL as legacy RPL'), async () => {
             const rplAmount = '100'.ether;
             // Stake 1000 megapool RPL
             await nodeStakeRPL(rplAmount, { from: node });
-            // Fail to withdraw legacy RPL
+            // Fail to unstake legacy RPL
             await shouldRevert(
-                withdrawLegacyRpl(rplAmount, { from: node }),
-                'Was able to withdraw legacy RPL',
+                unstakeLegacyRpl(rplAmount, { from: node }),
+                'Was able to unstake legacy RPL',
                 'Insufficient legacy staked RPL',
             );
             // Assert balances
@@ -421,20 +420,33 @@ export default function() {
                 await assertBalances(node, legacyAmount, 0n);
             });
 
-            it(printTitle('node operator', 'can withdraw legacy RPL'), async () => {
-                await withdrawLegacyRpl(legacyAmount, { from: node });
+            it(printTitle('node operator', 'can unstake and withdraw legacy RPL'), async () => {
+                // Unstake 500 RPL
+                await unstakeLegacyRpl('500'.ether, { from: node });
+                // Wait 28 days
+                await helpers.time.increase(60 * 60 * 24 * 28 + 1);
+                // Withdraw the 500 legacy staked
+                await withdrawRpl({ from: node });
+                // Check
+                await assertBalances(node, '500'.ether, 0n);
             });
 
             it(printTitle('node operator', 'can withdraw legacy RPL from RPL withdrawal address'), async () => {
+                // Set RPL withdrawal address
                 await setNodeRPLWithdrawalAddress(node, rplWithdrawalAddress, { from: node });
-                await withdrawLegacyRplFor(legacyAmount, node.address, rplWithdrawalAddress);
+                // Unstake RPL
+                await unstakeLegacyRplFor(legacyAmount, node, rplWithdrawalAddress);
+                // Wait 28 days
+                await helpers.time.increase(60 * 60 * 24 * 28 + 1);
+                // Withdraw the 500 megapool staked
+                await withdrawRplFor(node, rplWithdrawalAddress);
             });
 
             it(printTitle('random', 'can not withdraw legacy RPL for node operator'), async () => {
                 await shouldRevert(
-                    withdrawLegacyRplFor(legacyAmount, node.address, random),
+                    unstakeLegacyRplFor(legacyAmount, node.address, random),
                     'Was able to withdraw from random account',
-                    'Not allowed to withdraw for'
+                    'Not allowed to unstake legacy RPL for'
                 );
             });
 
@@ -454,14 +466,14 @@ export default function() {
                 );
             });
 
-            it(printTitle('node operator', 'can stake megapool staked RPL and then withdraw'), async () => {
+            it(printTitle('node operator', 'can stake megapool staked RPL and then unstake both'), async () => {
                 // Stake 1000 megapool staked RPL
                 await nodeStakeRPL('1000'.ether, { from: node });
                 // NO now has 1000 legacy and 1000 megapool
                 // Unstake 500 megapool
                 await unstakeRpl('500'.ether, { from: node });
-                // Withdraw 500 legacy
-                await withdrawLegacyRpl('500'.ether, { from: node });
+                // Unstake 500 legacy
+                await unstakeLegacyRpl('500'.ether, { from: node });
                 // Wait 28 days
                 await helpers.time.increase(60 * 60 * 24 * 28 + 1);
                 // Withdraw the 500 megapool staked
@@ -479,14 +491,14 @@ export default function() {
                 await setRPLLockingAllowed(node.address, true, { from: node });
                 await stakeHelper.lockRPL(node.address, '1500'.ether);
                 // NO should have 1000 legacy staked RPL, 1000 megapool staked RPL, and 1500 locked RPL, leaving 500 left to unstake
-                // Try to withdraw 1000 legacy RPL
+                // Try to unstake 1000 legacy RPL
                 await shouldRevert(
-                    withdrawLegacyRpl('1000'.ether, { from: node }),
+                    unstakeLegacyRpl('1000'.ether, { from: node }),
                     'Was able to unstake more than available',
                     'Insufficient RPL stake to reduce',
                 );
-                // Try to withdraw 500 legacy RPL
-                await withdrawLegacyRpl('500'.ether, { from: node });
+                // Try to unstake 500 legacy RPL
+                await unstakeLegacyRpl('500'.ether, { from: node });
                 // Fail to unstake 500 megapool RPL
                 await shouldRevert(
                     unstakeRpl('500'.ether, { from: node }),
@@ -518,16 +530,16 @@ export default function() {
                 );
                 // Try to unstake 500 RPL
                 await unstakeRpl('500'.ether, { from: node });
-                // Fail to withdraw 500 legacy RPL
+                // Fail to unstake 500 legacy RPL
                 await shouldRevert(
-                    withdrawLegacyRpl('500'.ether, { from: node }),
-                    'Was able to withdraw legacy RPL',
+                    unstakeLegacyRpl('500'.ether, { from: node }),
+                    'Was able to unstake legacy RPL',
                     'Insufficient RPL stake to reduce',
                 );
                 // Unlock the RPL
                 await stakeHelper.unlockRPL(node.address, '1500'.ether);
                 // Withdraw as legacy RPL
-                await withdrawLegacyRpl('500'.ether, { from: node });
+                await unstakeLegacyRpl('500'.ether, { from: node });
                 // Should have 500 of each now
                 await assertBalances(node, '500'.ether, '500'.ether);
             });

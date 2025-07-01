@@ -16,7 +16,7 @@ import { userDeposit } from '../test/_helpers/deposit';
 import assert from 'assert';
 import { getMinipoolMinimumRPLStake } from '../test/_helpers/minipool';
 import { mintRPL } from '../test/_helpers/tokens';
-import { withdrawLegacyRpl } from '../test/node/scenario-withdraw-legacy-rpl';
+import { withdrawLegacyRpl } from '../test/node/scenario-unstake-legacy-rpl';
 import { createMinipool } from './_helpers/minipool';
 import { stakeRPL } from './_helpers/stake';
 

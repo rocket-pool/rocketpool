@@ -28,11 +28,10 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     RocketVaultInterface immutable internal rocketVault;
 
     // Events
-    event RPLLegacyWithdrawn(address indexed to, uint256 amount, uint256 time);
-
     event RPLStaked(address indexed node, address from, uint256 amount, uint256 time);
     event RPLStaked(address indexed from, uint256 amount, uint256 time);
     event RPLUnstaked(address indexed from, uint256 amount, uint256 time);
+    event RPLLegacyUnstaked(address indexed to, uint256 amount, uint256 time);
     event RPLWithdrawn(address indexed to, uint256 amount, uint256 time);
 
     event RPLSlashed(address indexed node, uint256 amount, uint256 ethValue, uint256 time);
@@ -270,31 +269,31 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         return amountToWithdraw;
     }
 
-    /// @dev Withdraw legacy staked RPL back to the node operator
+    /// @dev Unstake legacy staked RPL
     /// @param _amount The amount of RPL to withdraw
-    function withdrawLegacyRPL(uint256 _amount) override external {
-        withdrawLegacyRPLFor(msg.sender, _amount);
+    function unstakeLegacyRPL(uint256 _amount) override external {
+        unstakeLegacyRPLFor(msg.sender, _amount);
     }
 
-    /// @dev Withdraw legacy staked RPL back to the node operator
+    /// @dev Unstake legacy RPL for a given node operator
     /// @param _nodeAddress Address of the node operator to withdraw legacy RPL for
     /// @param _amount The amount of RPL to withdraw
-    function withdrawLegacyRPLFor(address _nodeAddress, uint256 _amount) override public onlyRegisteredNode(_nodeAddress) {
-        require(callerAllowedFor(_nodeAddress), "Not allowed to withdraw for");
-        _withdrawLegacyRPLFor(_nodeAddress, _amount);
+    function unstakeLegacyRPLFor(address _nodeAddress, uint256 _amount) override public onlyRegisteredNode(_nodeAddress) {
+        require(callerAllowedFor(_nodeAddress), "Not allowed to unstake legacy RPL for");
+        _unstakeLegacyRPL(_nodeAddress, _amount);
     }
 
-    /// @dev Internal implementation for legacy withdraw process
-    function _withdrawLegacyRPLFor(address _nodeAddress, uint256 _amount) internal {
-        // Load contracts
-        RocketDAOProtocolSettingsRewardsInterface rocketDAOProtocolSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
-        // Check cooldown period (one claim period) has passed since RPL last staked
-        require(block.timestamp - getNodeRPLStakedTime(_nodeAddress) >= rocketDAOProtocolSettingsRewards.getRewardsClaimIntervalTime(), "The withdrawal cooldown period has not passed");
-        // Update RPL stake amounts
+    /// @dev Internal implementation for legacy unstake process
+    function _unstakeLegacyRPL(address _nodeAddress, uint256 _amount) internal {
+        // Withdraw any RPL that has been unstaking long enough
+        _withdrawUnstakingRPL(_nodeAddress);
+        // Move RPL from staking to unstaking
         decreaseNodeLegacyRPLStake(_nodeAddress, _amount);
-        // Transfer RPL tokens to node's RPL withdrawal address (if unset, defaults to primary withdrawal address)
-        transferRPLOut(_nodeAddress, _amount);
-        emit RPLLegacyWithdrawn(_nodeAddress, _amount, block.timestamp);
+        addUint(keccak256(abi.encodePacked("rpl.megapool.unstaking.amount", _nodeAddress)), _amount);
+        // Reset the unstake time
+        setNodeLastUnstakeTime(_nodeAddress);
+        // Emit event
+        emit RPLLegacyUnstaked(_nodeAddress, _amount, block.timestamp);
     }
 
     /// @notice Locks an amount of RPL from being withdrawn even if the node operator is over capitalised
@@ -469,8 +468,6 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Decrease total
         subUint(totalKey, _amount);
     }
-
-    // TODO: This stuff feels out of place here now
 
     /// @notice Returns the total amount of a node operator's bonded ETH (minipool + megapool)
     /// @param _nodeAddress Address of the node operator to query
