@@ -9,12 +9,12 @@ import { assertBN } from '../_helpers/bn';
 const hre = require('hardhat');
 const ethers = hre.ethers;
 
-// Withdraw legacy RPL for
+// Unstake legacy RPL for
 export async function unstakeLegacyRpl(amount, txOptions) {
     return unstakeLegacyRplFor(amount, txOptions.from.address, txOptions.from)
 }
 
-// Withdraw legacy RPL
+// Unstake legacy RPL
 export async function unstakeLegacyRplFor(amount, nodeAddress, from) {
     // Load contracts
     const [
