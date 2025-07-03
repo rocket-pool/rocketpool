@@ -88,22 +88,38 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
             voterShare = _getCurrentShare(rocketNetworkSnapshots, voterShareKey);
         } else {
             require(_sinceBlock < block.number, "Block must be in the past");
-            // Query accumulators
-            uint256 nodeShareAccumLast = getAccumulatorAt(rocketNetworkSnapshots, nodeShareKey, _sinceBlock);
-            uint256 voterShareAccumLast = getAccumulatorAt(rocketNetworkSnapshots, voterShareKey, _sinceBlock);
-            uint256 nodeShareAccumCurr = getAccumulatorAt(rocketNetworkSnapshots, nodeShareKey, block.number);
-            uint256 voterShareAccumCurr = getAccumulatorAt(rocketNetworkSnapshots, voterShareKey, block.number);
-            // Calculate average fee between the blocks
-            uint256 duration = (block.number - _sinceBlock);
-            nodeShare = (nodeShareAccumCurr - nodeShareAccumLast) / duration;
-            voterShare = (voterShareAccumCurr - voterShareAccumLast) / duration;
-            // Scale values
-            nodeShare *= shareScale;
-            voterShare *= shareScale;
+            nodeShare = getAverageSince(rocketNetworkSnapshots, _sinceBlock, nodeShareKey);
+            voterShare = getAverageSince(rocketNetworkSnapshots, _sinceBlock, voterShareKey);
         }
         uint256 rethCommission = nodeShare + voterShare;
         rethShare = 1 ether - rethCommission;
         return (nodeShare, voterShare, rethShare);
+    }
+
+    /// @notice Calculates the time-weighted average since a given block
+    function getAverageSince(RocketNetworkSnapshotsInterface _rocketNetworkSnapshots, uint256 _sinceBlock, bytes32 _key) internal view returns (uint256) {
+        (bool checkpointExists, uint32 checkpointBlock, uint224 checkpointValue) = _rocketNetworkSnapshots.latest(_key);
+        require(checkpointExists, "RocketNetworkRevenues is not initialised");
+        if (checkpointBlock <= _sinceBlock) {
+            // Value hasn't changed since _sinceBlock, so return current
+            bytes32 valueKey = bytes32(uint256(_key) + checkpointBlock);
+            return getUint(valueKey) * shareScale;
+        }
+        // Calculate the current accumulator value
+        bytes32 valueKey = bytes32(uint256(_key) + checkpointBlock);
+        uint256 valueAtBlock = getUint(valueKey);
+        uint256 blockDuration = (block.number - checkpointBlock);
+        uint256 currentAccum = uint256(checkpointValue) + (valueAtBlock * blockDuration);
+        // Calculate the accumulator at _sinceBlock
+        (checkpointExists, checkpointBlock, checkpointValue) = _rocketNetworkSnapshots.lookupCheckpoint(_key, uint32(_sinceBlock));
+        valueKey = bytes32(uint256(_key) + checkpointBlock);
+        valueAtBlock = getUint(valueKey);
+        blockDuration = (_sinceBlock - checkpointBlock);
+        uint256 pastAccum = uint256(checkpointValue) + (valueAtBlock * blockDuration);
+        // Calculate time-weighted average
+        uint256 duration = (block.number - _sinceBlock);
+        uint256 average = (currentAccum - pastAccum) / duration;
+        return average * shareScale;
     }
 
     /// @dev Calculates the cumulative value of the accumulator at a given block
