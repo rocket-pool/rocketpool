@@ -26,10 +26,11 @@ const networkContracts = {
     rocketNetworkRevenues: artifacts.require('RocketNetworkRevenues'),
     rocketNetworkBalances: artifacts.require('RocketNetworkBalances'),
     rocketNetworkSnapshots: artifacts.require('RocketNetworkSnapshots'),
-    rocketVoterRewards: artifacts.require('RocketVoterRewards'),
+    rocketRewardsPool: artifacts.require('RocketRewardsPool'),
     blockRoots: artifacts.require('BlockRoots'),
     beaconStateVerifier: artifacts.require('BeaconStateVerifier'),
     rocketNodeDistributorDelegate: artifacts.require('RocketNodeDistributorDelegate'),
+    rocketClaimDAO: artifacts.require('RocketClaimDAO'),
 
     rocketUpgradeOneDotFour: artifacts.require('RocketUpgradeOneDotFour'),
 };
@@ -125,10 +126,11 @@ export async function deployUpgrade(rocketStorageAddress) {
                         addresses.rocketNetworkRevenues,
                         addresses.rocketNetworkBalances,
                         addresses.rocketNetworkSnapshots,
-                        addresses.rocketVoterRewards,
+                        addresses.rocketRewardsPool,
                         addresses.blockRoots,
                         addresses.beaconStateVerifier,
                         addresses.rocketNodeDistributorDelegate,
+                        addresses.rocketClaimDAO,
                     ],
                     [
                         compressABI(networkContracts.rocketMegapoolDelegate.abi),
@@ -153,10 +155,11 @@ export async function deployUpgrade(rocketStorageAddress) {
                         compressABI(networkContracts.rocketNetworkRevenues.abi),
                         compressABI(networkContracts.rocketNetworkBalances.abi),
                         compressABI(networkContracts.rocketNetworkSnapshots.abi),
-                        compressABI(networkContracts.rocketVoterRewards.abi),
+                        compressABI(networkContracts.rocketRewardsPool.abi),
                         compressABI(networkContracts.blockRoots.abi),
                         compressABI(networkContracts.beaconStateVerifier.abi),
                         compressABI(networkContracts.rocketNodeDistributorDelegate.abi),
+                        compressABI(networkContracts.rocketClaimDAO.abi),
                     ],
                 ];
                 instance = await networkContracts[contract].new(rocketStorageAddress, ...args);

@@ -13,6 +13,7 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
 
     bytes32 private immutable nodeShareKey;
     bytes32 private immutable voterShareKey;
+    bytes32 private immutable protocolDAOShareKey;
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
@@ -34,7 +35,8 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
     /// @notice Used following an upgrade or new deployment to initialise the revenue split system
     /// @param _initialNodeShare The initial value to for the node share
     /// @param _initialVoterShare The initial value to for the voter share
-    function initialise(uint256 _initialNodeShare, uint256 _initialVoterShare) override public {
+    /// @param _initialProtocolDAOShare The initial value to for the pdao share
+    function initialise(uint256 _initialNodeShare, uint256 _initialVoterShare, uint256 _initialProtocolDAOShare) override public {
         // On new deploy, allow guardian to initialise, otherwise, only a network contract
         if (rocketStorage.getDeployedStatus()) {
             require(getBool(keccak256(abi.encodePacked("contract.exists", msg.sender))), "Invalid or outdated network contract");
@@ -53,6 +55,10 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
         valueKey = bytes32(uint256(voterShareKey) + block.number);
         setUint(valueKey, _initialVoterShare / shareScale);
         rocketNetworkSnapshots.push(voterShareKey, 0);
+        // Initialise pdao share
+        valueKey = bytes32(uint256(protocolDAOShareKey) + block.number);
+        setUint(valueKey, _initialProtocolDAOShare / shareScale);
+        rocketNetworkSnapshots.push(protocolDAOShareKey, 0);
     }
 
     /// @notice Returns the current node share value
@@ -67,6 +73,12 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
         return _getCurrentShare(rocketNetworkSnapshots, voterShareKey);
     }
 
+    /// @notice Returns the current pDAO share value
+    function getCurrentProtocolDAOShare() external override view returns (uint256) {
+        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
+        return _getCurrentShare(rocketNetworkSnapshots, protocolDAOShareKey);
+    }
+
     /// @notice Called by a pDAO governance contract or security council to update the `node_operator_commission_share` parameter
     /// @param _newShare The value to set `node_operator_commission_share` to
     function setNodeShare(uint256 _newShare) external override onlyProtocolOrSecurityDAO {
@@ -79,21 +91,29 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
         _setShare(voterShareKey, _newShare);
     }
 
+    /// @notice Called by a pDAO governance contract or security council to update the `pdao_share` parameter
+    /// @param _newShare The value to set the `pdao_share` to
+    function setProtocolDAOShare(uint256 _newShare) external override onlyProtocolOrSecurityDAO {
+        _setShare(protocolDAOShareKey, _newShare);
+    }
+
     /// @notice Calculates the time-weighted average revenue split values between the supplied block number and now
     /// @param _sinceBlock The starting block number for the calculation
-    function calculateSplit(uint256 _sinceBlock) external override view returns (uint256 nodeShare, uint256 voterShare, uint256 rethShare) {
+    function calculateSplit(uint256 _sinceBlock) external override view returns (uint256 nodeShare, uint256 voterShare, uint256 protocolDAOShare, uint256 rethShare) {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         if (_sinceBlock == block.number) {
             nodeShare = _getCurrentShare(rocketNetworkSnapshots, nodeShareKey);
             voterShare = _getCurrentShare(rocketNetworkSnapshots, voterShareKey);
+            protocolDAOShare = _getCurrentShare(rocketNetworkSnapshots, protocolDAOShareKey);
         } else {
             require(_sinceBlock < block.number, "Block must be in the past");
             nodeShare = getAverageSince(rocketNetworkSnapshots, _sinceBlock, nodeShareKey);
             voterShare = getAverageSince(rocketNetworkSnapshots, _sinceBlock, voterShareKey);
+            protocolDAOShare = getAverageSince(rocketNetworkSnapshots, _sinceBlock, protocolDAOShareKey);
         }
-        uint256 rethCommission = nodeShare + voterShare;
+        uint256 rethCommission = nodeShare + voterShare + protocolDAOShare;
         rethShare = 1 ether - rethCommission;
-        return (nodeShare, voterShare, rethShare);
+        return (nodeShare, voterShare, protocolDAOShare, rethShare);
     }
 
     /// @notice Calculates the time-weighted average since a given block

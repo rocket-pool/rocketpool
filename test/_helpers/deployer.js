@@ -26,7 +26,7 @@ function formatConstructorArgs(args) {
 
 const defaultOpts = {
     protocolVersion: '1.4',
-    initialRevenueSplit: ['0.05'.ether, '0.09'.ether],
+    initialRevenueSplit: ['0.05'.ether, '0.09'.ether, '0'.ether],
     depositAddress: null,
     fixedSupplyTokenAddress: null,
     genesisBlockTimestamp: 1606824023n,
@@ -105,7 +105,6 @@ const contractNameMap = {
     rocketMegapoolDelegate: 'RocketMegapoolDelegate',
     rocketMegapoolPenalties: 'RocketMegapoolPenalties',
     rocketNetworkRevenues: 'RocketNetworkRevenues',
-    rocketVoterRewards: 'RocketVoterRewards',
     rocketDAOProtocolSettingsMegapool: 'RocketDAOProtocolSettingsMegapool',
     rocketDAOSecurityUpgrade: 'RocketDAOSecurityUpgrade',
     addressQueueStorage: 'AddressQueueStorage',

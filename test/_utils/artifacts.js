@@ -167,5 +167,4 @@ export const StakeHelper = artifacts.require('StakeHelper');
 export const BeaconStateVerifier = artifacts.require('BeaconStateVerifierMock');
 export const BlockRootsMock = artifacts.require('BlockRootsMock');
 export const RocketNetworkRevenues = artifacts.require('RocketNetworkRevenues');
-export const RocketVoterRewards = artifacts.require('RocketVoterRewards');
 export const RocketUpgradeOneDotFour = artifacts.require('RocketUpgradeOneDotFour');

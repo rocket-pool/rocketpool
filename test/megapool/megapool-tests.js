@@ -15,7 +15,7 @@ import {
     BeaconStateVerifier,
     MegapoolUpgradeHelper,
     RocketDAOProtocolSettingsDeposit,
-    RocketDAOProtocolSettingsMegapool,
+    RocketDAOProtocolSettingsMegapool, RocketDAOProtocolSettingsNetwork,
     RocketDAOProtocolSettingsNode,
     RocketDepositPool,
     RocketMegapoolDelegate,
@@ -882,14 +882,47 @@ export default function() {
                         Commission: 0.875 * 5% = 0.04375 ETH
                         Node Share: 0.04375 + 0.125 = 0.16875 ETH
                         Voter Share: 0.875 * 9% = 0.07875 ETH
-                        rETH Share: 1 - 0.875 - 0.04375 = 0.08125 ETH
+                        rETH Share: 1 - 0.16875 - 0.07875 = 0.7525 ETH
 
                         Note: calculations on-chain are of 3 fixed point precision
                      */
                     const rewardSplit = await megapool.calculatePendingRewards();
-                    assertBN.equal(rewardSplit[0], '0.16875'.ether);
-                    assertBN.equal(rewardSplit[1], '0.07875'.ether);
-                    assertBN.equal(rewardSplit[2], '0.7525'.ether);
+                    assertBN.equal(rewardSplit[0], '0.16875'.ether); // Node
+                    assertBN.equal(rewardSplit[1], '0.07875'.ether); // Voter
+                    assertBN.equal(rewardSplit[2], '0'.ether);       // pDAO
+                    assertBN.equal(rewardSplit[3], '0.7525'.ether);  // User
+
+                    // Perform distribution
+                    await distributeMegapool(megapool);
+                });
+
+                it(printTitle('node', 'can distribute to pdao rewards'), async () => {
+                    // Set pDAO share to 1%
+                    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, "network.pdao.share", '0.01'.ether, { from: owner });
+                    // Distribute some rewards to reset time-weighted calculations
+                    await mockRewards(megapool, '1'.ether);
+                    await megapool.distribute();
+                    // Mock 1 ETH of rewards
+                    await mockRewards(megapool, '1'.ether);
+
+                    /*
+                        Rewards: 1 ETH
+                        Collat Ratio: 1/8
+                        Node Portion: 0.125 ETH
+                        User Portion: 0.875 ETH
+                        Commission: 0.875 * 5% = 0.04375 ETH
+                        Node Share: 0.04375 + 0.125 = 0.16875 ETH
+                        Voter Share: 0.875 * 9% = 0.07875 ETH
+                        pDAO Share: 0.875 * 1% = 0.00875 ETH
+                        rETH Share: 1 - 0.16875 - 0.07875  - 0.00875 = 0.7525 ETH
+
+                        Note: calculations on-chain are of 3 fixed point precision
+                     */
+                    const rewardSplit = await megapool.calculatePendingRewards();
+                    assertBN.equal(rewardSplit[0], '0.16875'.ether); // Node
+                    assertBN.equal(rewardSplit[1], '0.07875'.ether); // Voter
+                    assertBN.equal(rewardSplit[2], '0.00875'.ether); // pDAO
+                    assertBN.equal(rewardSplit[3], '0.74375'.ether); // User
 
                     // Perform distribution
                     await distributeMegapool(megapool);

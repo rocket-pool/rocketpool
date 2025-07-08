@@ -1,7 +1,7 @@
 import {
     RocketClaimDAO,
     RocketDAONodeTrusted,
-    RocketRewardsPool,
+    RocketRewardsPool, RocketSmoothingPool,
     RocketTokenRETH,
     RocketTokenRPL,
 } from '../_utils/artifacts';
@@ -53,28 +53,26 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, txOpti
         nodeETH[rewards[i].network] = nodeETH[rewards[i].network] + rewards[i].nodeETH;
     }
 
-    // // web3 doesn't like an array of BigNumbers, have to convert to dec string
-    // for (let i = 0; i <= maxNetwork; i++) {
-    //     trustedNodeRPL[i] = trustedNodeRPL[i].toString();
-    //     nodeRPL[i] = nodeRPL[i].toString();
-    //     nodeETH[i] = nodeETH[i].toString();
-    // }
-
     const root = treeData.proof.merkleRoot;
-    const cid = '0';
+
+    const treasuryETH = '0'.ether
 
     const submission = {
         rewardIndex: index,
-        executionBlock: '0',
-        consensusBlock: '0',
+        executionBlock: 0n,
+        consensusBlock: 0n,
         merkleRoot: root,
-        merkleTreeCID: cid,
-        intervalsPassed: '1',
+        intervalsPassed: 1n,
+        smoothingPoolETH: userETH + treasuryETH + nodeETH.reduce((a,b) => a + b, 0n),
+
         treasuryRPL: treasuryRPL,
+        treasuryETH: treasuryETH,
+
+        userETH: userETH,
+
         trustedNodeRPL: trustedNodeRPL,
         nodeRPL: nodeRPL,
         nodeETH: nodeETH,
-        userETH: userETH,
     };
 
     // Get submission details
@@ -177,20 +175,24 @@ export async function executeRewards(index, rewards, treasuryRPL, userETH, txOpt
     // }
 
     const root = treeData.proof.merkleRoot;
-    const cid = '0';
+    const treasuryETH = '0'.ether
 
     const submission = {
         rewardIndex: index,
-        executionBlock: 0,
-        consensusBlock: 0,
+        executionBlock: 0n,
+        consensusBlock: 0n,
         merkleRoot: root,
-        merkleTreeCID: cid,
-        intervalsPassed: 1,
+        intervalsPassed: 1n,
+        smoothingPoolETH: userETH + treasuryETH + nodeETH.reduce((a,b) => a + b, 0n),
+
         treasuryRPL: treasuryRPL,
+        treasuryETH: treasuryETH,
+
+        userETH: userETH,
+
         trustedNodeRPL: trustedNodeRPL,
         nodeRPL: nodeRPL,
         nodeETH: nodeETH,
-        userETH: userETH,
     };
 
     // Submit prices

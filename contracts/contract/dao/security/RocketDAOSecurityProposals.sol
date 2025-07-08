@@ -102,7 +102,6 @@ contract RocketDAOSecurityProposals is RocketBase, RocketDAOSecurityProposalsInt
         setUint(keccak256(abi.encodePacked(namespace, _settingPath)), _value);
 
         // Security council adder requires additional processing
-        // TODO: Consider abstracting this out to a common call between security council and pDAO
         if (keccak256(bytes(_settingNameSpace)) == keccak256(bytes("network"))) {
             if (keccak256(bytes(_settingPath)) == keccak256(bytes("network.node.commission.share.security.council.adder"))) {
                 RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));

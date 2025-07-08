@@ -36,6 +36,7 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             _setSettingUint("network.node.commission.share", 0.05 ether);                        // 5% (RPIP-46)
             _setSettingUint("network.node.commission.share.security.council.adder", 0 ether);    // 0% (RPIP-46)
             _setSettingUint("network.voter.share", 0.09 ether);                                  // 9% (RPIP-46)
+            _setSettingUint("network.pdao.share", 0.00 ether);                                   // 0% (RPIP-72)
             _setSettingUint("network.max.node.commission.share.council.adder", 0.01 ether);      // 1% (RPIP-46)
             _setSettingUint("network.max.reth.balance.delta", 0.02 ether);                       // 2% (RPIP-61)
             // Set deploy flag
@@ -67,6 +68,8 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
                 return _setNodeCommissionShare(_value);
             } else if (settingKey == keccak256(bytes("network.voter.share"))) {
                 return _setVoterShare(_value);
+            } else if (settingKey == keccak256(bytes("network.pdao.share"))) {
+                return _setProtocolDAOShare(_value);
             }
             // Update setting now
             _setSettingUint(_settingPath, _value);
@@ -86,30 +89,42 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
         setBool(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }
 
+    // @notice Returns the maximum value the security council can set the node share security council adder to
     function getMaxNodeShareSecurityCouncilAdder() override public view returns (uint256) {
         return getSettingUint("network.max.node.commission.share.council.adder");
     }
 
+    // @notice Returns the current voter share (excluding security council adder)
     function getVoterShare() override public view returns (uint256) {
         return getSettingUint("network.voter.share");
     }
 
+    // @notice Returns the current pdao share
+    function getProtocolDAOShare() override public view returns (uint256) {
+        return getSettingUint("network.pdao.share");
+    }
+
+    // @notice Returns the current node share (excluding security council adder)
     function getNodeShare() override public view returns (uint256) {
         return getSettingUint("network.node.commission.share");
     }
 
+    // @notice Returns the current node share security council adder
     function getNodeShareSecurityCouncilAdder() override public view returns (uint256) {
         return getSettingUint("network.node.commission.share.security.council.adder");
     }
 
+    // @notice Returns the current rETH commission
     function getRethCommission() override public view returns (uint256) {
-        return getNodeShare() + getVoterShare();
+        return getNodeShare() + getVoterShare() + getProtocolDAOShare();
     }
 
+    // @notice Returns the current voter share (taking into account the security council adder)
     function getEffectiveVoterShare() override public view returns (uint256) {
         return getVoterShare() - getNodeShareSecurityCouncilAdder();
     }
 
+    // @notice Returns the current node share (taking into account the security council adder)
     function getEffectiveNodeShare() override public view returns (uint256) {
         return getNodeShare() + getNodeShareSecurityCouncilAdder();
     }
@@ -222,6 +237,12 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
         _setVoterShare(_value);
     }
 
+    /// @notice Called by an explicitly allowed address to modify the pdao share parameter
+    /// @param _value New value for the parameter
+    function setProtocolDAOShare(uint256 _value) override external onlyAllowListedController {
+        _setProtocolDAOShare(_value);
+    }
+
     /// @dev Internal implementation of setting the node share security council adder parameter
     function _setNodeShareSecurityCouncilAdder(uint256 _value) internal {
         // Validate input
@@ -259,5 +280,16 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
         // Notify change of UARS parameter for snapshot
         RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
         rocketNetworkRevenues.setVoterShare(getEffectiveVoterShare());
+    }
+
+    /// @dev Internal implementation of setting the pdao share parameter
+    function _setProtocolDAOShare(uint256 _value) internal {
+        // Make setting change
+        _setSettingUint("network.pdao.share", _value);
+        // Sanity check value
+        require(getRethCommission() <= 1 ether, "rETH Commission must be <= 100%");
+        // Notify change of UARS parameter for snapshot
+        RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
+        rocketNetworkRevenues.setProtocolDAOShare(_value);
     }
 }

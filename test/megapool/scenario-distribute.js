@@ -8,7 +8,6 @@ const ethers = hre.ethers;
 export async function distributeMegapool(megapool) {
 
     const rocketStorage = await RocketStorage.deployed();
-    const rocketVoterRewards = await RocketVoterRewards.deployed();
     const rocketTokenRETH = await RocketTokenRETH.deployed();
     const rocketVault = await RocketVault.deployed();
 
@@ -16,19 +15,20 @@ export async function distributeMegapool(megapool) {
     const withdrawalAddress = await rocketStorage.getNodeWithdrawalAddress(nodeAddress);
 
     async function getBalances() {
-        let [pendingRewards, megapoolBalance, nodeBalance, voterBalance, rethBalance, nodeDebt, refundValue] = await Promise.all([
+        let [pendingRewards, megapoolBalance, nodeBalance, voterBalance, pdaoBalance, rethBalance, nodeDebt, refundValue] = await Promise.all([
             megapool.getPendingRewards(),
             ethers.provider.getBalance(megapool.target),
             ethers.provider.getBalance(withdrawalAddress),
-            rocketVault.balanceOf("rocketVoterRewards"),
+            rocketVault.balanceOf("rocketRewardsPool"),
+            rocketVault.balanceOf("rocketClaimDAO"),
             ethers.provider.getBalance(rocketTokenRETH.target),
             megapool.getDebt(),
             megapool.getRefundValue(),
         ]);
-        return { pendingRewards, megapoolBalance, nodeBalance, voterBalance, rethBalance, nodeDebt, refundValue };
+        return { pendingRewards, megapoolBalance, nodeBalance, voterBalance, pdaoBalance, rethBalance, nodeDebt, refundValue };
     }
 
-    const [expectedNodeRewards, expectedVoterRewards, expectedRethRewards] = await megapool.calculatePendingRewards();
+    const [expectedNodeRewards, expectedVoterRewards, expectedProtocolDAORewards, expectedRethRewards] = await megapool.calculatePendingRewards();
 
     const balancesBefore = await getBalances();
     await megapool.distribute();
@@ -39,6 +39,7 @@ export async function distributeMegapool(megapool) {
         megapoolBalance: balancesAfter.megapoolBalance - balancesBefore.megapoolBalance,
         nodeBalance: balancesAfter.nodeBalance - balancesBefore.nodeBalance,
         voterBalance: balancesAfter.voterBalance - balancesBefore.voterBalance,
+        pdaoBalance: balancesAfter.pdaoBalance - balancesBefore.pdaoBalance,
         rethBalance: balancesAfter.rethBalance - balancesBefore.rethBalance,
         nodeDebt: balancesAfter.nodeDebt - balancesBefore.nodeDebt,
         refundValue: balancesAfter.refundValue - balancesBefore.refundValue,
@@ -66,6 +67,7 @@ export async function distributeMegapool(megapool) {
     assertBN.equal(balanceDeltas.nodeDebt, expectedDebtDelta);
     assertBN.equal(balanceDeltas.rethBalance, -expectedDebtDelta + expectedRethRewards);
     assertBN.equal(balanceDeltas.voterBalance, expectedVoterRewards);
+    assertBN.equal(balanceDeltas.pdaoBalance, expectedProtocolDAORewards);
     assertBN.equal(balanceDeltas.rethBalance + balanceDeltas.nodeDebt, expectedRethRewards);
     assertBN.equal(balancesAfter.pendingRewards, 0n);
 }

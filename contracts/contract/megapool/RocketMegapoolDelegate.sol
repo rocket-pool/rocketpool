@@ -10,6 +10,7 @@ import {RocketNetworkRevenuesInterface} from "../../interface/network/RocketNetw
 import {RocketNodeDepositInterface} from "../../interface/node/RocketNodeDepositInterface.sol";
 import {RocketMegapoolDelegateBase} from "./RocketMegapoolDelegateBase.sol";
 import {RocketMegapoolStorageLayout} from "./RocketMegapoolStorageLayout.sol";
+import {RocketRewardsPoolInterface} from "../../interface/rewards/RocketRewardsPoolInterface.sol";
 
 /// @notice This contract manages multiple validators. It serves as the target of Beacon Chain withdrawal credentials.
 contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDelegateInterface {
@@ -402,7 +403,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             }
         }
         require(numLockedValidators == 0, "Megapool locked");
-        (uint256 nodeAmount, uint256 voterAmount, uint256 rethAmount) = calculateRewards(_rewards);
+        (uint256 nodeAmount, uint256 voterAmount, uint256 protocolDAOAmount, uint256 rethAmount) = calculateRewards(_rewards);
         // Update last distribution block for use in calculating time-weighted average commission
         lastDistributionBlock = block.number;
         // Maybe repay debt from node share
@@ -416,12 +417,18 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         }
         // Send user share to rETH
         sendToRETH(rethAmount);
-        // Send voter share to voting contract
+        // Send voter share to rewards pool
         if (voterAmount > 0) {
             // TODO: Potential oDAO attack here by making rocketVoterRewards revert on transfer
-            address rocketVoterRewards = getContractAddress("rocketVoterRewards");
-            (bool success,) = rocketVoterRewards.call{value: voterAmount}("");
-            require(success, "Failed to send voter rewards");
+            RocketRewardsPoolInterface rocketRewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
+            rocketRewardsPool.depositVoterShare{value: voterAmount}();
+        }
+        // Protocol DAO share to rocketClaimDAO
+        if (protocolDAOAmount > 0) {
+            // TODO: Potential oDAO attack here by making rocketVoterRewards revert on transfer
+            address rocketClaimDAO = getContractAddress("rocketClaimDAO");
+            (bool success,) = rocketClaimDAO.call{value: protocolDAOAmount}("");
+            require(success, "Failed to send protocol DAO rewards");
         }
         // Increase node rewards value
         refundValue += nodeAmount;
@@ -460,25 +467,26 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     }
 
     /// @notice Returns the calculated split of pending rewards
-    function calculatePendingRewards() override external view returns (uint256 nodeRewards, uint256 voterRewards, uint256 rethRewards) {
+    function calculatePendingRewards() override external view returns (uint256 nodeRewards, uint256 voterRewards, uint256 protocolDAORewards, uint256 rethRewards) {
         return calculateRewards(getPendingRewards());
     }
 
     /// @notice Calculates the split of rewards for a given amount of ETH
     /// @param _amount Amount of rewards in gwei to calculate the split of
-    function calculateRewards(uint256 _amount) public view returns (uint256 nodeRewards, uint256 voterRewards, uint256 rethRewards) {
+    function calculateRewards(uint256 _amount) public view returns (uint256 nodeRewards, uint256 voterRewards, uint256 protocolDAORewards, uint256 rethRewards) {
         // Early out for edge cases
-        if (_amount == 0) return (0, 0, 0);
+        if (_amount == 0) return (0, 0, 0, 0);
         uint256 totalCapital = nodeBond + userCapital;
-        if (totalCapital == 0) return (_amount, 0, 0);
+        if (totalCapital == 0) return (_amount, 0, 0, 0);
         // Calculate split based on capital ratio and average commission since last distribute
         RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
-        (, uint256 voterShare, uint256 rethShare) = rocketNetworkRevenues.calculateSplit(lastDistributionBlock);
+        (, uint256 voterShare, uint256 protocolDAOShare, uint256 rethShare) = rocketNetworkRevenues.calculateSplit(lastDistributionBlock);
         unchecked {
             uint256 borrowedPortion = _amount * userCapital / (nodeBond + userCapital);
             rethRewards = rethShare * borrowedPortion / calcBase;
             voterRewards = voterShare * borrowedPortion / calcBase;
-            nodeRewards = _amount - rethRewards - voterRewards;
+            protocolDAORewards = protocolDAOShare * borrowedPortion / calcBase;
+            nodeRewards = _amount - rethRewards - voterRewards - protocolDAORewards;
         }
     }
 

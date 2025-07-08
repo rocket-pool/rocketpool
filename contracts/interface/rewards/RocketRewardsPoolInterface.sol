@@ -6,6 +6,7 @@ import "../../types/RewardSubmission.sol";
 // SPDX-License-Identifier: GPL-3.0-only
 
 interface RocketRewardsPoolInterface {
+    function getEthBalance() external view returns (uint256);
     function getRewardIndex() external view returns(uint256);
     function getRPLBalance() external view returns(uint256);
     function getPendingRPLRewards() external view returns (uint256);
@@ -22,4 +23,5 @@ interface RocketRewardsPoolInterface {
     function getSubmissionCount(RewardSubmission calldata _submission) external view returns (uint256);
     function submitRewardSnapshot(RewardSubmission calldata _submission) external;
     function executeRewardSnapshot(RewardSubmission calldata _submission) external;
+    function depositVoterShare() payable external;
 }

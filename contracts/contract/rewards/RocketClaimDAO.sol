@@ -27,7 +27,13 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
     event RPLTreasuryContractUpdated(string indexed contractName, address indexed recipient, uint256 amountPerPeriod, uint256 periodLength, uint256 numPeriods);
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 3;
+        version = 4;
+    }
+
+    receive() payable external {
+        // Transfer incoming ETH directly to the vault
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        rocketVault.depositEther{value: msg.value}();
     }
 
     /// @notice Returns whether a contract with the given name exists

@@ -19,6 +19,7 @@ interface RocketDAOProtocolSettingsNetworkInterface {
     function getSubmitRewardsEnabled() external view returns (bool);
     function getMaxNodeShareSecurityCouncilAdder() external view returns (uint256);
     function getVoterShare() external view returns (uint256);
+    function getProtocolDAOShare() external view returns (uint256);
     function getNodeShare() external view returns (uint256);
     function getNodeShareSecurityCouncilAdder() external view returns (uint256);
     function getRethCommission() external view returns (uint256);
@@ -30,4 +31,5 @@ interface RocketDAOProtocolSettingsNetworkInterface {
     function setNodeShareSecurityCouncilAdder(uint256 _value) external;
     function setNodeCommissionShare(uint256 _value) external;
     function setVoterShare(uint256 _value) external;
+    function setProtocolDAOShare(uint256 _value) external;
 }

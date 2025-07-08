@@ -40,6 +40,26 @@ export default function() {
             assertBN.equal(calculatedShare[0], '0.08333'.ether);
         });
 
+        it(printTitle('revenue split', 'calculates correct time weighted average pdao share'), async () => {
+            const rocketNetworkRevenues = await RocketNetworkRevenues.deployed();
+            // Initial value should be 0%
+            const shareBefore = await rocketNetworkRevenues.getCurrentProtocolDAOShare();
+            assertBN.equal(shareBefore, '0'.ether);
+            // Mine 10 blocks
+            await helpers.mine(10);
+            // Set value to 1% and check
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, "network.pdao.share", '0.01'.ether, { from: owner });
+            const shareAfter = await rocketNetworkRevenues.getCurrentProtocolDAOShare();
+            assertBN.equal(shareAfter, '0.01'.ether);
+            // Mine 2 blocks
+            await helpers.mine(20);
+            // Get calculated shares
+            const currentBlock = await ethers.provider.getBlockNumber();
+            const calculatedShare = await rocketNetworkRevenues.calculateSplit(currentBlock - 30);
+            // 10 days at 0% and 20 days at 1% should average out to 0.666% (math is done in 3 decimal fixed point)
+            assertBN.equal(calculatedShare[2], '0.00666'.ether);
+        });
+
         it(printTitle('revenue split', 'calculates correct shares when using the adder'), async () => {
             const rocketNetworkRevenues = await RocketNetworkRevenues.deployed();
             const rocketDAOProtocolSettingsNetwork = await RocketDAOProtocolSettingsNetwork.deployed();
@@ -56,6 +76,30 @@ export default function() {
             assertBN.equal(effectiveVoterShare, '0.09'.ether - adder);
             const voterShare = await rocketNetworkRevenues.getCurrentVoterShare();
             assertBN.equal(voterShare, '0.09'.ether - adder);
+        });
+
+        it(printTitle('revenue split', 'calculates correct shares when using the adder and pdao share'), async () => {
+            const rocketNetworkRevenues = await RocketNetworkRevenues.deployed();
+            const rocketDAOProtocolSettingsNetwork = await RocketDAOProtocolSettingsNetwork.deployed();
+            // Set the protocol dao share to 1%
+            const pdaoShare = '0.01'.ether
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, "network.pdao.share", pdaoShare, { from: owner });
+            // Increment the adder by 0.5%
+            const adder = '0.005'.ether;
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, "network.node.commission.share.security.council.adder", adder, { from: owner });
+            // Check node share
+            const effectiveNodeShare = await rocketDAOProtocolSettingsNetwork.getEffectiveNodeShare();
+            assertBN.equal(effectiveNodeShare, '0.05'.ether + adder);
+            const nodeShare = await rocketNetworkRevenues.getCurrentNodeShare();
+            assertBN.equal(nodeShare, '0.05'.ether + adder);
+            // Check voter share
+            const effectiveVoterShare = await rocketDAOProtocolSettingsNetwork.getEffectiveVoterShare();
+            assertBN.equal(effectiveVoterShare, '0.09'.ether - adder);
+            const voterShare = await rocketNetworkRevenues.getCurrentVoterShare();
+            assertBN.equal(voterShare, '0.09'.ether - adder);
+            // Check pdao share
+            const networkPdaoShare = await rocketDAOProtocolSettingsNetwork.getProtocolDAOShare();
+            assertBN.equal(networkPdaoShare, '0.01'.ether);
         });
 
         it(printTitle('revenue split', 'calculates correct time weighted average node share after adder is used'), async () => {
