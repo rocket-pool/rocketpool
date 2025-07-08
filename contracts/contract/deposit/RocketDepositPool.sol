@@ -40,7 +40,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     event ExcessWithdrawn(address indexed to, uint256 amount, uint256 time);
     event FundsRequested(address indexed receiver, uint256 validatorId, uint256 amount, bool expressQueue, uint256 time);
     event FundsAssigned(address indexed receiver, uint256 amount, uint256 time);
-    event QueueExited(address indexed receiver, uint256 time);
+    event QueueExited(address indexed nodeAddress, uint256 time);
     event CreditWithdrawn(address indexed receiver, uint256 amount, uint256 time);
 
     // Structs
@@ -516,10 +516,10 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         emit FundsRequested(msg.sender, _validatorId, _amount, _expressQueue, block.timestamp);
     }
 
-    /// @notice Removes a pending entry in the validator queue and returns funds to node by credit mechanism
+    /// @dev Called from a megapool to remove an entry in the validator queue and returns funds to node by credit mechanism
     /// @param _validatorId Internal ID of the validator to be removed
     /// @param _expressQueue Whether the entry is in the express queue or not
-    function exitQueue(uint32 _validatorId, bool _expressQueue) external onlyRegisteredMegapool(msg.sender) {
+    function exitQueue(address _nodeAddress, uint32 _validatorId, bool _expressQueue) external onlyRegisteredMegapool(msg.sender) {
         LinkedListStorageInterface linkedListStorage = LinkedListStorageInterface(getContractAddress("linkedListStorage"));
         LinkedListStorageInterface.DepositQueueKey memory key = LinkedListStorageInterface.DepositQueueKey({
             receiver: msg.sender,
@@ -534,10 +534,8 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         subUint(keccak256("deposit.pool.requested.total"), value.requestedValue * milliToWei);
         if (_expressQueue) {
             // Refund express ticket
-            RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(msg.sender);
             RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-            address nodeAddress = megapool.getNodeAddress();
-            rocketNodeManager.refundExpressTicket(nodeAddress);
+            rocketNodeManager.refundExpressTicket(_nodeAddress);
             // Update head moved block
             if (isAtHead) {
                 setQueueMoved(true, false);
@@ -549,10 +547,10 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             }
         }
         // Emit event
-        // TODO: msg.sender should be the node address?
-        emit QueueExited(msg.sender, block.timestamp);
+        emit QueueExited(_nodeAddress, block.timestamp);
     }
 
+    /// @dev Called from megapool to increase a node operator's credit
     function applyCredit(address _nodeAddress, uint256 _amount) override external onlyRegisteredMegapool(msg.sender) {
         // Add to node's credit for the amount supplied
         addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress)), _amount);
@@ -669,8 +667,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         }
         return standardQueueNamespace;
     }
-
-    // TODO: This stuff doesn't feel like it belongs here
 
     /// @dev Called by a megapool during a bond reduction to adjust its capital ratio
     function reduceBond(address _nodeAddress, uint256 _amount) override external onlyRegisteredMegapool(msg.sender) {

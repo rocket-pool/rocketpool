@@ -220,7 +220,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         userCapital -= userShare;
         // Dequeue validator from the deposit pool and issue credit
         RocketDepositPoolInterface rocketDepositPool = getRocketDepositPool();
-        rocketDepositPool.exitQueue(_validatorId, validator.expressUsed);
+        rocketDepositPool.exitQueue(nodeAddress, _validatorId, validator.expressUsed);
         rocketDepositPool.fundsReturned(nodeAddress, nodeShare, userShare);
         if (nodeShare > 0) {
             nodeBond -= nodeShare;
@@ -535,24 +535,25 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     function notifyExit(uint32 _validatorId, uint64 _withdrawableEpoch) override external onlyRocketMegapoolManager {
         ValidatorInfo memory validator = validators[_validatorId];
         // Check required state
-        require(validator.staked, "Not staking");
+        require(validator.staked || validator.dissolved, "Not staking or dissolved");
         require(!validator.exiting, "Already notified");
         require(!validator.exited, "Already exited");
-        require(!validator.dissolved, "Validator dissolved");
         // Update validator state to exiting
         validator.exiting = true;
         validator.withdrawableEpoch = _withdrawableEpoch;
         // Setup distribution lock
-        unchecked { // Infeasible overflow
-            numExitingValidators += 1;
-        }
-        if (_withdrawableEpoch < soonestWithdrawableEpoch || soonestWithdrawableEpoch == 0) {
-            soonestWithdrawableEpoch = _withdrawableEpoch;
-        }
-        // If validator was locked, notifying exit unlocks it
-        if (validator.locked) {
-            validator.locked = false;
-            numLockedValidators -= 1;
+        if (!validator.dissolved) {
+            unchecked { // Infeasible overflow
+                numExitingValidators += 1;
+            }
+            if (_withdrawableEpoch < soonestWithdrawableEpoch || soonestWithdrawableEpoch == 0) {
+                soonestWithdrawableEpoch = _withdrawableEpoch;
+            }
+            // If validator was locked, notifying exit unlocks it
+            if (validator.locked) {
+                validator.locked = false;
+                numLockedValidators -= 1;
+            }
         }
         validators[_validatorId] = validator;
         // Apply penalty for late submission
@@ -592,7 +593,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         ValidatorInfo memory validator = validators[_validatorId];
         require(!validator.exited, "Already exited");
         require(validator.exiting, "Validator not exiting");
-        require(!validator.dissolved, "Validator dissolved");
         require(_withdrawalSlot >= validator.withdrawableEpoch * slotsPerEpoch, "Not full withdrawal");
         // Mark as exited
         validator.exited = true;
@@ -602,8 +602,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         validators[_validatorId] = validator;
         // Handle dissolved recovery
         if (validator.dissolved) {
-            // TODO: By using refundValue here on dissolve, NO will have debt applied to this value which might be undesirable
-            // TODO: Instead, maybe only NO can notify final balance on a dissolved validator and the funds are immediately sent to their withdrawal address?
             refundValue += withdrawalBalance;
             return;
         }

@@ -138,7 +138,7 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
                 totalChallenges += 1;
             }
         }
-        // TODO: Hardcoded or parameter?
+        // Only allow up to 50 total challenges at a time
         require(totalChallenges < 50, "Too many challenges");
     }
 

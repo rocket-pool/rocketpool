@@ -745,6 +745,15 @@ export default function() {
                 await dissolveValidator(node, 0, random);
             });
 
+            it(printTitle('node', 'can exit a dissolved validator'), async () => {
+                await nodeDeposit(node);
+                await helpers.time.increase(dissolvePeriod + 1);
+                await dissolveValidator(node, 0, random);
+                const currentEpoch = await getCurrentEpoch();
+                await notifyExitValidator(megapool, 0, currentEpoch + 5);
+                await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner, (currentEpoch + 5) * 32);
+            });
+
             it(printTitle('random', 'can dissolve validator immediately with a state proof'), async () => {
                 await nodeDeposit(node);
                 const info = await getValidatorInfo(megapool, 0);
