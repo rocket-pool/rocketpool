@@ -145,12 +145,15 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         if (currentTotalEthBalance > 0) {
             uint256 maxChangePercent = rocketDAOProtocolSettingsNetwork.getMaxRethDelta();
             uint256 maxChange = currentTotalEthBalance * maxChangePercent / calcBase;
-            // TODO: RPIP-61 states "If an update would lead to an rETH exchange rate change of more than Maximum rETH Delta, the oDAO SHALL submit an update of Maximum rETH Delta instead."
-            // TODO: Determine whether this should be performed off chain or applied here
+            // Limit change per RPIP-61
             if (_totalEth > currentTotalEthBalance) {
-                require(_totalEth - currentTotalEthBalance <= maxChange, "Change exceeds allowed range");
+                if(_totalEth - currentTotalEthBalance > maxChange) {
+                    _totalEth = currentTotalEthBalance + maxChange;
+                }
             } else {
-                require(currentTotalEthBalance - _totalEth <= maxChange, "Change exceeds allowed range");
+                if(currentTotalEthBalance - _totalEth > maxChange) {
+                    _totalEth = currentTotalEthBalance - maxChange;
+                }
             }
         }
         // Update balances
