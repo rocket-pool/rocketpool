@@ -419,13 +419,11 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         sendToRETH(rethAmount);
         // Send voter share to rewards pool
         if (voterAmount > 0) {
-            // TODO: Potential oDAO attack here by making rocketVoterRewards revert on transfer
             RocketRewardsPoolInterface rocketRewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
             rocketRewardsPool.depositVoterShare{value: voterAmount}();
         }
         // Protocol DAO share to rocketClaimDAO
         if (protocolDAOAmount > 0) {
-            // TODO: Potential oDAO attack here by making rocketVoterRewards revert on transfer
             address rocketClaimDAO = getContractAddress("rocketClaimDAO");
             (bool success,) = rocketClaimDAO.call{value: protocolDAOAmount}("");
             require(success, "Failed to send protocol DAO rewards");
@@ -606,7 +604,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             return;
         }
         // Calculate capital distribution amounts
-        // TODO: A malicious oDAO could prevent returning of funds by upgrading RocketNodeDeposit to a reverting contract
         uint256 depositBalance = uint256(validator.depositValue) * milliToWei;
         (uint256 nodeShare, uint256 userShare) = calculateCapitalDispersal(depositBalance, getActiveValidatorCount() - 1);
         {
@@ -706,7 +703,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
 
     /// @dev Calculates share of returned capital based on current bond level and requirement
     function calculateCapitalDispersal(uint256 _value, uint256 _newValidatorCount) internal view returns (uint256 _nodeShare, uint256 _userShare) {
-        // TODO: A malicious pDAO could prevent returning of funds by messing with these values
         RocketNodeDepositInterface rocketNodeDeposit = getRocketNodeDeposit();
         uint256 newBondRequirement = rocketNodeDeposit.getBondRequirement(_newValidatorCount);
         _nodeShare = 0;

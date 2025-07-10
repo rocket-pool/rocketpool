@@ -141,7 +141,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         unchecked { // depositFee < msg.value
             uint256 depositFee = msg.value * rocketDAOProtocolSettingsDeposit.getDepositFee() / calcBase;
             uint256 depositNet = msg.value - depositFee;
-        // Mint rETH to user account
+            // Mint rETH to user account
             rocketTokenRETH.mint(depositNet, msg.sender);
         }
         // Emit deposit received event
@@ -560,16 +560,26 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     /// @notice Allows node operator to withdraw any ETH credit they have as rETH
     /// @param _amount Amount in ETH to withdraw
     function withdrawCredit(uint256 _amount) override external onlyRegisteredNode(msg.sender) {
+        // Check deposits are enabled
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
+        require(rocketDAOProtocolSettingsDeposit.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
+        // Check node operator has sufficient credit
         uint256 credit = getUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)));
         require(credit >= _amount, "Amount exceeds credit available");
         // Account for balance changes
         subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), _amount);
         subUint("deposit.pool.node.balance", _amount);
-        // Mint rETH to node
-        // TODO: Do we need to check deposits are enabled, capacity is respected and apply a deposit fee?
+        // Note: The funds are already stored in RocketVault under RocketDepositPool so no ETH transfer is required
+        // Get the node operator's withdrawal address
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-        rocketTokenRETH.mint(_amount, rocketNodeManager.getNodeWithdrawalAddress(msg.sender));
-        // The funds are already stored in RocketVault under RocketDepositPool so no transfer is required
+        address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(msg.sender);
+        // Calculate deposit fee
+        unchecked { // depositFee < msg.value
+            uint256 depositFee = _amount * rocketDAOProtocolSettingsDeposit.getDepositFee() / calcBase;
+            uint256 depositNet = _amount - depositFee;
+            // Mint rETH to node
+            rocketTokenRETH.mint(depositNet, nodeWithdrawalAddress);
+        }
         // Emit event
         emit CreditWithdrawn(msg.sender, _amount, block.timestamp);
     }

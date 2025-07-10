@@ -508,9 +508,9 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface, RocketVaul
 
     /// @notice Sends any unclaimed rewards to node operator's withdrawal address
     /// @param _nodeAddress Address of the node operator
-    function claimUnclaimedRewards(address _nodeAddress) external {
-        // TODO: Determine correct caller restrictions for this function (NO and withdrawal address?)
-        // TODO: Previously, distributing via distributor was permissionless but this doesn't need to be
+    function claimUnclaimedRewards(address _nodeAddress) external onlyRegisteredNode(_nodeAddress) {
+        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
+        require (msg.sender == _nodeAddress || msg.sender == withdrawalAddress, "Only node can claim");
         // Retrieve unclaimed rewards amount and reset balance
         bytes32 key = keccak256(abi.encodePacked("node.unclaimed.rewards", _nodeAddress));
         uint256 amount = getUint(key);
@@ -519,9 +519,8 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface, RocketVaul
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         rocketVault.withdrawEther(amount);
         // Transfer to node operator's withdrawal address
-        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
         (bool success,) = withdrawalAddress.call{value: amount}("");
-        require(success);
+        require(success, "Failed to send funds to withdrawal address");
         // Emit event
         emit NodeUnclaimedRewardsClaimed(_nodeAddress, amount, block.timestamp);
     }

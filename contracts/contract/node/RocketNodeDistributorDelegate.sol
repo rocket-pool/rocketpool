@@ -72,9 +72,12 @@ contract RocketNodeDistributorDelegate is RocketNodeDistributorStorageLayout, Ro
         uint256 nodeShare = getNodeShare();
         // Transfer node share
         address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
-        (bool success,) = withdrawalAddress.call{value: nodeShare}("");
-        if (!success) {
-            // If transfer to withdrawal address fails, add it to "unclaimed" rewards for claiming later
+        if (msg.sender == nodeAddress || msg.sender == withdrawalAddress) {
+            // If called by node operator, transfer directly
+            (bool success,) = withdrawalAddress.call{value: nodeShare}("");
+            require(success, "Failed to send funds to withdrawal address");
+        } else {
+            // If not called by node operator, add to unclaimed balance for later claiming
             RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(rocketStorage.getAddress(rocketNodeManagerKey));
             rocketNodeManager.addUnclaimedRewards{value: nodeShare}(nodeAddress);
         }

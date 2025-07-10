@@ -5,6 +5,7 @@ import { registerNode, setNodeTrusted, setNodeWithdrawalAddress } from '../_help
 import { distributeRewards } from './scenario-distribute-rewards';
 import { globalSnapShot } from '../_utils/snapshotting';
 import { assertBN } from '../_helpers/bn';
+import { shouldRevert } from '../_utils/testing';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -15,6 +16,7 @@ export default function() {
         let owner,
             node1,
             node2,
+            node1WithdrawalAddress,
             trustedNode,
             random;
 
@@ -29,6 +31,7 @@ export default function() {
                 owner,
                 node1,
                 node2,
+                node1WithdrawalAddress,
                 trustedNode,
                 random,
             ] = await ethers.getSigners();
@@ -46,35 +49,92 @@ export default function() {
             await rocketNodeManager.connect(node1).initialiseFeeDistributor();
         });
 
-        it(printTitle('node operator', 'can claim unclaimed rewards when ETH transfer to withdrawal address fails'), async () => {
-            // Enable reverting on transfer helper
-            const revertOnTransfer = await RevertOnTransfer.deployed();
-            await revertOnTransfer.setEnabled(true);
-            // Set node withdrawal address to reverting helper
-            await setNodeWithdrawalAddress(node1.address, revertOnTransfer.target, { from: node1 });
+        it(printTitle('random', 'can distribute rewards'), async () => {
             // Send some funds to the distributor
             await owner.sendTransaction({
                 to: distributorAddress,
                 value: '1'.ether,
             });
             // Distributing rewards should not fail
-            await distributeRewards(node1, { from: owner });
+            await distributeRewards(node1, { from: random });
             // Check unclaimed rewards was increased
             const rocketNodeManager = await RocketNodeManager.deployed();
-            const unclaimedRewardsBefore = await rocketNodeManager.getUnclaimedRewards(node1.address);
+            const unclaimedRewards = await rocketNodeManager.getUnclaimedRewards(node1.address);
             // The default capital ratio is 1:1 with 0% fee, therefore NO should have 0.5 ETH unclaimed
-            assertBN.equal(unclaimedRewardsBefore, '0.5'.ether);
-            // Disable revert
-            await revertOnTransfer.setEnabled(false);
-            // Try to claim
-            await rocketNodeManager.connect(node1).claimUnclaimedRewards(node1.address);
-            const unclaimedRewardsAfter = await rocketNodeManager.getUnclaimedRewards(node1.address);
-            // Should be no unclaimed rewards now
-            assertBN.equal(unclaimedRewardsAfter, '0'.ether);
-            // Withdrawal address should now have the 0.5 ETH
-            const withdrawalAddressBalance = await ethers.provider.getBalance(revertOnTransfer.target)
-            assertBN.equal(withdrawalAddressBalance, '0.5'.ether);
+            assertBN.equal(unclaimedRewards, '0.5'.ether);
         });
+
+        it(printTitle('node', 'can distribute rewards directly to withdrawal address'), async () => {
+            // Set node withdrawal address to reverting helper
+            await setNodeWithdrawalAddress(node1.address, node1WithdrawalAddress.address, { from: node1 });
+            // Send some funds to the distributor
+            await owner.sendTransaction({
+                to: distributorAddress,
+                value: '1'.ether,
+            });
+            // Get withdrawal address balance before
+            const withdrawalAddressBalanceBefore = await ethers.provider.getBalance(node1WithdrawalAddress.address)
+            // Distributing rewards should not fail
+            await distributeRewards(node1, { from: node1 });
+            // Check unclaimed rewards was increased
+            const rocketNodeManager = await RocketNodeManager.deployed();
+            const unclaimedRewards = await rocketNodeManager.getUnclaimedRewards(node1.address);
+            // Should be no unclaimed rewards
+            assertBN.equal(unclaimedRewards, '0'.ether);
+            // Withdrawal address should now have the 0.5 ETH
+            const withdrawalAddressBalanceAfter = await ethers.provider.getBalance(node1WithdrawalAddress.address)
+            assertBN.equal(withdrawalAddressBalanceAfter - withdrawalAddressBalanceBefore, '0.5'.ether);
+        });
+
+        describe('With unclaimed rewards from reverting withdrawal contract', () => {
+
+            let revertOnTransfer;
+
+            before(async () => {
+                // Enable reverting on transfer helper
+                revertOnTransfer = await RevertOnTransfer.deployed();
+                await revertOnTransfer.setEnabled(true);
+                // Set node withdrawal address to reverting helper
+                await setNodeWithdrawalAddress(node1.address, revertOnTransfer.target, { from: node1 });
+                // Send some funds to the distributor
+                await owner.sendTransaction({
+                    to: distributorAddress,
+                    value: '1'.ether,
+                });
+                // Distributing rewards should not fail
+                await distributeRewards(node1, { from: owner });
+                // Check unclaimed rewards was increased
+                const rocketNodeManager = await RocketNodeManager.deployed();
+                const unclaimedRewards = await rocketNodeManager.getUnclaimedRewards(node1.address);
+                // The default capital ratio is 1:1 with 0% fee, therefore NO should have 0.5 ETH unclaimed
+                assertBN.equal(unclaimedRewards, '0.5'.ether);
+                // Disable revert
+                await revertOnTransfer.setEnabled(false);
+            })
+
+            it(printTitle('node operator', 'can claim unclaimed rewards'), async () => {
+                // Try to claim
+                const rocketNodeManager = await RocketNodeManager.deployed();
+                await rocketNodeManager.connect(node1).claimUnclaimedRewards(node1.address);
+                const unclaimedRewards = await rocketNodeManager.getUnclaimedRewards(node1.address);
+                // Should be no unclaimed rewards now
+                assertBN.equal(unclaimedRewards, '0'.ether);
+                // Withdrawal address should now have the 0.5 ETH
+                const withdrawalAddressBalance = await ethers.provider.getBalance(revertOnTransfer.target)
+                assertBN.equal(withdrawalAddressBalance, '0.5'.ether);
+            });
+
+            it(printTitle('random', 'can not claim unclaimed rewards'), async () => {
+                // Try to claim
+                const rocketNodeManager = await RocketNodeManager.deployed();
+                await shouldRevert(
+                    rocketNodeManager.connect(random).claimUnclaimedRewards(node1.address),
+                    'Was able to claim',
+                    'Only node can claim'
+                );
+            });
+        })
+
 
     });
 }
