@@ -11,6 +11,7 @@ interface RocketRewardsPoolInterface {
     function getRPLBalance() external view returns(uint256);
     function getPendingRPLRewards() external view returns (uint256);
     function getPendingETHRewards() external view returns (uint256);
+    function getPendingVoterShare() external view returns (uint256);
     function getClaimIntervalTimeStart() external view returns(uint256);
     function getClaimIntervalTime() external view returns(uint256);
     function getClaimIntervalsPassed() external view returns(uint256);
