@@ -18,7 +18,6 @@ import "../../../interface/dao/security/RocketDAOSecurityProposalsInterface.sol"
 
 /// @notice Manages protocol DAO proposals
 contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInterface {
-
     // Events
     event ProposalSettingUint(string settingContractName, string settingPath, uint256 value, uint256 time);
     event ProposalSettingBool(string settingContractName, string settingPath, bool value, uint256 time);

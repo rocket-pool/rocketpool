@@ -8,18 +8,16 @@ import {RocketNetworkRevenuesInterface} from "../../interface/network/RocketNetw
 
 /// @notice Handles the calculations of revenue splits for the protocol's Universal Adjustable Revenue Split
 contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
+    // Constants
     uint256 private constant shareMagnitude = 100_000;
     uint256 private constant shareScale = 1 ether / shareMagnitude;
+    bytes32 private constant nodeShareKey = keccak256(abi.encodePacked("network.revenue.node.share"));
+    bytes32 private constant voterShareKey = keccak256(abi.encodePacked("network.revenue.voter.share"));
+    bytes32 private constant protocolDAOShareKey = keccak256(abi.encodePacked("network.revenue.pdao.share"));
 
-    bytes32 private immutable nodeShareKey;
-    bytes32 private immutable voterShareKey;
-    bytes32 private immutable protocolDAOShareKey;
-
+    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
-        // Initialise immutables
-        nodeShareKey = keccak256(abi.encodePacked("network.revenue.node.share"));
-        voterShareKey = keccak256(abi.encodePacked("network.revenue.voter.share"));
     }
 
     /// @dev Only allows calls from the pDAO setting contract or the security DAO contract

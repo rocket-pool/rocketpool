@@ -35,7 +35,6 @@ contract RocketDAONodeTrustedUpgrade is RocketBase, RocketDAONodeTrustedUpgradeI
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 2;
-
         // Precompute keys
         typeUpgradeContract = keccak256(abi.encodePacked("upgradeContract"));
         typeAddContract = keccak256(abi.encodePacked("addContract"));

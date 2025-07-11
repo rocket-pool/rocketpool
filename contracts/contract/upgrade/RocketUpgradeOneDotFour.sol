@@ -15,9 +15,6 @@ contract RocketUpgradeOneDotFour is RocketBase {
     // Whether the upgrade has been performed or not
     bool public executed;
 
-    // Whether the contract is locked to further changes
-    bool public locked;
-
     // Upgrade contracts
     address public immutable rocketMegapoolDelegate;
     address public immutable rocketMegapoolFactory;
@@ -77,7 +74,7 @@ contract RocketUpgradeOneDotFour is RocketBase {
     string public rocketClaimDAOAbi;
 
     // Save deployer to limit access to set functions
-    address immutable deployer;
+    address immutable internal deployer;
 
     // Construct
     constructor(
@@ -153,12 +150,6 @@ contract RocketUpgradeOneDotFour is RocketBase {
         return address(rocketStorage);
     }
 
-    /// @notice Prevents further changes from being applied
-    function lock() external {
-        require(msg.sender == deployer, "Only deployer");
-        locked = true;
-    }
-
     /// @notice Once this contract has been voted in by oDAO, guardian can perform the upgrade
     function execute() external onlyGuardian {
         require(!executed, "Already executed");
@@ -194,7 +185,7 @@ contract RocketUpgradeOneDotFour is RocketBase {
         _upgradeContract("rocketRewardsPool", rocketRewardsPool, rocketRewardsPoolAbi);
         _upgradeContract("rocketClaimDAO", rocketClaimDAO, rocketClaimDAOAbi);
 
-        // Init the megapool factory
+        // Initialise the megapool factory
         InitialiseInterface(rocketMegapoolFactory).initialise();
 
         // Initialise the new megapool settings contract
@@ -203,38 +194,49 @@ contract RocketUpgradeOneDotFour is RocketBase {
         // Add new security council allowed parameter
         setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "network", "network.node.commission.share.security.council.adder")), true);
 
-        // Set socialised assignments to 0 per RPIP-59
-        bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "deposit"));
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "deposit.assign.socialised.maximum")), 0);
+        // Deposit settings
+        {
+            bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "deposit"));
+            // Set socialised assignments to 0 per RPIP-59
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "deposit.assign.socialised.maximum")), 0);
+            // Set default express queue settings per RPIP-59
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "express.queue.rate")), 2);
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "express.queue.tickets.base.provision")), 2);
+        }
 
-        // Set default express queue settings per RPIP-59
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "express.queue.rate")), 2);
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "express.queue.tickets.base.provision")), 2);
+        // Network settings
+        {
+            bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "network"));
+            // Initialise UARS setting defaults per RPIP-46
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.commission.share")), 0.05 ether);                        // 5% (RPIP-46)
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.commission.share.security.council.adder")), 0 ether);    // 0% (RPIP-46)
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "network.voter.share")), 0.09 ether);                                  // 9% (RPIP-46)
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "network.pdao.share")), 0 ether);                                      // 0% (RPIP-72)
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "network.max.node.commission.share.council.adder")), 0.01 ether);      // 1% (RPIP-46)
+            // Initialise max rETH delta per RPIP-61
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "network.max.reth.balance.delta")), 0.02 ether);                       // 2% (RPIP-61)
+        }
 
-        // Initialise UARS setting defaults per RPIP-46
-        settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "network"));
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.commission.share")), 0.05 ether);                        // 5% (RPIP-46)
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.commission.share.security.council.adder")), 0 ether);    // 0% (RPIP-46)
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.voter.share")), 0.09 ether);                                  // 9% (RPIP-46)
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.pdao.share")), 0 ether);                                      // 0% (RPIP-72)
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.max.node.commission.share.council.adder")), 0.01 ether);      // 1% (RPIP-46)
-        // Initialise max rETH delta per RPIP-61
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.max.reth.balance.delta")), 0.02 ether);                       // 2% (RPIP-61)
+        // Node settings
+        {
+            bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "node"));
+            // Initialised reduced_bond and unstaking_period setting per RPIP-42 and RPIP-30
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "reduced.bond")), 4 ether);                    // 4 ether (RPIP-42)
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "node.unstaking.period")), 28 days);           // 28 days (RPIP-30)
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "node.megapool.minimum.stake")), 0.15 ether);  // 15% (RPIP-30)
+        }
 
-        // Initialised reduced_bond and unstaking_period setting per RPIP-42 and RPIP-30
-        settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "node"));
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "reduced.bond")), 4 ether);                    // 4 ether (RPIP-42)
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "node.unstaking.period")), 28 days);           // 28 days (RPIP-30)
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "node.megapool.minimum.stake")), 0.15 ether);  // 15% (RPIP-30)
+        // Security settings
+        {
+            bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "security"));
+            // Set protocol upgrade settings per RPIP-60
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "upgrade.delay")), 7 days);
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "upgradeveto.quorum")), 0.33 ether);
+        }
 
         // Initialise UARS system
         RocketNetworkRevenuesInterface rocketNetworkRevenuesInstance = RocketNetworkRevenuesInterface(rocketNetworkRevenues);
         rocketNetworkRevenuesInstance.initialise(0.05 ether, 0.09 ether, 0); // 5% node share, 9% voter share, 0% pdao share (RPIP-46)
-
-        // Set protocol upgrade settings per RPIP-60
-        settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "security"));
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "upgrade.delay")), 7 days);
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "upgradeveto.quorum")), 0.33 ether);
 
         // Set a protocol version value in storage for convenience with bindings
         setString(keccak256(abi.encodePacked("protocol.version")), "1.4");

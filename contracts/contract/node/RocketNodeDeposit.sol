@@ -37,13 +37,14 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
     function receiveVaultWithdrawalETH() external payable {}
 
     /// @notice Returns the bond requirement for the given number of validators
+    /// @param _numValidators The number of validator to calculate the bond requirement for
     function getBondRequirement(uint256 _numValidators) override public view returns (uint256) {
         if (_numValidators == 0) {
             return 0;
         }
         // Get contracts
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
-        // Calculate bond requirement
+        // Calculate bond requirement (per RPIP-42)
         uint256[] memory baseBondArray = rocketDAOProtocolSettingsNode.getBaseBondArray();
         if (_numValidators - 1 < baseBondArray.length) {
             return baseBondArray[_numValidators - 1];
@@ -53,26 +54,31 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
     }
 
     /// @notice Returns a node operator's credit balance in wei
-    function getNodeDepositCredit(address _nodeOperator) override public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeOperator)));
+    /// @param _nodeAddress Address of the node operator to query for
+    function getNodeDepositCredit(address _nodeAddress) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress)));
     }
 
     /// @notice Returns the current ETH balance for the given node operator
+    /// @param _nodeAddress Address of the node operator to query for
     function getNodeEthBalance(address _nodeAddress) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("node.eth.balance", _nodeAddress)));
     }
 
     /// @notice Returns the sum of the credit balance of a given node operator and their balance
+    /// @param _nodeAddress Address of the node operator to query for
     function getNodeCreditAndBalance(address _nodeAddress) override external view returns (uint256) {
         return getNodeDepositCredit(_nodeAddress) + getNodeEthBalance(_nodeAddress);
     }
 
     /// @notice Returns the sum of the amount of ETH credit currently usable by a given node operator and their balance
+    /// @param _nodeAddress Address of the node operator to query for
     function getNodeUsableCreditAndBalance(address _nodeAddress) override external view returns (uint256) {
         return getNodeUsableCredit(_nodeAddress) + getNodeEthBalance(_nodeAddress);
     }
 
     /// @notice Returns the amount of ETH credit currently usable by a given node operator
+    /// @param _nodeAddress Address of the node operator to query for
     function getNodeUsableCredit(address _nodeAddress) override public view returns (uint256) {
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         uint256 depositPoolBalance = rocketDepositPool.getBalance();
@@ -84,13 +90,19 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
     }
 
     /// @dev Increases a node operators deposit credit balance
-    function increaseDepositCreditBalance(address _nodeOperator, uint256 _amount) override external onlyLatestContract("rocketNodeDeposit", address(this)) {
+    /// @param _nodeAddress Address of the node operator to increase deposit balance for
+    /// @param _amount Amount to increase deposit credit balance by
+    function increaseDepositCreditBalance(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeDeposit", address(this)) {
         // Accept calls from network contracts or registered minipools
-        require(getBool(keccak256(abi.encodePacked("minipool.exists", msg.sender))) ||
-        getBool(keccak256(abi.encodePacked("contract.exists", msg.sender))),
-            "Invalid or outdated network contract");
+        require(
+            (
+                getBool(keccak256(abi.encodePacked("minipool.exists", msg.sender))) ||
+                getBool(keccak256(abi.encodePacked("contract.exists", msg.sender)))
+            ),
+            "Invalid or outdated network contract"
+        );
         // Increase credit balance
-        addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeOperator)), _amount);
+        addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress)), _amount);
     }
 
     /// @notice Deposits ETH for the given node operator
@@ -175,6 +187,12 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
     }
 
     /// @dev Internal logic to process a deposit
+    /// @param _bondAmount The amount of capital the node operator wants to put up as his bond
+    /// @param _useExpressTicket If the express queue should be used
+    /// @param _validatorPubkey Pubkey of the validator the node operator wishes to migrate
+    /// @param _validatorSignature Signature from the validator over the deposit data
+    /// @param _depositDataRoot The hash tree root of the deposit data (passed onto the deposit contract on pre stake)
+    /// @param _value Total value of the deposit including any credit balance used
     function _deposit(uint256 _bondAmount, bool _useExpressTicket, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot, uint256 _value) private {
         // Validate arguments
         validateBytes(_validatorPubkey, pubKeyLength);

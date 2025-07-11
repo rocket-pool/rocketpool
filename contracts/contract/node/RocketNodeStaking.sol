@@ -20,7 +20,6 @@ import "../network/RocketNetworkSnapshots.sol";
 
 /// @notice Handles staking of RPL by node operators
 contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
-
     // Immutables
     bytes32 immutable internal totalKey;
     bytes32 immutable internal totalMegapoolKey;
@@ -33,7 +32,6 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     event RPLUnstaked(address indexed from, uint256 amount, uint256 time);
     event RPLLegacyUnstaked(address indexed to, uint256 amount, uint256 time);
     event RPLWithdrawn(address indexed to, uint256 amount, uint256 time);
-
     event RPLSlashed(address indexed node, uint256 amount, uint256 ethValue, uint256 time);
     event StakeRPLForAllowed(address indexed node, address indexed caller, bool allowed, uint256 time);
     event RPLLockingAllowed(address indexed node, bool allowed, uint256 time);
@@ -577,7 +575,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         setUint(keccak256(abi.encodePacked("rpl.megapool.unstake.time", _nodeAddress)), block.timestamp);
     }
 
-    /// @dev Implements caller restrictions per RPIP-31:
+    /// @dev Implements caller restrictions (per RPIP-31):
     ///         - If a node’s RPL withdrawal address is unset, the call MUST come from one of: the node’s primary withdrawal address, or the node’s address
     ///         - If a node’s RPL withdrawal address is set, the call MUST come from the current RPL withdrawal address
     function callerAllowedFor(address _nodeAddress) internal view returns (bool) {

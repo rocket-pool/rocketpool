@@ -8,11 +8,10 @@ import {RocketNetworkSnapshotsInterface} from "../../../../interface/network/Roc
 
 /// @notice Network auction settings
 contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOProtocolSettingsNodeInterface {
-
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "node") {
         // Set version
-        version = 4;
+        version = 5;
         // Initialise settings on deployment
         if (!rocketStorage.getDeployedStatus()) {
             // Set defaults
@@ -91,7 +90,7 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
         return getSettingUint("reduced.bond");
     }
 
-    /// @notice Returns the `base_bond_array` cumulative array of bond requirements for number of validators
+    /// @notice Returns the `base_bond_array` mapping of number of validators to cumulative bond requirement
     function getBaseBondArray() override public pure returns (uint256[] memory) {
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = 4 ether;
@@ -99,6 +98,7 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
         return amounts;
     }
 
+    /// @notice Returns the amount of time that must be waiting after unstaking RPL before it can be returned
     function getUnstakingPeriod() override external view returns (uint256) {
         return getSettingUint("node.unstaking.period");
     }

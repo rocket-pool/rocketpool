@@ -22,12 +22,15 @@ import {RocketVaultWithdrawerInterface} from "../../interface/RocketVaultWithdra
 
 /// @notice Accepts user deposits and mints rETH; handles assignment of deposited ETH to megapools
 contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaultWithdrawerInterface {
-
     // Constants
     uint256 internal constant milliToWei = 10 ** 15;
     bytes32 internal constant queueKeyVariable = keccak256("minipools.available.variable");
     bytes32 internal constant expressQueueNamespace = keccak256("deposit.queue.express");
     bytes32 internal constant standardQueueNamespace = keccak256("deposit.queue.standard");
+    bytes32 internal constant queueMovedKey = keccak256("megapool.queue.moved");
+    bytes32 internal constant nodeBalanceKey = "deposit.pool.node.balance"; // Note: this is not hashed due to bug in earlier contract
+    bytes32 internal constant requestedTotalKey = keccak256("deposit.pool.requested.total");
+    bytes32 internal constant queueIndexKey = keccak256("megapool.queue.index");
 
     // Immutables
     RocketVaultInterface immutable internal rocketVault;
@@ -70,7 +73,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
     /// @notice Returns the amount of ETH contributed to the deposit pool by node operators waiting in the queue
     function getNodeBalance() override public view returns (uint256) {
-        return getUint("deposit.pool.node.balance");
+        return getUint(nodeBalanceKey);
     }
 
     /// @notice Returns the user owned portion of the deposit pool
@@ -91,7 +94,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Get minipool queue capacity
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
         uint256 capacity = rocketMinipoolQueue.getEffectiveCapacity();
-        capacity += getUint(keccak256("deposit.pool.requested.total"));
+        capacity += getUint(requestedTotalKey);
         uint256 balance = getBalance();
         // Calculate and return
         if (capacity >= balance) {
@@ -131,7 +134,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             if (rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) {
                 RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
                 uint256 capacity = rocketMinipoolQueue.getEffectiveCapacity();
-                capacity += getUint(keccak256("deposit.pool.requested.total"));
+                capacity += getUint(requestedTotalKey);
                 require(capacityNeeded <= maxDepositPoolSize + capacity, "The deposit pool size after depositing exceeds the maximum size");
             } else {
                 revert("The deposit pool size after depositing exceeds the maximum size");
@@ -163,7 +166,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         if (rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) {
             RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
             maxCapacity += rocketMinipoolQueue.getEffectiveCapacity();
-            maxCapacity += getUint(keccak256("deposit.pool.requested.total"));
+            maxCapacity += getUint(requestedTotalKey);
         }
         // Check we aren't already over
         if (depositPoolBalance >= maxCapacity) {
@@ -183,7 +186,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Note: The difference between `_bondAmount` and `msg.value` is the amount of credit being used on this deposit.
         //       That amount of credit is already accounted for in `deposit.pool.node.balance` and therefore we only
         //       need to add `msg.value` to the node balance.
-        addUint("deposit.pool.node.balance", msg.value);
+        addUint(nodeBalanceKey, msg.value);
     }
 
     /// @notice Recycle a deposit from a dissolved validator
@@ -263,7 +266,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         _assignDeposits(_max, rocketDAOProtocolSettingsDeposit);
     }
 
-    /// @notice Assigns up to specified number of minipools or megapools
+    /// @dev Assigns up to specified number of minipools or megapools
     /// @param _max Maximum number of minipools/megapools to assign
     function _assignDeposits(uint256 _max, RocketDAOProtocolSettingsDepositInterface _rocketDAOProtocolSettingsDeposit) internal {
         // Get contracts
@@ -330,7 +333,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     /// @dev Assigns a number of megapools based on `msg.value`
     function _assignMegapoolsByDeposit(RocketDAOProtocolSettingsDepositInterface _rocketDAOProtocolSettingsDeposit) internal {
         // Calculate the number of minipools to assign
-        // TODO: Confirm whether we still want to support socialised assignments or whether the RPIP intends for them to be entirely removed (improve gas if removed)
         uint256 maxAssignments = _rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments();
         uint256 scalingCount = msg.value / 32 ether;
         uint256 assignments = _rocketDAOProtocolSettingsDeposit.getMaximumDepositSocialisedAssignments() + scalingCount;
@@ -374,7 +376,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
                 emit DepositAssigned(minipools[i], variableDepositAmount, block.timestamp);
             }
             // Decrease node balance
-            subUint("deposit.pool.node.balance", nodeBalanceUsed);
+            subUint(nodeBalanceKey, nodeBalanceUsed);
         }
     }
 
@@ -386,7 +388,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Get required inputs
         uint256 expressQueueLength = linkedListStorage.getLength(expressQueueNamespace);
         uint256 standardQueueLength = linkedListStorage.getLength(standardQueueNamespace);
-        uint256 queueIndex = getUint(keccak256("megapool.queue.index"));
+        uint256 queueIndex = getUint(queueIndexKey);
         uint256 expressQueueRate = _rocketDAOProtocolSettingsDeposit.getExpressQueueRate();
         // Keep track of changes to applied at the end
         uint256 nodeBalanceUsed = 0;
@@ -439,19 +441,20 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             }
         }
         // Store state changes
-        subUint("deposit.pool.node.balance", nodeBalanceUsed);
-        setUint(keccak256("megapool.queue.index"), queueIndex);
-        subUint(keccak256("deposit.pool.requested.total"), totalSent);
+        subUint(nodeBalanceKey, nodeBalanceUsed);
+        setUint(queueIndexKey, queueIndex);
+        subUint(requestedTotalKey, totalSent);
         setQueueMoved(expressHeadMoved, standardHeadMoved);
     }
 
+    /// @dev Stores block number when the queues moved
     function setQueueMoved(bool expressHeadMoved, bool standardHeadMoved) internal {
-        uint256 packed = getUint(keccak256("megapool.queue.moved"));
+        uint256 packed = getUint(queueMovedKey);
         uint128 express = expressHeadMoved ? uint128(block.number) : uint128(packed >> 0);
         uint128 standard = standardHeadMoved ? uint128(block.number) : uint128(packed >> 128);
         packed = express << 0;
         packed |= uint256(standard) << 128;
-        setUint(keccak256("megapool.queue.moved"), packed);
+        setUint(queueMovedKey, packed);
     }
 
     /// @dev Withdraw excess deposit pool balance for rETH collateral
@@ -494,7 +497,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         LinkedListStorageInterface linkedListStorage = LinkedListStorageInterface(getContractAddress("linkedListStorage"));
         linkedListStorage.enqueueItem(namespace, value);
         // Increase requested balance and node balance
-        addUint(keccak256("deposit.pool.requested.total"), _amount);
+        addUint(requestedTotalKey, _amount);
         // Check if head moved
         if (_expressQueue) {
             uint256 expressQueueLength = linkedListStorage.getLength(expressQueueNamespace);
@@ -531,7 +534,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         bool isAtHead = linkedListStorage.getHeadIndex(namespace) == index;
         linkedListStorage.removeItem(namespace, key);
         // Perform balance accounting
-        subUint(keccak256("deposit.pool.requested.total"), value.requestedValue * milliToWei);
+        subUint(requestedTotalKey, value.requestedValue * milliToWei);
         if (_expressQueue) {
             // Refund express ticket
             RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
@@ -554,7 +557,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     function applyCredit(address _nodeAddress, uint256 _amount) override external onlyRegisteredMegapool(msg.sender) {
         // Add to node's credit for the amount supplied
         addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress)), _amount);
-        addUint("deposit.pool.node.balance", _amount);
+        addUint(nodeBalanceKey, _amount);
     }
 
     /// @notice Allows node operator to withdraw any ETH credit they have as rETH
@@ -568,7 +571,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         require(credit >= _amount, "Amount exceeds credit available");
         // Account for balance changes
         subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), _amount);
-        subUint("deposit.pool.node.balance", _amount);
+        subUint(nodeBalanceKey, _amount);
         // Note: The funds are already stored in RocketVault under RocketDepositPool so no ETH transfer is required
         // Get the node operator's withdrawal address
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
@@ -608,7 +611,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             return (address(0x0), false, 0);
         }
 
-        uint256 queueIndex = getUint(keccak256("megapool.queue.index"));
+        uint256 queueIndex = getUint(queueIndexKey);
 
         uint256 expressQueueRate = rocketDAOProtocolSettingsDeposit.getExpressQueueRate();
 
@@ -632,7 +635,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         }
 
         // Retrieve the block at which the entry at the top of the queue got to that position
-        uint256 packed = getUint(keccak256("megapool.queue.moved"));
+        uint256 packed = getUint(queueMovedKey);
         if (express) {
             headMovedBlock = uint64(packed >> 64);
         } else {
@@ -644,7 +647,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
     /// @notice Retrieves the queue index (used for deciding whether to assign express or standard queue next)
     function getQueueIndex() override external view returns (uint256) {
-        return getUint(keccak256("megapool.queue.index"));
+        return getUint(queueIndexKey);
     }
 
     /// @notice Returns the number of minipools in the queue

@@ -21,7 +21,7 @@ contract RocketDAOSecurityUpgrade is RocketBase, RocketDAOSecurityUpgradeInterfa
     // The namespace for any data stored in the trusted node DAO (do not change)
     string constant internal daoNameSpace = "dao.security.";
 
-    // Only allow certain contracts to execute methods
+    /// @dev Only allow certain contracts to execute methods
     modifier onlyExecutingContracts() {
         // Methods are either executed by bootstrapping methods in rocketDAONodeTrusted or by people executing passed proposals in rocketDAOProposal
         require(msg.sender == getContractAddress("rocketDAOProtocol") || msg.sender == getContractAddress("rocketDAOProposal"), "Sender is not permitted to access executing methods");
@@ -34,6 +34,7 @@ contract RocketDAOSecurityUpgrade is RocketBase, RocketDAOSecurityUpgradeInterfa
         _;
     }
 
+    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }

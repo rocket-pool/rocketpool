@@ -23,7 +23,7 @@ contract RocketDAOSecurityProposals is RocketBase, RocketDAOSecurityProposalsInt
     // The namespace of the DAO that setting changes get applied to (protocol DAO)
     string constant internal protocolDaoSettingNamespace = "dao.protocol.setting.";
 
-    // Only allow certain contracts to execute methods
+    /// @dev Only allow certain contracts to execute methods
     modifier onlyExecutingContracts() {
         // Methods are either executed by bootstrapping methods in rocketDAONodeTrusted or by people executing passed proposals in rocketDAOProposal
         require(msg.sender == getContractAddress("rocketDAOProtocol") || msg.sender == getContractAddress("rocketDAOProposal"), "Sender is not permitted to access executing methods");
@@ -44,6 +44,7 @@ contract RocketDAOSecurityProposals is RocketBase, RocketDAOSecurityProposalsInt
         _;
     }
 
+    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 2;
     }

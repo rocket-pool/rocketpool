@@ -8,9 +8,9 @@ import {BlockRootsInterface} from "../../interface/util/BlockRootsInterface.sol"
 import {BeaconStateVerifierInterface, ValidatorProof, Validator, WithdrawalProof, Withdrawal} from "../../interface/util/BeaconStateVerifierInterface.sol";
 
 contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
+    // Immutables
     uint256 internal immutable slotsPerHistoricalRoot;
     uint256 internal immutable historicalSummaryOffset;
-
     uint64 internal immutable slotPhase0;
     uint64 internal immutable slotAltair;
     uint64 internal immutable slotBellatrix;
@@ -18,6 +18,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
     uint64 internal immutable slotDeneb;
     uint64 internal immutable slotElectra;
 
+    // Enums
     enum Fork {
         PHASE_0,
         ALTAIR,
@@ -27,17 +28,17 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         ELECTRA
     }
 
+    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress, uint256 _slotsPerHistoricalRoot, uint64[5] memory _forkSlots) RocketBase(_rocketStorageAddress) {
         version = 1;
         slotsPerHistoricalRoot = _slotsPerHistoricalRoot;
-
+        // Set fork slots
         slotPhase0 = 0;
         slotAltair = _forkSlots[0];
         slotBellatrix = _forkSlots[1];
         slotCapella = _forkSlots[2];
         slotDeneb = _forkSlots[3];
         slotElectra = _forkSlots[4];
-
         // Historical summaries started being appended from Capella onwards, depending on the chain we might need an offset
         historicalSummaryOffset = slotCapella / slotsPerHistoricalRoot;
     }
@@ -104,6 +105,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         return SSZ.efficientSha256(a,b);
     }
 
+    /// @dev Returns the fork at a given slot
     function slotToFork(uint64 _slot) internal view returns (Fork) {
         if (_slot >= slotElectra) return Fork.ELECTRA;
         if (_slot >= slotDeneb) return Fork.DENEB;
@@ -113,17 +115,20 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         return Fork.PHASE_0;
     }
 
+    /// @dev Returns a partial gindex from a BeaconBlockHeader -> state_root
     function pathBeaconBlockHeaderToStateRoot() internal view returns (SSZ.Path memory) {
         SSZ.Path memory path = SSZ.from(3, 3); // 0b011 (BeaconBlockHeader -> state_root)
         return path;
     }
 
+    /// @dev Returns a partial gindex from a BeaconState -> validators[n]
     function pathBeaconStateToValidator(uint256 _validatorIndex) internal view returns (SSZ.Path memory) {
         SSZ.Path memory path = SSZ.from(11, 6); // 0b001011 (BeaconState -> validators)
         path = SSZ.concat(path, SSZ.intoVector(_validatorIndex, 40)); // validators -> validators[n]
         return path;
     }
 
+    /// @dev Returns a partial gindex from BeaconState -> block_roots[n] (via historical_summaries if required)
     function pathBeaconStateToPastBlockRoot(uint64 _slot, uint64 _pastSlot) internal view returns (SSZ.Path memory) {
         bool isHistorical = isHistoricalProof(_slot, _pastSlot);
         SSZ.Path memory path;
@@ -138,6 +143,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         return path;
     }
 
+    /// @dev Returns a partial gindex from BeaconBlockHeader -> withdrwals[n]
     function pathBlockToWithdrawal(uint256 _withdrawalNum) internal view returns (SSZ.Path memory) {
         SSZ.Path memory path = SSZ.from(4, 3); // 0b100 (BeaconBlockHeader -> body_root)
         path = SSZ.concat(path, SSZ.from(9, 4)); // 0b1001 (BeaconBlockBody -> execution_payload)

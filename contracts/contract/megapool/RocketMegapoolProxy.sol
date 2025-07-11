@@ -60,6 +60,7 @@ contract RocketMegapoolProxy is RocketMegapoolProxyInterface, RocketMegapoolStor
     }
 
     /// @notice Delegates all other calls to megapool delegate contract (or latest if flag is set)
+    /// @param _input Transaction calldata that is passed directly to the delegate
     fallback(bytes calldata _input) external payable notSelf returns (bytes memory) {
         address delegateContract;
         // If useLatestDelegate is set, use the latest delegate contract otherwise use stored and check expiry
@@ -86,13 +87,14 @@ contract RocketMegapoolProxy is RocketMegapoolProxyInterface, RocketMegapoolStor
             address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
             require(msg.sender == nodeAddress || msg.sender == withdrawalAddress, "Only the node operator can access this method");
         }
-        // Store old address for event
+        // Only succeed if there is a new delegate to upgrade to
         address oldDelegate = rocketMegapoolDelegate;
+        address newDelegate = getContractAddress("rocketMegapoolDelegate");
+        require(oldDelegate != newDelegate, "Already using latest");
         // Set new delegate
-        rocketMegapoolDelegate = getContractAddress("rocketMegapoolDelegate");
-        require(oldDelegate != rocketMegapoolDelegate, "Already using latest");
+        rocketMegapoolDelegate = newDelegate;
         // Log event
-        emit DelegateUpgraded(oldDelegate, rocketMegapoolDelegate, block.timestamp);
+        emit DelegateUpgraded(oldDelegate, newDelegate, block.timestamp);
     }
 
     /// @notice Sets the flag to automatically use the latest delegate contract or not
@@ -128,7 +130,7 @@ contract RocketMegapoolProxy is RocketMegapoolProxyInterface, RocketMegapoolStor
     function getDelegateExpired() public view returns (bool) {
         RocketMegapoolDelegateBaseInterface megapoolDelegate = RocketMegapoolDelegateBaseInterface(rocketMegapoolDelegate);
         uint256 expiry = megapoolDelegate.getExpirationBlock();
-        return expiry != 0 && block.number > expiry;
+        return expiry != 0 && block.number >= expiry;
     }
 
     /// @dev Get the address of a Rocket Pool network contract

@@ -2,14 +2,15 @@
 pragma solidity 0.8.30;
 pragma abicoder v2;
 
-import "../RocketBase.sol";
-import "../../interface/RocketVaultInterface.sol";
-import "../../interface/rewards/RocketRewardsPoolInterface.sol";
-import "../../interface/rewards/claims/RocketClaimDAOInterface.sol";
+import {RocketBase} from "../RocketBase.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
+import {RocketVaultInterface} from "../../interface/RocketVaultInterface.sol";
+import {RocketRewardsPoolInterface} from "../../interface/rewards/RocketRewardsPoolInterface.sol";
+import {RocketClaimDAOInterface} from "../../interface/rewards/claims/RocketClaimDAOInterface.sol";
+import {IERC20} from "../../interface/util/IERC20.sol";
 
 /// @notice Recipient of pDAO RPL from inflation. Performs treasury spends and handles recurring payments.
 contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
-
     // Offsets into storage for contract details
     uint256 constant internal existsOffset = 0;
     uint256 constant internal recipientOffset = 1;
@@ -26,14 +27,17 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
     event RPLTreasuryContractCreated(string indexed contractName, address indexed recipient, uint256 amountPerPeriod, uint256 startTime, uint256 periodLength, uint256 numPeriods);
     event RPLTreasuryContractUpdated(string indexed contractName, address indexed recipient, uint256 amountPerPeriod, uint256 periodLength, uint256 numPeriods);
 
+    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 4;
     }
 
+    /// @dev Receive pDAO share of rewards from megapool distributions and reward submissions
     receive() payable external {
         // Transfer incoming ETH directly to the vault
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         rocketVault.depositEther{value: msg.value}();
+        // Note: There is currently no way to spend this ETH
     }
 
     /// @notice Returns whether a contract with the given name exists

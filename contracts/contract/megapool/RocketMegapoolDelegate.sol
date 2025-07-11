@@ -8,11 +8,12 @@ import {RocketDepositPoolInterface} from "../../interface/deposit/RocketDepositP
 import {RocketMegapoolDelegateInterface} from "../../interface/megapool/RocketMegapoolDelegateInterface.sol";
 import {RocketNetworkRevenuesInterface} from "../../interface/network/RocketNetworkRevenuesInterface.sol";
 import {RocketNodeDepositInterface} from "../../interface/node/RocketNodeDepositInterface.sol";
+import {RocketRewardsPoolInterface} from "../../interface/rewards/RocketRewardsPoolInterface.sol";
 import {RocketMegapoolDelegateBase} from "./RocketMegapoolDelegateBase.sol";
 import {RocketMegapoolStorageLayout} from "./RocketMegapoolStorageLayout.sol";
-import {RocketRewardsPoolInterface} from "../../interface/rewards/RocketRewardsPoolInterface.sol";
 
-/// @notice This contract manages multiple validators. It serves as the target of Beacon Chain withdrawal credentials.
+/// @notice This contract manages multiple validators belonging to an individual node operator.
+///         It serves as the withdrawal credentials for all Beacon Chain validators managed by it.
 contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDelegateInterface {
     // Constants
     uint256 constant internal prestakeValue = 1 ether;
@@ -65,11 +66,10 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         rocketDepositPoolKey = keccak256(abi.encodePacked("contract.address", "rocketDepositPool"));
         rocketMegapoolManagerKey = keccak256(abi.encodePacked("contract.address", "rocketMegapoolManager"));
         rocketNodeDepositKey = keccak256(abi.encodePacked("contract.address", "rocketNodeDeposit"));
-
         // Prefetch immutable contracts
         rocketTokenRETH = payable(getContractAddress("rocketTokenRETH"));
         casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
-
+        // Set other immutables
         genesisTime = _beaconGenesisTime;
     }
 
@@ -114,6 +114,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     }
 
     /// @notice Returns both validator information and pubkey
+    /// @param _validatorId Internal ID of the validator to query
     function getValidatorInfoAndPubkey(uint32 _validatorId) override external view returns (ValidatorInfo memory info, bytes memory pubkey) {
         info = validators[_validatorId];
         pubkey = pubkeys[_validatorId];
@@ -291,7 +292,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     }
 
     /// @notice Performs the remaining ETH deposit on the Beacon Chain
-    /// @param _validatorId The validator ID
+    /// @param _validatorId The internal ID of the validator in this megapool
     /// @param _validatorIndex The validator's index on the beacon chain
     function stake(uint32 _validatorId, uint64 _validatorIndex) external onlyRocketMegapoolManager {
         // Retrieve validator from storage
@@ -378,7 +379,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         _reduceDebt(_amount);
     }
 
-    /// @notice Distributes any accrued execution layer rewards sent to this address
+    /// @notice Distributes any accrued staking rewards
     function distribute() override public {
         // Calculate split of rewards
         uint256 rewards = getPendingRewards();
@@ -402,6 +403,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
                 revert("Pending validator exit");
             }
         }
+        // Cannot distribute if challenged by oDAO
         require(numLockedValidators == 0, "Megapool locked");
         (uint256 nodeAmount, uint256 voterAmount, uint256 protocolDAOAmount, uint256 rethAmount) = calculateRewards(_rewards);
         // Update last distribution block for use in calculating time-weighted average commission
@@ -568,7 +570,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     /// @notice Used to notify the megapool of the final balance of an exited validator
     /// @param _validatorId Internal ID of the validator to notify final balance of
     /// @param _amountInGwei The amount in the final withdrawal
-    /// @param _caller The account which called (msg.sender passed from RocketMegapoolManager)
+    /// @param _caller The address which is submitted the final balance (i.e. msg.sender passed from RocketMegapoolManager)
     /// @param _withdrawalSlot The slot containing the withdrawal
     function notifyFinalBalance(uint32 _validatorId, uint64 _amountInGwei, address _caller, uint64 _withdrawalSlot) override external onlyRocketMegapoolManager {
         // Perform notification process
@@ -587,6 +589,9 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     }
 
     /// @dev Internal implementation of final balance notification process
+    /// @param _validatorId Internal ID of the validator to notify final balance of
+    /// @param _amountInGwei The amount in the final withdrawal
+    /// @param _withdrawalSlot The slot containing the withdrawal
     function _notifyFinalBalance(uint32 _validatorId, uint64 _amountInGwei, uint64 _withdrawalSlot) internal {
         ValidatorInfo memory validator = validators[_validatorId];
         require(!validator.exited, "Already exited");
@@ -702,6 +707,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     }
 
     /// @dev Calculates share of returned capital based on current bond level and requirement
+    /// @param _value The amount of ETH capital that is needing to be dispersed
+    /// @param _newValidatorCount The number of validators the node will have after this dispersal
     function calculateCapitalDispersal(uint256 _value, uint256 _newValidatorCount) internal view returns (uint256 _nodeShare, uint256 _userShare) {
         RocketNodeDepositInterface rocketNodeDeposit = getRocketNodeDeposit();
         uint256 newBondRequirement = rocketNodeDeposit.getBondRequirement(_newValidatorCount);

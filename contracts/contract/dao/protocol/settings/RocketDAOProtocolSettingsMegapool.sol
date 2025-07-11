@@ -8,7 +8,7 @@ import {RocketDAOProtocolSettings} from "./RocketDAOProtocolSettings.sol";
 
 /// @notice Network megapool settings
 contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketDAOProtocolSettingsMegapoolInterface {
-
+    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "megapool") {
         version = 1;
         // Initialise settings on deployment

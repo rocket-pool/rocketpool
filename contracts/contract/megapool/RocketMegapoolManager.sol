@@ -10,29 +10,31 @@ import {BeaconStateVerifierInterface, ValidatorProof, Withdrawal, WithdrawalProo
 
 /// @notice Handles protocol-level megapool functionality
 contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
-
+    // Immutables
     bytes32 immutable internal challengerKey;
+    bytes32 immutable internal setCountKey;
 
+    // Constants
     uint256 constant internal farFutureEpoch = 2 ** 64 - 1;
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
-
         // Precompute static storage keys
         challengerKey = keccak256("last.trusted.node.megapool.challenger");
+        setCountKey = keccak256("megapool.validator.set.count");
     }
 
     /// @notice Returns the total number validators across all megapools
     function getValidatorCount() override external view returns (uint256) {
-        return getUint(keccak256("megapool.validator.set.count"));
+        return getUint(setCountKey);
     }
 
     /// @notice Adds a validator record to the global megapool validator set
     /// @param _megapoolAddress Address of the megapool which manages this validator
     /// @param _validatorId Internal validator ID of the new validator
     function addValidator(address _megapoolAddress, uint32 _validatorId) override external onlyLatestContract("rocketMegapoolManager", address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) {
-        uint256 index = getUint(keccak256("megapool.validator.set.count"));
-        setUint(keccak256("megapool.validator.set.count"), index + 1);
+        uint256 index = getUint(setCountKey);
+        setUint(setCountKey, index + 1);
         uint256 encoded = (uint256(uint160(_megapoolAddress)) << 96) | uint32(_validatorId);
         setUint(keccak256(abi.encodePacked("megapool.validator.set", index)), encoded);
     }
@@ -45,10 +47,11 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
     /// @notice Returns validator info for the given global megapool validator index
     /// @param _index The index of the validator to query
     function getValidatorInfo(uint256 _index) override external view returns (bytes memory pubkey, RocketMegapoolStorageLayout.ValidatorInfo memory validatorInfo, address megapool, uint32 validatorId) {
+        // Retrieve and decode entry
         uint256 encoded = getUint(keccak256(abi.encodePacked("megapool.validator.set", _index)));
         megapool = address(uint160(encoded >> 96));
         validatorId = uint32(encoded);
-
+        // Fetch and return info
         RocketMegapoolInterface rocketMegapool = RocketMegapoolInterface(megapool);
         (validatorInfo, pubkey) = rocketMegapool.getValidatorInfoAndPubkey(validatorId);
     }
@@ -85,7 +88,7 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         // Verify matching pubkey
         bytes memory pubkey = _megapool.getValidatorPubkey(_validatorId);
         require(keccak256(_proof.validator.pubkey) == keccak256(pubkey), "Pubkey does not match");
-        // Perform the stake
+        // Dissolve the validator
         _megapool.dissolveValidator(_validatorId);
     }
 
@@ -123,8 +126,9 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         _megapool.notifyNotExit(_validatorId, _proof.slot);
     }
 
-    /// @notice Asserts that a megapool validator is exiting but a proof has not been supplied by the node operator
+    /// @notice Asserts that one or more megapool validators are exiting but a proof has not been supplied by the node operator
     /// @param _challenges List of challenges to submit
+    /// @dev Only a trusted node can submit challenges
     function challengeExit(ExitChallenge[] calldata _challenges) override external onlyTrustedNode(msg.sender) {
         // Check if this member was the previous one to challenge
         address lastSubmitter = getAddress(challengerKey);

@@ -9,12 +9,13 @@ import {RocketDAOProtocolSettings} from "./RocketDAOProtocolSettings.sol";
 
 /// @notice Network auction settings
 contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDAOProtocolSettingsNetworkInterface {
-
+    // Modifiers
     modifier onlyAllowListedController() {
         require(isAllowListedController(msg.sender), "Not on allow list");
         _;
     }
 
+    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "network") {
         version = 4;
         // Initialise settings on deployment

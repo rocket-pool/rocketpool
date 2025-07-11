@@ -2,14 +2,14 @@
 pragma solidity 0.8.30;
 pragma abicoder v2;
 
-import "../../RocketBase.sol";
-import "../../../interface/dao/protocol/RocketDAOProtocolInterface.sol";
-import "../../../interface/dao/protocol/RocketDAOProtocolProposalsInterface.sol";
-import "../../../types/SettingType.sol";
+import {RocketStorageInterface} from "../../../interface/RocketStorageInterface.sol";
+import {RocketDAOProtocolInterface} from "../../../interface/dao/protocol/RocketDAOProtocolInterface.sol";
+import {RocketDAOProtocolProposalsInterface} from "../../../interface/dao/protocol/RocketDAOProtocolProposalsInterface.sol";
+import {SettingType} from "../../../types/SettingType.sol";
+import {RocketBase} from "../../RocketBase.sol";
 
-/// @notice The Rocket Pool Protocol DAO
+/// @notice The Rocket Pool Protocol DAO (pDAO)
 contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
-
     // Events
     event BootstrapSettingMulti(string[] settingContractNames, string[] settingPaths, SettingType[] types, bytes[] values, uint256 time);
     event BootstrapSettingUint(string settingContractName, string settingPath, uint256 value, uint256 time);
@@ -102,7 +102,7 @@ contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
     }
 
     /// @notice Bootstrap mode - Update treasury contract
-    function bootstrapTreasuryUpdateContract(string memory _contractName, address _recipientAddress, uint256 _amountPerPeriod, uint256 _periodLength, uint256 _numPeriods) override external  onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
+    function bootstrapTreasuryUpdateContract(string memory _contractName, address _recipientAddress, uint256 _amountPerPeriod, uint256 _periodLength, uint256 _numPeriods) override external onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
         RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals")).proposalTreasuryUpdateContract(_contractName, _recipientAddress, _amountPerPeriod, _periodLength, _numPeriods);
         emit BootstrapTreasuryUpdateContract(_contractName, _recipientAddress, _amountPerPeriod, _periodLength, _numPeriods, block.timestamp);
     }

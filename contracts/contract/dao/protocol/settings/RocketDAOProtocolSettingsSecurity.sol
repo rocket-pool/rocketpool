@@ -7,7 +7,7 @@ import {RocketDAOProtocolSettingsSecurityInterface} from "../../../../interface/
 
 /// @notice Protocol parameters relating to the security council
 contract RocketDAOProtocolSettingsSecurity is RocketDAOProtocolSettings, RocketDAOProtocolSettingsSecurityInterface {
-
+    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "security") {
         version = 2;
         // Initialise settings on deployment

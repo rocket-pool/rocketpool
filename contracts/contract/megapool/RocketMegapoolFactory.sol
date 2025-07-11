@@ -10,7 +10,6 @@ import {Clones} from "@openzeppelin4/contracts/proxy/Clones.sol";
 
 /// @notice Performs deterministic deployment of megapool delegate contracts and handles deprecation of old ones
 contract RocketMegapoolFactory is RocketBase, RocketMegapoolFactoryInterface {
-
     // Immutables
     uint256 private immutable setKey;
 
@@ -31,7 +30,7 @@ contract RocketMegapoolFactory is RocketBase, RocketMegapoolFactoryInterface {
         } else {
             require(msg.sender == rocketStorage.getGuardian(), "Not guardian");
         }
-        // Prevent multiple initialisations
+        // Prevent multiple initialisations by checking if the meta struct is non-zero
         bytes32 metaKey = bytes32(setKey);
         uint256 meta = getUint(metaKey);
         require(meta == 0, "Already initialised");
@@ -112,7 +111,8 @@ contract RocketMegapoolFactory is RocketBase, RocketMegapoolFactoryInterface {
                 keccak("megapool.delegate.set") + 0: delegate 0
                              "                  + 1: delegate 1 <-- head (oldest unexpired delegate)
                              "                  + 2: delegate 2
-                             "                  + 3: delegate 3 <-- tail (latest delegate)
+                             "                  + 3: delegate 3 (latest delegate)
+                             "                  + 4: empty      <-- tail
         */
         // Compute storage keys
         bytes32 metaKey = bytes32(setKey);
@@ -123,7 +123,7 @@ contract RocketMegapoolFactory is RocketBase, RocketMegapoolFactoryInterface {
         // Expiry blocks should be sequential, but just in case we'll only advance the head if none before it have expired
         bool deprecatedOne = false;
         // Iterate over "in-use" delegates and deprecate them if they are yet to expire
-        for (uint256 i = head; i < tail; i++) {
+        for (uint256 i = head; i < tail; ++i) {
             RocketMegapoolDelegateBaseInterface delegate = RocketMegapoolDelegateBaseInterface(getAddress(bytes32(setKey + i)));
             uint256 expiry = delegate.getExpirationBlock();
             if (expiry == 0 || block.number < expiry) {

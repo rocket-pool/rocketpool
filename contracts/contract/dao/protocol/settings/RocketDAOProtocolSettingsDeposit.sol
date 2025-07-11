@@ -8,9 +8,9 @@ import {RocketDAOProtocolSettings} from "./RocketDAOProtocolSettings.sol";
 
 /// @notice Network deposit settings
 contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDAOProtocolSettingsDepositInterface {
-
+    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "deposit") {
-        version = 4;
+        version = 5;
         // Initialise settings on deployment
         if (!rocketStorage.getDeployedStatus()) {
             // Set defaults
