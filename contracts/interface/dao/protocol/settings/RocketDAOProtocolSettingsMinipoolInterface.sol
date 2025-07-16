@@ -19,4 +19,5 @@ interface RocketDAOProtocolSettingsMinipoolInterface {
     function hasUserDistributeWindowPassed(uint256 _time) external view returns (bool);
     function getUserDistributeWindowStart() external view returns (uint256);
     function getUserDistributeWindowLength() external view returns (uint256);
+    function getMaximumPenaltyCount() external view returns (uint256);
 }

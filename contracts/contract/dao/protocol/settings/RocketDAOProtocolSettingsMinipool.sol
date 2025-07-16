@@ -12,7 +12,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     uint256 constant internal minipoolUserDistributeWindowStart = 90 days;
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "minipool") {
-        version = 3;
+        version = 4;
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
@@ -21,6 +21,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
             setSettingUint("minipool.launch.timeout", 72 hours);
             setSettingUint("minipool.maximum.count", 14);
             setSettingUint("minipool.user.distribute.window.length", 2 days);
+            setSettingUint("minipool.maximum.penalty.count", 2500);                 // Max number of penalties oDAO can apply in rolling 1 week window (RPIP-52)
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -38,7 +39,10 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
                 require(_value >= (rocketDAONodeTrustedSettingsMinipool.getScrubPeriod() + 1 hours), "Launch timeout must be greater than scrub period");
                 // >= 12 hours (RPIP-33)
                 require(_value >= 12 hours, "Launch timeout must be greater than 12 hours");
-            } 
+            } else if(settingKey == keccak256(abi.encodePacked("minipool.maximum.penalty.count"))) {
+                // >= 2500 (RPIP-52)
+                require(_value >= 2500, "Maximum penalty count must be equal or greater than 2500");
+            }
         }
         // Update setting now
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
@@ -55,7 +59,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     }
 
     /// @notice Returns the deposit amount for a given deposit type (only used for legacy minipool types)
-    function getDepositUserAmount(MinipoolDeposit _depositType) override external pure returns (uint256) {
+    function getDepositUserAmount(MinipoolDeposit _depositType) override public pure returns (uint256) {
         if (_depositType == MinipoolDeposit.Full) { return getFullDepositUserAmount(); }
         if (_depositType == MinipoolDeposit.Half) { return getHalfDepositUserAmount(); }
         return 0;
@@ -72,7 +76,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     }
 
     /// @notice Returns the amount a "Variable" minipool requires to move to staking status
-    function getVariableDepositAmount() override public pure returns (uint256) {
+    function getVariableDepositAmount() override external pure returns (uint256) {
         return getLaunchBalance() - getPreLaunchValue();
     }
 
@@ -119,4 +123,10 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     function getUserDistributeWindowLength() override public view returns (uint256) {
         return getSettingUint("minipool.user.distribute.window.length");
     }
+
+    /// @notice Returns the maximum number of penalties the oDAO can apply in a rolling 1 week window
+    function getMaximumPenaltyCount() override external view returns (uint256) {
+        return getSettingUint("minipool.maximum.penalty.count");
+    }
+
 }

@@ -15,6 +15,10 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
     uint256 constant internal penaltyMaximumPeriod = 50400;
     bytes32 constant internal penaltyKey = keccak256(abi.encodePacked("megapool.running.penalty"));
 
+    // Events
+    event PenaltySubmitted(address indexed from, address megapool, uint256 block, uint256 amount, uint256 time);
+    event PenaltyApplied(address indexed megapool, uint256 block, uint256 amount, uint256 time);
+
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
@@ -46,6 +50,8 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
         setUint(submissionCountKey, submissionCount);
         // Maybe execute
         maybeApplyPenalty(_megapool, _block, _amount, submissionCount);
+        // Emit event
+        emit PenaltySubmitted(msg.sender, _megapool, _block, _amount, block.timestamp);
     }
 
     /// @notice Manually execute a penalty that has hit majority vote
@@ -88,9 +94,11 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
         }
         uint256 earlierRunningTotal = uint256(rocketNetworkSnapshots.lookup(penaltyKey, uint32(earlierBlock)));
         // Get current running total
-        (,, uint224 currentTotal) = rocketNetworkSnapshots.latest(penaltyKey);
+        (,, uint224 currentRunningTotal) = rocketNetworkSnapshots.latest(penaltyKey);
         // Cap the penalty at the maximum amount based on past 50400 blocks
-        return maxPenalty - (uint256(currentTotal) - earlierRunningTotal);
+        uint256 currentTotal = uint256(currentRunningTotal) - earlierRunningTotal;
+        if (currentTotal > maxPenalty) return 0;
+        return maxPenalty - currentTotal;
     }
 
     /// @dev If a penalty has not been applied and hit majority, execute the penalty
@@ -107,6 +115,8 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
             // Apply penalty and mark as applied
             applyPenalty(_megapool, _amount);
             setBool(penaltyAppliedKey, true);
+            // Emit event
+            emit PenaltyApplied(_megapool, _block, _amount, block.timestamp);
         }
     }
 
@@ -124,12 +134,14 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
         }
         uint256 earlierRunningTotal = rocketNetworkSnapshots.lookup(penaltyKey, uint32(earlierBlock));
         // Get current running total
-        (,, uint224 currentTotal) = rocketNetworkSnapshots.latest(penaltyKey);
+        (,, uint224 currentRunningTotal) = rocketNetworkSnapshots.latest(penaltyKey);
         // Prevent the running penalty total from exceeding the maximum amount
-        uint256 maxCurrentPenalty = maxPenalty - (uint256(currentTotal) - earlierRunningTotal);
-        require(_amount <= maxCurrentPenalty, "Max penalty exceeded");
+        uint256 currentTotal = uint256(currentRunningTotal) - earlierRunningTotal;
+        require(currentTotal < maxPenalty, "Max penalty exceeded");
+        uint256 currentMaxPenalty = maxPenalty - currentTotal;
+        require(_amount <= currentMaxPenalty, "Max penalty exceeded");
         // Insert new running total
-        rocketNetworkSnapshots.push(penaltyKey, currentTotal + uint224(_amount));
+        rocketNetworkSnapshots.push(penaltyKey, currentRunningTotal + uint224(_amount));
         // Call megapool to increase debt
         RocketMegapoolDelegateInterface(_megapool).applyPenalty(_amount);
     }

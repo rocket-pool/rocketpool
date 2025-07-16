@@ -21,7 +21,7 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
     function initialise() override public {
         // Set defaults
         _setSettingUint("megapool.time.before.dissolve", 28 days);               // Time that must be waited before dissolving a megapool validator (RPIP-59)
-        _setSettingUint("maximum.megapool.eth.penalty", 2500 ether);             // Maximum ETH penalty that can be applied over a rolling 50400 block window (RPIP-58)
+        _setSettingUint("maximum.megapool.eth.penalty", 612 ether);              // Maximum ETH penalty that can be applied over a rolling 50400 block window (RPIP-42)
         _setSettingUint("notify.threshold", 12 hours);                           // Time before withdrawable_epoch a node operator must notify exit (RPIP-72)
         _setSettingUint("late.notify.fine", 0.05 ether);                         // Fine applied to node operator for not notifying exit in time (RPIP-72)
         _setSettingUint("user.distribute.window.length", 7 days);                // How long a user must wait before distributing someone else's megapool (RPIP-72)
@@ -40,7 +40,7 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
             if (settingKey == keccak256(abi.encodePacked("megapool.time.before.dissolve"))) {
                 require(_value >= 2 days, "Value must be greater or equal to 2 days");                  // Per RPIP-59
             } else if (settingKey == keccak256(abi.encodePacked("maximum.megapool.eth.penalty"))) {
-                require(_value >= 2500 ether, "Penalty must equal or exceed 2500 ETH");                 // Per RPIP-58
+                require(_value >= 300 ether, "Maximum penalty must equal or exceed 300 ETH");           // Per RPIP-42
             } else if (settingKey == keccak256(abi.encodePacked("notify.threshold"))) {
                 require(_value >= 2 hours, "Notify threshold must be greater or equal to 2 hours");     // Per RPIP-72
             } else if (settingKey == keccak256(abi.encodePacked("late.notify.fine"))) {
