@@ -627,7 +627,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Check if enough value is in the deposit pool to assign the requested value
         bytes32 namespace = getQueueNamespace(express);
         LinkedListStorageInterface.DepositQueueValue memory head = linkedListStorage.peekItem(namespace);
-        assignmentPossible = rocketVault.balanceOf("rocketDepositPool") >= head.requestedValue;
+        assignmentPossible = rocketVault.balanceOf("rocketDepositPool") >= head.requestedValue * milliToWei;
 
         // Check assignments are enabled
         if (!rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) {
@@ -637,7 +637,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Retrieve the block at which the entry at the top of the queue got to that position
         uint256 packed = getUint(queueMovedKey);
         if (express) {
-            headMovedBlock = uint64(packed >> 64);
+            headMovedBlock = uint64(packed);
         } else {
             headMovedBlock = uint64(packed >> 128);
         }
