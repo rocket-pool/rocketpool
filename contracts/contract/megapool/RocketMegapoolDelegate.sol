@@ -633,7 +633,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
                 if (toNode > debt) {
                     toNode -= debt;
                     toUser += debt;
-                    debt = 0;
+                    _reduceDebt(debt);
                 } else {
                     toUser += toNode;
                     toNode = 0;
