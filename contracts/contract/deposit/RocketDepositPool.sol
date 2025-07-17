@@ -332,7 +332,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
     /// @dev Assigns a number of megapools based on `msg.value`
     function _assignMegapoolsByDeposit(RocketDAOProtocolSettingsDepositInterface _rocketDAOProtocolSettingsDeposit) internal {
-        // Calculate the number of minipools to assign
+        // Calculate the number of megapool validators to assign
         uint256 maxAssignments = _rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments();
         uint256 scalingCount = msg.value / 32 ether;
         uint256 assignments = _rocketDAOProtocolSettingsDeposit.getMaximumDepositSocialisedAssignments() + scalingCount;
