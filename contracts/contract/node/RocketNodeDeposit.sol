@@ -9,10 +9,7 @@ import {RocketDepositPoolInterface} from "../../interface/deposit/RocketDepositP
 import {RocketMegapoolFactoryInterface} from "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
 import {RocketMegapoolInterface} from "../../interface/megapool/RocketMegapoolInterface.sol";
 import {RocketMegapoolManagerInterface} from "../../interface/megapool/RocketMegapoolManagerInterface.sol";
-import {RocketNetworkSnapshotsInterface} from "../../interface/network/RocketNetworkSnapshotsInterface.sol";
-import {RocketNetworkVotingInterface} from "../../interface/network/RocketNetworkVotingInterface.sol";
 import {RocketNodeDepositInterface} from "../../interface/node/RocketNodeDepositInterface.sol";
-import {RocketNodeStakingInterface} from "../../interface/node/RocketNodeStakingInterface.sol";
 import {RocketBase} from "../RocketBase.sol";
 
 /// @notice Entry point for node operators to perform deposits for the creation of new validators on the network
@@ -23,6 +20,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
 
     // Events
     event DepositReceived(address indexed from, uint256 amount, uint256 time);
+    event MultiDepositReceived(address indexed from, uint256 numberOfValidators, uint256 totalBond, uint256 time);
     event DepositFor(address indexed nodeAddress, address indexed from, uint256 amount, uint256 time);
     event Withdrawal(address indexed nodeAddress, address indexed to, uint256 amount, uint256 time);
 
@@ -159,31 +157,46 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
     /// @param _validatorSignature Signature from the validator over the deposit data
     /// @param _depositDataRoot The hash tree root of the deposit data (passed onto the deposit contract on pre stake)
     function depositWithCredit(uint256 _bondAmount, bool _useExpressTicket, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(msg.sender) {
-        uint256 balanceToUse = 0;
-        uint256 creditToUse = 0;
-        uint256 shortFall = _bondAmount - msg.value;
-        uint256 credit = getNodeUsableCredit(msg.sender);
-        uint256 balance = getNodeEthBalance(msg.sender);
-        // Check credit
-        require(credit + balance >= shortFall, "Insufficient credit");
-        // Calculate amounts to use
-        creditToUse = shortFall;
-        if (credit < shortFall) {
-            balanceToUse = shortFall - credit;
-            creditToUse = credit;
-        }
-        // Update balances
-        if (balanceToUse > 0) {
-            subUint(keccak256(abi.encodePacked("node.eth.balance", msg.sender)), balanceToUse);
-            // Withdraw the funds
-            RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
-            rocketVault.withdrawEther(balanceToUse);
-        }
-        if (creditToUse > 0) {
-            subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), creditToUse);
-        }
         // Process the deposit
+        uint256 balanceToUse = useCreditOrBalanceIfRequired(_bondAmount);
         _deposit(_bondAmount, _useExpressTicket, _validatorPubkey, _validatorSignature, _depositDataRoot, msg.value + balanceToUse);
+    }
+
+    /// @notice Processes multiple node deposits in one call
+    /// @param _deposits Array of deposits to process
+    function depositMulti(NodeDeposit[] calldata _deposits) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(msg.sender) {
+        // Check pre-conditions
+        require(_deposits.length > 0, "Must perform at least 1 deposit");
+        checkDepositsEnabled();
+        // Get or deploy a megapool for the caller
+        RocketMegapoolFactoryInterface rocketMegapoolFactory = RocketMegapoolFactoryInterface(getContractAddress("rocketMegapoolFactory"));
+        RocketMegapoolInterface megapool = RocketMegapoolInterface(rocketMegapoolFactory.getOrDeployContract(msg.sender));
+        RocketMegapoolManagerInterface rocketMegapoolManager = RocketMegapoolManagerInterface(getContractAddress("rocketMegapoolManager"));
+        // Iterate deposits and execute
+        uint256 totalBond = 0;
+        for (uint256 i = 0; i < _deposits.length; ++i) {
+            NodeDeposit calldata deposit = _deposits[i];
+            // Validate arguments
+            validateBytes(deposit.validatorPubkey, pubKeyLength);
+            validateBytes(deposit.validatorSignature, signatureLength);
+            // Request a new validator from the megapool
+            rocketMegapoolManager.addValidator(address(megapool), megapool.getValidatorCount());
+            megapool.newValidator(deposit.bondAmount, deposit.useExpressTicket, deposit.validatorPubkey, deposit.validatorSignature, deposit.depositDataRoot);
+            // Sum bond total
+            totalBond += deposit.bondAmount;
+        }
+        // Check if node sent full bond amount of if we need to use credit/balance
+        uint256 balanceToUse = 0;
+        if (msg.value < totalBond) {
+            balanceToUse = useCreditOrBalanceIfRequired(totalBond);
+        }
+        // Emit deposit received event
+        emit MultiDepositReceived(msg.sender, _deposits.length, totalBond, block.timestamp);
+        // Send node operator's bond to the deposit pool
+        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+        rocketDepositPool.nodeDeposit{value: msg.value + balanceToUse}(totalBond);
+        // Attempt to assign 1 minipool/megapool for each deposit
+        rocketDepositPool.maybeAssignDeposits(_deposits.length);
     }
 
     /// @dev Internal logic to process a deposit
@@ -228,5 +241,35 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
     /// @param _length the expected length
     function validateBytes(bytes memory _data, uint256 _length) pure internal {
         require(_data.length == _length, "Invalid bytes length");
+    }
+
+    /// @dev If msg.value does not cover the bond amount, take from node's credit / balance to make up the difference
+    ///      Reverts if node does not have enough credit or ETH balance to cover the shortfall
+    /// @return Returns the amount of ETH withdrawn from the vault from the node's ETH balance
+    function useCreditOrBalanceIfRequired(uint256 _bondAmount) private returns (uint256) {
+        uint256 balanceToUse = 0;
+        uint256 creditToUse = 0;
+        uint256 shortFall = _bondAmount - msg.value;
+        uint256 credit = getNodeUsableCredit(msg.sender);
+        uint256 balance = getNodeEthBalance(msg.sender);
+        // Check credit
+        require(credit + balance >= shortFall, "Insufficient credit");
+        // Calculate amounts to use
+        creditToUse = shortFall;
+        if (credit < shortFall) {
+            balanceToUse = shortFall - credit;
+            creditToUse = credit;
+        }
+        // Update balances
+        if (balanceToUse > 0) {
+            subUint(keccak256(abi.encodePacked("node.eth.balance", msg.sender)), balanceToUse);
+            // Withdraw the funds
+            RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+            rocketVault.withdrawEther(balanceToUse);
+        }
+        if (creditToUse > 0) {
+            subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), creditToUse);
+        }
+        return balanceToUse;
     }
 }

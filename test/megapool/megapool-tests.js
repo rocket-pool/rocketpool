@@ -8,7 +8,7 @@ import {
     deployMegapool,
     getMegapoolForNode,
     getValidatorInfo,
-    nodeDeposit,
+    nodeDeposit, nodeDepositMulti,
 } from '../_helpers/megapool';
 import { shouldRevert } from '../_utils/testing';
 import {
@@ -151,6 +151,142 @@ export default function() {
             await nodeDeposit(node);
         });
 
+        it(printTitle('node', 'can manually deploy a megapool then deposit multi'), async () => {
+            await deployMegapool({ from: node });
+
+            const deposits = [
+                {
+                    bondAmount: '4'.ether,
+                    useExpressTicket: false,
+                },
+                {
+                    bondAmount: '4'.ether,
+                    useExpressTicket: false,
+                },
+            ]
+
+            await nodeDepositMulti(node, deposits);
+        });
+
+        it(printTitle('node', 'can not perform multi deposit with no deposits'), async () => {
+            await deployMegapool({ from: node });
+            const deposits = []
+            await shouldRevert(
+                nodeDepositMulti(node, deposits),
+                'Was able to multi deposit with no deposits',
+                'Must perform at least 1 deposit'
+            );
+        });
+
+        it(printTitle('node', 'can deposit multi with supplied ETH'), async () => {
+            await nodeDepositEthFor(node, { from: random, value: '4'.ether });
+
+            const deposits = [
+                {
+                    bondAmount: '4'.ether,
+                    useExpressTicket: false,
+                },
+                {
+                    bondAmount: '4'.ether,
+                    useExpressTicket: false,
+                },
+            ]
+
+            await nodeDepositMulti(node, deposits, '4'.ether);
+        });
+
+        it(printTitle('node', 'can not deposit multi with more credit than exists'), async () => {
+            const deposits = [
+                {
+                    bondAmount: '4'.ether,
+                    useExpressTicket: false,
+                },
+                {
+                    bondAmount: '4'.ether,
+                    useExpressTicket: false,
+                },
+            ]
+
+            await shouldRevert(
+                nodeDepositMulti(node, deposits, '4'.ether),
+                'Was able to use more credit than exists',
+                'Insufficient credit'
+            );
+        });
+
+        it(printTitle('node', 'can not deposit multi with incorrect bond'), async () => {
+            await deployMegapool({ from: node });
+
+            const deposits = [
+                {
+                    bondAmount: '4'.ether,
+                    useExpressTicket: false,
+                },
+                {
+                    bondAmount: '2'.ether,
+                    useExpressTicket: false,
+                },
+            ]
+
+            await shouldRevert(
+                nodeDepositMulti(node, deposits),
+                'Was able to deposit with incorrect bond',
+                'Bond requirement not met',
+            );
+        });
+
+        it(printTitle('node', 'can deposit multi with mixed express ticket usage'), async () => {
+            await deployMegapool({ from: node });
+
+            const deposits = [
+                {
+                    bondAmount: '4'.ether,
+                    useExpressTicket: false,
+                },
+                {
+                    bondAmount: '4'.ether,
+                    useExpressTicket: true,
+                },
+                {
+                    bondAmount: '4'.ether,
+                    useExpressTicket: true,
+                },
+                {
+                    bondAmount: '4'.ether,
+                    useExpressTicket: false,
+                },
+            ]
+
+            await nodeDepositMulti(node, deposits);
+        });
+
+        it(printTitle('node', 'can deposit multi with mixed bond amounts'), async () => {
+            await deployMegapool({ from: node });
+
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
+
+            const deposits = [
+                {
+                    bondAmount: '4'.ether,
+                    useExpressTicket: false,
+                },
+                {
+                    bondAmount: '4'.ether,
+                    useExpressTicket: true,
+                },
+                {
+                    bondAmount: '2'.ether,
+                    useExpressTicket: true,
+                },
+                {
+                    bondAmount: '2'.ether,
+                    useExpressTicket: false,
+                },
+            ]
+
+            await nodeDepositMulti(node, deposits);
+        });
+
         it(printTitle('node', 'can exit the queue after a bond reduction and then use credit to deposit'), async () => {
             const rocketNodeDeposit = await RocketNodeDeposit.deployed();
             // Deposit enough for 3 validators
@@ -187,6 +323,24 @@ export default function() {
             await exitQueue(node, 0);
             // Use credit on entering the queue again
             await nodeDeposit(node, '4'.ether, false, '4'.ether);
+        });
+
+        it(printTitle('node', 'can deposit multi using ETH credit'), async () => {
+            // Enter and exit queue to receive a 4 ETH credit
+            await nodeDeposit(node, '4'.ether);
+            await exitQueue(node, 0);
+            // Use credit on entering the queue again
+            const deposits = [
+                {
+                    bondAmount: '4'.ether,
+                    useExpressTicket: false,
+                },
+                {
+                    bondAmount: '4'.ether,
+                    useExpressTicket: false,
+                },
+            ]
+            await nodeDepositMulti(node, deposits, '4'.ether);
         });
 
         it(printTitle('node', 'can not deploy megapool twice'), async () => {
