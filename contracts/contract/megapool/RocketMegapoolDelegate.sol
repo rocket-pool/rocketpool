@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.30;
 
-import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 import {DepositInterface} from "../../interface/casper/DepositInterface.sol";
 import {RocketDAOProtocolSettingsMegapoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMegapoolInterface.sol";
 import {RocketDepositPoolInterface} from "../../interface/deposit/RocketDepositPoolInterface.sol";
+import {RocketMegapoolDelegateBase} from "./RocketMegapoolDelegateBase.sol";
 import {RocketMegapoolDelegateInterface} from "../../interface/megapool/RocketMegapoolDelegateInterface.sol";
+import {RocketMegapoolStorageLayout} from "./RocketMegapoolStorageLayout.sol";
 import {RocketNetworkRevenuesInterface} from "../../interface/network/RocketNetworkRevenuesInterface.sol";
 import {RocketNodeDepositInterface} from "../../interface/node/RocketNodeDepositInterface.sol";
 import {RocketRewardsPoolInterface} from "../../interface/rewards/RocketRewardsPoolInterface.sol";
-import {RocketMegapoolDelegateBase} from "./RocketMegapoolDelegateBase.sol";
-import {RocketMegapoolStorageLayout} from "./RocketMegapoolStorageLayout.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
+import {RocketTokenRETHInterface} from "../../interface/token/RocketTokenRETHInterface.sol";
 
 /// @notice This contract manages multiple validators belonging to an individual node operator.
 ///         It serves as the withdrawal credentials for all Beacon Chain validators managed by it.
@@ -575,6 +576,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     function notifyFinalBalance(uint32 _validatorId, uint64 _amountInGwei, address _caller, uint64 _withdrawalSlot) override external onlyRocketMegapoolManager {
         // Perform notification process
         _notifyFinalBalance(_validatorId, _amountInGwei, _withdrawalSlot);
+        // Trigger a deposit of excess collateral from rETH contract to deposit pool
+        RocketTokenRETHInterface(rocketTokenRETH).depositExcessCollateral();
         // If owner is calling, claim immediately
         if (isNodeCalling(_caller)) {
             _claim();
