@@ -164,7 +164,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         return bytes32((uint256(0x01) << 248) | uint256(uint160(address(this))));
     }
 
-    /// @notice Creates a new validator as part of a megapool
+    /// @notice Creates a new validator for this megapool
     /// @param _bondAmount The bond amount supplied by the node operator
     /// @param _useExpressTicket If an express ticket should be used
     /// @param _validatorPubkey The pubkey of the new validator
@@ -636,8 +636,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
                     _reduceDebt(debt);
                 } else {
                     toUser += toNode;
-                    toNode = 0;
                     _reduceDebt(toNode);
+                    toNode = 0;
                 }
             }
             // Send funds
@@ -671,13 +671,13 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         emit MegapoolPenaltyApplied(_amount, block.timestamp);
     }
 
-    /// @dev Increases debt of this minipool
+    /// @dev Increases debt of this megapool
     function _increaseDebt(uint256 _amount) internal {
         debt += _amount;
         emit MegapoolDebtIncreased(_amount, block.timestamp);
     }
 
-    /// @dev Reduces debt of this minipool
+    /// @dev Reduces debt of this megapool
     function _reduceDebt(uint256 _amount) internal {
         debt -= _amount;
         emit MegapoolDebtReduced(_amount, block.timestamp);
