@@ -24,6 +24,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
     event DepositFor(address indexed nodeAddress, address indexed from, uint256 amount, uint256 time);
     event Withdrawal(address indexed nodeAddress, address indexed to, uint256 amount, uint256 time);
 
+    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 5;
     }
@@ -51,7 +52,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
         return baseBondArray[baseBondArray.length - 1] + (_numValidators - baseBondArray.length) * reducedBond;
     }
 
-    /// @notice Returns a node operator's credit balance in wei
+    /// @notice Returns a node operator's credit balance in ETH
     /// @param _nodeAddress Address of the node operator to query for
     function getNodeDepositCredit(address _nodeAddress) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress)));
@@ -150,7 +151,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
         _deposit(_bondAmount, _useExpressTicket, _validatorPubkey, _validatorSignature, _depositDataRoot, msg.value);
     }
 
-    /// @notice Accept a node deposit and create a new minipool under the node. Only accepts calls from registered nodes
+    /// @notice Accept a node deposit and create a new validator under the node. Only accepts calls from registered nodes
     /// @param _bondAmount The amount of capital the node operator wants to put up as his bond
     /// @param _useExpressTicket If the express queue should be used 
     /// @param _validatorPubkey Pubkey of the validator the node operator wishes to migrate

@@ -6,6 +6,29 @@ const mnemonicPassword = process.env.MNEMONIC_PASSWORD;
 const providerUrl = process.env.PROVIDER_URL || 'http://localhost:8545';
 
 module.exports = Object.assign(common, {
+    solidity: {
+        compilers: [
+            {
+                version: '0.8.30',
+                settings: {
+                    viaIR: true,
+                    optimizer: {
+                        enabled: true,
+                        runs: 15000,
+                    },
+                },
+            },
+            {
+                version: '0.7.6',
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 15000,
+                    },
+                },
+            },
+        ],
+    },
     networks: {
         custom: {
             url: `${providerUrl}`,

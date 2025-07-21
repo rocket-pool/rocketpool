@@ -44,11 +44,10 @@ import {
     getNodeCount,
     nodeSetDelegate,
     nodeStakeRPL,
-    nodeWithdrawRPL,
     registerNode,
     setRPLLockingAllowed,
 } from '../_helpers/node';
-import { createMinipool, getMinipoolMinimumRPLStake } from '../_helpers/minipool';
+import { getMinipoolMinimumRPLStake } from '../_helpers/minipool';
 import { mintRPL } from '../_helpers/tokens';
 import { userDeposit } from '../_helpers/deposit';
 import {
@@ -64,9 +63,9 @@ import { assertBN } from '../_helpers/bn';
 import { daoSecurityMemberJoin, getDAOSecurityMemberIsValid } from './scenario-dao-security';
 import { voteStates } from './scenario-dao-proposal';
 import * as assert from 'assert';
-import { globalSnapShot, snapshotDescribe } from '../_utils/snapshotting';
-import { deployMegapool, nodeDeposit } from '../_helpers/megapool';
-import { stakeMegapoolValidator } from '../megapool/scenario-stake';
+import { globalSnapShot } from '../_utils/snapshotting';
+import { nodeDepositMulti } from '../_helpers/megapool';
+import { unstakeRpl } from '../node/scenario-unstake-rpl';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -291,16 +290,21 @@ export default function() {
 
         });
 
-        async function createNode(minipoolCount, node) {
+        async function createNode(validatorCount, node) {
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake * minipoolCount.BN;
+            let rplStake = minipoolRplStake * validatorCount.BN;
             const nodeCount = await getNodeCount();
             await registerNode({ from: node });
             nodeMap[node.address] = Number(nodeCount);
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, { from: node });
-            await createMinipool({ from: node, value: '16'.ether });
+            // Create validators
+            const deposits = Array(validatorCount).fill({
+                bondAmount: '4'.ether,
+                useExpressTicket: false,
+            })
+            await nodeDepositMulti(node, deposits);
             // Allow RPL locking by default
             await setRPLLockingAllowed(node, true, { from: node });
         }
@@ -411,8 +415,7 @@ export default function() {
          * Proposer
          */
 
-        // TODO: Re-enable and  once we have RPL megapool staking implemented
-        describe.skip('With Node Operators', () => {
+        describe('With Node Operators', () => {
             let nodes;
 
             before(async () => {
@@ -455,31 +458,7 @@ export default function() {
                     await shouldRevert(createValidProposal(), 'Was able to create proposal', 'Node is not allowed to lock RPL');
                 });
 
-                it(printTitle('proposer', 'can not withdraw excess RPL if it is locked'), async () => {
-                    // Give the proposer 150% collateral + proposal bond + 50
-                    await mintRPL(owner, proposer, '2390'.ether);
-                    await nodeStakeRPL('2390'.ether, { from: proposer });
-
-                    // Create a minipool with a node to use as a challenger
-                    await createNode(1, node1);
-
-                    // Create a valid proposal
-                    await createValidProposal();
-
-                    // Wait for withdraw cooldown
-                    await helpers.time.increase(Math.max(voteDelayTime, rewardClaimPeriodTime) + 1);
-
-                    // Let the proposal expire to unlock the bond
-                    await helpers.time.increase(votePhase1Time + votePhase2Time + 1);
-
-                    // Try to withdraw the 100 RPL bond (below 150% after lock)
-                    await shouldRevert(nodeWithdrawRPL(proposalBond, { from: proposer }), 'Was able to withdraw', 'Node\'s staked RPL balance after withdrawal is less than required balance');
-
-                    // Try to withdraw the additional 50 RPL (still above 150% after lock)
-                    await nodeWithdrawRPL('50'.ether, { from: proposer });
-                });
-
-                it(printTitle('proposer', 'can withdraw excess RPL after it is unlocked'), async () => {
+                it(printTitle('proposer', 'can unstake excess RPL after it is unlocked'), async () => {
                     // Give the proposer 150% collateral + proposal bond + 50
                     await mintRPL(owner, proposer, '2390'.ether);
                     await nodeStakeRPL('2390'.ether, { from: proposer });
@@ -499,8 +478,8 @@ export default function() {
                     // Wait the withdrawal cooldown time
                     await helpers.time.increase(rewardClaimPeriodTime + 1);
 
-                    // Withdraw excess
-                    await nodeWithdrawRPL('150'.ether, { from: proposer });
+                    // Unstake excess
+                    await unstakeRpl('150'.ether, { from: proposer });
                 });
 
                 it(printTitle('proposer', 'can not create proposal with invalid leaf count'), async () => {

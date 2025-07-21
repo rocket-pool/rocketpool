@@ -35,9 +35,9 @@ export async function submitPenalty(minipoolAddress, block, txOptions) {
 
     // Get submission keys
     let penaltyKey = ethers.solidityPackedKeccak256(['string', 'address'], ['network.penalties.penalty', minipoolAddress]);
-    let nodeSubmissionKey = ethers.solidityPackedKeccak256(['string', 'address', 'address', 'uint256'], ['network.penalties.submitted.node', txOptions.from.address, minipoolAddress, block]);
-    let submissionCountKey = ethers.solidityPackedKeccak256(['string', 'address', 'uint256'], ['network.penalties.submitted.count', minipoolAddress, block]);
-    let executionKey = ethers.solidityPackedKeccak256(['string', 'address', 'uint256'], ['network.penalties.executed', minipoolAddress, block]);
+    let nodeSubmissionKey = ethers.solidityPackedKeccak256(['string', 'address', 'address', 'uint256'], ['minipool.penalty.submission', txOptions.from.address, minipoolAddress, block]);
+    let submissionCountKey = ethers.solidityPackedKeccak256(['string', 'address', 'uint256'], ['minipool.penalty.submission', minipoolAddress, block]);
+    let executionKey = ethers.solidityPackedKeccak256(['string', 'address', 'uint256'], ['minipool.penalty.submission.applied', minipoolAddress, block]);
 
     let maxPenaltyRate = await rocketMinipoolPenalty.getMaxPenaltyRate();
     let penaltyThreshold = await rocketDAOProtocolSettingsNetwork.getNodePenaltyThreshold();
@@ -72,7 +72,7 @@ export async function submitPenalty(minipoolAddress, block, txOptions) {
 
     // Submit penalties
     if (submission1.executed) {
-        await shouldRevert(rocketNetworkPenalties.connect(txOptions.from).submitPenalty(minipoolAddress, block, txOptions), 'Did not revert on already executed penalty', 'Penalty already applied for this block');
+        await shouldRevert(rocketNetworkPenalties.connect(txOptions.from).submitPenalty(minipoolAddress, block, txOptions), 'Did not revert on already executed penalty', 'Penalty already applied');
     } else {
         await rocketNetworkPenalties.connect(txOptions.from).submitPenalty(minipoolAddress, block, txOptions);
     }

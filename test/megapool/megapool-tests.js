@@ -22,7 +22,7 @@ import {
     RocketMegapoolFactory,
     RocketMegapoolManager,
     RocketNodeDeposit,
-    RocketStorage, RocketTokenRETH,
+    RocketStorage, RocketTokenRETH, RocketVault,
 } from '../_utils/artifacts';
 import assert from 'assert';
 import { stakeMegapoolValidator } from './scenario-stake';
@@ -1267,12 +1267,14 @@ export default function() {
                 snapshotDescribe('With debt', () => {
                     async function getData() {
                         const rocketTokenRETH = await RocketTokenRETH.deployed()
-                        const [ rethBalance, debt, nodeBalance ] = await Promise.all([
+                        const rocketVault = await RocketVault.deployed()
+                        const [ rethBalance, depositPoolBalance, debt, nodeBalance ] = await Promise.all([
                             ethers.provider.getBalance(rocketTokenRETH.target),
+                            rocketVault.balanceOf('rocketDepositPool'),
                             megapool.getDebt(),
                             ethers.provider.getBalance(nodeWithdrawalAddress),
                         ])
-                        return { rethBalance, debt, nodeBalance };
+                        return { rethBalance, depositPoolBalance, debt, nodeBalance };
                     }
 
                     async function exitValidator(megapool, index, finalBalance) {
@@ -1311,7 +1313,7 @@ export default function() {
                         const data2 = await getData();
                         assertBN.equal(data2.nodeBalance - data1.nodeBalance, '3'.ether); // 3 ETH returned to node
                         assertBN.equal(data2.debt, 0n); // Debt cleared
-                        assertBN.equal(data2.rethBalance - data1.rethBalance, '28'.ether + '1'.ether); // User capital + 1 ETH debt returned to rETH
+                        assertBN.equal((data2.rethBalance + data2.depositPoolBalance) - (data1.rethBalance + data1.depositPoolBalance), '28'.ether + '1'.ether); // User capital + 1 ETH debt returned to rETH
                     });
 
                     it(printTitle('node', 'will increase debt further on slashed exit'), async () => {
@@ -1320,7 +1322,7 @@ export default function() {
                         const data2 = await getData();
                         assertBN.equal(data2.nodeBalance - data1.nodeBalance, '0'.ether); // No change
                         assertBN.equal(data2.debt - data1.debt, '1'.ether); // 1 ETH more debt added
-                        assertBN.equal(data2.rethBalance - data1.rethBalance, '27'.ether); // Entire balance sent to rETH
+                        assertBN.equal((data2.rethBalance + data2.depositPoolBalance) - (data1.rethBalance + data1.depositPoolBalance), '27'.ether); // Entire balance sent to rETH
                     });
                 });
             });

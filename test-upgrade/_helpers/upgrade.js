@@ -1,4 +1,4 @@
-import { artifacts } from '../../test/_utils/artifacts';
+import { artifacts, RocketDAONodeTrusted, RocketUpgradeOneDotFour } from '../../test/_utils/artifacts';
 import pako from 'pako';
 
 const hre = require('hardhat');
@@ -20,17 +20,21 @@ const networkContracts = {
     rocketDAOProtocolSettingsNetwork: artifacts.require('RocketDAOProtocolSettingsNetwork'),
     rocketDAOProtocolSettingsSecurity: artifacts.require('RocketDAOProtocolSettingsSecurity'),
     rocketDAOProtocolSettingsMegapool: artifacts.require('RocketDAOProtocolSettingsMegapool'),
+    rocketDAOProtocolSettingsMinipool: artifacts.require('RocketDAOProtocolSettingsMinipool'),
     rocketDAOSecurityUpgrade: artifacts.require('RocketDAOSecurityUpgrade'),
     rocketDAOSecurityProposals: artifacts.require('RocketDAOSecurityProposals'),
     rocketDAONodeTrustedUpgrade: artifacts.require('RocketDAONodeTrustedUpgrade'),
     rocketNetworkRevenues: artifacts.require('RocketNetworkRevenues'),
     rocketNetworkBalances: artifacts.require('RocketNetworkBalances'),
     rocketNetworkSnapshots: artifacts.require('RocketNetworkSnapshots'),
+    rocketNetworkPenalties: artifacts.require('RocketNetworkPenalties'),
     rocketRewardsPool: artifacts.require('RocketRewardsPool'),
     blockRoots: artifacts.require('BlockRoots'),
     beaconStateVerifier: artifacts.require('BeaconStateVerifier'),
     rocketNodeDistributorDelegate: artifacts.require('RocketNodeDistributorDelegate'),
     rocketClaimDAO: artifacts.require('RocketClaimDAO'),
+    rocketMinipoolBondReducer: artifacts.require('RocketMinipoolBondReducer'),
+    rocketNetworkVoting: artifacts.require('RocketNetworkVoting'),
 
     rocketUpgradeOneDotFour: artifacts.require('RocketUpgradeOneDotFour'),
 };
@@ -120,17 +124,21 @@ export async function deployUpgrade(rocketStorageAddress) {
                         addresses.rocketDAOProtocolSettingsNetwork,
                         addresses.rocketDAOProtocolSettingsSecurity,
                         addresses.rocketDAOProtocolSettingsMegapool,
+                        addresses.rocketDAOProtocolSettingsMinipool,
                         addresses.rocketDAOSecurityUpgrade,
                         addresses.rocketDAOSecurityProposals,
                         addresses.rocketDAONodeTrustedUpgrade,
                         addresses.rocketNetworkRevenues,
                         addresses.rocketNetworkBalances,
                         addresses.rocketNetworkSnapshots,
+                        addresses.rocketNetworkPenalties,
                         addresses.rocketRewardsPool,
                         addresses.blockRoots,
                         addresses.beaconStateVerifier,
                         addresses.rocketNodeDistributorDelegate,
                         addresses.rocketClaimDAO,
+                        addresses.rocketMinipoolBondReducer,
+                        addresses.rocketNetworkVoting,
                     ],
                     [
                         compressABI(networkContracts.rocketMegapoolDelegate.abi),
@@ -149,17 +157,21 @@ export async function deployUpgrade(rocketStorageAddress) {
                         compressABI(networkContracts.rocketDAOProtocolSettingsNetwork.abi),
                         compressABI(networkContracts.rocketDAOProtocolSettingsSecurity.abi),
                         compressABI(networkContracts.rocketDAOProtocolSettingsMegapool.abi),
+                        compressABI(networkContracts.rocketDAOProtocolSettingsMinipool.abi),
                         compressABI(networkContracts.rocketDAOSecurityUpgrade.abi),
                         compressABI(networkContracts.rocketDAOSecurityProposals.abi),
                         compressABI(networkContracts.rocketDAONodeTrustedUpgrade.abi),
                         compressABI(networkContracts.rocketNetworkRevenues.abi),
                         compressABI(networkContracts.rocketNetworkBalances.abi),
                         compressABI(networkContracts.rocketNetworkSnapshots.abi),
+                        compressABI(networkContracts.rocketNetworkPenalties.abi),
                         compressABI(networkContracts.rocketRewardsPool.abi),
                         compressABI(networkContracts.blockRoots.abi),
                         compressABI(networkContracts.beaconStateVerifier.abi),
                         compressABI(networkContracts.rocketNodeDistributorDelegate.abi),
                         compressABI(networkContracts.rocketClaimDAO.abi),
+                        compressABI(networkContracts.rocketMinipoolBondReducer.abi),
+                        compressABI(networkContracts.rocketNetworkVoting.abi),
                     ],
                 ];
                 instance = await networkContracts[contract].new(rocketStorageAddress, ...args);
@@ -182,3 +194,13 @@ export async function deployUpgrade(rocketStorageAddress) {
 
     return upgradeContract;
 }
+
+export async function executeUpgrade(owner, upgradeContract, rocketStorageAddress) {
+    // Bootstrap add the upgrade contract and execute
+    const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
+    await rocketDAONodeTrusted.connect(owner).bootstrapUpgrade('addContract', 'rocketUpgradeOneDotFour', compressABI(RocketUpgradeOneDotFour.abi), upgradeContract.target);
+    await upgradeContract.connect(owner).execute();
+    // Reload contracts from deployment as some were upgraded
+    await artifacts.loadFromDeployment(rocketStorageAddress);
+}
+

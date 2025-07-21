@@ -1,4 +1,5 @@
 import {
+    RocketDepositPool,
     RocketMegapoolManager,
     RocketStorage,
     RocketTokenRETH,
@@ -84,20 +85,22 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
     const rocketStorage = await RocketStorage.deployed();
     const rocketTokenRETH = await RocketTokenRETH.deployed();
     const rocketMegapoolManager = await RocketMegapoolManager.deployed();
+    const rocketVault = await RocketVault.deployed();
 
     const nodeAddress = await megapool.getNodeAddress();
     const withdrawalAddress = await rocketStorage.getNodeWithdrawalAddress(nodeAddress);
 
     async function getBalances() {
-        let [pendingRewards, megapoolBalance, nodeBalance, rethBalance, nodeRefund, activeValidatorCount] = await Promise.all([
+        let [pendingRewards, megapoolBalance, nodeBalance, rethBalance, depositPoolBalance, nodeRefund, activeValidatorCount] = await Promise.all([
             megapool.getPendingRewards(),
             ethers.provider.getBalance(megapool.target),
             ethers.provider.getBalance(withdrawalAddress),
             ethers.provider.getBalance(rocketTokenRETH.target),
+            rocketVault.balanceOf('rocketDepositPool'),
             megapool.getRefundValue(),
             megapool.getActiveValidatorCount()
         ]);
-        return { pendingRewards, megapoolBalance, nodeBalance, rethBalance, nodeRefund, activeValidatorCount };
+        return { pendingRewards, megapoolBalance, nodeBalance, rethBalance, depositPoolBalance, nodeRefund, activeValidatorCount };
     }
 
     const balancesBefore = await getBalances();
@@ -133,6 +136,7 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
         megapoolBalance: balancesAfter.megapoolBalance - balancesBefore.megapoolBalance,
         nodeBalance: balancesAfter.nodeBalance - balancesBefore.nodeBalance,
         rethBalance: balancesAfter.rethBalance - balancesBefore.rethBalance,
+        depositPoolBalance: balancesAfter.depositPoolBalance - balancesBefore.depositPoolBalance,
         nodeRefund: balancesAfter.nodeRefund - balancesBefore.nodeRefund,
         activeValidatorCount: balancesAfter.activeValidatorCount - balancesBefore.activeValidatorCount,
     }
@@ -151,9 +155,9 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
     assertBN.equal(balanceDeltas.pendingRewards, 0);
 
     if (nodeCalling) {
-        assertBN.equal(balanceDeltas.rethBalance + balanceDeltas.nodeBalance + balanceDeltas.nodeRefund, finalBalance);
+        assertBN.equal(balanceDeltas.depositPoolBalance + balanceDeltas.rethBalance + balanceDeltas.nodeBalance + balanceDeltas.nodeRefund, finalBalance);
     } else {
-        assertBN.equal(balanceDeltas.rethBalance + balanceDeltas.nodeRefund, finalBalance);
+        assertBN.equal(balanceDeltas.depositPoolBalance + balanceDeltas.rethBalance + balanceDeltas.nodeRefund, finalBalance);
     }
 
     if (!info.dissolved) {

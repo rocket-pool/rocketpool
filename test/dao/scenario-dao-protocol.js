@@ -686,8 +686,8 @@ export async function daoProtocolFinalise(_proposalID, txOptions) {
         return Promise.all([
             rocketDAOProtocolProposal.getState(_proposalID),
             rocketDAOProtocolProposal.getFinalised(_proposalID),
-            rocketNodeStaking.getNodeRPLLocked(proposer),
-            rocketNodeStaking.getNodeRPLStake(proposer),
+            rocketNodeStaking.getNodeLockedRPL(proposer),
+            rocketNodeStaking.getNodeStakedRPL(proposer),
         ]).then(
             ([proposalState, finalised, lockedRPL, stakedRPL]) =>
                 ({ proposalState, finalised, lockedRPL, stakedRPL }),
@@ -717,14 +717,14 @@ export async function daoProtocolClaimBondProposer(_proposalID, _indices, txOpti
     const rocketNodeStaking = (await RocketNodeStaking.deployed()).connect(txOptions.from);
     const rocketTokenRPL = await RocketTokenRPL.deployed();
 
-    const lockedBalanceBefore = await rocketNodeStaking.getNodeRPLLocked(txOptions.from);
-    const balanceBefore = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
+    const lockedBalanceBefore = await rocketNodeStaking.getNodeLockedRPL(txOptions.from);
+    const balanceBefore = await rocketNodeStaking.getNodeStakedRPL(txOptions.from);
     const supplyBefore = await rocketTokenRPL.totalSupply();
 
     await rocketDAOProtocolVerifier.claimBondProposer(_proposalID, _indices, txOptions);
 
-    const lockedBalanceAfter = await rocketNodeStaking.getNodeRPLLocked(txOptions.from);
-    const balanceAfter = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
+    const lockedBalanceAfter = await rocketNodeStaking.getNodeLockedRPL(txOptions.from);
+    const balanceAfter = await rocketNodeStaking.getNodeStakedRPL(txOptions.from);
     const supplyAfter = await rocketTokenRPL.totalSupply();
 
     return {
@@ -739,14 +739,14 @@ export async function daoProtocolClaimBondChallenger(_proposalID, _indices, txOp
     const rocketNodeStaking = await RocketNodeStaking.deployed();
     const rocketTokenRPL = await RocketTokenRPL.deployed();
 
-    const lockedBalanceBefore = await rocketNodeStaking.getNodeRPLLocked(txOptions.from);
-    const balanceBefore = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
+    const lockedBalanceBefore = await rocketNodeStaking.getNodeLockedRPL(txOptions.from);
+    const balanceBefore = await rocketNodeStaking.getNodeStakedRPL(txOptions.from);
     const supplyBefore = await rocketTokenRPL.totalSupply();
 
     await rocketDAOProtocolVerifier.claimBondChallenger(_proposalID, _indices, txOptions);
 
-    const lockedBalanceAfter = await rocketNodeStaking.getNodeRPLLocked(txOptions.from);
-    const balanceAfter = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
+    const lockedBalanceAfter = await rocketNodeStaking.getNodeLockedRPL(txOptions.from);
+    const balanceAfter = await rocketNodeStaking.getNodeStakedRPL(txOptions.from);
     const supplyAfter = await rocketTokenRPL.totalSupply();
 
     return {

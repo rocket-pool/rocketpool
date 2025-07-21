@@ -3,30 +3,29 @@ pragma solidity 0.8.30;
 
 import "@openzeppelin4/contracts/utils/math/Math.sol";
 
-import "../RocketBase.sol";
-import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
-import "../../interface/node/RocketNodeStakingInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
-import "../../interface/network/RocketNetworkPricesInterface.sol";
-import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
-import "../../interface/util/AddressSetStorageInterface.sol";
-import "../../interface/network/RocketNetworkVotingInterface.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
+import {RocketBase} from "../RocketBase.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
+import {RocketNetworkSnapshotsInterface} from "../../interface/network/RocketNetworkSnapshotsInterface.sol";
+import {RocketDAOProtocolSettingsMinipoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import {RocketNodeStakingInterface} from "../../interface/node/RocketNodeStakingInterface.sol";
+import {RocketDAOProtocolSettingsNodeInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
+import {RocketNetworkPricesInterface} from "../../interface/network/RocketNetworkPricesInterface.sol";
+import {RocketMinipoolManagerInterface} from "../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import {AddressSetStorageInterface} from "../../interface/util/AddressSetStorageInterface.sol";
+import {RocketNetworkVotingInterface} from "../../interface/network/RocketNetworkVotingInterface.sol";
+import {RocketNodeManagerInterface} from "../../interface/node/RocketNodeManagerInterface.sol";
 
 /// @notice Accounting for snapshotting of governance related values based on block numbers
 contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
-
     // Constants
-    bytes32 immutable internal priceKey;
+    bytes32 immutable internal priceKey = keccak256("network.prices.rpl");
 
     // Events
     event DelegateSet(address nodeOperator, address delegate, uint256 time);
 
+    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 2;
-        // Precompute keys
-        priceKey = keccak256("network.prices.rpl");
+        version = 3;
     }
 
     /// @notice Returns the number of registered nodes at a given block
@@ -82,6 +81,10 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
     }
 
     /// @dev Calculates and returns a node's voting power based on the given inputs
+    /// @param _rplStake Total RPL staked by a node (megapool + legacy staked RPL)
+    /// @param _bondedETH Sum total of a node's bonded ETH
+    /// @param _rplPrice The price of RPL in ETH
+    /// @param _maxStakePercent The maximum RPL percentage that counts towards voting power
     function calculateVotingPower(uint256 _rplStake, uint256 _bondedETH, uint256 _rplPrice, uint256 _maxStakePercent) internal pure returns (uint256) {
         // Get contracts
         uint256 maximumStake = _bondedETH * _maxStakePercent / _rplPrice;
