@@ -43,7 +43,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         historicalSummaryOffset = slotCapella / slotsPerHistoricalRoot;
     }
 
-    /// @notice Verifies a proof about the pubkey/withdrawal_credentials root of a validator on the beacon chain
+    /// @notice Verifies a proof about a validator on the beacon chain
     function verifyValidator(ValidatorProof calldata _proof) override external view returns(bool) {
         // Only support post-electra state proofs
         require(_proof.slot >= slotElectra, "Invalid proof");

@@ -27,8 +27,8 @@ contract BlockRoots is BlockRootsInterface {
         // Make sure the slot is recent enough that it will exist in the beaconRoots contract
         uint256 slotTimestamp = getTimestampFromSlot(_slot + 1);
         uint256 earliestTimestamp = block.timestamp - (beaconRootsHistoryBufferLength * secondsPerSlot);
-        require (slotTimestamp > earliestTimestamp);
-        // Walk backwards from the given timestamp 1 slot at a time until block root is found
+        require (slotTimestamp > earliestTimestamp, "Slot too old");
+        // Walk forwards from the given timestamp 1 slot at a time until block root is found
         while (slotTimestamp <= block.timestamp) {
             (bool success, bytes memory result) = beaconRoots.staticcall(abi.encode(slotTimestamp));
             if (success && result.length > 0) {

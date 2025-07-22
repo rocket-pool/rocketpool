@@ -1,8 +1,9 @@
 import { before, describe, it } from 'mocha';
 import { printTitle } from '../_utils/formatting';
-import { BeaconStateVerifier, BlockRootsMock } from '../_utils/artifacts';
+import { artifacts, BeaconStateVerifier, BlockRootsMock } from '../_utils/artifacts';
 import * as assert from 'assert';
 import { shouldRevert } from '../_utils/testing';
+import { time } from '@nomicfoundation/hardhat-network-helpers';
 
 const hre = require('hardhat');
 const ethers = hre.ethers;
@@ -367,6 +368,78 @@ export default function() {
             };
 
             assert.equal(await beaconStateVerifier.verifyWithdrawal(correctProof), true);
+        });
+
+        it(printTitle('BlockRoots', 'Returns the correct block hash'), async () => {
+            // Choose genesis time 1000 slots ago
+            const block = await ethers.provider.getBlock();
+            const beaconGenesisTime = (BigInt(block.timestamp) / 12n * 12n) - (1000n * 12n);
+            const secondsPerSlot = 12n
+
+            const BeaconRootsMock = artifacts.require('BeaconRootsMock');
+            const BlockRoots = artifacts.require('BlockRoots');
+            const beaconRootsMock = await BeaconRootsMock.new();
+            const blockRoots = await BlockRoots.new(beaconGenesisTime, secondsPerSlot, 8191n, beaconRootsMock.target);
+
+            const root1 = '0x0000000000000000000000000000000000000000000000000000000000000001'
+            const root2 = '0x0000000000000000000000000000000000000000000000000000000000000002'
+            const root3 = '0x0000000000000000000000000000000000000000000000000000000000000003'
+
+            async function setParentBlockRoot(slot, root) {
+                await beaconRootsMock.setParentBlockRoot(beaconGenesisTime + (slot * secondsPerSlot), root);
+            }
+
+            await setParentBlockRoot(501n, root1);
+            await setParentBlockRoot(502n, root2);
+            // Simulate 2 skipped slots
+            await setParentBlockRoot(505n, root3);
+
+            assert.equal(await blockRoots.getBlockRoot(500n), root1);
+            assert.equal(await blockRoots.getBlockRoot(501n), root2);
+            assert.equal(await blockRoots.getBlockRoot(502n), root3);
+            assert.equal(await blockRoots.getBlockRoot(503n), root3);
+            assert.equal(await blockRoots.getBlockRoot(504n), root3);
+            await shouldRevert(
+                blockRoots.getBlockRoot(505n),
+                "Did not revert on invalid slot",
+                "Block root is not available"
+            );
+        });
+
+        it(printTitle('BlockRoots', 'Fails to return a block root for a slot that is too old'), async () => {
+            const block = await ethers.provider.getBlock();
+            const beaconGenesisTime = (BigInt(block.timestamp) / 12n * 12n);
+            const secondsPerSlot = 12n
+
+            const BeaconRootsMock = artifacts.require('BeaconRootsMock');
+            const BlockRoots = artifacts.require('BlockRoots');
+            const beaconRootsMock = await BeaconRootsMock.new();
+            const blockRoots = await BlockRoots.new(beaconGenesisTime, secondsPerSlot, 10n, beaconRootsMock.target);
+
+            await time.increaseTo(beaconGenesisTime + (secondsPerSlot * 100n));
+
+            /**
+             * We've set the genesis time such that we are now at slot 100
+             * And we've set the history buffer length to 10
+             *
+             * That means the EVM theoretically has parent block hashes for slots 91 to 100 or in other words, the
+             * block hashes for blocks in slots 90 to 99
+             *
+             * Therefore, retrieving the block hash for 89 should revert with "Slot too old" but not 90
+             */
+
+            await shouldRevert(
+                blockRoots.getBlockRoot(89n),
+                "Was able to get old block root",
+                "Slot too old"
+            );
+
+            // We didn't actually mock the parent block hash so just check that we don't revert with "Slot too old"
+            await shouldRevert(
+                blockRoots.getBlockRoot(90n),
+                "Incorrectly reverted with slot too old",
+                "Block root is not available"
+            );
         });
     });
 }
