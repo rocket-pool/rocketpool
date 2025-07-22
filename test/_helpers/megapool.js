@@ -88,6 +88,10 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     let depositDataRoot = getDepositDataRoot(depositData);
     let usingCredit = creditAmount > 0n;
 
+    const queueIndex = await rocketDepositPool.getQueueIndex();
+    const expressQueueRate = await rocketDAOProtocolSettingsDeposit.getExpressQueueRate();
+    const nextAssignmentIsExpress = queueIndex % (expressQueueRate + 1n) !== 0n;
+
     async function getData() {
         let data = await Promise.all([
             rocketMegapoolFactory.getMegapoolDeployed(node.address),
@@ -137,7 +141,6 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     const assignmentsEnabled = await rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled();
     const depositPoolCapacity = await rocketDepositPool.getBalance();
     const amountRequired = '32'.ether - bondAmount;
-    const expectAssignment = assignmentsEnabled && depositPoolCapacity >= amountRequired;
     let expectedNodeBalanceChange = bondAmount;
 
     if (!usingCredit) {
@@ -188,15 +191,23 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     assertBN.equal(numValidatorsDelta, 1n, 'Number of validators did not increase by 1');
     assertBN.equal(numGlobalValidatorsDelta, 1n, 'Number of global validators did not increase by 1');
 
+    const expectSelfAssignment =
+        assignmentsEnabled &&
+        depositPoolCapacity >= amountRequired &&
+        (
+            nextAssignmentIsExpress && data1.expressQueueLength === 0n ||
+            !nextAssignmentIsExpress && data1.standardQueueLength === 0n
+        );
+
     if (useExpressTicket) {
         assertBN.equal(numExpressTicketsDelta, -1n, 'Did not consume express ticket');
-        if (!expectAssignment) {
+        if (!expectSelfAssignment) {
             assertBN.equal(expressQueueLengthDelta, 1n, 'Express queue did not grow by 1');
             assertBN.equal(standardQueueLengthDelta, 0n, 'Standard queue grew');
         }
     } else {
         assertBN.equal(numExpressTicketsDelta, 0n, 'Express ticket count incorrect');
-        if (!expectAssignment) {
+        if (!expectSelfAssignment) {
             assertBN.equal(expressQueueLengthDelta, 0n, 'Express queue grew');
             assertBN.equal(standardQueueLengthDelta, 1n, 'Standard queue did not grow by 1');
         }
@@ -209,17 +220,17 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     assertBN.equal(nodeCapitalDelta, bondAmount, 'Incorrect node capital');
     assertBN.equal(userCapitalDelta, '32'.ether - bondAmount, 'Incorrect user capital');
 
-    // if (expectAssignment) {
-    //     assert.equal(validatorInfo.inQueue, false, 'Incorrect validator status');
-    //     assert.equal(validatorInfo.inPrestake, true, 'Incorrect validator status');
-    //     assertBN.equal(assignedValueDelta, '31'.ether, 'Incorrect assigned value');
-    //     assertBN.equal(nodeBalanceDelta, 0n, 'Incorrect node balance value');
-    // } else {
-    //     assert.equal(validatorInfo.inQueue, true, 'Incorrect validator status');
-    //     assert.equal(validatorInfo.inPrestake, false, 'Incorrect validator status');
-    //     assertBN.equal(assignedValueDelta, 0n, 'Incorrect assigned value');
-    //     assertBN.equal(nodeBalanceDelta, expectedNodeBalanceChange, 'Incorrect node balance value');
-    // }
+    if (expectSelfAssignment) {
+        assert.equal(validatorInfo.inQueue, false, 'Incorrect validator status');
+        assert.equal(validatorInfo.inPrestake, true, 'Incorrect validator status');
+        assertBN.equal(assignedValueDelta, '31'.ether, 'Incorrect assigned value');
+        assertBN.equal(nodeBalanceDelta, 0n, 'Incorrect node balance value');
+    } else {
+        assert.equal(validatorInfo.inQueue, true, 'Incorrect validator status');
+        assert.equal(validatorInfo.inPrestake, false, 'Incorrect validator status');
+        assertBN.equal(assignedValueDelta, 0n, 'Incorrect assigned value');
+        assertBN.equal(nodeBalanceDelta, expectedNodeBalanceChange, 'Incorrect node balance value');
+    }
 
     assertBN.equal(validatorInfo.lastRequestedValue, '32'.ether / milliToWei, 'Incorrect validator lastRequestedValue');
     assertBN.equal(validatorInfo.lastRequestedBond, bondAmount / milliToWei, 'Incorrect validator lastRequestedBond');
@@ -251,14 +262,6 @@ export async function nodeDepositMulti(node, deposits, creditAmount = 0n) {
     ]);
 
     const depositParams = [];
-
-    // struct NodeDeposit {
-    //     uint256 bondAmount;
-    //     bool useExpressTicket;
-    //     bytes validatorPubkey;
-    //     bytes validatorSignature;
-    //     bytes32 depositDataRoot;
-    // }
 
     const withdrawalCredentials = await getMegapoolWithdrawalCredentials(node.address);
     let totalBond = 0n;
@@ -404,8 +407,6 @@ export async function nodeDepositMulti(node, deposits, creditAmount = 0n) {
     assertBN.equal(numGlobalValidatorsDelta, BigInt(deposits.length), 'Number of global validators did not increase by 1');
 
     assertBN.equal(numExpressTicketsDelta, BigInt(-totalExpressTickets), 'Did not consume express tickets');
-    // assertBN.equal(expressQueueLengthDelta, BigInt(totalExpressTickets - expectedExpressAssignments), 'Express queue did not grow correctly');
-    // assertBN.equal(standardQueueLengthDelta, BigInt((deposits.length - totalExpressTickets) - (expectedAssignments - expectedExpressAssignments)), 'Standard queue did not grow correctly');
 
     // Confirm state of new validator
     const megapool = await getMegapoolForNode(node);
@@ -425,18 +426,7 @@ export async function nodeDepositMulti(node, deposits, creditAmount = 0n) {
         assert.equal(validatorInfo.exited, false, 'Incorrect validator status');
         assert.equal(validatorInfo.expressUsed, deposits[i].useExpressTicket, 'Incorrect validator express ticket usage');
         assert.equal(validatorInfo.pubkey, '0x' + pubkeys[i].toString('hex'), 'Incorrect validator pubkey');
-
-        // if (i < expectedAssignments) {
-        //     assert.equal(validatorInfo.inQueue, false, 'Incorrect validator status');
-        //     assert.equal(validatorInfo.inPrestake, true, 'Incorrect validator status');
-        // } else {
-        //     assert.equal(validatorInfo.inQueue, true, 'Incorrect validator status');
-        //     assert.equal(validatorInfo.inPrestake, false, 'Incorrect validator status');
-        // }
     }
-
-    // assertBN.equal(assignedValueDelta, '31'.ether * BigInt(expectedAssignments), 'Incorrect assigned value');
-    // assertBN.equal(nodeBalanceDelta, expectedNodeBalanceChange, 'Incorrect node balance value');
 }
 
 export async function getMegapoolWithdrawalCredentials(nodeAddress) {
