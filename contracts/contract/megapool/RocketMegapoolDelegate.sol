@@ -660,6 +660,9 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         }
         // Remove distribution lock
         numExitingValidators -= 1;
+        if (numExitingValidators == 0) {
+            soonestWithdrawableEpoch = 0;
+        }
         // Emit event
         emit MegapoolValidatorExited(_validatorId, block.timestamp);
     }

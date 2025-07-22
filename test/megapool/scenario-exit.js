@@ -85,16 +85,18 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
     const withdrawalAddress = await rocketStorage.getNodeWithdrawalAddress(nodeAddress);
 
     async function getBalances() {
-        let [pendingRewards, megapoolBalance, nodeBalance, rethBalance, depositPoolBalance, nodeRefund, activeValidatorCount] = await Promise.all([
+        let [pendingRewards, megapoolBalance, nodeBalance, rethBalance, depositPoolBalance, nodeRefund, activeValidatorCount, exitingValidatorCount, soonestWithdrawableEpoch] = await Promise.all([
             megapool.getPendingRewards(),
             ethers.provider.getBalance(megapool.target),
             ethers.provider.getBalance(withdrawalAddress),
             ethers.provider.getBalance(rocketTokenRETH.target),
             rocketVault.balanceOf('rocketDepositPool'),
             megapool.getRefundValue(),
-            megapool.getActiveValidatorCount()
+            megapool.getActiveValidatorCount(),
+            megapool.getExitingValidatorCount(),
+            megapool.getSoonestWithdrawableEpoch()
         ]);
-        return { pendingRewards, megapoolBalance, nodeBalance, rethBalance, depositPoolBalance, nodeRefund, activeValidatorCount };
+        return { pendingRewards, megapoolBalance, nodeBalance, rethBalance, depositPoolBalance, nodeRefund, activeValidatorCount, exitingValidatorCount, soonestWithdrawableEpoch };
     }
 
     const balancesBefore = await getBalances();
@@ -156,5 +158,10 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
 
     if (!info.dissolved) {
         assertBN.equal(balanceDeltas.activeValidatorCount, -1n);
+    }
+
+    // Soonest withdrawable epoch is reset if no validators are exiting
+    if (balancesAfter.exitingValidatorCount === 0n) {
+        assertBN.equal(balancesAfter.soonestWithdrawableEpoch, 0n);
     }
 }
