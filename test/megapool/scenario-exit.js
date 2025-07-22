@@ -62,21 +62,15 @@ export async function notifyExitValidator(megapool, validatorId, withdrawalEpoch
     assert.equal(info.exiting, true);
     assert.equal(info.exited, false);
 
-    if (info.dissolved) {
-        assertBN.equal(deltas.activeValidatorCount, 0n);
-        assertBN.equal(deltas.exitingValidatorCount, 0n);
-        assertBN.equal(dataBefore.soonestWithdrawableEpoch, dataAfter.soonestWithdrawableEpoch);
-    } else {
-        assertBN.equal(deltas.activeValidatorCount, 0n);
-        assertBN.equal(deltas.exitingValidatorCount, 1n);
+    assertBN.equal(deltas.activeValidatorCount, 0n);
+    assertBN.equal(deltas.exitingValidatorCount, 1n);
 
-        let expectedSoonestWithdrawableEpoch = dataBefore.soonestWithdrawableEpoch;
-        if (dataBefore.soonestWithdrawableEpoch === 0n || withdrawalEpoch < expectedSoonestWithdrawableEpoch) {
-            expectedSoonestWithdrawableEpoch = withdrawalEpoch;
-        }
-
-        assertBN.equal(dataAfter.soonestWithdrawableEpoch, expectedSoonestWithdrawableEpoch);
+    let expectedSoonestWithdrawableEpoch = dataBefore.soonestWithdrawableEpoch;
+    if (dataBefore.soonestWithdrawableEpoch === 0n || withdrawalEpoch < expectedSoonestWithdrawableEpoch) {
+        expectedSoonestWithdrawableEpoch = withdrawalEpoch;
     }
+
+    assertBN.equal(dataAfter.soonestWithdrawableEpoch, expectedSoonestWithdrawableEpoch);
 }
 
 // Notify validator of final balance

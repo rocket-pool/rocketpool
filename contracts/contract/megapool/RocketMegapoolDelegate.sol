@@ -543,18 +543,16 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         validator.exiting = true;
         validator.withdrawableEpoch = _withdrawableEpoch;
         // Setup distribution lock
-        if (!validator.dissolved) {
-            unchecked { // Infeasible overflow
-                numExitingValidators += 1;
-            }
-            if (_withdrawableEpoch < soonestWithdrawableEpoch || soonestWithdrawableEpoch == 0) {
-                soonestWithdrawableEpoch = _withdrawableEpoch;
-            }
-            // If validator was locked, notifying exit unlocks it
-            if (validator.locked) {
-                validator.locked = false;
-                numLockedValidators -= 1;
-            }
+        unchecked { // Infeasible overflow
+            numExitingValidators += 1;
+        }
+        if (_withdrawableEpoch < soonestWithdrawableEpoch || soonestWithdrawableEpoch == 0) {
+            soonestWithdrawableEpoch = _withdrawableEpoch;
+        }
+        // If validator was locked, notifying exit unlocks it
+        if (validator.locked) {
+            validator.locked = false;
+            numLockedValidators -= 1;
         }
         validators[_validatorId] = validator;
         // Apply penalty for late submission
@@ -608,58 +606,60 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         validators[_validatorId] = validator;
         // Handle dissolved recovery
         if (validator.dissolved) {
+            // Send full withdrawal balance to NO
             refundValue += withdrawalBalance;
-            return;
-        }
-        // Calculate capital distribution amounts
-        uint256 depositBalance = uint256(validator.depositValue) * milliToWei;
-        (uint256 nodeShare, uint256 userShare) = calculateCapitalDispersal(depositBalance, getActiveValidatorCount() - 1);
-        {
-            uint256 toNode = nodeShare;
-            if (withdrawalBalance < depositBalance) {
-                uint256 shortfall = depositBalance - withdrawalBalance;
-                if (shortfall > toNode) {
-                    toNode = 0;
-                } else {
-                    toNode -= shortfall;
+        } else {
+            // Calculate capital distribution amounts
+            uint256 depositBalance = uint256(validator.depositValue) * milliToWei;
+            (uint256 nodeShare, uint256 userShare) = calculateCapitalDispersal(depositBalance, getActiveValidatorCount() - 1);
+            {
+                uint256 toNode = nodeShare;
+                if (withdrawalBalance < depositBalance) {
+                    uint256 shortfall = depositBalance - withdrawalBalance;
+                    if (shortfall > toNode) {
+                        toNode = 0;
+                    } else {
+                        toNode -= shortfall;
+                    }
+                }
+                uint256 toUser = withdrawalBalance - toNode;
+                // Pay off any existing debt and any new debt introduced by this exit
+                if (toUser < userShare) {
+                    _increaseDebt(userShare - toUser);
+                }
+                if (toNode > 0 && debt > 0) {
+                    if (toNode > debt) {
+                        toNode -= debt;
+                        toUser += debt;
+                        _reduceDebt(debt);
+                    } else {
+                        toUser += toNode;
+                        _reduceDebt(toNode);
+                        toNode = 0;
+                    }
+                }
+                // Send funds
+                sendToRETH(toUser);
+                if (toNode > 0) {
+                    refundValue += toNode;
                 }
             }
-            uint256 toUser = withdrawalBalance - toNode;
-            // Pay off any existing debt and any new debt introduced by this exit
-            if (toUser < userShare) {
-                _increaseDebt(userShare - toUser);
+            // Update state
+            if (nodeShare > 0) {
+                nodeBond -= nodeShare;
             }
-            if (toNode > 0 && debt > 0) {
-                if (toNode > debt) {
-                    toNode -= debt;
-                    toUser += debt;
-                    _reduceDebt(debt);
-                } else {
-                    toUser += toNode;
-                    _reduceDebt(toNode);
-                    toNode = 0;
-                }
+            if (userShare > 0) {
+                userCapital -= userShare;
             }
-            // Send funds
-            sendToRETH(toUser);
-            if (toNode > 0) {
-                refundValue += toNode;
+            unchecked { // Infeasible overflow
+                numInactiveValidators += 1;
             }
+            // Handle collateral change
+            RocketDepositPoolInterface rocketDepositPool = getRocketDepositPool();
+            rocketDepositPool.fundsReturned(nodeAddress, nodeShare, userShare);
         }
-        // Update state
-        if (nodeShare > 0) {
-            nodeBond -= nodeShare;
-        }
-        if (userShare > 0) {
-            userCapital -= userShare;
-        }
+        // Remove distribution lock
         numExitingValidators -= 1;
-        unchecked { // Infeasible overflow
-            numInactiveValidators += 1;
-        }
-        // Handle collateral change
-        RocketDepositPoolInterface rocketDepositPool = getRocketDepositPool();
-        rocketDepositPool.fundsReturned(nodeAddress, nodeShare, userShare);
         // Emit event
         emit MegapoolValidatorExited(_validatorId, block.timestamp);
     }

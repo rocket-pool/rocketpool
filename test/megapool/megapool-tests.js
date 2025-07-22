@@ -1139,6 +1139,31 @@ export default function() {
                     await shouldRevert(notifyExitValidator(megapool, 0, currentEpoch + 5), 'Notified exit twice', 'Already exited');
                 });
 
+                it(printTitle('node', 'can pay off a portion of debt with exiting validator'), async () => {
+                    // Apply a penalty larger than bond
+                    await votePenalty(megapool, 0n, '8'.ether, trustedNode1);
+                    await votePenalty(megapool, 0n, '8'.ether, trustedNode2);
+                    // Notify exit of 32 ETH in 113+1 epochs to avoid late penalty
+                    const currentEpoch = await getCurrentEpoch();
+                    await notifyExitValidator(megapool, 0, currentEpoch + 114);
+                    await helpers.time.increase(12 * 32 * 114);
+                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner, await getCurrentEpoch() * 32);
+                    // 4 ETH bond should pay down debt, and remaining debt should be 4 ETH
+                    assertBN.equal(await megapool.getDebt(), '4'.ether);
+                });
+
+                it(printTitle('node', 'can pay off full debt with exiting validator'), async () => {
+                    // Apply a penalty larger less than bond
+                    await votePenalty(megapool, 0n, '3'.ether, trustedNode1);
+                    await votePenalty(megapool, 0n, '3'.ether, trustedNode2);
+                    // Notify exit of 32 ETH in 113+1 epochs to avoid late penalty
+                    const currentEpoch = await getCurrentEpoch();
+                    await notifyExitValidator(megapool, 0, currentEpoch + 114);
+                    await helpers.time.increase(12 * 32 * 114);
+                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner, await getCurrentEpoch() * 32);
+                    // 4 ETH bond should pay down debt entirely
+                    assertBN.equal(await megapool.getDebt(), '0'.ether);
+                });
             });
 
             snapshotDescribe('With multiple staking validators', () => {
