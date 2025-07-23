@@ -241,12 +241,24 @@ export default function() {
 
         it(printTitle('trusted nodes', 'cannot submit network balance change that exceeds 2%'), async () => {
             // First submission is fine
-            await submitAll(2, '1600000000', '10'.ether, '9'.ether, '8'.ether);
+            await submitAll(2, '1600000000', '10'.ether, '9'.ether, '10'.ether);
             // Wait enough time
             await helpers.time.increase(submitBalancesFrequency);
             await helpers.mine();
-            // Submitting an increase of 2.1% should only result in a 2% change
-            await submitAll(3, '1600000001', '10.21'.ether, '9.1'.ether, '8.1'.ether);
+            // Submitting an increase of 2.1% should revert
+            await shouldRevert(
+                submitAll(3, '1600000001', '10.21'.ether, '9.1'.ether, '10'.ether),
+                "Submitted change with greater than 2% delta",
+                "Change exceeds maximum"
+            );
+            // Submitting an decrease of 2.1% should revert
+            await shouldRevert(
+                submitAll(3, '1600000001', '7.9'.ether, '9.1'.ether, '10'.ether),
+                "Submitted change with greater than 2% delta",
+                "Change exceeds maximum"
+            );
+            // Change of only 2% should work
+            await submitAll(3, '1600000001', '10.2'.ether, '9'.ether, '10'.ether);
         });
 
         it(printTitle('trusted nodes', 'cannot submit the same network balances twice'), async () => {

@@ -111,10 +111,10 @@ export async function submitBalances(block, slotTimestamp, totalEth, stakingEth,
         assertBN.equal(balances2.stakingEth, stakingEth, 'Incorrect updated network staking ETH balance');
         assertBN.equal(balances2.rethSupply, rethSupply, 'Incorrect updated network total rETH supply');
     } else {
-        assertBN.notEqual(balances2.block, block, 'Incorrectly updated network balances block');
-        assertBN.notEqual(balances2.totalEth, totalEth, 'Incorrectly updated network total ETH balance');
-        assertBN.notEqual(balances2.stakingEth, stakingEth, 'Incorrectly updated network staking ETH balance');
-        assertBN.notEqual(balances2.rethSupply, rethSupply, 'Incorrectly updated network total rETH supply');
+        assertBN.equal(balances2.block, balances1.block, 'Incorrectly updated network balances block');
+        assertBN.equal(balances2.totalEth, balances1.totalEth, 'Incorrectly updated network total ETH balance');
+        assertBN.equal(balances2.stakingEth, balances1.stakingEth, 'Incorrectly updated network staking ETH balance');
+        assertBN.equal(balances2.rethSupply, balances1.rethSupply, 'Incorrectly updated network total rETH supply');
     }
 }
 

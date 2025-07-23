@@ -59,7 +59,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     }
 
     /// @notice The current RP network total rETH supply
-    function getTotalRETHSupply() override external view returns (uint256) {
+    function getTotalRETHSupply() override public view returns (uint256) {
         return getUint(keccak256("network.balance.reth.supply"));
     }
 
@@ -143,17 +143,16 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         uint256 currentTotalEthBalance = getTotalETHBalance();
         // Bypass the delta restriction on first balance update
         if (currentTotalEthBalance > 0) {
+            uint256 currentRethSupply = getTotalRETHSupply();
+            uint256 currentRatio = calcBase * currentTotalEthBalance / currentRethSupply;
+            uint256 newRatio = calcBase * _totalEth / _rethSupply;
             uint256 maxChangePercent = rocketDAOProtocolSettingsNetwork.getMaxRethDelta();
-            uint256 maxChange = currentTotalEthBalance * maxChangePercent / calcBase;
+            uint256 maxChange = currentRatio * maxChangePercent / calcBase;
             // Limit change per RPIP-61
-            if (_totalEth > currentTotalEthBalance) {
-                if(_totalEth - currentTotalEthBalance > maxChange) {
-                    _totalEth = currentTotalEthBalance + maxChange;
-                }
+            if (newRatio > currentRatio) {
+                require(newRatio - currentRatio <= maxChange, "Change exceeds maximum");
             } else {
-                if(currentTotalEthBalance - _totalEth > maxChange) {
-                    _totalEth = currentTotalEthBalance - maxChange;
-                }
+                require(currentRatio - newRatio <= maxChange, "Change exceeds maximum");
             }
         }
         // Update balances
