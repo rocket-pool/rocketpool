@@ -137,14 +137,14 @@ export class MerkleTree {
 export class RewardClaimTree {
     constructor(balances) {
         this.tree = new MerkleTree(
-            balances.map(({ address, network, amountRPL, amountETH }) => {
-                return RewardClaimTree.toNode(address, network, amountRPL, amountETH);
+            balances.map(({ address, network, amountRPL, amountSmoothingPoolETH, amountVoterETH }) => {
+                return RewardClaimTree.toNode(address, network, amountRPL, amountSmoothingPoolETH, amountVoterETH);
             }),
         );
     }
 
-    static verifyProof(address, network, amountRPL, amountETH, proof, root) {
-        let pair = RewardClaimTree.toNode(address, network, amountRPL, amountETH);
+    static verifyProof(address, network, amountRPL, amountSmoothingPoolETH, amountVoterETH, proof, root) {
+        let pair = RewardClaimTree.toNode(address, network, amountRPL, amountSmoothingPoolETH, amountVoterETH);
         for (const item of proof) {
             pair = MerkleTree.combinedHash(pair, item);
         }
@@ -152,11 +152,11 @@ export class RewardClaimTree {
         return pair.equals(root);
     }
 
-    // keccak256(abi.encode(nodeAddress, network, amountRPL, amountETH))
-    static toNode(nodeAddress, network, amountRPL, amountETH) {
+    // keccak256(abi.encode(nodeAddress, network, amountRPL, amountSmoothingPoolETH, amountVoterETH))
+    static toNode(nodeAddress, network, amountRPL, amountSmoothingPoolETH, amountVoterETH) {
         return Buffer.from(
-            ethers.solidityPackedKeccak256(['address', 'uint256', 'uint256', 'uint256'],
-                [nodeAddress, network, amountRPL, amountETH]).substr(2),
+            ethers.solidityPackedKeccak256(['address', 'uint256', 'uint256', 'uint256', 'uint256'],
+                [nodeAddress, network, amountRPL, amountSmoothingPoolETH, amountVoterETH]).substr(2),
             'hex',
         );
     }
@@ -166,16 +166,16 @@ export class RewardClaimTree {
     }
 
     // returns the hex bytes32 values of the proof
-    getProof(address, network, amountRPL, amountETH) {
-        return this.tree.getHexProof(RewardClaimTree.toNode(address, network, amountRPL, amountETH));
+    getProof(address, network, amountRPL, amountSmoothingPoolETH, amountVoterETH) {
+        return this.tree.getHexProof(RewardClaimTree.toNode(address, network, amountRPL, amountSmoothingPoolETH, amountVoterETH));
     }
 }
 
-// Takes an array of objects with the form [{address, id, network, amountRPL, amountETH},...] and returns a RewardClaimTree object
+// Takes an array of objects with the form [{address, id, network, amountRPL, amountSmoothingPoolETH, amountVoterETH},...] and returns a RewardClaimTree object
 export function parseRewardsMap(rewards) {
 
-    // Transform input into a mapping of address => { address, network, amountRPL, amountETH }
-    const dataByAddress = rewards.reduce((memo, { address, network, trustedNodeRPL, nodeRPL, nodeETH }) => {
+    // Transform input into a mapping of address => { address, network, amountRPL, amountSmoothingPoolETH, amountVoterETH }
+    const dataByAddress = rewards.reduce((memo, { address, network, trustedNodeRPL, nodeRPL, nodeETH, voterETH }) => {
         if (!ethers.isAddress(address)) {
             throw new Error(`Found invalid address: ${address}`);
         }
@@ -183,13 +183,14 @@ export function parseRewardsMap(rewards) {
         memo[address] = {
             address: ethers.getAddress(address),
             amountRPL: nodeRPL + trustedNodeRPL,
-            amountETH: nodeETH,
+            amountSmoothingPoolETH: nodeETH,
+            amountVoterETH: voterETH,
             network: BigInt(network),
         };
         return memo;
     }, {});
 
-    const rewardsPerNetworkBN = rewards.reduce((perNetwork, { network, trustedNodeRPL, nodeRPL, nodeETH }) => {
+    const rewardsPerNetworkBN = rewards.reduce((perNetwork, { network, trustedNodeRPL, nodeRPL, nodeETH, voterETH }) => {
         if (!(network in perNetwork)) {
             perNetwork[network] = {
                 RPL: 0n,
@@ -197,7 +198,7 @@ export function parseRewardsMap(rewards) {
             };
         }
         perNetwork[network].RPL = perNetwork[network].RPL + nodeRPL + trustedNodeRPL;
-        perNetwork[network].ETH = perNetwork[network].ETH + nodeETH;
+        perNetwork[network].ETH = perNetwork[network].ETH + nodeETH + voterETH;
         return perNetwork;
     }, {});
 
@@ -215,19 +216,21 @@ export function parseRewardsMap(rewards) {
             address: dataByAddress[address].address,
             network: dataByAddress[address].network,
             amountRPL: dataByAddress[address].amountRPL,
-            amountETH: dataByAddress[address].amountETH,
+            amountSmoothingPoolETH: dataByAddress[address].amountSmoothingPoolETH,
+            amountVoterETH: dataByAddress[address].amountVoterETH,
         })),
     );
 
     // Generate claims
     const claims = sortedAddresses.reduce((memo, _address) => {
-        const { address, network, amountRPL, amountETH } = dataByAddress[_address];
+        const { address, network, amountRPL, amountSmoothingPoolETH, amountVoterETH } = dataByAddress[_address];
         memo[address] = {
             network: Number(network),
             amountRPL: amountRPL,
-            amountETH: amountETH,
-            proof: tree.getProof(address, network, amountRPL, amountETH),
-            leaf: RewardClaimTree.toNode(address, network, amountRPL, amountETH).toString('hex'),
+            amountSmoothingPoolETH: amountSmoothingPoolETH,
+            amountVoterETH: amountVoterETH,
+            proof: tree.getProof(address, network, amountRPL, amountSmoothingPoolETH, amountVoterETH),
+            leaf: RewardClaimTree.toNode(address, network, amountRPL, amountSmoothingPoolETH, amountVoterETH).toString('hex'),
         };
         return memo;
     }, {});
@@ -238,7 +241,7 @@ export function parseRewardsMap(rewards) {
     );
 
     const totalRewardsETH = sortedAddresses.reduce(
-        (memo, key) => memo + dataByAddress[key].amountETH,
+        (memo, key) => memo + dataByAddress[key].amountSmoothingPoolETH + dataByAddress[key].amountVoterETH,
         0n,
     );
 

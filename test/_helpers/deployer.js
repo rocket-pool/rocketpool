@@ -215,6 +215,7 @@ export class RocketPoolDeployer {
         this.addStage('Initialise contracts', 60, [
                 async () => await this.deployedContracts['rocketMegapoolFactory'].instance.initialise(),
                 async () => await this.deployedContracts['rocketNetworkRevenues'].instance.initialise(...opts.initialRevenueSplit),
+                async () => await this.deployedContracts['rocketMerkleDistributorMainnet'].instance.initialise(),
             ],
         );
 

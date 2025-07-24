@@ -47,11 +47,10 @@ export async function claimRewards(nodeAddress, indices, rewards, txOptions) {
 
     // Construct claim arguments
     let claimer = nodeAddress;
-    let amountsRPL = [];
-    let amountsETH = [];
-    let proofs = [];
     let totalAmountRPL = 0n;
     let totalAmountETH = 0n;
+
+    let claims = []
 
     for (let i = 0; i < indices.length; i++) {
         let treeData = parseRewardsMap(rewards[i]);
@@ -59,18 +58,22 @@ export async function claimRewards(nodeAddress, indices, rewards, txOptions) {
         let proof = treeData.proof.claims[ethers.getAddress(claimer)];
 
         if (!proof) {
-            throw new Error('No proof in merkle tree for ' + claimer);
+            throw new Error('No proof in merkle tree for ' + claimer)
         }
 
-        amountsRPL.push(proof.amountRPL);
-        amountsETH.push(proof.amountETH);
-        proofs.push(proof.proof);
+        claims.push({
+            rewardIndex: indices[i],
+            amountRPL: proof.amountRPL,
+            amountSmoothingPoolETH: proof.amountSmoothingPoolETH,
+            amountVoterETH: proof.amountVoterETH,
+            merkleProof: proof.proof
+        })
 
         totalAmountRPL = totalAmountRPL + proof.amountRPL;
-        totalAmountETH = totalAmountETH + proof.amountETH;
+        totalAmountETH = totalAmountETH + proof.amountSmoothingPoolETH + proof.amountVoterETH;
     }
 
-    const tx = await rocketMerkleDistributorMainnet.connect(txOptions.from).claim(nodeAddress, indices, amountsRPL, amountsETH, proofs, txOptions);
+    const tx = await rocketMerkleDistributorMainnet.connect(txOptions.from).claim(nodeAddress, claims, txOptions);
     let gasUsed = 0n;
 
     if (ethers.getAddress(nodeWithdrawalAddress) === ethers.getAddress(txOptions.from.address)) {

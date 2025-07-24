@@ -16,9 +16,8 @@ import "@openzeppelin4/contracts/utils/cryptography/MerkleProof.sol";
 /// @dev On mainnet, the relay and the distributor are the same contract as there is no need for an intermediate contract to
 ///      handle cross-chain messaging.
 contract RocketMerkleDistributorMainnet is RocketBase, RocketMerkleDistributorMainnetInterface, RocketVaultWithdrawerInterface {
-
     // Events
-    event RewardsClaimed(address indexed claimer, uint256[] rewardIndex, uint256[] amountRPL, uint256[] amountETH);
+    event RewardsClaimed(address indexed claimer, Claim[] claims);
 
     // Constants
     uint256 constant network = 0;
@@ -33,15 +32,25 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketMerkleDistributorMa
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Version
-        version = 2;
+        version = 3;
         // Precompute keys
         rocketVaultKey = keccak256(abi.encodePacked("contract.address", "rocketVault"));
         rocketTokenRPLKey = keccak256(abi.encodePacked("contract.address", "rocketTokenRPL"));
+    }
+
+    /// @notice Used following an upgrade or new deployment to initialise the delegate list
+    function initialise() external override {
+        // On new deploy, allow guardian to initialise, otherwise, only a network contract
+        if (rocketStorage.getDeployedStatus()) {
+            require(getBool(keccak256(abi.encodePacked("contract.exists", msg.sender))), "Invalid or outdated network contract");
+        } else {
+            require(msg.sender == rocketStorage.getGuardian(), "Not guardian");
+        }
         // Set this contract as the relay for network 0
         setAddress(keccak256(abi.encodePacked("rewards.relay.address", uint256(0))), address(this));
     }
 
-    // Called by RocketRewardsPool to include a snapshot into this distributor
+    /// @notice Called by RocketRewardsPool to include a snapshot into this distributor
     function relayRewards(uint256 _rewardIndex, bytes32 _root, uint256 _rewardsRPL, uint256 _rewardsETH) external override onlyLatestContract("rocketMerkleDistributorMainnet", address(this)) onlyLatestContract("rocketRewardsPool", msg.sender) {
         bytes32 key = keccak256(abi.encodePacked('rewards.merkle.root', _rewardIndex));
         require(getBytes32(key) == bytes32(0));
@@ -58,18 +67,19 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketMerkleDistributorMa
         }
     }
 
-    // Reward recipients can call this method with a merkle proof to claim rewards for one or more reward intervals
-    function claim(address _nodeAddress, uint256[] calldata _rewardIndex, uint256[] calldata _amountRPL, uint256[] calldata _amountETH, bytes32[][] calldata _merkleProof) external override {
-        claimAndStake(_nodeAddress, _rewardIndex, _amountRPL, _amountETH, _merkleProof, 0);
+    /// @notice Reward recipients can call this method with a merkle proof to claim rewards for one or more reward intervals
+    function claim(address _nodeAddress, Claim[] calldata _claims) external override {
+        claimAndStake(_nodeAddress, _claims, 0);
     }
 
-    function claimAndStake(address _nodeAddress, uint256[] calldata _rewardIndex, uint256[] calldata _amountRPL, uint256[] calldata _amountETH, bytes32[][] calldata _merkleProof, uint256 _stakeAmount) public override {
-        _verifyClaim(_rewardIndex, _nodeAddress, _amountRPL, _amountETH, _merkleProof);
-        _claimAndStake(_nodeAddress, _rewardIndex, _amountRPL, _amountETH, _stakeAmount);
+    /// @notice Reward recipients can call this method to claim rewards for one or more reward intervals and immediately stake some or all of the claimed RPL
+    function claimAndStake(address _nodeAddress, Claim[] calldata _claims, uint256 _stakeAmount) public override {
+        _verifyClaim(_nodeAddress, _claims);
+        _claimAndStake(_nodeAddress, _claims, _stakeAmount);
     }
 
-    // Node operators can call this method to claim rewards for one or more reward intervals and specify an amount of RPL to stake at the same time
-    function _claimAndStake(address _nodeAddress, uint256[] calldata _rewardIndex, uint256[] calldata _amountRPL, uint256[] calldata _amountETH, uint256 _stakeAmount) internal {
+    /// @notice Node operators can call this method to claim rewards for one or more reward intervals and specify an amount of RPL to stake at the same time
+    function _claimAndStake(address _nodeAddress, Claim[] calldata _claims, uint256 _stakeAmount) internal {
         // Get contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getAddress(rocketVaultKey));
 
@@ -100,10 +110,12 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketMerkleDistributorMa
         // Calculate totals
         {
             uint256 totalAmountRPL = 0;
-            uint256 totalAmountETH = 0;
-            for (uint256 i = 0; i < _rewardIndex.length; ++i) {
-                totalAmountRPL = totalAmountRPL + _amountRPL[i];
-                totalAmountETH = totalAmountETH + _amountETH[i];
+            uint256 totalAmountSmoothingPoolETH = 0;
+            uint256 totalAmountVoterETH = 0;
+            for (uint256 i = 0; i < _claims.length; ++i) {
+                totalAmountRPL = totalAmountRPL + _claims[i].amountRPL;
+                totalAmountSmoothingPoolETH = totalAmountSmoothingPoolETH + _claims[i].amountSmoothingPoolETH;
+                totalAmountVoterETH = totalAmountVoterETH + _claims[i].amountVoterETH;
             }
             // Validate input
             require(_stakeAmount <= totalAmountRPL, "Invalid stake amount");
@@ -115,16 +127,29 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketMerkleDistributorMa
                 }
             }
             // Distribute ETH
-            if (totalAmountETH > 0) {
-                rocketVault.withdrawEther(totalAmountETH);
-                // Allow up to 10000 gas to send ETH to the withdrawal address
-                (bool result,) = withdrawalAddress.call{value: totalAmountETH, gas: 10000}("");
-                if (!result) {
-                    // If the withdrawal address cannot accept the ETH with 10000 gas, add it to their balance to be claimed later at their own expense
-                    bytes32 balanceKey = keccak256(abi.encodePacked('rewards.eth.balance', withdrawalAddress));
-                    addUint(balanceKey, totalAmountETH);
-                    // Return the ETH to the vault
-                    rocketVault.depositEther{value: totalAmountETH}();
+            if (totalAmountSmoothingPoolETH + totalAmountVoterETH > 0) {
+                rocketVault.withdrawEther(totalAmountSmoothingPoolETH + totalAmountVoterETH);
+                if (totalAmountSmoothingPoolETH > 0) {
+                    // Allow up to 10000 gas to send ETH to the withdrawal address
+                    (bool result,) = withdrawalAddress.call{value: totalAmountSmoothingPoolETH, gas: 10000}("");
+                    if (!result) {
+                        // If the withdrawal address cannot accept the ETH with 10000 gas, add it to their balance to be claimed later at their own expense
+                        bytes32 balanceKey = keccak256(abi.encodePacked('rewards.eth.balance', withdrawalAddress));
+                        addUint(balanceKey, totalAmountSmoothingPoolETH);
+                        // Return the ETH to the vault
+                        rocketVault.depositEther{value: totalAmountSmoothingPoolETH}();
+                    }
+                }
+                if (totalAmountVoterETH > 0) {
+                    // Allow up to 10000 gas to send ETH to the RPL withdrawal address
+                    (bool result,) = rplWithdrawalAddress.call{value: totalAmountVoterETH, gas: 10000}("");
+                    if (!result) {
+                        // If the RPL withdrawal address cannot accept the ETH with 10000 gas, add it to their balance to be claimed later at their own expense
+                        bytes32 balanceKey = keccak256(abi.encodePacked('rewards.eth.balance', rplWithdrawalAddress));
+                        addUint(balanceKey, totalAmountVoterETH);
+                        // Return the ETH to the vault
+                        rocketVault.depositEther{value: totalAmountVoterETH}();
+                    }
                 }
             }
         }
@@ -139,10 +164,10 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketMerkleDistributorMa
         }
 
         // Emit event
-        emit RewardsClaimed(_nodeAddress, _rewardIndex, _amountRPL, _amountETH);
+        emit RewardsClaimed(_nodeAddress, _claims);
     }
 
-    // If ETH was claimed but was unable to be sent to the withdrawal address, it can be claimed via this function
+    /// @notice If ETH was claimed but was unable to be sent to the withdrawal address, it can be claimed via this function
     function claimOutstandingEth() external override {
         // Get contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getAddress(rocketVaultKey));
@@ -157,39 +182,39 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketMerkleDistributorMa
         require(result, 'Transfer failed');
     }
 
-    // Returns the amount of ETH that can be claimed by a withdrawal address
+    /// @notice Returns the amount of ETH that can be claimed by a withdrawal address
     function getOutstandingEth(address _address) external override view returns (uint256) {
         bytes32 balanceKey = keccak256(abi.encodePacked('rewards.eth.balance', _address));
         return getUint(balanceKey);
     }
 
-    // Verifies the given data exists as a leaf nodes for the specified reward interval and marks them as claimed if they are valid
-    // Note: this function is optimised for gas when _rewardIndex is ordered numerically
-    function _verifyClaim(uint256[] calldata _rewardIndex, address _nodeAddress, uint256[] calldata _amountRPL, uint256[] calldata _amountETH, bytes32[][] calldata _merkleProof) internal {
+    /// @notice Verifies the given data exists as a leaf nodes for the specified reward interval and marks them as claimed if they are valid
+    /// @dev This function is optimised for gas when _rewardIndex is ordered numerically
+    function _verifyClaim(address _nodeAddress, Claim[] calldata _claim) internal {
         // Set initial parameters to the first reward index in the array
-        uint256 indexWordIndex = _rewardIndex[0] / 256;
+        uint256 indexWordIndex = _claim[0].rewardIndex / 256;
         bytes32 claimedWordKey = keccak256(abi.encodePacked('rewards.interval.claimed', _nodeAddress, indexWordIndex));
         uint256 claimedWord = getUint(claimedWordKey);
         // Loop over every entry
-        for (uint256 i = 0; i < _rewardIndex.length; ++i) {
+        for (uint256 i = 0; i < _claim.length; ++i) {
             // Prevent accidental claim of 0
-            require(_amountRPL[i] > 0 || _amountETH[i] > 0, "Invalid amount");
+            require(_claim[i].amountRPL > 0 || _claim[i].amountSmoothingPoolETH > 0 || _claim[i].amountVoterETH > 0, "Invalid amount");
             // Check if this entry has a different word index than the previous
-            if (indexWordIndex != _rewardIndex[i] / 256) {
+            if (indexWordIndex != _claim[i].rewardIndex / 256) {
                 // Store the previous word
                 setUint(claimedWordKey, claimedWord);
                 // Load the word for this entry
-                indexWordIndex = _rewardIndex[i] / 256;
+                indexWordIndex = _claim[i].rewardIndex / 256;
                 claimedWordKey = keccak256(abi.encodePacked('rewards.interval.claimed', _nodeAddress, indexWordIndex));
                 claimedWord = getUint(claimedWordKey);
             }
             // Calculate the bit index for this entry
-            uint256 indexBitIndex = _rewardIndex[i] % 256;
+            uint256 indexBitIndex = _claim[i].rewardIndex % 256;
             // Ensure the bit is not yet set on this word
             uint256 mask = (1 << indexBitIndex);
             require(claimedWord & mask != mask, "Already claimed");
             // Verify the merkle proof
-            require(_verifyProof(_rewardIndex[i], _nodeAddress, _amountRPL[i], _amountETH[i], _merkleProof[i]), "Invalid proof");
+            require(_verifyProof(_nodeAddress, _claim[i]), "Invalid proof");
             // Set the bit for the current reward index
             claimedWord = claimedWord | (1 << indexBitIndex);
         }
@@ -197,15 +222,15 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketMerkleDistributorMa
         setUint(claimedWordKey, claimedWord);
     }
 
-    // Verifies that the given proof is valid
-    function _verifyProof(uint256 _rewardIndex, address _nodeAddress, uint256 _amountRPL, uint256 _amountETH, bytes32[] calldata _merkleProof) internal view returns (bool) {
-        bytes32 node = keccak256(abi.encodePacked(_nodeAddress, network, _amountRPL, _amountETH));
-        bytes32 key = keccak256(abi.encodePacked('rewards.merkle.root', _rewardIndex));
+    /// @notice Verifies that the given proof is valid
+    function _verifyProof(address _nodeAddress, Claim calldata _claim) internal view returns (bool) {
+        bytes32 node = keccak256(abi.encodePacked(_nodeAddress, network, _claim.amountRPL, _claim.amountSmoothingPoolETH, _claim.amountVoterETH));
+        bytes32 key = keccak256(abi.encodePacked('rewards.merkle.root', _claim.rewardIndex));
         bytes32 merkleRoot = getBytes32(key);
-        return MerkleProof.verify(_merkleProof, merkleRoot, node);
+        return MerkleProof.verify(_claim.merkleProof, merkleRoot, node);
     }
 
-    // Returns true if the given claimer has claimed for the given reward interval
+    /// @notice Returns true if the given claimer has claimed for the given reward interval
     function isClaimed(uint256 _rewardIndex, address _claimer) public override view returns (bool) {
         uint256 indexWordIndex = _rewardIndex / 256;
         uint256 indexBitIndex = _rewardIndex % 256;
@@ -214,6 +239,6 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketMerkleDistributorMa
         return claimedWord & mask == mask;
     }
 
-    // Allow receiving ETH from RocketVault, no action required
+    /// @notice Allow receiving ETH from RocketVault, no action required
     function receiveVaultWithdrawalETH() external override payable {}
 }

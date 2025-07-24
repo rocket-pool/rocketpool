@@ -207,6 +207,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '0'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
             ];
 
@@ -257,6 +258,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '1'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
                 {
                     address: registeredNode2.address,
@@ -264,6 +266,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '2'.ether,
                     nodeETH: '1'.ether,
+                    voterETH: 0n
                 },
                 {
                     address: registeredNodeTrusted1.address,
@@ -271,6 +274,7 @@ export default function() {
                     trustedNodeRPL: '1'.ether,
                     nodeRPL: '2'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
                 {
                     address: userOne.address,
@@ -278,6 +282,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '1.333'.ether,
                     nodeETH: '0.3'.ether,
+                    voterETH: 0n
                 },
             ];
             await submitRewards(0, rewards, '0'.ether, '2'.ether, '0'.ether, { from: registeredNodeTrusted1 });
@@ -335,6 +340,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '1'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
             ];
             await submitRewards(0, rewards, '0'.ether, '0'.ether, '0'.ether, { from: registeredNodeTrusted1 });
@@ -364,6 +370,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '1'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
             ];
 
@@ -373,14 +380,17 @@ export default function() {
 
             let treeData = parseRewardsMap(rewards);
             let proof = treeData.proof.claims[ethers.getAddress(registeredNode1.address)];
-            let amountsRPL = [proof.amountRPL];
-            let amountsETH = [proof.amountETH];
-            let proofs = [proof.proof];
-
             let rocketMerkleDistributorMainnet = await RocketMerkleDistributorMainnet.deployed();
 
             // Attempt to claim reward for registeredNode1 with registeredNode2
-            await shouldRevert(rocketMerkleDistributorMainnet.connect(registeredNode2).claim(registeredNode2, [0], amountsRPL, amountsETH, proofs, { from: registeredNode2 }), 'Was able to claim with invalid proof', 'Invalid proof');
+            const claim = {
+                rewardIndex: 0,
+                amountRPL: proof.amountRPL,
+                amountSmoothingPoolETH: proof.amountSmoothingPoolETH,
+                amountVoterETH: proof.amountVoterETH,
+                merkleProof: proof.proof
+            }
+            await shouldRevert(rocketMerkleDistributorMainnet.connect(registeredNode2).claim(registeredNode2, [claim], { from: registeredNode2 }), 'Was able to claim with invalid proof', 'Invalid proof');
         });
 
         it(printTitle('node', 'can not claim same interval twice'), async () => {
@@ -401,6 +411,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '1'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
             ];
 
@@ -448,6 +459,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '1'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
                 {
                     address: registeredNode2.address,
@@ -455,6 +467,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '2'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
             ];
 
@@ -496,6 +509,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '1'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
                 {
                     address: registeredNode2.address,
@@ -503,6 +517,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '2'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
             ];
             await submitRewards(0, rewards, '0'.ether, '0'.ether, '0'.ether, { from: registeredNodeTrusted1 });
@@ -550,6 +565,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '1'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
             ];
             await submitRewards(0, rewards, '0'.ether, '0'.ether, '0'.ether, { from: registeredNodeTrusted1 });
@@ -587,6 +603,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '1'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
             ];
             await submitRewards(0, rewards, '0'.ether, '0'.ether, '0'.ether, { from: registeredNodeTrusted1 });
@@ -616,6 +633,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '1'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
             ];
             await submitRewards(0, rewards, '0'.ether, '0'.ether, '0'.ether, { from: registeredNodeTrusted1 });
@@ -645,6 +663,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '1'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
             ];
             await submitRewards(0, rewards, '0'.ether, '0'.ether, '0'.ether, { from: registeredNodeTrusted1 });
@@ -682,6 +701,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '1'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
             ];
 
@@ -717,6 +737,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '1'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
             ];
 
@@ -752,6 +773,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '1'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
             ];
 
@@ -785,6 +807,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '1'.ether,
                     nodeETH: '0'.ether,
+                    voterETH: 0n
                 },
             ];
 
@@ -853,6 +876,7 @@ export default function() {
                     trustedNodeRPL: '0'.ether,
                     nodeRPL: '0'.ether,
                     nodeETH: '1'.ether,
+                    voterETH: 0n
                 },
             ];
             await submitRewards(0, rewards, '0'.ether, '1'.ether, '0'.ether, { from: registeredNodeTrusted1 });

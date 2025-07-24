@@ -11,9 +11,8 @@ interface InitialiseInterface {
 
 /// @notice v1.4 Saturn 1 upgrade contract
 contract RocketUpgradeOneDotFour is RocketBase {
-
     // Whether the upgrade has been performed or not
-    bool public executed;
+    bool internal executed;
 
     // Upgrade contracts
     address public immutable rocketMegapoolDelegate;
@@ -47,22 +46,19 @@ contract RocketUpgradeOneDotFour is RocketBase {
     address public immutable rocketClaimDAO;
     address public immutable rocketMinipoolBonderReducer;
     address public immutable rocketNetworkVoting;
+    address public immutable rocketMerkleDistributorMainnet;
 
     // Upgrade ABIs
-    string[31] public abis;
-
-    // Save deployer to limit access to set functions
-    address immutable internal deployer;
+    string[32] public abis;
 
     // Construct
     constructor(
         RocketStorageInterface _rocketStorageAddress,
-        address[31] memory _addresses,
-        string[31] memory _abis
+        address[32] memory _addresses,
+        string[32] memory _abis
     ) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
-        deployer = msg.sender;
 
         // Set contract addresses
         rocketMegapoolDelegate = _addresses[0];
@@ -96,6 +92,7 @@ contract RocketUpgradeOneDotFour is RocketBase {
         rocketClaimDAO = _addresses[28];
         rocketMinipoolBonderReducer = _addresses[29];
         rocketNetworkVoting = _addresses[30];
+        rocketMerkleDistributorMainnet = _addresses[31];
 
         // Set ABIs
         abis = _abis;
@@ -108,7 +105,7 @@ contract RocketUpgradeOneDotFour is RocketBase {
 
     /// @notice Once this contract has been voted in by oDAO, guardian can perform the upgrade
     function execute() external onlyGuardian {
-        require(!executed, "Already executed");
+        require(!executed);
         executed = true;
 
         // Add new contracts
@@ -145,6 +142,10 @@ contract RocketUpgradeOneDotFour is RocketBase {
         _upgradeContract("rocketClaimDAO", rocketClaimDAO, abis[28]);
         _upgradeContract("rocketMinipoolBondReducer", rocketMinipoolBonderReducer, abis[29]);
         _upgradeContract("rocketNetworkVoting", rocketNetworkVoting, abis[30]);
+        _upgradeContract("rocketMerkleDistributorMainnet", rocketMerkleDistributorMainnet, abis[31]);
+
+        // Initialise the rewards relay address
+        InitialiseInterface(rocketMerkleDistributorMainnet).initialise();
 
         // Initialise the megapool factory
         InitialiseInterface(rocketMegapoolFactory).initialise();
@@ -213,13 +214,13 @@ contract RocketUpgradeOneDotFour is RocketBase {
     function _upgradeContract(string memory _name, address _contractAddress, string memory _contractAbi) internal {
         // Get old contract address & check contract exists
         address oldContractAddress = getAddress(keccak256(abi.encodePacked("contract.address", _name)));
-        require(oldContractAddress != address(0x0), "Contract does not exist");
+        require(oldContractAddress != address(0x0));
         // Check new contract address
-        require(_contractAddress != address(0x0), "Invalid contract address");
-        require(_contractAddress != oldContractAddress, "The contract address cannot be set to its current address");
-        require(!getBool(keccak256(abi.encodePacked("contract.exists", _contractAddress))), "Contract address is already in use");
+        require(_contractAddress != address(0x0));
+        require(_contractAddress != oldContractAddress);
+        require(!getBool(keccak256(abi.encodePacked("contract.exists", _contractAddress))));
         // Check ABI isn't empty
-        require(bytes(_contractAbi).length > 0, "Empty ABI is invalid");
+        require(bytes(_contractAbi).length > 0);
         // Register new contract
         setBool(keccak256(abi.encodePacked("contract.exists", _contractAddress)), true);
         setString(keccak256(abi.encodePacked("contract.name", _contractAddress)), _name);
@@ -233,17 +234,17 @@ contract RocketUpgradeOneDotFour is RocketBase {
     /// @dev Add a new network contract
     function _addContract(string memory _name, address _contractAddress, string memory _contractAbi) internal {
         // Check contract name
-        require(bytes(_name).length > 0, "Invalid contract name");
+        require(bytes(_name).length > 0);
         // Cannot add contract if it already exists (use upgradeContract instead)
-        require(getAddress(keccak256(abi.encodePacked("contract.address", _name))) == address(0x0), "Contract name is already in use");
+        require(getAddress(keccak256(abi.encodePacked("contract.address", _name))) == address(0x0));
         // Cannot add contract if already in use as ABI only
         string memory existingAbi = getString(keccak256(abi.encodePacked("contract.abi", _name)));
-        require(bytes(existingAbi).length == 0, "Contract name is already in use");
+        require(bytes(existingAbi).length == 0);
         // Check contract address
-        require(_contractAddress != address(0x0), "Invalid contract address");
-        require(!getBool(keccak256(abi.encodePacked("contract.exists", _contractAddress))), "Contract address is already in use");
+        require(_contractAddress != address(0x0));
+        require(!getBool(keccak256(abi.encodePacked("contract.exists", _contractAddress))));
         // Check ABI isn't empty
-        require(bytes(_contractAbi).length > 0, "Empty ABI is invalid");
+        require(bytes(_contractAbi).length > 0);
         // Register contract
         setBool(keccak256(abi.encodePacked("contract.exists", _contractAddress)), true);
         setString(keccak256(abi.encodePacked("contract.name", _contractAddress)), _name);

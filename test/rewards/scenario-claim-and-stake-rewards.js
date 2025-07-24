@@ -50,12 +50,10 @@ export async function claimAndStakeRewards(nodeAddress, indices, rewards, stakeA
 
     // Construct claim arguments
     let claimer = nodeAddress;
-    let claimerIndices = [];
-    let amountsRPL = [];
-    let amountsETH = [];
-    let proofs = [];
     let totalAmountRPL = 0n;
     let totalAmountETH = 0n;
+
+    let claims = []
 
     for (let i = 0; i < indices.length; i++) {
         let treeData = parseRewardsMap(rewards[i]);
@@ -66,16 +64,19 @@ export async function claimAndStakeRewards(nodeAddress, indices, rewards, stakeA
             throw new Error('No proof in merkle tree for ' + claimer)
         }
 
-        claimerIndices.push(proof.index);
-        amountsRPL.push(proof.amountRPL);
-        amountsETH.push(proof.amountETH);
-        proofs.push(proof.proof);
+        claims.push({
+            rewardIndex: indices[i],
+            amountRPL: proof.amountRPL,
+            amountSmoothingPoolETH: proof.amountSmoothingPoolETH,
+            amountVoterETH: proof.amountVoterETH,
+            merkleProof: proof.proof
+        })
 
         totalAmountRPL = totalAmountRPL + proof.amountRPL;
-        totalAmountETH = totalAmountETH + proof.amountETH;
+        totalAmountETH = totalAmountETH + proof.amountSmoothingPoolETH + proof.amountVoterETH;
     }
 
-    const tx = await rocketMerkleDistributorMainnet.connect(txOptions.from).claimAndStake(nodeAddress, indices, amountsRPL, amountsETH, proofs, stakeAmount, txOptions);
+    const tx = await rocketMerkleDistributorMainnet.connect(txOptions.from).claimAndStake(nodeAddress, claims, stakeAmount, txOptions);
     let gasUsed = 0n;
 
     if(nodeWithdrawalAddress.toLowerCase() === txOptions.from.address.toLowerCase()) {
