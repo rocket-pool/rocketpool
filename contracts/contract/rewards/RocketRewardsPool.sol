@@ -250,7 +250,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface, RocketVaul
         }
         // Get the smoothing pool instance
         RocketSmoothingPoolInterface rocketSmoothingPool = RocketSmoothingPoolInterface(getContractAddress("rocketSmoothingPool"));
-        // Send deposit pool user's ETH
+        // Withdraw ETH from the smoothing pool required for this interval
         if (_submission.smoothingPoolETH > 0) {
             rocketSmoothingPool.withdrawEther(address(this), _submission.smoothingPoolETH);
         }
@@ -259,7 +259,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface, RocketVaul
         for (uint i = 0; i < _submission.nodeETH.length; ++i) {
             totalETH += _submission.nodeETH[i];
         }
-        // Withdraw required amount from the vault
+        // Withdraw remaining ETH required from the vault
         uint256 vaultBalance = totalETH - _submission.smoothingPoolETH;
         if (vaultBalance > 0) {
             rocketVault.withdrawEther(vaultBalance);
@@ -268,7 +268,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface, RocketVaul
         if (_submission.userETH > 0) {
             address rocketTokenRETHAddress = getContractAddress("rocketTokenRETH");
             (bool result,) = rocketTokenRETHAddress.call{value: _submission.userETH}("");
-            require(result, "Failed to send voter rewards");
+            require(result, "Failed to send user rewards");
         }
         // Send pDAO share to treasury
         if (_submission.treasuryETH > 0) {
@@ -296,12 +296,13 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface, RocketVaul
             }
             // Transfer rewards
             if (rewardsRPL > 0) {
-                // RPL rewards are withdrawn from the vault
+                // RPL rewards are withdrawn from the vault directly to the relay
                 rocketVault.withdrawToken(address(relay), rplContract, rewardsRPL);
             }
             if (rewardsETH > 0) {
-                // ETH rewards are withdrawn from the smoothing pool
-                rocketSmoothingPool.withdrawEther(address(relay), rewardsETH);
+                // Send ETH rewards to the relay
+                (bool result,) = address(relay).call{value: rewardsETH}("");
+                require(result, "Failed to send ETH rewards to relay");
             }
             // Call into relay contract to handle distribution of rewards
             relay.relayRewards(_submission.rewardIndex, _submission.merkleRoot, rewardsRPL, rewardsETH);

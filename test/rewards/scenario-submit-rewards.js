@@ -103,14 +103,15 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, treasu
     }
 
     async function getData() {
-        let [submission, rewardIndex, treasuryRpl, treasuryEth, rethBalance] = await Promise.all([
+        let [submission, rewardIndex, treasuryRpl, treasuryEth, rethBalance, rewardsPoolBalance] = await Promise.all([
             getSubmissionDetails(),
             rocketRewardsPool.getRewardIndex(),
             rocketTokenRPL.balanceOf(rocketClaimDAO.target),
             rocketVault.balanceOf('rocketClaimDAO'),
             ethers.provider.getBalance(rocketTokenRETH.target),
+            ethers.provider.getBalance(rocketRewardsPool.target),
         ]);
-        return {submission, rewardIndex, treasuryRpl, treasuryEth, rethBalance};
+        return {submission, rewardIndex, treasuryRpl, treasuryEth, rethBalance, rewardsPoolBalance};
     }
 
     // Get initial submission details
@@ -155,6 +156,9 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, treasu
         assertBN.equal(data1.treasuryRpl, data2.treasuryRpl, 'Treasury RPL balance changed');
         assertBN.equal(data1.treasuryEth, data2.treasuryEth, 'Treasury ETH balance changed');
     }
+
+    // No left over ETH in the rewards pool
+    assertBN.equal(data2.rewardsPoolBalance, 0n, 'ETH was left in the rewards pool');
 }
 
 // Execute a reward period that already has consensus
