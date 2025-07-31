@@ -124,7 +124,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
     /// @dev Returns a partial gindex from a BeaconState -> validators[n]
     function pathBeaconStateToValidator(uint256 _validatorIndex) internal view returns (SSZ.Path memory) {
         SSZ.Path memory path = SSZ.from(11, 6); // 0b001011 (BeaconState -> validators)
-        path = SSZ.concat(path, SSZ.intoVector(_validatorIndex, 40)); // validators -> validators[n]
+        path = SSZ.concat(path, SSZ.intoList(_validatorIndex, 40)); // validators -> validators[n]
         return path;
     }
 
@@ -134,12 +134,12 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         SSZ.Path memory path;
         if (isHistorical) {
             path = SSZ.concat(path, SSZ.from(27, 6)); // 0b001011 (BeaconState -> historical_summaries)
-            path = SSZ.concat(path, SSZ.intoVector(uint256(_pastSlot) / slotsPerHistoricalRoot - historicalSummaryOffset, 24)); // historical_summaries -> historical_summaries[n]
+            path = SSZ.concat(path, SSZ.intoList(uint256(_pastSlot) / slotsPerHistoricalRoot - historicalSummaryOffset, 24)); // historical_summaries -> historical_summaries[n]
             path = SSZ.concat(path, SSZ.from(0, 1)); // 0b0 (HistoricalSummary -> block_summary_root)
         } else {
             path = SSZ.concat(path, SSZ.from(5, 6)); // 0b000101 (BeaconState -> block_roots)
         }
-        path = SSZ.concat(path, SSZ.intoList(uint256(_pastSlot) % slotsPerHistoricalRoot, 13)); // block_roots -> block_roots[n]
+        path = SSZ.concat(path, SSZ.intoVector(uint256(_pastSlot) % slotsPerHistoricalRoot, 13)); // block_roots -> block_roots[n]
         return path;
     }
 
@@ -148,7 +148,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         SSZ.Path memory path = SSZ.from(4, 3); // 0b100 (BeaconBlockHeader -> body_root)
         path = SSZ.concat(path, SSZ.from(9, 4)); // 0b1001 (BeaconBlockBody -> execution_payload)
         path = SSZ.concat(path, SSZ.from(14, 5)); // 0b01110 (ExecutionPayload -> withdrawals)
-        path = SSZ.concat(path, SSZ.intoList(_withdrawalNum, 5)); // withdrawals -> withdrawals[n]
+        path = SSZ.concat(path, SSZ.intoVector(_withdrawalNum, 5)); // withdrawals -> withdrawals[n]
         return path;
     }
 }

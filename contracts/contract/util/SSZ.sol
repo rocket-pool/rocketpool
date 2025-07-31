@@ -25,12 +25,12 @@ library SSZ {
     }
 
     /// @dev Constructs a Path into a vector field
-    function intoVector(uint256 _index, uint8 _log2Length) internal pure returns (Path memory) {
+    function intoList(uint256 _index, uint8 _log2Length) internal pure returns (Path memory) {
         return Path((uint256(_index) << 8) | uint256(_log2Length + 1));
     }
 
     /// @dev Constructs a Path into a list field
-    function intoList(uint256 index, uint8 log2Len) internal pure returns (Path memory) {
+    function intoVector(uint256 index, uint8 log2Len) internal pure returns (Path memory) {
         return Path((uint256(index) << 8) | uint256(log2Len));
     }
 
