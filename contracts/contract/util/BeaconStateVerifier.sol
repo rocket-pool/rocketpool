@@ -51,6 +51,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         SSZ.Path memory path = pathBeaconBlockHeaderToStateRoot();
         path = SSZ.concat(path, pathBeaconStateToValidator(_proof.validatorIndex));
         // Restore the block root for the supplied slot
+        require(SSZ.length(path) == _proof.witnesses.length, "Invalid witness length");
         bytes32 computedRoot = SSZ.restoreMerkleRoot(merkleiseValidator(_proof.validator), SSZ.toIndex(path), _proof.witnesses);
         // Retrieve and compare the root with what we determined it should be from the given proof
         bytes32 root = getBlockRoot(_proof.slot);
@@ -69,6 +70,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         // Merkleise the withdrawal struct
         bytes32 leaf = merkleiseWithdrawal(_proof.withdrawal);
         // Restore the block root for the supplied slot
+        require(SSZ.length(path) == _proof.witnesses.length, "Invalid witness length");
         bytes32 computedRoot = SSZ.restoreMerkleRoot(leaf, SSZ.toIndex(path), _proof.witnesses);
         // Retrieve and compare the root with what we determined it should be from the given proof
         bytes32 root = getBlockRoot(_proof.slot);
