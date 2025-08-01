@@ -121,6 +121,24 @@ export default function() {
                 ],
             };
 
+            const invalidWitnessLengthProof = {
+                slot: slot,
+                validatorIndex: 1060378,
+                validator: {
+                    pubkey: '0xb6544b67c27a9d9f460bd839b1a42d4edf4fedd2567a631ffe473f047acd539257dd326e5c969a08a5ae07db6fd8616c',
+                    withdrawalCredentials: '0x010000000000000000000000b9d7934878b5fb9610b3fe8a5e441e8fad7e293f',
+                    effectiveBalance: 32000000000n,
+                    slashed: false,
+                    activationEligibilityEpoch: 246886n,
+                    activationEpoch: 247130n,
+                    exitEpoch: farFutureEpoch,
+                    withdrawableEpoch: farFutureEpoch,
+                },
+                witnesses: [
+                    ...witnesses.slice(1),
+                ],
+            };
+
             const invalidCredentialsProof = {
                 slot: slot,
                 validatorIndex: 1060378,
@@ -157,6 +175,11 @@ export default function() {
                 beaconStateVerifier.verifyValidator(tooOldProof),
                 'Accepted pre-electra proof',
                 'Invalid proof',
+            );
+            await shouldRevert(
+                beaconStateVerifier.verifyValidator(invalidWitnessLengthProof),
+                'Accepted invalid witness length',
+                'Invalid witness length',
             );
             assert.equal(await beaconStateVerifier.verifyValidator(incorrectProof), false);
             assert.equal(await beaconStateVerifier.verifyValidator(invalidCredentialsProof), false);
@@ -224,6 +247,21 @@ export default function() {
                 ],
             };
 
+            const invalidWitnessLengthProof = {
+                slot: slot,
+                withdrawalSlot: 11825974n,
+                withdrawalNum: 0n,
+                withdrawal: {
+                    index: 89138507n,
+                    validatorIndex: 1060378,
+                    withdrawalCredentials: '0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f',
+                    amountInGwei: 19165416n,
+                },
+                witnesses: [
+                    '0x0000000000000000000000000000000000000000000000000000000000000000',
+                ],
+            };
+
             const incorrectAmountProof = {
                 slot: slot,
                 withdrawalSlot: 11825974n,
@@ -240,6 +278,19 @@ export default function() {
             const tooOldProof = {
                 slot: 100000n,
                 withdrawalSlot: 11825974n,
+                withdrawalNum: 0n,
+                withdrawal: {
+                    index: 89138507n,
+                    validatorIndex: 1060378,
+                    withdrawalCredentials: '0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f',
+                    amountInGwei: 19165416n,
+                },
+                witnesses: witnesses,
+            };
+
+            const tooNewProof = {
+                slot: slot,
+                withdrawalSlot: slot,
                 withdrawalNum: 0n,
                 withdrawal: {
                     index: 89138507n,
@@ -272,6 +323,16 @@ export default function() {
                 beaconStateVerifier.verifyWithdrawal(tooOldWithdrawalProof),
                 'Accepted pre-electra proof',
                 'Invalid proof',
+            );
+            await shouldRevert(
+                beaconStateVerifier.verifyWithdrawal(tooNewProof),
+                'Accepted too recent proof',
+                'Invalid slot for proof',
+            );
+            await shouldRevert(
+                beaconStateVerifier.verifyWithdrawal(invalidWitnessLengthProof),
+                'Accepted invalid witness length',
+                'Invalid witness length',
             );
             assert.equal(await beaconStateVerifier.verifyWithdrawal(invalidProof), false);
             assert.equal(await beaconStateVerifier.verifyWithdrawal(incorrectAmountProof), false);

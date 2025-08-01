@@ -85,7 +85,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
 
     /// @dev Returns whether the target slot is older than SLOTS_PER_HISTORICAL_ROOT indicating a proof must be for an older slot
     function isHistoricalProof(uint64 proofSlot, uint64 targetSlot) internal view returns (bool) {
-        require(proofSlot >= targetSlot, "Invalid slot for proof");
+        require(proofSlot > targetSlot, "Invalid slot for proof");
         return targetSlot + slotsPerHistoricalRoot < proofSlot;
     }
 
