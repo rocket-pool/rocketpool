@@ -29,14 +29,24 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         return getUint(setCountKey);
     }
 
+    /// @notice Get a megapool address by validator pubkey
+    /// @param _pubkey The pubkey to query
+    function getMegapoolByPubkey(bytes calldata _pubkey) override external view returns (address) {
+        return getAddress(keccak256(abi.encodePacked("validator.megapool", _pubkey)));
+    }
+
     /// @notice Adds a validator record to the global megapool validator set
     /// @param _megapoolAddress Address of the megapool which manages this validator
     /// @param _validatorId Internal validator ID of the new validator
-    function addValidator(address _megapoolAddress, uint32 _validatorId) override external onlyLatestContract("rocketMegapoolManager", address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) {
+    function addValidator(address _megapoolAddress, uint32 _validatorId, bytes calldata _pubkey) override external onlyLatestContract("rocketMegapoolManager", address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) {
         uint256 index = getUint(setCountKey);
         setUint(setCountKey, index + 1);
         uint256 encoded = (uint256(uint160(_megapoolAddress)) << 96) | uint32(_validatorId);
         setUint(keccak256(abi.encodePacked("megapool.validator.set", index)), encoded);
+        // Add pubkey => megapool mapping and ensure uniqueness
+        bytes32 key = keccak256(abi.encodePacked("validator.megapool", _pubkey));
+        require(getAddress(key) == address(0x0), "Pubkey in use");
+        setAddress(key, _megapoolAddress);
     }
 
     /// @notice Returns the last trusted member to execute a challenge

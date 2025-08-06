@@ -181,7 +181,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
             validateBytes(deposit.validatorPubkey, pubKeyLength);
             validateBytes(deposit.validatorSignature, signatureLength);
             // Request a new validator from the megapool
-            rocketMegapoolManager.addValidator(address(megapool), megapool.getValidatorCount());
+            rocketMegapoolManager.addValidator(address(megapool), megapool.getValidatorCount(), deposit.validatorPubkey);
             megapool.newValidator(deposit.bondAmount, deposit.useExpressTicket, deposit.validatorPubkey, deposit.validatorSignature, deposit.depositDataRoot);
             // Sum bond total
             totalBond += deposit.bondAmount;
@@ -220,7 +220,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
         RocketMegapoolInterface megapool = RocketMegapoolInterface(rocketMegapoolFactory.getOrDeployContract(msg.sender));
         RocketMegapoolManagerInterface rocketMegapoolManager = RocketMegapoolManagerInterface(getContractAddress("rocketMegapoolManager"));
         // Request a new validator from the megapool
-        rocketMegapoolManager.addValidator(address(megapool), megapool.getValidatorCount());
+        rocketMegapoolManager.addValidator(address(megapool), megapool.getValidatorCount(), _validatorPubkey);
         megapool.newValidator(_bondAmount, _useExpressTicket, _validatorPubkey, _validatorSignature, _depositDataRoot);
         // Send node operator's bond to the deposit pool
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));

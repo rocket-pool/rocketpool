@@ -6,7 +6,7 @@ import { userDeposit } from '../_helpers/deposit';
 import {
     calculatePositionInQueue,
     deployMegapool,
-    getMegapoolForNode,
+    getMegapoolForNode, getMegapoolWithdrawalCredentials,
     getValidatorInfo,
     nodeDeposit, nodeDepositMulti,
 } from '../_helpers/megapool';
@@ -37,6 +37,7 @@ import { reduceBond } from './scenario-reduce-bond';
 import { dissolveValidator } from './scenario-dissolve';
 import { challengeValidator } from './scenario-challenge';
 import { repayDebt } from './scenario-repay-debt';
+import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '../_utils/beacon';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -315,6 +316,27 @@ export default function() {
         it(printTitle('node', 'can deposit using supplied ETH'), async () => {
             await nodeDepositEthFor(node, { from: random, value: '4'.ether });
             await nodeDeposit(node, '4'.ether, false, '4'.ether);
+        });
+
+        it(printTitle('node', 'can not reuse pubkey'), async () => {
+            // Construct deposit data for prestake
+            let withdrawalCredentials = await getMegapoolWithdrawalCredentials(node.address);
+            let depositData = {
+                pubkey: getValidatorPubkey(),
+                withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
+                amount: BigInt(1000000000), // gwei
+                signature: getValidatorSignature(),
+            };
+            let depositDataRoot = getDepositDataRoot(depositData);
+            const rocketNodeDeposit = await RocketNodeDeposit.deployed();
+            // Perform first deposit
+            await rocketNodeDeposit.connect(node).deposit('4'.ether, false, depositData.pubkey, depositData.signature, depositDataRoot, { value: '4'.ether });
+            // Try to deposit again with the same pubkey
+            await shouldRevert(
+                rocketNodeDeposit.connect(node).deposit('4'.ether, false, depositData.pubkey, depositData.signature, depositDataRoot, { value: '4'.ether }),
+                'Was able to reuse existing pubkey',
+                'Pubkey in use'
+            )
         });
 
         it(printTitle('node', 'can deposit using ETH credit'), async () => {
