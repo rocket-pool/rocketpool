@@ -68,7 +68,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         return getUint(totalKey);
     }
 
-    /// @notice Returns the total quantity of RPL staked on the network
+    /// @notice Returns the total quantity of "Megapool Staked RPL" on the network
     function getTotalMegapoolStakedRPL() override public view returns (uint256) {
         return getUint(totalMegapoolKey);
     }

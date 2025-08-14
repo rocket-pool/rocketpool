@@ -153,7 +153,7 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
             }
         }
         // Only allow up to 50 total challenges at a time
-        require(totalChallenges < 50, "Too many challenges");
+        require(totalChallenges <= 50, "Too many challenges");
     }
 
     /// @notice Verifies a withdrawal state proof then notifies megapool of the final balance

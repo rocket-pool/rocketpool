@@ -18,7 +18,7 @@ import {RocketDAONodeTrustedUpgradeInterface} from "../../../interface/dao/node/
 /// @notice Proposal contract for the security council upgrade veto powers
 contract RocketDAOSecurityUpgrade is RocketBase, RocketDAOSecurityUpgradeInterface {
 
-    // The namespace for any data stored in the trusted node DAO (do not change)
+    // The namespace for any data stored in the security DAO (do not change)
     string constant internal daoNameSpace = "dao.security.";
 
     /// @dev Only allow certain contracts to execute methods

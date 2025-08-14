@@ -59,7 +59,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     }
 
     /// @notice Returns the deposit amount for a given deposit type (only used for legacy minipool types)
-    function getDepositUserAmount(MinipoolDeposit _depositType) override public pure returns (uint256) {
+    function getDepositUserAmount(MinipoolDeposit _depositType) override external pure returns (uint256) {
         if (_depositType == MinipoolDeposit.Full) { return getFullDepositUserAmount(); }
         if (_depositType == MinipoolDeposit.Half) { return getHalfDepositUserAmount(); }
         return 0;

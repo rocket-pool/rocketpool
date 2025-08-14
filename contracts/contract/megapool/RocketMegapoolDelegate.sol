@@ -109,7 +109,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         return validators[_validatorId];
     }
 
-    /// @notice Returns information about a given validator
+    /// @notice Returns pubkey for a given validator
     function getValidatorPubkey(uint32 _validatorId) override external view returns (bytes memory) {
         return pubkeys[_validatorId];
     }
@@ -250,8 +250,10 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         RocketNodeDepositInterface rocketNodeDeposit = getRocketNodeDeposit();
         uint256 newBondRequirement = rocketNodeDeposit.getBondRequirement(getActiveValidatorCount());
         require(nodeBond > newBondRequirement, "Bond is at minimum");
-        uint256 maxReduce = nodeBond - newBondRequirement;
-        require(_amount <= maxReduce, "New bond is too low");
+        unchecked { // Impossible underflow given nodeBond > newBondRequirement
+            uint256 maxReduce = nodeBond - newBondRequirement;
+            require(_amount <= maxReduce, "New bond is too low");
+        }
         // Force distribute at previous capital ratio
         uint256 pendingRewards = getPendingRewards();
         if (pendingRewards > 0) {

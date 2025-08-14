@@ -24,7 +24,7 @@ import {RocketVaultWithdrawerInterface} from "../../interface/RocketVaultWithdra
 contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaultWithdrawerInterface {
     // Constants
     uint256 internal constant milliToWei = 10 ** 15;
-    bytes32 internal constant queueKeyVariable = keccak256("minipools.available.variable");
+    bytes32 internal constant queueKeyMinipoolVariable = keccak256("minipools.available.variable");
     bytes32 internal constant expressQueueNamespace = keccak256("deposit.queue.express");
     bytes32 internal constant standardQueueNamespace = keccak256("deposit.queue.standard");
     bytes32 internal constant queueMovedKey = keccak256("megapool.queue.moved");
@@ -156,7 +156,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     /// @notice Returns the maximum amount that can be accepted into the deposit pool at this time in wei
     function getMaximumDepositAmount() override external view returns (uint256) {
         RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
-        // If deposits are enabled max deposit is 0
+        // If deposits are disabled max deposit is 0
         if (!rocketDAOProtocolSettingsDeposit.getDepositEnabled()) {
             return 0;
         }
@@ -272,13 +272,13 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Get contracts
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
         // Process minipool queue first
-        uint256 minipoolQueueLength = addressQueueStorage.getLength(queueKeyVariable);
+        uint256 minipoolQueueLength = addressQueueStorage.getLength(queueKeyMinipoolVariable);
         if (minipoolQueueLength > 0) {
             if (minipoolQueueLength >= _max) {
                 _assignMinipools(_max, _rocketDAOProtocolSettingsDeposit);
                 return;
             } else {
-                unchecked { // _max < minipoolQueueLength
+                unchecked { // _max > minipoolQueueLength
                     _max -= minipoolQueueLength;
                 }
                 _assignMinipools(minipoolQueueLength, _rocketDAOProtocolSettingsDeposit);
@@ -300,7 +300,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         }
         // Continue processing legacy minipool queue until empty
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
-        if (addressQueueStorage.getLength(queueKeyVariable) > 0) {
+        if (addressQueueStorage.getLength(queueKeyMinipoolVariable) > 0) {
             RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
             _assignMinipoolsByDeposit(rocketMinipoolQueue, rocketDAOProtocolSettingsDeposit);
         } else {
@@ -471,6 +471,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     }
 
     /// @notice Requests funds from the deposit queue by a megapool, places the request in the relevant queue
+    /// @param _bondAmount The bond amount supplied by the NO for the fund request
     /// @param _validatorId The megapool-managed ID of the validator requesting funds
     /// @param _amount The amount of ETH requested by the node operator
     /// @param _expressQueue Whether to consume an express ticket to be placed in the express queue
@@ -496,7 +497,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         });
         LinkedListStorageInterface linkedListStorage = LinkedListStorageInterface(getContractAddress("linkedListStorage"));
         linkedListStorage.enqueueItem(namespace, value);
-        // Increase requested balance and node balance
+        // Increase requested balance
         addUint(requestedTotalKey, _amount);
         // Check if head moved
         if (_expressQueue) {
@@ -595,7 +596,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     function getQueueTop() override external view returns (address receiver, bool assignmentPossible, uint256 headMovedBlock) {
         // If legacy queue is still being processed, return null address
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
-        if (addressQueueStorage.getLength(queueKeyVariable) > 0) {
+        if (addressQueueStorage.getLength(queueKeyMinipoolVariable) > 0) {
             return (address(0x0), false, 0);
         }
 
@@ -653,16 +654,16 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     /// @notice Returns the number of minipools in the queue
     function getMinipoolQueueLength() override public view returns (uint256) {
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
-        return addressQueueStorage.getLength(queueKeyVariable);
+        return addressQueueStorage.getLength(queueKeyMinipoolVariable);
     }
 
-    /// @notice Returns the number of megapools in the express queue
+    /// @notice Returns the number of megapool validators in the express queue
     function getExpressQueueLength() override public view returns (uint256) {
         LinkedListStorageInterface linkedListStorage = LinkedListStorageInterface(getContractAddress("linkedListStorage"));
         return linkedListStorage.getLength(expressQueueNamespace);
     }
 
-    /// @notice Returns the number of megapools in the standard queue
+    /// @notice Returns the number of megapool validators in the standard queue
     function getStandardQueueLength() override public view returns (uint256) {
         LinkedListStorageInterface linkedListStorage = LinkedListStorageInterface(getContractAddress("linkedListStorage"));
         return linkedListStorage.getLength(standardQueueNamespace);

@@ -69,19 +69,6 @@ contract RocketMegapoolDelegateBase is RocketMegapoolStorageLayout, RocketMegapo
         _;
     }
 
-    /// @dev Only allow access from node address or if RPL address is set, only from it
-    modifier onlyRPLWithdrawalAddressOrNode() {
-        // Check that the call is coming from RPL withdrawal address (or node if unset)
-        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-        if (rocketNodeManager.getNodeRPLWithdrawalAddressIsSet(nodeAddress)) {
-            address rplWithdrawalAddress = rocketNodeManager.getNodeRPLWithdrawalAddress(nodeAddress);
-            require(msg.sender == rplWithdrawalAddress, "Not allowed");
-        } else {
-            require(msg.sender == nodeAddress, "Not allowed");
-        }
-        _;
-    }
-
     /// @dev Returns true if msg.sender is node or node's withdrawal address
     function isNodeCalling(address _caller) internal view returns (bool) {
         if (_caller == nodeAddress) {
