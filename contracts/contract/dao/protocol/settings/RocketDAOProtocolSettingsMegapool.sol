@@ -44,7 +44,7 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
             } else if (settingKey == keccak256(abi.encodePacked("notify.threshold"))) {
                 require(_value >= 2 hours, "Notify threshold must be greater or equal to 2 hours");     // Per RPIP-72
             } else if (settingKey == keccak256(abi.encodePacked("late.notify.fine"))) {
-                require(_value < 0.5 ether, "Fine must be less than or equal to 0.5 ETH");              // Per RPIP-72
+                require(_value <= 0.5 ether, "Fine must be less than or equal to 0.5 ETH");              // Per RPIP-72
             } else if (settingKey == keccak256(abi.encodePacked("user.distribute.window.length"))) {
                 require(_value >= 1 days && _value <= 30 days, "Value must be between 1 and 30 days");  // Per RPIP-72
             }
