@@ -44,7 +44,7 @@ contract RocketUpgradeOneDotFour is RocketBase {
     address public immutable beaconStateVerifier;
     address public immutable rocketNodeDistributorDelegate;
     address public immutable rocketClaimDAO;
-    address public immutable rocketMinipoolBonderReducer;
+    address public immutable rocketMinipoolBondReducer;
     address public immutable rocketNetworkVoting;
     address public immutable rocketMerkleDistributorMainnet;
 
@@ -90,7 +90,7 @@ contract RocketUpgradeOneDotFour is RocketBase {
         beaconStateVerifier = _addresses[26];
         rocketNodeDistributorDelegate = _addresses[27];
         rocketClaimDAO = _addresses[28];
-        rocketMinipoolBonderReducer = _addresses[29];
+        rocketMinipoolBondReducer = _addresses[29];
         rocketNetworkVoting = _addresses[30];
         rocketMerkleDistributorMainnet = _addresses[31];
 
@@ -115,8 +115,8 @@ contract RocketUpgradeOneDotFour is RocketBase {
         _addContract("rocketMegapoolManager", rocketMegapoolManager, abis[3]);
         _addContract("linkedListStorage", linkedListStorage, abis[8]);
         _addContract("rocketNetworkRevenues", rocketNetworkRevenues, abis[20]);
-        _addContract("blockRoots", blockRoots, abis[23]);
-        _addContract("beaconStateVerifier", beaconStateVerifier, abis[24]);
+        _addContract("blockRoots", blockRoots, abis[25]);
+        _addContract("beaconStateVerifier", beaconStateVerifier, abis[26]);
         _addContract("rocketDAOProtocolSettingsMegapool", rocketDAOProtocolSettingsMegapool, abis[15]);
         _addContract("rocketDAOSecurityUpgrade", rocketDAOSecurityUpgrade, abis[17]);
 
@@ -140,7 +140,7 @@ contract RocketUpgradeOneDotFour is RocketBase {
         _upgradeContract("rocketNodeDistributorDelegate", rocketNodeDistributorDelegate, abis[27]);
         _upgradeContract("rocketRewardsPool", rocketRewardsPool, abis[24]);
         _upgradeContract("rocketClaimDAO", rocketClaimDAO, abis[28]);
-        _upgradeContract("rocketMinipoolBondReducer", rocketMinipoolBonderReducer, abis[29]);
+        _upgradeContract("rocketMinipoolBondReducer", rocketMinipoolBondReducer, abis[29]);
         _upgradeContract("rocketNetworkVoting", rocketNetworkVoting, abis[30]);
         _upgradeContract("rocketMerkleDistributorMainnet", rocketMerkleDistributorMainnet, abis[31]);
 
