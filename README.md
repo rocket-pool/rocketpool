@@ -7,20 +7,21 @@
 Rocket Pool is a decentralized Ethereum liquid staking protocol. It lets people participate in Ethereum staking without needing to run a full validator with 32 ETH, and it also lowers the technical barrier for running nodes. Here’s a breakdown:
 
 ### For Regular Stakers
-- Users can stake as little as 0.01 ETH by depositing into Rocket Pool’s smart contracts.
-- In return, they receive rETH (Rocket Pool ETH), a liquid staking token that automatically accrues staking rewards over time.
-- rETH can be traded, used in DeFi, or redeemed for ETH + rewards.
+- Users can stake as little as 0.01 ETH by depositing into Rocket Pool’s smart contracts
+- In return, they receive rETH (Rocket Pool ETH), a liquid staking token that automatically accrues staking rewards over time
+- rETH can be traded, used in DeFi, or redeemed for ETH + rewards
 
 ### For Node Operators
-- People who want to run validator nodes can join Rocket Pool by staking 8 ETH (instead of the full 32 ETH).
-- Rocket Pool pairs that 8 ETH with pooled ETH from other stakers to make a full validator.
-- They earn consensus rewards (ETH) plus commission fees from the stakers who pooled with them.
+- People who want to run validator nodes can join Rocket Pool by staking 8 ETH (instead of the full 32 ETH)
+- Rocket Pool pairs that 8 ETH with the ETH deposited by rETH users to make a full validator
+- They earn consensus rewards (ETH) plus commission from the rETH users for running the node
 
 ### Why It’s Different
-- Decentralized alternative to centralized exchanges’ staking services.
-- Permissionless: anyone can run a node, no approval required.
-- rETH token means stakers don’t have their ETH locked; they can use rETH across DeFi.
-- Built-in slashing insurance through RPL collateral.
+- Lower capital requirement, 8 ETH instead of 32 ETH
+- Better yield than solo staking for node operators
+- Decentralized alternative to centralized exchanges’ staking services
+- Permissionless: anyone can run a node, no approval required
+- rETH token means stakers don’t have their ETH locked; they can use rETH across DeFi
 
 Learn more at [https://rocketpool.net](https://rocketpool.net).
 
