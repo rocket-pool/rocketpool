@@ -156,7 +156,8 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
 
     return {
         nodeBalanceChange,
-        rethBalanceChange
+        rethBalanceChange,
+        depositPoolChange,
     }
 }
 

@@ -104,9 +104,10 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
             rocketNodeStaking.getNodeETHBonded(node.address),
             rocketNodeStaking.getNodeMegapoolETHBorrowed(node.address),
             rocketNodeStaking.getNodeMegapoolETHBonded(node.address),
+            rocketDepositPool.getMinipoolQueueLength(),
         ]).then(
             ([deployed, numExpressTickets, numGlobalValidators, expressQueueLength, standardQueueLength, nodeBalance,
-                 nodeEthBorrowed, nodeEthBonded, nodeMegapoolEthBorrowed, nodeMegapoolEthBonded]) =>
+                 nodeEthBorrowed, nodeEthBonded, nodeMegapoolEthBorrowed, nodeMegapoolEthBonded, minipoolQueueLength]) =>
                 ({
                     deployed,
                     numExpressTickets,
@@ -118,6 +119,7 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
                     nodeEthBonded,
                     nodeMegapoolEthBorrowed,
                     nodeMegapoolEthBonded,
+                    minipoolQueueLength,
                     numValidators: 0n,
                     assignedValue: 0n,
                     nodeCapital: 0n,
@@ -191,7 +193,10 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     assertBN.equal(numValidatorsDelta, 1n, 'Number of validators did not increase by 1');
     assertBN.equal(numGlobalValidatorsDelta, 1n, 'Number of global validators did not increase by 1');
 
+    const minipoolInQueue = data1.minipoolQueueLength > 0n;
+
     const expectSelfAssignment =
+        !minipoolInQueue &&
         assignmentsEnabled &&
         depositPoolCapacity >= amountRequired &&
         (
@@ -220,12 +225,21 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     assertBN.equal(nodeCapitalDelta, bondAmount, 'Incorrect node capital');
     assertBN.equal(userCapitalDelta, '32'.ether - bondAmount, 'Incorrect user capital');
 
-    if (expectSelfAssignment) {
+    if (minipoolInQueue) {
+        // Validator will never be assigned if a minipool exists in the queue as it is serviced first
+        assert.equal(validatorInfo.inQueue, true, 'Incorrect validator status');
+        assert.equal(validatorInfo.inPrestake, false, 'Incorrect validator status');
+        assertBN.equal(assignedValueDelta, 0n, 'Incorrect assigned value');
+    }
+    else if (expectSelfAssignment)
+    {
         assert.equal(validatorInfo.inQueue, false, 'Incorrect validator status');
         assert.equal(validatorInfo.inPrestake, true, 'Incorrect validator status');
         assertBN.equal(assignedValueDelta, '31'.ether, 'Incorrect assigned value');
         assertBN.equal(nodeBalanceDelta, 0n, 'Incorrect node balance value');
-    } else {
+    }
+    else
+    {
         assert.equal(validatorInfo.inQueue, true, 'Incorrect validator status');
         assert.equal(validatorInfo.inPrestake, false, 'Incorrect validator status');
         assertBN.equal(assignedValueDelta, 0n, 'Incorrect assigned value');
