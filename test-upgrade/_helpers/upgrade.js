@@ -34,6 +34,7 @@ const networkContracts = {
     rocketNodeDistributorDelegate: artifacts.require('RocketNodeDistributorDelegate'),
     rocketClaimDAO: artifacts.require('RocketClaimDAO'),
     rocketMinipoolBondReducer: artifacts.require('RocketMinipoolBondReducer'),
+    rocketMinipoolManager: artifacts.require('RocketMinipoolManager'),
     rocketNetworkVoting: artifacts.require('RocketNetworkVoting'),
     rocketMerkleDistributorMainnet: artifacts.require('RocketMerkleDistributorMainnet'),
 
@@ -139,6 +140,7 @@ export async function deployUpgrade(rocketStorageAddress) {
                         addresses.rocketNodeDistributorDelegate,
                         addresses.rocketClaimDAO,
                         addresses.rocketMinipoolBondReducer,
+                        addresses.rocketMinipoolManager,
                         addresses.rocketNetworkVoting,
                         addresses.rocketMerkleDistributorMainnet,
                     ],
@@ -173,6 +175,7 @@ export async function deployUpgrade(rocketStorageAddress) {
                         compressABI(networkContracts.rocketNodeDistributorDelegate.abi),
                         compressABI(networkContracts.rocketClaimDAO.abi),
                         compressABI(networkContracts.rocketMinipoolBondReducer.abi),
+                        compressABI(networkContracts.rocketMinipoolManager.abi),
                         compressABI(networkContracts.rocketNetworkVoting.abi),
                         compressABI(networkContracts.rocketMerkleDistributorMainnet.abi),
                     ],
