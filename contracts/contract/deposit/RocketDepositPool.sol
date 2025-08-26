@@ -183,10 +183,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             rocketVault.depositEther{value: msg.value}();
         }
         // Increase recorded node balance
-        // Note: The difference between `_bondAmount` and `msg.value` is the amount of credit being used on this deposit.
-        //       That amount of credit is already accounted for in `deposit.pool.node.balance` and therefore we only
-        //       need to add `msg.value` to the node balance.
-        addUint(nodeBalanceKey, msg.value);
+        addUint(nodeBalanceKey, _bondAmount);
     }
 
     /// @notice Recycle a deposit from a dissolved validator
@@ -550,6 +547,9 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
                 setQueueMoved(false, true);
             }
         }
+        // Remove bond from node balance
+        uint256 nodeBalanceUsed = value.suppliedValue * milliToWei;
+        subUint(nodeBalanceKey, nodeBalanceUsed);
         // Emit event
         emit QueueExited(_nodeAddress, block.timestamp);
     }
@@ -558,7 +558,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     function applyCredit(address _nodeAddress, uint256 _amount) override external onlyRegisteredMegapool(msg.sender) {
         // Add to node's credit for the amount supplied
         addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress)), _amount);
-        addUint(nodeBalanceKey, _amount);
     }
 
     /// @notice Allows node operator to withdraw any ETH credit they have as rETH
@@ -572,7 +571,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         require(credit >= _amount, "Amount exceeds credit available");
         // Account for balance changes
         subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), _amount);
-        subUint(nodeBalanceKey, _amount);
         // Note: The funds are already stored in RocketVault under RocketDepositPool so no ETH transfer is required
         // Get the node operator's withdrawal address
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));

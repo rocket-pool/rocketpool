@@ -161,8 +161,6 @@ export default function() {
             await promoteMinipool(prelaunchMinipool8, { from: node });
             // Verify deposit credit balance increases by 24 ETH with migration
             const rocketDepositPool = await RocketDepositPool.deployed();
-            assertBN.equal(await getNodeDepositCredit(node), '0'.ether);
-            await rocketDepositPool.connect(node).migrateCreditBalance(node.address);
             assertBN.equal(await getNodeDepositCredit(node), '24'.ether);
             // Deposit 24 ETH into deposit pool to make it available for use
             await userDeposit({ from: random, value: '24'.ether });
@@ -172,7 +170,7 @@ export default function() {
                 await nodeDeposit(node, '4'.ether, false, '4'.ether);
                 // There is only 24 ETH in DP, not enough to assign
                 assertBN.equal(await rocketDepositPool.getBalance(), '24'.ether)
-                assertBN.equal(await rocketDepositPool.getNodeBalance(), '24'.ether)
+                assertBN.equal(await rocketDepositPool.getNodeBalance(), '4'.ether * BigInt(i + 1))
             }
             // Deposit enough ETH into deposit pool to assign the 3 validators (use >=32 ETH to trigger assignment)
             for (let i = 0; i < 3; ++i) {

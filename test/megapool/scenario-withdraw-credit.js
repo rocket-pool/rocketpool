@@ -48,5 +48,5 @@ export async function withdrawCredit(node, amount) {
 
     assertBN.equal(rethBalanceDelta, rethValue);
     assertBN.equal(creditBalanceDelta, -amount);
-    assertBN.equal(userBalanceDelta, amount);
+    assertBN.equal(userBalanceDelta, 0n);
 }

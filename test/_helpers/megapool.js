@@ -17,6 +17,7 @@ import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '.
 const hre = require('hardhat');
 const ethers = hre.ethers;
 
+const launchValue = '32'.ether;
 const milliToWei = 1000000000000000n;
 
 export async function getValidatorInfo(megapool, index) {
@@ -122,8 +123,10 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
                     minipoolQueueLength,
                     numValidators: 0n,
                     assignedValue: 0n,
-                    nodeCapital: 0n,
+                    nodeBond: 0n,
+                    nodeQueuedCapital: 0n,
                     userCapital: 0n,
+                    userQueuedCapital: 0n,
                 }),
         );
 
@@ -131,8 +134,10 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
             const megapool = (await getMegapoolForNode(node));
             data.numValidators = await megapool.getValidatorCount();
             data.assignedValue = await megapool.getAssignedValue();
-            data.nodeCapital = await megapool.getNodeBond();
+            data.nodeBond = await megapool.getNodeBond();
+            data.nodeQueuedCapital = await megapool.getNodeQueuedBond();
             data.userCapital = await megapool.getUserCapital();
+            data.userQueuedCapital = await megapool.getUserQueuedCapital();
         }
 
         return data;
@@ -149,20 +154,8 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
         const tx = await rocketNodeDeposit.connect(node).deposit(bondAmount, useExpressTicket, depositData.pubkey, depositData.signature, depositDataRoot, { value: bondAmount });
         await tx.wait();
     } else {
-        const creditBefore = await rocketNodeDeposit.getNodeDepositCredit(node.address);
-        const balanceBefore = await rocketNodeDeposit.getNodeEthBalance(node.address);
-
         const tx = await rocketNodeDeposit.connect(node).depositWithCredit(bondAmount, useExpressTicket, depositData.pubkey, depositData.signature, depositDataRoot, { value: bondAmount - creditAmount });
         await tx.wait();
-
-        const creditAfter = await rocketNodeDeposit.getNodeDepositCredit(node.address);
-        const balanceAfter = await rocketNodeDeposit.getNodeEthBalance(node.address);
-
-        const creditAndBalanceDelta = (creditAfter + balanceAfter) - (creditBefore + balanceBefore);
-        assertBN.equal(creditAndBalanceDelta, -creditAmount);
-
-        const creditDelta = creditAfter - creditBefore;
-        expectedNodeBalanceChange += creditDelta;
     }
 
     const data2 = await getData();
@@ -176,8 +169,10 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     const numGlobalValidatorsDelta = data2.numGlobalValidators - data1.numGlobalValidators;
     const numExpressTicketsDelta = data2.numExpressTickets - data1.numExpressTickets;
     const assignedValueDelta = data2.assignedValue - data1.assignedValue;
-    const nodeCapitalDelta = data2.nodeCapital - data1.nodeCapital;
+    const nodeBondDelta = data2.nodeBond - data1.nodeBond;
+    const nodeQueuedBondDelta = data2.nodeQueuedCapital - data1.nodeQueuedCapital;
     const userCapitalDelta = data2.userCapital - data1.userCapital;
+    const userQueuedCapitalDelta = data2.userQueuedCapital - data1.userQueuedCapital;
     const expressQueueLengthDelta = data2.expressQueueLength - data1.expressQueueLength;
     const standardQueueLengthDelta = data2.standardQueueLength - data1.standardQueueLength;
     const nodeBalanceDelta = data2.nodeBalance - data1.nodeBalance;
@@ -187,8 +182,8 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     assertBN.equal(nodeEthBondedDelta, bondAmount);
     assertBN.equal(nodeEthBorrowedDelta, '32'.ether - bondAmount);
 
-    assertBN.equal(data2.nodeCapital, data2.nodeMegapoolEthBonded);
-    assertBN.equal(data2.userCapital, data2.nodeMegapoolEthBorrowed);
+    assertBN.equal(data2.nodeBond + data2.nodeQueuedCapital, data2.nodeMegapoolEthBonded);
+    assertBN.equal(data2.userCapital + data2.userQueuedCapital, data2.nodeMegapoolEthBorrowed);
 
     assertBN.equal(numValidatorsDelta, 1n, 'Number of validators did not increase by 1');
     assertBN.equal(numGlobalValidatorsDelta, 1n, 'Number of global validators did not increase by 1');
@@ -222,14 +217,16 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     const megapool = await getMegapoolForNode(node);
     const validatorInfo = await getValidatorInfo(megapool, data1.numValidators);
 
-    assertBN.equal(nodeCapitalDelta, bondAmount, 'Incorrect node capital');
-    assertBN.equal(userCapitalDelta, '32'.ether - bondAmount, 'Incorrect user capital');
+    assertBN.equal(nodeBondDelta + nodeQueuedBondDelta, bondAmount, 'Incorrect node capital');
+    assertBN.equal(userCapitalDelta + userQueuedCapitalDelta, '32'.ether - bondAmount, 'Incorrect user capital');
 
     if (minipoolInQueue) {
         // Validator will never be assigned if a minipool exists in the queue as it is serviced first
         assert.equal(validatorInfo.inQueue, true, 'Incorrect validator status');
         assert.equal(validatorInfo.inPrestake, false, 'Incorrect validator status');
         assertBN.equal(assignedValueDelta, 0n, 'Incorrect assigned value');
+        assertBN.equal(userQueuedCapitalDelta, launchValue - bondAmount);
+        assertBN.equal(nodeQueuedBondDelta, bondAmount);
     }
     else if (expectSelfAssignment)
     {
@@ -237,6 +234,9 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
         assert.equal(validatorInfo.inPrestake, true, 'Incorrect validator status');
         assertBN.equal(assignedValueDelta, '31'.ether, 'Incorrect assigned value');
         assertBN.equal(nodeBalanceDelta, 0n, 'Incorrect node balance value');
+        // If validator is assigned immediately, then there should be no change in queued capital balances
+        assertBN.equal(nodeQueuedBondDelta, 0n);
+        assertBN.equal(userQueuedCapitalDelta, 0n);
     }
     else
     {
@@ -244,6 +244,8 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
         assert.equal(validatorInfo.inPrestake, false, 'Incorrect validator status');
         assertBN.equal(assignedValueDelta, 0n, 'Incorrect assigned value');
         assertBN.equal(nodeBalanceDelta, expectedNodeBalanceChange, 'Incorrect node balance value');
+        assertBN.equal(userQueuedCapitalDelta, launchValue - bondAmount);
+        assertBN.equal(nodeQueuedBondDelta, bondAmount);
     }
 
     assertBN.equal(validatorInfo.lastRequestedValue, '32'.ether / milliToWei, 'Incorrect validator lastRequestedValue');
@@ -335,8 +337,10 @@ export async function nodeDepositMulti(node, deposits, creditAmount = 0n) {
                     nodeMegapoolEthBonded,
                     numValidators: 0n,
                     assignedValue: 0n,
-                    nodeCapital: 0n,
+                    nodeBond: 0n,
                     userCapital: 0n,
+                    nodeQueuedBond: 0n,
+                    userQueuedCapital: 0n,
                 }),
         );
 
@@ -344,8 +348,10 @@ export async function nodeDepositMulti(node, deposits, creditAmount = 0n) {
             const megapool = (await getMegapoolForNode(node));
             data.numValidators = await megapool.getValidatorCount();
             data.assignedValue = await megapool.getAssignedValue();
-            data.nodeCapital = await megapool.getNodeBond();
+            data.nodeBond = await megapool.getNodeBond();
             data.userCapital = await megapool.getUserCapital();
+            data.nodeQueuedBond = await megapool.getNodeQueuedBond();
+            data.userQueuedCapital = await megapool.getUserQueuedCapital();
         }
 
         return data;
@@ -403,8 +409,10 @@ export async function nodeDepositMulti(node, deposits, creditAmount = 0n) {
     const numGlobalValidatorsDelta = data2.numGlobalValidators - data1.numGlobalValidators;
     const numExpressTicketsDelta = data2.numExpressTickets - data1.numExpressTickets;
     const assignedValueDelta = data2.assignedValue - data1.assignedValue;
-    const nodeCapitalDelta = data2.nodeCapital - data1.nodeCapital;
+    const nodeBondDelta = data2.nodeBond - data1.nodeBond;
+    const nodeQueuedBondDelta = data2.nodeQueuedBond - data1.nodeQueuedBond;
     const userCapitalDelta = data2.userCapital - data1.userCapital;
+    const userQueuedCapitalDelta = data2.userQueuedCapital - data1.userQueuedCapital;
     const expressQueueLengthDelta = data2.expressQueueLength - data1.expressQueueLength;
     const standardQueueLengthDelta = data2.standardQueueLength - data1.standardQueueLength;
     const nodeBalanceDelta = data2.nodeBalance - data1.nodeBalance;
@@ -414,8 +422,8 @@ export async function nodeDepositMulti(node, deposits, creditAmount = 0n) {
     assertBN.equal(nodeEthBondedDelta, totalBond);
     assertBN.equal(nodeEthBorrowedDelta, ('32'.ether * BigInt(deposits.length)) - totalBond);
 
-    assertBN.equal(data2.nodeCapital, data2.nodeMegapoolEthBonded);
-    assertBN.equal(data2.userCapital, data2.nodeMegapoolEthBorrowed);
+    assertBN.equal(data2.nodeBond + data2.nodeQueuedBond, data2.nodeMegapoolEthBonded);
+    assertBN.equal(data2.userCapital + data2.userQueuedCapital, data2.nodeMegapoolEthBorrowed);
 
     assertBN.equal(numValidatorsDelta, BigInt(deposits.length), 'Number of validators did not increase by 1');
     assertBN.equal(numGlobalValidatorsDelta, BigInt(deposits.length), 'Number of global validators did not increase by 1');
@@ -425,8 +433,8 @@ export async function nodeDepositMulti(node, deposits, creditAmount = 0n) {
     // Confirm state of new validator
     const megapool = await getMegapoolForNode(node);
 
-    assertBN.equal(nodeCapitalDelta, totalBond, 'Incorrect node capital');
-    assertBN.equal(userCapitalDelta, ('32'.ether * BigInt(deposits.length)) - totalBond, 'Incorrect user capital');
+    assertBN.equal(nodeBondDelta + nodeQueuedBondDelta, totalBond, 'Incorrect node capital');
+    assertBN.equal(userCapitalDelta + userQueuedCapitalDelta, ('32'.ether * BigInt(deposits.length)) - totalBond, 'Incorrect user capital');
 
     for (let i = 0; i < deposits.length; ++i) {
         const validatorId = Number(data1.numValidators) + i;

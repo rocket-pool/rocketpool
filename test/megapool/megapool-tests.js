@@ -297,16 +297,16 @@ export default function() {
             await nodeDeposit(node, '4'.ether);
             await nodeDeposit(node, '4'.ether); // 4th validator enters the queue
             assertBN.equal(await megapool.getActiveValidatorCount(), 4n);
-            assertBN.equal(await megapool.getNodeBond(), '4'.ether * 4n);
+            assertBN.equal(await megapool.getNodeQueuedBond(), '4'.ether);
+            assertBN.equal(await megapool.getNodeBond(), '4'.ether * 3n);
             // NO has 4 validators with a required 16 ETH bond 1 of those validators is in the queue
             // Reduce 'reduced.bond' to 2 ETH
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
             // Exit the queue
             await exitQueue(node, 3);
-            // NO had 16 ETH bond but new requirement for 3 validators is only 10, so they should receive 6 ETH credit
-            assertBN.equal(await rocketNodeDeposit.getNodeDepositCredit(node.address), '6'.ether);
-            // Perform 3 new deposits with credit at the reduced bond
-            await nodeDeposit(node, '2'.ether, false, '2'.ether);
+            // NO should receive 4 ETH credit
+            assertBN.equal(await rocketNodeDeposit.getNodeDepositCredit(node.address), '4'.ether);
+            // Perform 2 new deposits with credit at the reduced bond
             await nodeDeposit(node, '2'.ether, false, '2'.ether);
             await nodeDeposit(node, '2'.ether, false, '2'.ether);
             // Used up all credit
@@ -789,6 +789,18 @@ export default function() {
             });
         });
 
+        it(printTitle('node', 'can not reduce bond with queued validators'), async () => {
+            await nodeDeposit(node, '4'.ether);
+            await nodeDeposit(node, '4'.ether);
+            await nodeDeposit(node, '4'.ether);
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
+            await shouldRevert(
+                reduceBond(megapool, '2'.ether),
+                'Was able to reduce bond',
+                'Cannot reduce bond with queued validators'
+            );
+        })
+
         snapshotDescribe('With overbonded megapool', () => {
             before(async () => {
                 // Deposit enough for 4 validators
@@ -796,6 +808,9 @@ export default function() {
                 await nodeDeposit(node, '4'.ether);
                 await nodeDeposit(node, '4'.ether);
                 await nodeDeposit(node, '4'.ether);
+                await stakeMegapoolValidator(megapool, 0);
+                await stakeMegapoolValidator(megapool, 1);
+                await stakeMegapoolValidator(megapool, 2);
                 // Reduce 'reduced.bond' to 2 ETH
                 await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
                 // Node is now overbonded by 2 ETH

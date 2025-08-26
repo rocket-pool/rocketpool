@@ -1,6 +1,6 @@
 import {
     RocketDepositPool,
-    RocketMegapoolManager,
+    RocketMegapoolManager, RocketNodeDeposit,
     RocketStorage,
     RocketTokenRETH,
     RocketVault,
@@ -80,12 +80,13 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
     const rocketTokenRETH = await RocketTokenRETH.deployed();
     const rocketMegapoolManager = await RocketMegapoolManager.deployed();
     const rocketVault = await RocketVault.deployed();
+    const rocketNodeDeposit = await RocketNodeDeposit.deployed();
 
     const nodeAddress = await megapool.getNodeAddress();
     const withdrawalAddress = await rocketStorage.getNodeWithdrawalAddress(nodeAddress);
 
-    async function getBalances() {
-        let [pendingRewards, megapoolBalance, nodeBalance, rethBalance, depositPoolBalance, nodeRefund, activeValidatorCount, exitingValidatorCount, soonestWithdrawableEpoch] = await Promise.all([
+    async function getData() {
+        let [pendingRewards, megapoolBalance, nodeBalance, rethBalance, depositPoolBalance, nodeRefund, activeValidatorCount, exitingValidatorCount, soonestWithdrawableEpoch, nodeBond, userCapital, nodeQueuedBond, userQueuedCapital] = await Promise.all([
             megapool.getPendingRewards(),
             ethers.provider.getBalance(megapool.target),
             ethers.provider.getBalance(withdrawalAddress),
@@ -94,12 +95,16 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
             megapool.getRefundValue(),
             megapool.getActiveValidatorCount(),
             megapool.getExitingValidatorCount(),
-            megapool.getSoonestWithdrawableEpoch()
+            megapool.getSoonestWithdrawableEpoch(),
+            megapool.getNodeBond(),
+            megapool.getUserCapital(),
+            megapool.getNodeQueuedBond(),
+            megapool.getUserQueuedCapital(),
         ]);
-        return { pendingRewards, megapoolBalance, nodeBalance, rethBalance, depositPoolBalance, nodeRefund, activeValidatorCount, exitingValidatorCount, soonestWithdrawableEpoch };
+        return { pendingRewards, megapoolBalance, nodeBalance, rethBalance, depositPoolBalance, nodeRefund, activeValidatorCount, exitingValidatorCount, soonestWithdrawableEpoch, nodeBond, userCapital, nodeQueuedBond, userQueuedCapital };
     }
 
-    const balancesBefore = await getBalances();
+    const data1 = await getData();
 
     // Mock exiting validator by sending final balance to megapool
     await funder.sendTransaction({
@@ -125,16 +130,31 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
     }
 
     await rocketMegapoolManager.connect(megapool.runner).notifyFinalBalance(megapool.target, validatorId, proof);
-    const balancesAfter = await getBalances();
+    const data2 = await getData();
 
-    const balanceDeltas = {
-        pendingRewards: balancesAfter.pendingRewards - balancesBefore.pendingRewards,
-        megapoolBalance: balancesAfter.megapoolBalance - balancesBefore.megapoolBalance,
-        nodeBalance: balancesAfter.nodeBalance - balancesBefore.nodeBalance,
-        rethBalance: balancesAfter.rethBalance - balancesBefore.rethBalance,
-        depositPoolBalance: balancesAfter.depositPoolBalance - balancesBefore.depositPoolBalance,
-        nodeRefund: balancesAfter.nodeRefund - balancesBefore.nodeRefund,
-        activeValidatorCount: balancesAfter.activeValidatorCount - balancesBefore.activeValidatorCount,
+    // Get new bond requirements
+    let bondRequirement = 0n;
+    if (data2.activeValidatorCount > 0n) {
+        bondRequirement = await rocketNodeDeposit.getBondRequirement(data2.activeValidatorCount);
+    }
+
+    let expectedNodeBondDelta = -(data1.nodeBond - bondRequirement);
+    if (expectedNodeBondDelta < -'32'.ether) {
+        expectedNodeBondDelta = -'32'.ether;
+    }
+
+    const deltas = {
+        pendingRewards: data2.pendingRewards - data1.pendingRewards,
+        megapoolBalance: data2.megapoolBalance - data1.megapoolBalance,
+        nodeBalance: data2.nodeBalance - data1.nodeBalance,
+        rethBalance: data2.rethBalance - data1.rethBalance,
+        depositPoolBalance: data2.depositPoolBalance - data1.depositPoolBalance,
+        nodeRefund: data2.nodeRefund - data1.nodeRefund,
+        activeValidatorCount: data2.activeValidatorCount - data1.activeValidatorCount,
+        nodeBond: data2.nodeBond - data1.nodeBond,
+        userCapital: data2.userCapital - data1.userCapital,
+        nodeQueuedBond: data2.nodeQueuedBond - data1.nodeQueuedBond,
+        userQueuedCapital: data2.userQueuedCapital - data1.userQueuedCapital,
     }
 
     const nodeCalling = (megapool.runner.address.toLowerCase() === nodeAddress.toLowerCase()) ||
@@ -147,21 +167,33 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
     assert.equal(info.exited, true);
     assertBN.equal(info.exitBalance, finalBalance / '1'.gwei);
 
+    if (info.dissolved) {
+        assertBN.equal(deltas.nodeBond, 0n);
+        assertBN.equal(deltas.userCapital, 0n);
+        assertBN.equal(deltas.nodeQueuedBond, 0n);
+        assertBN.equal(deltas.userQueuedCapital, 0n);
+    } else {
+        assertBN.equal(deltas.nodeBond, expectedNodeBondDelta);
+        assertBN.equal(deltas.userCapital, -'32'.ether - expectedNodeBondDelta);
+        assertBN.equal(deltas.nodeQueuedBond, 0n);
+        assertBN.equal(deltas.userQueuedCapital, 0n);
+    }
+
     // Pending rewards shouldn't change on capital distribution
-    assertBN.equal(balanceDeltas.pendingRewards, 0);
+    assertBN.equal(deltas.pendingRewards, 0);
 
     if (nodeCalling) {
-        assertBN.equal(balanceDeltas.depositPoolBalance + balanceDeltas.rethBalance + balanceDeltas.nodeBalance + balanceDeltas.nodeRefund, finalBalance);
+        assertBN.equal(deltas.depositPoolBalance + deltas.rethBalance + deltas.nodeBalance + deltas.nodeRefund, finalBalance);
     } else {
-        assertBN.equal(balanceDeltas.depositPoolBalance + balanceDeltas.rethBalance + balanceDeltas.nodeRefund, finalBalance);
+        assertBN.equal(deltas.depositPoolBalance + deltas.rethBalance + deltas.nodeRefund, finalBalance);
     }
 
     if (!info.dissolved) {
-        assertBN.equal(balanceDeltas.activeValidatorCount, -1n);
+        assertBN.equal(deltas.activeValidatorCount, -1n);
     }
 
     // Soonest withdrawable epoch is reset if no validators are exiting
-    if (balancesAfter.exitingValidatorCount === 0n) {
-        assertBN.equal(balancesAfter.soonestWithdrawableEpoch, 0n);
+    if (data2.exitingValidatorCount === 0n) {
+        assertBN.equal(data2.soonestWithdrawableEpoch, 0n);
     }
 }

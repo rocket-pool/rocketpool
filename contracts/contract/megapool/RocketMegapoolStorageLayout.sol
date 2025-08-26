@@ -68,8 +68,10 @@ abstract contract RocketMegapoolStorageLayout {
     uint256 internal refundValue;     // ETH refunded to the owner after a dissolution
     uint256 internal nodeRewards;     // Unclaimed ETH rewards for the owner
 
-    uint256 internal nodeBond;        // Total value of bond supplied by node operator
-    uint256 internal userCapital;     // Value of capital on the beacon chain supplied by the DP
+    uint256 internal nodeBond;              // Value of node ETH bond (including value yet to be assigned/deposited)
+    uint256 internal userCapital;           // Value of user supplied capital (including value yet to be assigned/deposited)
+    uint256 internal nodeQueuedBond;        // Value of node ETH bond (yet to be assigned/deposited to beacon chain)
+    uint256 internal userQueuedCapital;     // Value of user supplied capital (yet to be assigned/deposited to beacon chain)
 
     uint256 internal debt;            // Amount the owner owes the DP
 
