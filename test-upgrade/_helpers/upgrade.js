@@ -37,6 +37,7 @@ const networkContracts = {
     rocketMinipoolManager: artifacts.require('RocketMinipoolManager'),
     rocketNetworkVoting: artifacts.require('RocketNetworkVoting'),
     rocketMerkleDistributorMainnet: artifacts.require('RocketMerkleDistributorMainnet'),
+    rocketMegapoolPenalties: artifacts.require('RocketMegapoolPenalties'),
 
     rocketUpgradeOneDotFour: artifacts.require('RocketUpgradeOneDotFour'),
 };
@@ -143,6 +144,7 @@ export async function deployUpgrade(rocketStorageAddress) {
                         addresses.rocketMinipoolManager,
                         addresses.rocketNetworkVoting,
                         addresses.rocketMerkleDistributorMainnet,
+                        addresses.rocketMegapoolPenalties,
                     ],
                     [
                         compressABI(networkContracts.rocketMegapoolDelegate.abi),
@@ -177,7 +179,7 @@ export async function deployUpgrade(rocketStorageAddress) {
                         compressABI(networkContracts.rocketMinipoolBondReducer.abi),
                         compressABI(networkContracts.rocketMinipoolManager.abi),
                         compressABI(networkContracts.rocketNetworkVoting.abi),
-                        compressABI(networkContracts.rocketMerkleDistributorMainnet.abi),
+                        compressABI(networkContracts.rocketMegapoolPenalties.abi),
                     ],
                 ];
                 instance = await networkContracts[contract].new(rocketStorageAddress, ...args);

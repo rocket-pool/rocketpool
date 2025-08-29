@@ -15,14 +15,14 @@ contract RocketUpgradeOneDotFour is RocketBase {
     bool internal executed;
 
     // Upgrade ABIs
-    address[33] public addresses;
-    string[33] public abis;
+    address[34] public addresses;
+    string[34] public abis;
 
     // Construct
     constructor(
         RocketStorageInterface _rocketStorageAddress,
-        address[33] memory _addresses,
-        string[33] memory _abis
+        address[34] memory _addresses,
+        string[34] memory _abis
     ) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
@@ -51,6 +51,7 @@ contract RocketUpgradeOneDotFour is RocketBase {
         _addContract("beaconStateVerifier", addresses[26], abis[26]);
         _addContract("rocketDAOProtocolSettingsMegapool", addresses[15], abis[15]);
         _addContract("rocketDAOSecurityUpgrade", addresses[17], abis[17]);
+        _addContract("rocketMegapoolPenalties", addresses[33], abis[33]);
 
         // Upgrade existing contracts
         _upgradeContract("rocketNodeManager", addresses[4], abis[4]);
