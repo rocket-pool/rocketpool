@@ -145,10 +145,10 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
         // clear the 64 bits used to stored the 'start' pointer
         data &= ~(uint256(ones64Bits) << startOffset);
         data |= nextItem << startOffset;
-        setUint(keccak256(abi.encodePacked(_namespace, ".index", item.receiver, item.validatorId)), 0);
+        deleteUint(keccak256(abi.encodePacked(_namespace, ".index", item.receiver, item.validatorId)));
 
         if (nextItem > 0) {
-            setUint(keccak256(abi.encodePacked(_namespace, ".prev", nextItem)), 0);
+            deleteUint(keccak256(abi.encodePacked(_namespace, ".prev", nextItem)));
         } else {
             // zero the 64 bits storing the 'end' pointer
             data &= ~(uint256(ones64Bits) << endOffset);
@@ -159,6 +159,11 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
         data &= ~(uint256(ones64Bits) << lengthOffset);
         data |= (length - 1) << lengthOffset;
         setUint(keccak256(abi.encodePacked(_namespace, ".data")), data);
+
+        // Clean up state
+        deleteUint(keccak256(abi.encodePacked(_namespace, ".next", start)));
+        deleteUint(keccak256(abi.encodePacked(_namespace, ".prev", start)));
+        deleteUint(keccak256(abi.encodePacked(_namespace, ".item", start)));
 
         return item;
     }
@@ -188,7 +193,7 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
             // clear the 64 bits used to stored the 'start' pointer
             data &= ~(uint256(ones64Bits) << startOffset);
             data |= nextIndex << startOffset;
-            setUint(keccak256(abi.encodePacked(_namespace, ".prev", nextIndex)), 0);
+            deleteUint(keccak256(abi.encodePacked(_namespace, ".prev", nextIndex)));
         }
 
         if (nextIndex > 0) {
@@ -201,9 +206,11 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
             data |= prevIndex << endOffset;
         }
 
-        setUint(keccak256(abi.encodePacked(_namespace, ".index", _key.receiver, _key.validatorId)), 0);
-        setUint(keccak256(abi.encodePacked(_namespace, ".next", index)), 0);
-        setUint(keccak256(abi.encodePacked(_namespace, ".prev", index)), 0);
+        // Clean up state
+        deleteUint(keccak256(abi.encodePacked(_namespace, ".index", _key.receiver, _key.validatorId)));
+        deleteUint(keccak256(abi.encodePacked(_namespace, ".next", index)));
+        deleteUint(keccak256(abi.encodePacked(_namespace, ".prev", index)));
+        deleteUint(keccak256(abi.encodePacked(_namespace, ".item", index)));
 
         // Update the length of the queue
         uint256 currentLength = uint64(data >> lengthOffset);
