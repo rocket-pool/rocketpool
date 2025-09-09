@@ -481,7 +481,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface, RocketVaul
 
     /// @notice Calculates a node operator's entitled express tickets and stores them
     /// @param _nodeAddress Address of the node operator to provision
-    function provisionExpressTickets(address _nodeAddress) external override onlyLatestContract("rocketNodeManager", address(this)) onlyLatestContract("rocketDepositPool", msg.sender) {
+    function provisionExpressTickets(address _nodeAddress) external override onlyLatestContract("rocketNodeManager", address(this)) onlyRegisteredNode(_nodeAddress) {
         bytes32 provisionedKey = keccak256(abi.encodePacked("node.express.provisioned", _nodeAddress));
         if (getBool(provisionedKey)) {
             return;
@@ -489,6 +489,13 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface, RocketVaul
         uint256 tickets = getExpressTicketCount(_nodeAddress);
         setBool(provisionedKey, true);
         setUint(keccak256(abi.encodePacked("node.express.tickets", _nodeAddress)), tickets);
+    }
+
+    /// @notice Returns true if express tickets have been provisioned for the given node
+    /// @param _nodeAddress Address of the node operator to query
+    function getExpressTicketsProvisioned(address _nodeAddress) external override view returns (bool) {
+        bytes32 provisionedKey = keccak256(abi.encodePacked("node.express.provisioned", _nodeAddress));
+        return getBool(provisionedKey);
     }
 
     /// @notice Refunds an express ticket for the given node operator

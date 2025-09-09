@@ -250,9 +250,15 @@ export default function() {
 
             it(printTitle('node', 'has expected number of express queue tickets'), async () => {
                 const rocketNodeManager = await RocketNodeManager.deployed();
-                const expressTickets = await rocketNodeManager.getExpressTicketCount(node.address)
+                const expressTicketsBefore = await rocketNodeManager.getExpressTicketCount(node.address)
                 // 2 base + 4 for the 16 ETH minipool (16 / 4)
-                assertBN.equal(expressTickets, 6n);
+                assertBN.equal(expressTicketsBefore, 6n);
+                assert.equal(await rocketNodeManager.getExpressTicketsProvisioned(node.address), false);
+                // Manually provision
+                await rocketNodeManager.connect(node).provisionExpressTickets(node.address);
+                const expressTicketsAfter = await rocketNodeManager.getExpressTicketCount(node.address)
+                assertBN.equal(expressTicketsAfter, 6n);
+                assert.equal(await rocketNodeManager.getExpressTicketsProvisioned(node.address), true);
             });
 
             it(printTitle('node', 'can exit a staking minipool'), async () => {
