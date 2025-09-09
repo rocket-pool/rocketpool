@@ -4,6 +4,7 @@ import { endSnapShot, startSnapShot } from '../test/_utils/snapshotting';
 import minipoolTests from './tests/minipool-tests';
 import stakingTests from './tests/staking-tests';
 import miscTests from './tests/misc-tests';
+import rewardsTests from './tests/rewards-tests';
 
 injectBNHelpers();
 beforeEach(startSnapShot);
@@ -12,3 +13,4 @@ afterEach(endSnapShot);
 minipoolTests()
 stakingTests()
 miscTests()
+rewardsTests()

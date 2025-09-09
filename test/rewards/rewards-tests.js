@@ -51,6 +51,7 @@ export default function() {
             unregisteredNodeTrusted1,
             unregisteredNodeTrusted2,
             node1WithdrawalAddress,
+            node1RplWithdrawalAddress,
             random;
 
         // Constants
@@ -120,6 +121,7 @@ export default function() {
                 unregisteredNodeTrusted1,
                 unregisteredNodeTrusted2,
                 node1WithdrawalAddress,
+                node1RplWithdrawalAddress,
                 random,
             ] = await ethers.getSigners();
 
@@ -347,6 +349,46 @@ export default function() {
             await submitRewards(0, rewards, '0'.ether, '0'.ether, '0'.ether, { from: registeredNodeTrusted2 });
 
             // Claim RPL
+            await claimRewards(registeredNode1.address, [0], [rewards], {
+                from: node1WithdrawalAddress,
+            });
+        });
+
+        it(printTitle('node', 'can claim voter ETH to RPL withdrawal address'), async () => {
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartTime = await rplInflationSetup();
+            await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
+
+            // Move to inflation start plus one claim interval
+            let currentTime = BigInt(await helpers.time.latest());
+            assertBN.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
+            await helpers.time.increase(rplInflationStartTime - currentTime + claimIntervalTime);
+
+            // Send ETH to rewards pool
+            const rocketSmoothingPool = await RocketSmoothingPool.deployed();
+            await owner.sendTransaction({
+                to: rocketSmoothingPool.target,
+                value: '20'.ether,
+            });
+
+            // Set node's RPL withdrawal address
+            await setNodeRPLWithdrawalAddress(registeredNode1, node1RplWithdrawalAddress, { from: node1WithdrawalAddress });
+
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1.address,
+                    network: 0,
+                    trustedNodeRPL: '0'.ether,
+                    nodeRPL: '0'.ether,
+                    nodeETH: '1'.ether,
+                    voterETH: '2'.ether,
+                },
+            ];
+            await submitRewards(0, rewards, '0'.ether, '0'.ether, '0'.ether, { from: registeredNodeTrusted1 });
+            await submitRewards(0, rewards, '0'.ether, '0'.ether, '0'.ether, { from: registeredNodeTrusted2 });
+
+            // Claim
             await claimRewards(registeredNode1.address, [0], [rewards], {
                 from: node1WithdrawalAddress,
             });

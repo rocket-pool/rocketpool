@@ -179,6 +179,7 @@ export async function deployUpgrade(rocketStorageAddress) {
                         compressABI(networkContracts.rocketMinipoolBondReducer.abi),
                         compressABI(networkContracts.rocketMinipoolManager.abi),
                         compressABI(networkContracts.rocketNetworkVoting.abi),
+                        compressABI(networkContracts.rocketMerkleDistributorMainnet.abi),
                         compressABI(networkContracts.rocketMegapoolPenalties.abi),
                     ],
                 ];

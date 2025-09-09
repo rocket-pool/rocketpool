@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.30;
 
-import "../RocketBase.sol";
-import "../../interface/token/RocketTokenRPLInterface.sol";
-import "../../interface/RocketVaultInterface.sol";
-import "../../interface/node/RocketNodeStakingInterface.sol";
-import "../../interface/rewards/RocketRewardsRelayInterface.sol";
-import "../../interface/rewards/RocketSmoothingPoolInterface.sol";
-import "../../interface/RocketVaultWithdrawerInterface.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
-import "../../interface/rewards/RocketMerkleDistributorMainnetInterface.sol";
-
-import "@openzeppelin4/contracts/utils/cryptography/MerkleProof.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
+import {RocketVaultInterface} from "../../interface/RocketVaultInterface.sol";
+import {RocketVaultWithdrawerInterface} from "../../interface/RocketVaultWithdrawerInterface.sol";
+import {RocketNodeManagerInterface} from "../../interface/node/RocketNodeManagerInterface.sol";
+import {RocketNodeStakingInterface} from "../../interface/node/RocketNodeStakingInterface.sol";
+import {RocketMerkleDistributorMainnetInterface} from "../../interface/rewards/RocketMerkleDistributorMainnetInterface.sol";
+import {Claim} from "../../interface/rewards/RocketRewardsRelayInterface.sol";
+import {RocketTokenRPLInterface} from "../../interface/token/RocketTokenRPLInterface.sol";
+import {IERC20} from "../../interface/util/IERC20.sol";
+import {RocketBase} from "../RocketBase.sol";
+import {MerkleProof} from "@openzeppelin4/contracts/utils/cryptography/MerkleProof.sol";
 
 /// @dev On mainnet, the relay and the distributor are the same contract as there is no need for an intermediate contract to
 ///      handle cross-chain messaging.
@@ -38,7 +38,7 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketMerkleDistributorMa
         rocketTokenRPLKey = keccak256(abi.encodePacked("contract.address", "rocketTokenRPL"));
     }
 
-    /// @notice Used following an upgrade or new deployment to initialise the delegate list
+    /// @notice Used following an upgrade or new deployment to initialise the relay
     function initialise() external override {
         // On new deploy, allow guardian to initialise, otherwise, only a network contract
         if (rocketStorage.getDeployedStatus()) {
@@ -51,10 +51,14 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketMerkleDistributorMa
     }
 
     /// @notice Called by RocketRewardsPool to include a snapshot into this distributor
-    function relayRewards(uint256 _rewardIndex, bytes32 _root, uint256 _rewardsRPL, uint256 _rewardsETH) external override onlyLatestContract("rocketMerkleDistributorMainnet", address(this)) onlyLatestContract("rocketRewardsPool", msg.sender) {
+    function relayRewards(uint256 _rewardIndex, uint256 _treeVersion, bytes32 _root, uint256 _rewardsRPL, uint256 _rewardsETH) external override onlyLatestContract("rocketMerkleDistributorMainnet", address(this)) onlyLatestContract("rocketRewardsPool", msg.sender) {
+        // Store root
         bytes32 key = keccak256(abi.encodePacked('rewards.merkle.root', _rewardIndex));
         require(getBytes32(key) == bytes32(0));
         setBytes32(key, _root);
+        // Store tree version
+        bytes32 versionKey = keccak256(abi.encodePacked('rewards.interval.tree.version', _rewardIndex));
+        setUint(versionKey, _treeVersion);
         // Send the ETH and RPL to the vault
         RocketVaultInterface rocketVault = RocketVaultInterface(getAddress(rocketVaultKey));
         if (_rewardsETH > 0) {
@@ -224,10 +228,22 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketMerkleDistributorMa
 
     /// @notice Verifies that the given proof is valid
     function _verifyProof(address _nodeAddress, Claim calldata _claim) internal view returns (bool) {
-        bytes32 node = keccak256(abi.encodePacked(_nodeAddress, network, _claim.amountRPL, _claim.amountSmoothingPoolETH, _claim.amountVoterETH));
-        bytes32 key = keccak256(abi.encodePacked('rewards.merkle.root', _claim.rewardIndex));
-        bytes32 merkleRoot = getBytes32(key);
-        return MerkleProof.verify(_claim.merkleProof, merkleRoot, node);
+        bytes32 versionKey = keccak256(abi.encodePacked('rewards.interval.tree.version', _claim.rewardIndex));
+        uint256 version = getUint(versionKey);
+        if (version == 0) {
+            // v0 did not include `amountVoterETH`, so ensure the value supplied is 0
+            require(_claim.amountVoterETH == 0, "Invalid claim");
+            bytes32 node = keccak256(abi.encodePacked(_nodeAddress, network, _claim.amountRPL, _claim.amountSmoothingPoolETH));
+            bytes32 key = keccak256(abi.encodePacked('rewards.merkle.root', _claim.rewardIndex));
+            bytes32 merkleRoot = getBytes32(key);
+            return MerkleProof.verify(_claim.merkleProof, merkleRoot, node);
+        } else if(version == 1) {
+            bytes32 node = keccak256(abi.encodePacked(_nodeAddress, network, _claim.amountRPL, _claim.amountSmoothingPoolETH, _claim.amountVoterETH));
+            bytes32 key = keccak256(abi.encodePacked('rewards.merkle.root', _claim.rewardIndex));
+            bytes32 merkleRoot = getBytes32(key);
+            return MerkleProof.verify(_claim.merkleProof, merkleRoot, node);
+        }
+        revert("Invalid version");
     }
 
     /// @notice Returns true if the given claimer has claimed for the given reward interval

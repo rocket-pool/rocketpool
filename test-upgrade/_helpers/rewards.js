@@ -1,19 +1,19 @@
 import {
     RocketClaimDAO,
-    RocketDAONodeTrusted,
+    RocketDAONodeTrusted, RocketMerkleDistributorMainnet, RocketNodeManager,
     RocketRewardsPool, RocketSmoothingPool,
     RocketTokenRETH,
     RocketTokenRPL, RocketVault,
-} from '../_utils/artifacts';
-import { parseRewardsMap } from '../_utils/merkle-tree';
-import { assertBN } from '../_helpers/bn';
+} from '../../test/_utils/artifacts';
+import { parseRewardsMap } from './merkle-tree';
+import { assertBN } from '../../test/_helpers/bn';
 import * as assert from 'assert';
 
 const hre = require('hardhat');
 const ethers = hre.ethers;
 
 // Submit rewards
-export async function submitRewards(index, rewards, treasuryRPL, userETH, treasuryETH, txOptions) {
+export async function submitV0Rewards(index, rewards, treasuryRPL, userETH, txOptions) {
     // Load contracts
     const [
         rocketDAONodeTrusted,
@@ -21,16 +21,12 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, treasu
         rocketTokenRETH,
         rocketTokenRPL,
         rocketClaimDAO,
-        rocketVault,
-        rocketSmoothingPool,
     ] = await Promise.all([
         RocketDAONodeTrusted.deployed(),
         RocketRewardsPool.deployed(),
         RocketTokenRETH.deployed(),
         RocketTokenRPL.deployed(),
         RocketClaimDAO.deployed(),
-        RocketVault.deployed(),
-        RocketSmoothingPool.deployed(),
     ]);
 
     // Get parameters
@@ -54,41 +50,31 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, treasu
     for (let i = 0; i < rewards.length; i++) {
         trustedNodeRPL[rewards[i].network] = trustedNodeRPL[rewards[i].network] + rewards[i].trustedNodeRPL;
         nodeRPL[rewards[i].network] = nodeRPL[rewards[i].network] + rewards[i].nodeRPL;
-        nodeETH[rewards[i].network] = nodeETH[rewards[i].network] + rewards[i].nodeETH + rewards[i].voterETH;
+        nodeETH[rewards[i].network] = nodeETH[rewards[i].network] + rewards[i].nodeETH;
     }
 
-    const totalETHRequired = userETH + treasuryETH + nodeETH.reduce((a,b) => a + b, 0n);
-    const smoothingPoolTotal = await ethers.provider.getBalance(rocketSmoothingPool.target)
-    const rewardsPoolTotal = await rocketVault.balanceOf('rocketRewardsPool')
-
-    if (totalETHRequired > smoothingPoolTotal + rewardsPoolTotal) {
-        throw new Error('Not enough ETH in smoothing pool and rewards pool for rewards')
-    }
-
-    let smoothingPoolETH = 0
-
-    if (totalETHRequired > rewardsPoolTotal) {
-        smoothingPoolETH = totalETHRequired - rewardsPoolTotal
-    }
+    // // web3 doesn't like an array of BigNumbers, have to convert to dec string
+    // for (let i = 0; i <= maxNetwork; i++) {
+    //     trustedNodeRPL[i] = trustedNodeRPL[i].toString();
+    //     nodeRPL[i] = nodeRPL[i].toString();
+    //     nodeETH[i] = nodeETH[i].toString();
+    // }
 
     const root = treeData.proof.merkleRoot;
+    const cid = '0';
 
     const submission = {
         rewardIndex: index,
-        executionBlock: 0n,
-        consensusBlock: 0n,
+        executionBlock: '0',
+        consensusBlock: '0',
         merkleRoot: root,
-        intervalsPassed: 1n,
-        smoothingPoolETH,
-
+        merkleTreeCID: cid,
+        intervalsPassed: '1',
         treasuryRPL: treasuryRPL,
-        treasuryETH: treasuryETH,
-
-        userETH: userETH,
-
         trustedNodeRPL: trustedNodeRPL,
         nodeRPL: nodeRPL,
         nodeETH: nodeETH,
+        userETH: userETH,
     };
 
     // Get submission details
@@ -102,48 +88,44 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, treasu
         );
     }
 
-    async function getData() {
-        let [submission, rewardIndex, treasuryRpl, treasuryEth, rethBalance, rewardsPoolBalance] = await Promise.all([
-            getSubmissionDetails(),
-            rocketRewardsPool.getRewardIndex(),
-            rocketTokenRPL.balanceOf(rocketClaimDAO.target),
-            rocketVault.balanceOf('rocketClaimDAO'),
-            ethers.provider.getBalance(rocketTokenRETH.target),
-            ethers.provider.getBalance(rocketRewardsPool.target),
-        ]);
-        return {submission, rewardIndex, treasuryRpl, treasuryEth, rethBalance, rewardsPoolBalance};
-    }
-
     // Get initial submission details
-    const data1 = await getData()
+    let [submission1, rewardIndex1, treasuryRpl1, rethBalance1] = await Promise.all([
+        getSubmissionDetails(),
+        rocketRewardsPool.getRewardIndex(),
+        rocketTokenRPL.balanceOf(rocketClaimDAO.target),
+        ethers.provider.getBalance(rocketTokenRETH.target),
+    ]);
 
-    let alreadyExecuted = submission.rewardIndex !== Number(data1.rewardIndex);
+    let alreadyExecuted = submission.rewardIndex !== Number(rewardIndex1);
     // Submit prices
     await rocketRewardsPool.connect(txOptions.from).submitRewardSnapshot(submission, txOptions);
     const actualExecutionBlock = await ethers.provider.getBlockNumber();
     assert.equal(await rocketRewardsPool.getSubmissionFromNodeExists(txOptions.from.address, submission), true);
 
     // Get updated submission details & prices
-    const data2 = await getData()
+    let [submission2, rewardIndex2, treasuryRpl2, rethBalance2] = await Promise.all([
+        getSubmissionDetails(),
+        rocketRewardsPool.getRewardIndex(),
+        rocketTokenRPL.balanceOf(rocketClaimDAO.target),
+        ethers.provider.getBalance(rocketTokenRETH.target),
+    ]);
 
     // Check if prices should be updated and were not updated yet
-    let expectedExecute = (data2.submission.count * 2n) > trustedNodeCount && !alreadyExecuted;
+    let expectedExecute = (submission2.count * 2n) > trustedNodeCount && !alreadyExecuted;
     // Check submission details
-    assert.equal(data1.submission.nodeSubmitted, false, 'Incorrect initial node submitted status');
-    assert.equal(data2.submission.nodeSubmitted, true, 'Incorrect updated node submitted status');
-    assertBN.equal(data2.submission.count, data1.submission.count + 1n, 'Incorrect updated submission count');
+    assert.equal(submission1.nodeSubmitted, false, 'Incorrect initial node submitted status');
+    assert.equal(submission2.nodeSubmitted, true, 'Incorrect updated node submitted status');
+    assertBN.equal(submission2.count, submission1.count + 1n, 'Incorrect updated submission count');
 
     // Calculate changes in user ETH and treasury RPL
-    let userETHChange = data2.rethBalance - data1.rethBalance;
-    let treasuryRPLChange = data2.treasuryRpl - data1.treasuryRpl;
-    let treasuryEthChange = data2.treasuryEth - data1.treasuryEth;
+    let userETHChange = rethBalance2 - rethBalance1;
+    let treasuryRPLChange = treasuryRpl2 - treasuryRpl1;
 
     // Check reward index and user balances
     if (expectedExecute) {
-        assertBN.equal(data2.rewardIndex, data1.rewardIndex+ 1n, 'Incorrect updated network prices block');
+        assertBN.equal(rewardIndex2, rewardIndex1 + 1n, 'Incorrect updated network prices block');
         assertBN.equal(userETHChange, userETH, 'User ETH balance not correct');
         assertBN.equal(treasuryRPLChange, treasuryRPL, 'Treasury RPL balance not correct');
-        assertBN.equal(treasuryEthChange, treasuryETH, 'Treasury ETH balance not correct');
 
         // Check block and address
         const executionBlock = await rocketRewardsPool.getClaimIntervalExecutionBlock(index);
@@ -151,14 +133,10 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, treasu
         assert.equal(executionBlock, actualExecutionBlock);
         assert.equal(executionAddress, rocketRewardsPool.target);
     } else {
-        assertBN.equal(data2.rewardIndex, data1.rewardIndex, 'Incorrect updated network prices block');
-        assertBN.equal(data1.rethBalance, data2.rethBalance, 'User ETH balance changed');
-        assertBN.equal(data1.treasuryRpl, data2.treasuryRpl, 'Treasury RPL balance changed');
-        assertBN.equal(data1.treasuryEth, data2.treasuryEth, 'Treasury ETH balance changed');
+        assertBN.equal(rewardIndex2, rewardIndex1, 'Incorrect updated network prices block');
+        assertBN.equal(rethBalance1, rethBalance2, 'User ETH balance changed');
+        assertBN.equal(treasuryRpl1, treasuryRpl2, 'Treasury RPL balance changed');
     }
-
-    // No left over ETH in the rewards pool
-    assertBN.equal(data2.rewardsPoolBalance, 0n, 'ETH was left in the rewards pool');
 }
 
 // Execute a reward period that already has consensus
@@ -199,24 +177,20 @@ export async function executeRewards(index, rewards, treasuryRPL, userETH, txOpt
     // }
 
     const root = treeData.proof.merkleRoot;
-    const treasuryETH = '0'.ether
+    const cid = '0';
 
     const submission = {
         rewardIndex: index,
-        executionBlock: 0n,
-        consensusBlock: 0n,
+        executionBlock: 0,
+        consensusBlock: 0,
         merkleRoot: root,
-        intervalsPassed: 1n,
-        smoothingPoolETH: userETH + treasuryETH + nodeETH.reduce((a,b) => a + b, 0n),
-
+        merkleTreeCID: cid,
+        intervalsPassed: 1,
         treasuryRPL: treasuryRPL,
-        treasuryETH: treasuryETH,
-
-        userETH: userETH,
-
         trustedNodeRPL: trustedNodeRPL,
         nodeRPL: nodeRPL,
         nodeETH: nodeETH,
+        userETH: userETH,
     };
 
     // Submit prices
@@ -226,4 +200,83 @@ export async function executeRewards(index, rewards, treasuryRPL, userETH, txOpt
 
     // Check index incremented
     assertBN.equal(rewardIndex2, rewardIndex1 + 1n, 'Incorrect updated network prices block');
+}
+
+// Submit network prices
+export async function claimV0Rewards(nodeAddress, indices, rewards, txOptions) {
+
+    // Load contracts
+    const [
+        rocketRewardsPool,
+        rocketNodeManager,
+        rocketMerkleDistributorMainnet,
+        rocketTokenRPL,
+    ] = await Promise.all([
+        RocketRewardsPool.deployed(),
+        RocketNodeManager.deployed(),
+        RocketMerkleDistributorMainnet.deployed(),
+        RocketTokenRPL.deployed(),
+    ]);
+
+    // Get node withdrawal address
+    let nodeWithdrawalAddress = await rocketNodeManager.getNodeWithdrawalAddress(nodeAddress);
+
+    // Get balances
+    function getBalances() {
+        return Promise.all([
+            rocketRewardsPool.getClaimIntervalTimeStart(),
+            rocketTokenRPL.balanceOf(nodeWithdrawalAddress),
+            ethers.provider.getBalance(nodeWithdrawalAddress),
+        ]).then(
+            ([claimIntervalTimeStart, nodeRpl, nodeEth]) =>
+                ({ claimIntervalTimeStart, nodeRpl, nodeEth }),
+        );
+    }
+
+    let [balances1] = await Promise.all([
+        getBalances(),
+    ]);
+
+    // Construct claim arguments
+    let claimer = nodeAddress;
+    let totalAmountRPL = 0n;
+    let totalAmountETH = 0n;
+
+    let claims = []
+
+    for (let i = 0; i < indices.length; i++) {
+        let treeData = parseRewardsMap(rewards[i]);
+
+        let proof = treeData.proof.claims[ethers.getAddress(claimer)];
+
+        if (!proof) {
+            throw new Error('No proof in merkle tree for ' + claimer)
+        }
+
+        claims.push({
+            rewardIndex: indices[i],
+            amountRPL: proof.amountRPL,
+            amountSmoothingPoolETH: proof.amountETH,
+            amountVoterETH: 0n,
+            merkleProof: proof.proof
+        })
+
+        totalAmountRPL = totalAmountRPL + proof.amountRPL;
+        totalAmountETH = totalAmountETH + proof.amountETH;
+    }
+
+    const tx = await rocketMerkleDistributorMainnet.connect(txOptions.from).claim(nodeAddress, claims, txOptions);
+    let gasUsed = 0n;
+
+    if (ethers.getAddress(nodeWithdrawalAddress) === ethers.getAddress(txOptions.from.address)) {
+        const txReceipt = await tx.wait();
+        gasUsed = BigInt(txReceipt.gasUsed * txReceipt.gasPrice);
+    }
+
+    let [balances2] = await Promise.all([
+        getBalances(),
+    ]);
+
+    assertBN.equal(balances2.nodeRpl - balances1.nodeRpl, totalAmountRPL, 'Incorrect updated node RPL balance');
+    assertBN.equal(balances2.nodeEth - balances1.nodeEth + gasUsed, totalAmountETH, 'Incorrect updated node ETH balance');
 }

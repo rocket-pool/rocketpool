@@ -28,6 +28,7 @@ export async function claimRewards(nodeAddress, indices, rewards, txOptions) {
 
     // Get node withdrawal address
     let nodeWithdrawalAddress = await rocketNodeManager.getNodeWithdrawalAddress(nodeAddress);
+    let nodeRPLWithdrawalAddress = await rocketNodeManager.getNodeRPLWithdrawalAddress(nodeAddress);
 
     // Get balances
     function getBalances() {
@@ -35,9 +36,10 @@ export async function claimRewards(nodeAddress, indices, rewards, txOptions) {
             rocketRewardsPool.getClaimIntervalTimeStart(),
             rocketTokenRPL.balanceOf(nodeWithdrawalAddress),
             ethers.provider.getBalance(nodeWithdrawalAddress),
+            ethers.provider.getBalance(nodeRPLWithdrawalAddress),
         ]).then(
-            ([claimIntervalTimeStart, nodeRpl, nodeEth]) =>
-                ({ claimIntervalTimeStart, nodeRpl, nodeEth }),
+            ([claimIntervalTimeStart, nodeRpl, nodeEth, nodeRplEth]) =>
+                ({ claimIntervalTimeStart, nodeRpl, nodeEth, nodeRplEth }),
         );
     }
 
@@ -49,6 +51,7 @@ export async function claimRewards(nodeAddress, indices, rewards, txOptions) {
     let claimer = nodeAddress;
     let totalAmountRPL = 0n;
     let totalAmountETH = 0n;
+    let totalAmountVoterETH = 0n;
 
     let claims = []
 
@@ -70,7 +73,8 @@ export async function claimRewards(nodeAddress, indices, rewards, txOptions) {
         })
 
         totalAmountRPL = totalAmountRPL + proof.amountRPL;
-        totalAmountETH = totalAmountETH + proof.amountSmoothingPoolETH + proof.amountVoterETH;
+        totalAmountETH = totalAmountETH + proof.amountSmoothingPoolETH;
+        totalAmountVoterETH = totalAmountVoterETH + proof.amountVoterETH;
     }
 
     const tx = await rocketMerkleDistributorMainnet.connect(txOptions.from).claim(nodeAddress, claims, txOptions);
@@ -86,5 +90,11 @@ export async function claimRewards(nodeAddress, indices, rewards, txOptions) {
     ]);
 
     assertBN.equal(balances2.nodeRpl - balances1.nodeRpl, totalAmountRPL, 'Incorrect updated node RPL balance');
-    assertBN.equal(balances2.nodeEth - balances1.nodeEth + gasUsed, totalAmountETH, 'Incorrect updated node ETH balance');
+
+    if (nodeRPLWithdrawalAddress === nodeWithdrawalAddress) {
+        assertBN.equal(balances2.nodeEth - balances1.nodeEth + gasUsed, totalAmountETH + totalAmountVoterETH, 'Incorrect updated node ETH balance');
+    } else {
+        assertBN.equal(balances2.nodeEth - balances1.nodeEth + gasUsed, totalAmountETH, 'Incorrect updated node ETH balance');
+        assertBN.equal(balances2.nodeRplEth - balances1.nodeRplEth, totalAmountVoterETH, 'Incorrect updated node voter ETH balance');
+    }
 }
