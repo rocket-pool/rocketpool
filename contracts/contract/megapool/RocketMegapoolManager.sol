@@ -70,7 +70,7 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
     /// @param _megapool Address of the megapool which the validator belongs to
     /// @param _validatorId Internal ID of the validator within the megapool
     /// @param _proof State proof of the validator
-    function stake(RocketMegapoolInterface _megapool, uint32 _validatorId, ValidatorProof calldata _proof) override external {
+    function stake(RocketMegapoolInterface _megapool, uint32 _validatorId, ValidatorProof calldata _proof) override external onlyRegisteredMegapool(address(_megapool)) {
         // Verify state proof
         BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
         require(beaconStateVerifier.verifyValidator(_proof), "Invalid proof");
@@ -88,7 +88,7 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
     /// @param _megapool Address of the megapool which the validator belongs to
     /// @param _validatorId Internal ID of the validator within the megapool
     /// @param _proof State proof of the validator
-    function dissolve(RocketMegapoolInterface _megapool, uint32 _validatorId, ValidatorProof calldata _proof) override external {
+    function dissolve(RocketMegapoolInterface _megapool, uint32 _validatorId, ValidatorProof calldata _proof) override external onlyRegisteredMegapool(address(_megapool)) {
         // Verify state proof
         BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
         require(beaconStateVerifier.verifyValidator(_proof), "Invalid proof");
@@ -106,7 +106,7 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
     /// @param _megapool Address of the megapool which the validator belongs to
     /// @param _validatorId Internal ID of the validator within the megapool
     /// @param _proof State proof of the validator
-    function notifyExit(RocketMegapoolInterface _megapool, uint32 _validatorId, ValidatorProof calldata _proof) override external {
+    function notifyExit(RocketMegapoolInterface _megapool, uint32 _validatorId, ValidatorProof calldata _proof) override external onlyRegisteredMegapool(address(_megapool)) {
         // Verify state proof
         BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
         require(beaconStateVerifier.verifyValidator(_proof), "Invalid proof");
@@ -123,7 +123,7 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
     /// @param _megapool Address of the megapool which the validator belongs to
     /// @param _validatorId Internal ID of the validator within the megapool
     /// @param _proof State proof of the validator
-    function notifyNotExit(RocketMegapoolInterface _megapool, uint32 _validatorId, ValidatorProof calldata _proof) override external {
+    function notifyNotExit(RocketMegapoolInterface _megapool, uint32 _validatorId, ValidatorProof calldata _proof) override external onlyRegisteredMegapool(address(_megapool)) {
         // Verify state proof
         BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
         require(beaconStateVerifier.verifyValidator(_proof), "Invalid proof");
@@ -148,6 +148,7 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         uint256 totalChallenges = 0;
         for (uint256 i = 0; i < _challenges.length; ++i) {
             for (uint256 j = 0; j < _challenges[i].validatorIds.length; ++j) {
+                require(getBool(keccak256(abi.encodePacked("megapool.exists", address(_challenges[i].megapool)))), "Invalid megapool");
                 _challenges[i].megapool.challengeExit(_challenges[i].validatorIds[j]);
                 totalChallenges += 1;
             }
@@ -160,7 +161,7 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
     /// @param _megapool Address of the megapool which the validator belongs to
     /// @param _validatorId Internal ID of the validator within the megapool
     /// @param _proof State proof of the withdrawal
-    function notifyFinalBalance(RocketMegapoolInterface _megapool, uint32 _validatorId, WithdrawalProof calldata _proof) override external {
+    function notifyFinalBalance(RocketMegapoolInterface _megapool, uint32 _validatorId, WithdrawalProof calldata _proof) override external onlyRegisteredMegapool(address(_megapool)) {
         // Verify state proof
         BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
         require(beaconStateVerifier.verifyWithdrawal(_proof), "Invalid proof");
