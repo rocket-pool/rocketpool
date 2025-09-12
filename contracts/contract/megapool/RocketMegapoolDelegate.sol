@@ -38,7 +38,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     event MegapoolDebtIncreased(uint256 amount, uint256 time);
     event MegapoolDebtReduced(uint256 amount, uint256 time);
     event MegapoolBondReduced(uint256 amount, uint256 time);
-    event RewardsDistributed(uint256 nodeAmount, uint256 voterAmount, uint256 rethAmount, uint256 time);
+    event RewardsDistributed(uint256 nodeAmount, uint256 voterAmount, uint256 rethAmount, uint256 protocolDaoAmount, uint256 time);
     event RewardsClaimed(uint256 amount, uint256 time);
 
     // Immutables
@@ -462,7 +462,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         // Increase node rewards value
         refundValue += nodeAmount;
         // Emit event
-        emit RewardsDistributed(nodeAmount, voterAmount, rethAmount, block.timestamp);
+        emit RewardsDistributed(nodeAmount, voterAmount, rethAmount, protocolDAOAmount, block.timestamp);
     }
 
     /// @notice Claims any distributed but unclaimed rewards
@@ -501,7 +501,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     }
 
     /// @notice Calculates the split of rewards for a given amount of ETH
-    /// @param _amount Amount of rewards in gwei to calculate the split of
+    /// @param _amount Amount of rewards in wei to calculate the split of
     function calculateRewards(uint256 _amount) public view returns (uint256 nodeRewards, uint256 voterRewards, uint256 protocolDAORewards, uint256 rethRewards) {
         // Early out for edge cases
         if (_amount == 0) return (0, 0, 0, 0);
@@ -551,7 +551,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         // Check required state
         require(validator.locked, "Validator not locked");
         require(_slot >= validator.lockedSlot, "Proof is older than challenge");
-        // Update validator state to exiting/locked
+        // Update validator state to unlocked
         validator.locked = false;
         // Decrement locked validator counter
         numLockedValidators -= 1;
