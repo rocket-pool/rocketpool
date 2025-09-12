@@ -26,13 +26,13 @@ library SSZ {
     }
 
     /// @dev Constructs a Path into a list field
-    function intoList(uint256 _index, uint8 _log2Length) internal pure returns (Path memory) {
+    function intoList(uint248 _index, uint8 _log2Length) internal pure returns (Path memory) {
         require(_index < 2 ** _log2Length, "Index exceeds length");
         return Path((uint256(_index) << 8) | uint256(_log2Length + 1));
     }
 
     /// @dev Constructs a Path into a vector field
-    function intoVector(uint256 _index, uint8 _log2Length) internal pure returns (Path memory) {
+    function intoVector(uint248 _index, uint8 _log2Length) internal pure returns (Path memory) {
         require(_index < 2 ** _log2Length, "Index exceeds length");
         return Path((uint256(_index) << 8) | uint256(_log2Length));
     }
@@ -43,7 +43,7 @@ library SSZ {
         uint8 lenB = uint8(_right._data);
         unchecked {
             // Prevent overflow of length into path
-            require(uint256(lenA) + uint256(lenB) <= type(uint8).max, "Path too long");
+            require(lenA + lenB <= 248, "Path too long");
             _left._data = (_left._data - lenA) << lenB;
             _left._data += _right._data + lenA;
         }

@@ -136,12 +136,12 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         SSZ.Path memory path;
         if (isHistorical) {
             path = SSZ.concat(path, SSZ.from(27, 6)); // 0b001011 (BeaconState -> historical_summaries)
-            path = SSZ.concat(path, SSZ.intoList(uint256(_pastSlot) / slotsPerHistoricalRoot - historicalSummaryOffset, 24)); // historical_summaries -> historical_summaries[n]
+            path = SSZ.concat(path, SSZ.intoList(uint248(uint256(_pastSlot) / slotsPerHistoricalRoot - historicalSummaryOffset), 24)); // historical_summaries -> historical_summaries[n]
             path = SSZ.concat(path, SSZ.from(0, 1)); // 0b0 (HistoricalSummary -> block_summary_root)
         } else {
             path = SSZ.concat(path, SSZ.from(5, 6)); // 0b000101 (BeaconState -> block_roots)
         }
-        path = SSZ.concat(path, SSZ.intoVector(uint256(_pastSlot) % slotsPerHistoricalRoot, 13)); // block_roots -> block_roots[n]
+        path = SSZ.concat(path, SSZ.intoVector(uint248(_pastSlot % slotsPerHistoricalRoot), 13)); // block_roots -> block_roots[n]
         return path;
     }
 
