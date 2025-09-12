@@ -66,7 +66,6 @@ abstract contract RocketMegapoolStorageLayout {
 
     uint256 internal assignedValue;   // ETH assigned from DP pending prestake/stake
     uint256 internal refundValue;     // ETH refunded to the owner after a dissolution
-    uint256 internal nodeRewards;     // Unclaimed ETH rewards for the owner
 
     uint256 internal nodeBond;              // Value of node ETH bond (including value yet to be assigned/deposited)
     uint256 internal userCapital;           // Value of user supplied capital (including value yet to be assigned/deposited)
@@ -84,8 +83,6 @@ abstract contract RocketMegapoolStorageLayout {
     uint32 internal numLockedValidators;        // Number of validators currently locked
     uint32 internal numExitingValidators;       // Number of validators currently exiting
     uint64 internal soonestWithdrawableEpoch;   // The soonest epoch which a validator will become withdrawable
-
-    mapping(uint256 => uint256) internal penalties;
 
     uint256 internal __version1Boundary;        // Unused full slot width boundary
 }
