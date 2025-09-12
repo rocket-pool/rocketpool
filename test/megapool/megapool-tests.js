@@ -6,23 +6,28 @@ import { userDeposit } from '../_helpers/deposit';
 import {
     calculatePositionInQueue,
     deployMegapool,
-    getMegapoolForNode, getMegapoolWithdrawalCredentials,
+    getMegapoolForNode,
+    getMegapoolWithdrawalCredentials,
     getValidatorInfo,
-    nodeDeposit, nodeDepositMulti,
+    nodeDeposit,
+    nodeDepositMulti,
 } from '../_helpers/megapool';
 import { shouldRevert } from '../_utils/testing';
 import {
     BeaconStateVerifier,
     MegapoolUpgradeHelper,
     RocketDAOProtocolSettingsDeposit,
-    RocketDAOProtocolSettingsMegapool, RocketDAOProtocolSettingsNetwork,
+    RocketDAOProtocolSettingsMegapool,
+    RocketDAOProtocolSettingsNetwork,
     RocketDAOProtocolSettingsNode,
     RocketDepositPool,
     RocketMegapoolDelegate,
     RocketMegapoolFactory,
     RocketMegapoolManager,
     RocketNodeDeposit,
-    RocketStorage, RocketTokenRETH, RocketVault,
+    RocketStorage,
+    RocketTokenRETH,
+    RocketVault,
 } from '../_utils/artifacts';
 import assert from 'assert';
 import { stakeMegapoolValidator } from './scenario-stake';
@@ -164,18 +169,18 @@ export default function() {
                     bondAmount: '4'.ether,
                     useExpressTicket: false,
                 },
-            ]
+            ];
 
             await nodeDepositMulti(node, deposits);
         });
 
         it(printTitle('node', 'can not perform multi deposit with no deposits'), async () => {
             await deployMegapool({ from: node });
-            const deposits = []
+            const deposits = [];
             await shouldRevert(
                 nodeDepositMulti(node, deposits),
                 'Was able to multi deposit with no deposits',
-                'Must perform at least 1 deposit'
+                'Must perform at least 1 deposit',
             );
         });
 
@@ -191,7 +196,7 @@ export default function() {
                     bondAmount: '4'.ether,
                     useExpressTicket: false,
                 },
-            ]
+            ];
 
             await nodeDepositMulti(node, deposits, '4'.ether);
         });
@@ -206,12 +211,12 @@ export default function() {
                     bondAmount: '4'.ether,
                     useExpressTicket: false,
                 },
-            ]
+            ];
 
             await shouldRevert(
                 nodeDepositMulti(node, deposits, '4'.ether),
                 'Was able to use more credit than exists',
-                'Insufficient credit'
+                'Insufficient credit',
             );
         });
 
@@ -227,7 +232,7 @@ export default function() {
                     bondAmount: '2'.ether,
                     useExpressTicket: false,
                 },
-            ]
+            ];
 
             await shouldRevert(
                 nodeDepositMulti(node, deposits),
@@ -256,7 +261,7 @@ export default function() {
                     bondAmount: '4'.ether,
                     useExpressTicket: false,
                 },
-            ]
+            ];
 
             await nodeDepositMulti(node, deposits);
         });
@@ -283,7 +288,7 @@ export default function() {
                     bondAmount: '2'.ether,
                     useExpressTicket: false,
                 },
-            ]
+            ];
 
             await nodeDepositMulti(node, deposits);
         });
@@ -335,8 +340,8 @@ export default function() {
             await shouldRevert(
                 rocketNodeDeposit.connect(node).deposit('4'.ether, false, depositData.pubkey, depositData.signature, depositDataRoot, { value: '4'.ether }),
                 'Was able to reuse existing pubkey',
-                'Pubkey in use'
-            )
+                'Pubkey in use',
+            );
         });
 
         it(printTitle('node', 'can deposit using ETH credit'), async () => {
@@ -361,7 +366,7 @@ export default function() {
                     bondAmount: '4'.ether,
                     useExpressTicket: false,
                 },
-            ]
+            ];
             await nodeDepositMulti(node, deposits, '4'.ether);
         });
 
@@ -607,17 +612,17 @@ export default function() {
             it(printTitle('random', 'can not challenge a megapool'), async () => {
                 await shouldRevert(
                     challengeValidator(megapool, [1n], random),
-                    "Was able to challenge",
-                    "Invalid trusted node",
-                )
+                    'Was able to challenge',
+                    'Invalid trusted node',
+                );
             });
 
             it(printTitle('node', 'can not challenge a megapool'), async () => {
                 await shouldRevert(
                     challengeValidator(megapool, [1n], node),
-                    "Was able to challenge",
-                    "Invalid trusted node",
-                )
+                    'Was able to challenge',
+                    'Invalid trusted node',
+                );
             });
 
             it(printTitle('trusted node', 'can not challenge twice in a row'), async () => {
@@ -797,9 +802,9 @@ export default function() {
             await shouldRevert(
                 reduceBond(megapool, '2'.ether),
                 'Was able to reduce bond',
-                'Cannot reduce bond with queued validators'
+                'Cannot reduce bond with queued validators',
             );
-        })
+        });
 
         snapshotDescribe('With overbonded megapool', () => {
             before(async () => {
@@ -1098,7 +1103,7 @@ export default function() {
 
                 it(printTitle('node', 'can distribute to pdao rewards'), async () => {
                     // Set pDAO share to 1%
-                    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, "network.pdao.share", '0.01'.ether, { from: owner });
+                    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.pdao.share', '0.01'.ether, { from: owner });
                     // Distribute some rewards to reset time-weighted calculations
                     await mockRewards(megapool, '1'.ether);
                     await megapool.distribute();
@@ -1328,14 +1333,14 @@ export default function() {
 
                 snapshotDescribe('With debt', () => {
                     async function getData() {
-                        const rocketTokenRETH = await RocketTokenRETH.deployed()
-                        const rocketVault = await RocketVault.deployed()
-                        const [ rethBalance, depositPoolBalance, debt, nodeBalance ] = await Promise.all([
+                        const rocketTokenRETH = await RocketTokenRETH.deployed();
+                        const rocketVault = await RocketVault.deployed();
+                        const [rethBalance, depositPoolBalance, debt, nodeBalance] = await Promise.all([
                             ethers.provider.getBalance(rocketTokenRETH.target),
                             rocketVault.balanceOf('rocketDepositPool'),
                             megapool.getDebt(),
                             ethers.provider.getBalance(nodeWithdrawalAddress),
-                        ])
+                        ]);
                         return { rethBalance, depositPoolBalance, debt, nodeBalance };
                     }
 
@@ -1350,13 +1355,13 @@ export default function() {
                         /*
                             Exit the validator with 5 ETH capital loss will result in a debt of 1 ETH
                          */
-                        await exitValidator(megapool, 0, '32'.ether - '5'.ether)
+                        await exitValidator(megapool, 0, '32'.ether - '5'.ether);
                         const nodeDebt = await megapool.getDebt();
                         assertBN.equal(nodeDebt, '1'.ether);
                     });
 
                     it(printTitle('node', 'can manually pay down debt'), async () => {
-                        await repayDebt(megapool, '1'.ether)
+                        await repayDebt(megapool, '1'.ether);
                     });
 
                     it(printTitle('node', 'can use rewards to partially pay down debt'), async () => {
@@ -1371,7 +1376,7 @@ export default function() {
 
                     it(printTitle('node', 'will use exit balance to pay down debt'), async () => {
                         const data1 = await getData();
-                        await exitValidator(megapool, 1, '32'.ether)
+                        await exitValidator(megapool, 1, '32'.ether);
                         const data2 = await getData();
                         assertBN.equal(data2.nodeBalance - data1.nodeBalance, '3'.ether); // 3 ETH returned to node
                         assertBN.equal(data2.debt, 0n); // Debt cleared
@@ -1380,7 +1385,7 @@ export default function() {
 
                     it(printTitle('node', 'will increase debt further on slashed exit'), async () => {
                         const data1 = await getData();
-                        await exitValidator(megapool, 1, '27'.ether)
+                        await exitValidator(megapool, 1, '27'.ether);
                         const data2 = await getData();
                         assertBN.equal(data2.nodeBalance - data1.nodeBalance, '0'.ether); // No change
                         assertBN.equal(data2.debt - data1.debt, '1'.ether); // 1 ETH more debt added
@@ -1467,6 +1472,15 @@ export default function() {
                 await megapool.setUseLatestDelegate(false);
                 assert.equal(await megapool.getEffectiveDelegate(), newDelegate.target);
                 assert.equal(await megapool.getDelegate(), newDelegate.target);
+            });
+
+            it(printTitle('node', 'can not set use latest with current value'), async () => {
+                await megapool.setUseLatestDelegate(true);
+                await shouldRevert(
+                    megapool.setUseLatestDelegate(true),
+                    'Was able to set to current value',
+                    'Already set',
+                );
             });
         });
     });

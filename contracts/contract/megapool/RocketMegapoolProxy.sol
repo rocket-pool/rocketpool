@@ -100,7 +100,11 @@ contract RocketMegapoolProxy is RocketMegapoolProxyInterface, RocketMegapoolStor
     /// @notice Sets the flag to automatically use the latest delegate contract or not
     /// @param _state If true, will always use the latest delegate contract
     function setUseLatestDelegate(bool _state) external override onlyMegapoolOwner notSelf {
+        // Prevent modification if already set to desired state
+        require(useLatestDelegate != _state, "Already set");
+        // Update state
         useLatestDelegate = _state;
+        // Log event
         emit UseLatestUpdated(_state, block.timestamp);
         if (!_state) {
             // Upon disabling use latest, set their current delegate to the latest
