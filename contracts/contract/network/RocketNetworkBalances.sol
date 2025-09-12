@@ -87,6 +87,8 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         require(_block < block.number, "Balances can not be submitted for a future block");
         uint256 lastBalancesBlock = getBalancesBlock();
         require(_block >= lastBalancesBlock, "Network balances for a higher block are set");
+        // Check balances
+        require(_stakingEth <= _totalEth, "Invalid network balances");
         // Get submission keys
         bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("network.balances.submitted.node", msg.sender, _block, _slotTimestamp, _totalEth, _stakingEth, _rethSupply));
         bytes32 submissionCountKey = keccak256(abi.encodePacked("network.balances.submitted.count", _block, _slotTimestamp, _totalEth, _stakingEth, _rethSupply));
