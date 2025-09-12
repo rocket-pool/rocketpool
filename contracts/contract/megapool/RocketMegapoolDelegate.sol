@@ -248,6 +248,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         require(nodeBond + nodeQueuedBond >= newBondRequirement, "Bond requirement not met");
         // Update validator state
         validator.inQueue = false;
+        validator.expressUsed = false;
         validator.lastRequestedBond = 0;
         validator.lastRequestedValue = 0;
         validators[_validatorId] = validator;
@@ -371,6 +372,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         // Update validator info
         validator.inPrestake = false;
         validator.dissolved = true;
+        validator.lastAssignmentTime = 0;
         validators[_validatorId] = validator;
         // Decrease total bond used for bond requirement calculations
         uint256 recycleValue = uint256(validator.lastRequestedValue) * milliToWei;
