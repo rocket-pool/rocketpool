@@ -21,17 +21,20 @@ library SSZ {
 
     /// @dev Constructs a Path from a given gindex and length
     function from(uint248 _gindex, uint8 _length) internal pure returns (Path memory) {
+        require(_gindex < 2 ** _length, "Gindex exceeds length");
         return Path((uint256(_gindex) << 8) | uint256(_length));
     }
 
     /// @dev Constructs a Path into a list field
     function intoList(uint256 _index, uint8 _log2Length) internal pure returns (Path memory) {
+        require(_index < 2 ** _log2Length, "Index exceeds length");
         return Path((uint256(_index) << 8) | uint256(_log2Length + 1));
     }
 
     /// @dev Constructs a Path into a vector field
-    function intoVector(uint256 index, uint8 log2Len) internal pure returns (Path memory) {
-        return Path((uint256(index) << 8) | uint256(log2Len));
+    function intoVector(uint256 _index, uint8 _log2Length) internal pure returns (Path memory) {
+        require(_index < 2 ** _log2Length, "Index exceeds length");
+        return Path((uint256(_index) << 8) | uint256(_log2Length));
     }
 
     /// @dev Concatenates two Paths

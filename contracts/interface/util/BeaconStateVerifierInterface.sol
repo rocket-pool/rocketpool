@@ -11,7 +11,7 @@ pragma solidity >0.5.0 <0.9.0;
     struct WithdrawalProof {
         uint64 slot;
         uint64 withdrawalSlot;
-        uint64 withdrawalNum;
+        uint16 withdrawalNum;
         Withdrawal withdrawal;
         bytes32[] witnesses;
     }
@@ -29,7 +29,7 @@ pragma solidity >0.5.0 <0.9.0;
 
     struct ValidatorProof {
         uint64 slot;
-        uint64 validatorIndex;
+        uint40 validatorIndex;
         Validator validator;
         bytes32[] witnesses;
     }

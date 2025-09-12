@@ -124,7 +124,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
     }
 
     /// @dev Returns a partial gindex from a BeaconState -> validators[n]
-    function pathBeaconStateToValidator(uint256 _validatorIndex) internal view returns (SSZ.Path memory) {
+    function pathBeaconStateToValidator(uint40 _validatorIndex) internal view returns (SSZ.Path memory) {
         SSZ.Path memory path = SSZ.from(11, 6); // 0b001011 (BeaconState -> validators)
         path = SSZ.concat(path, SSZ.intoList(_validatorIndex, 40)); // validators -> validators[n]
         return path;
@@ -146,7 +146,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
     }
 
     /// @dev Returns a partial gindex from BeaconBlockHeader -> withdrwals[n]
-    function pathBlockToWithdrawal(uint256 _withdrawalNum) internal view returns (SSZ.Path memory) {
+    function pathBlockToWithdrawal(uint16 _withdrawalNum) internal view returns (SSZ.Path memory) {
         SSZ.Path memory path = SSZ.from(4, 3); // 0b100 (BeaconBlockHeader -> body_root)
         path = SSZ.concat(path, SSZ.from(9, 4)); // 0b1001 (BeaconBlockBody -> execution_payload)
         path = SSZ.concat(path, SSZ.from(14, 5)); // 0b01110 (ExecutionPayload -> withdrawals)
