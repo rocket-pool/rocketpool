@@ -614,7 +614,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
         uint256 expressQueueRate = rocketDAOProtocolSettingsDeposit.getExpressQueueRate();
 
-        bool express = queueIndex % (expressQueueRate + 1) != 0;
+        bool express = queueIndex % (expressQueueRate + 1) != expressQueueRate;
         if (express && expressQueueLength == 0) {
             express = false;
         }
