@@ -636,9 +636,9 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Retrieve the block at which the entry at the top of the queue got to that position
         uint256 packed = getUint(queueMovedKey);
         if (express) {
-            headMovedBlock = uint64(packed);
+            headMovedBlock = uint128(packed);
         } else {
-            headMovedBlock = uint64(packed >> 128);
+            headMovedBlock = uint128(packed >> 128);
         }
 
         return (head.receiver, assignmentPossible, headMovedBlock);
