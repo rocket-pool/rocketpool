@@ -375,6 +375,16 @@ export default function() {
             await shouldRevert(deployMegapool({ from: node }), 'Redeploy worked');
         });
 
+        it(printTitle('node', 'can not distribute before a validator is created'), async () => {
+            await deployMegapool({ from: node });
+            megapool = await getMegapoolForNode(node);
+            await shouldRevert(
+                megapool.distribute(),
+                "Was able to distribute",
+                "No first validator"
+            );
+        });
+
         it(printTitle('node', 'can exit the deposit queue and withdraw credit as rETH'), async () => {
             await deployMegapool({ from: node });
             await nodeDeposit(node);

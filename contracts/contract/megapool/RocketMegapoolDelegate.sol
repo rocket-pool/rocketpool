@@ -408,6 +408,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
 
     /// @notice Distributes any accrued staking rewards
     function distribute() override public {
+        // Prevent calls before a megapool's first validator has been staked
+        require(lastDistributionBlock != 0, "No first validator");
         // Calculate split of rewards
         uint256 rewards = getPendingRewards();
         if (rewards == 0) {
