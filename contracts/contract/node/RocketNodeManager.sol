@@ -524,7 +524,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface, RocketVaul
     /// @notice Add funds to a node's unclaimed balance
     /// @dev Used when a withdrawal address is unable to accept ETH rewards and allows node operator to claim them later
     /// @param _nodeAddress Address of the node operator to increase unclaimed rewards for
-    function addUnclaimedRewards(address _nodeAddress) external payable {
+    function addUnclaimedRewards(address _nodeAddress) external payable onlyRegisteredNode(_nodeAddress) {
         // Deposit funds into vault and increase balance
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         rocketVault.depositEther{value: msg.value}();
