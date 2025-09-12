@@ -253,7 +253,7 @@ export default function() {
             );
             // Submitting an decrease of 2.1% should revert
             await shouldRevert(
-                submitAll(3, '1600000001', '7.9'.ether, '9.1'.ether, '10'.ether),
+                submitAll(3, '1600000001', '7.9'.ether, '6.1'.ether, '10'.ether),
                 "Submitted change with greater than 2% delta",
                 "Change exceeds maximum"
             );
