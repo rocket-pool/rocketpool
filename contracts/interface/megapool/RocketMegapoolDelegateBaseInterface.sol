@@ -5,5 +5,5 @@ import "../../interface/RocketStorageInterface.sol";
 
 interface RocketMegapoolDelegateBaseInterface {
     function deprecate() external;
-    function getExpirationBlock() external view returns (uint256);
+    function getExpirationTime() external view returns (uint256);
 }

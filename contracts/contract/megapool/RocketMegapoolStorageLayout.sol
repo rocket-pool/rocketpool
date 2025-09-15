@@ -47,7 +47,7 @@ abstract contract RocketMegapoolStorageLayout {
     //
 
     bool internal storageState;           // Used to prevent direct calls to the delegate contract
-    uint256 internal expirationBlock;     // Used to store the expiry block of this delegate (0 meaning not expiring)
+    uint256 internal expirationTime;     // Used to store the expiry block of this delegate (0 meaning not expiring)
 
     //
     // Proxy state

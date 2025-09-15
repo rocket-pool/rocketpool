@@ -133,8 +133,8 @@ contract RocketMegapoolProxy is RocketMegapoolProxyInterface, RocketMegapoolStor
     /// @notice Returns true if the megapools current delegate has expired
     function getDelegateExpired() public view returns (bool) {
         RocketMegapoolDelegateBaseInterface megapoolDelegate = RocketMegapoolDelegateBaseInterface(rocketMegapoolDelegate);
-        uint256 expiry = megapoolDelegate.getExpirationBlock();
-        return expiry != 0 && block.number >= expiry;
+        uint256 expiry = megapoolDelegate.getExpirationTime();
+        return expiry != 0 && block.timestamp >= expiry;
     }
 
     /// @dev Get the address of a Rocket Pool network contract

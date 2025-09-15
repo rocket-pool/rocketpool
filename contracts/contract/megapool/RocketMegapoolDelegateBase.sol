@@ -10,7 +10,7 @@ import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol
 /// @dev All megapool delegate contracts must extend this base to include the expected deprecation functionality
 contract RocketMegapoolDelegateBase is RocketMegapoolStorageLayout, RocketMegapoolDelegateBaseInterface {
     // Constants
-    uint256 constant internal upgradeBuffer = 864000; // ~120 days
+    uint256 constant internal upgradeBuffer = 120 days;
 
     // Immutables
     RocketStorageInterface immutable internal rocketStorage;
@@ -27,12 +27,12 @@ contract RocketMegapoolDelegateBase is RocketMegapoolStorageLayout, RocketMegapo
     function deprecate() external override onlyLatestNetworkContract {
         // Expiry is only used on the delegate contract itself
         require(!storageState);
-        expirationBlock = block.number + upgradeBuffer;
+        expirationTime = block.timestamp + upgradeBuffer;
     }
 
-    /// @notice Returns the block at which this delegate expires (or 0 if not yet deprecated)
-    function getExpirationBlock() external override view returns (uint256) {
-        return expirationBlock;
+    /// @notice Returns the time at which this delegate expires (or 0 if not yet deprecated)
+    function getExpirationTime() external override view returns (uint256) {
+        return expirationTime;
     }
 
     //

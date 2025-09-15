@@ -1458,10 +1458,13 @@ export default function() {
                 const rocketMegapoolFactory = await RocketMegapoolFactory.deployed();
                 // Execute delegate upgrade via helper contract
                 await upgradeHelper.upgradeDelegate(newDelegate.target);
-                // Fast-forward until delegate expires
                 const oldDelegateExpiry = await rocketMegapoolFactory.getDelegateExpiry(oldDelegate.target);
-                await helpers.mineUpTo(oldDelegateExpiry + 1n);
-                // Try to call a function on the old delegate
+                // Fast-forward until just before delegate expires
+                await helpers.time.increaseTo(oldDelegateExpiry - 10n);
+                await megapool.connect(node).getValidatorCount();
+                // Fast-forward until after delegate expires
+                await helpers.time.increaseTo(oldDelegateExpiry + 10n);
+                // Fail to call a function on the old delegate
                 await shouldRevert(megapool.connect(node).getValidatorCount(), 'Used expired delegate', 'Delegate has expired');
             });
 

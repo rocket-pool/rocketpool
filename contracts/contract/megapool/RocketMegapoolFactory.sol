@@ -86,11 +86,11 @@ contract RocketMegapoolFactory is RocketBase, RocketMegapoolFactoryInterface {
         return deployContract(_nodeAddress);
     }
 
-    /// @notice Returns the expiration block of the given delegate (or 0 if not deprecated yet)
+    /// @notice Returns the expiration time of the given delegate (or 0 if not deprecated yet)
     /// @param _delegateAddress Address of the delegate to query
     function getDelegateExpiry(address _delegateAddress) override external view returns (uint256) {
         RocketMegapoolDelegateBaseInterface deprecatedDelegate = RocketMegapoolDelegateBaseInterface(_delegateAddress);
-        return deprecatedDelegate.getExpirationBlock();
+        return deprecatedDelegate.getExpirationTime();
     }
 
     /// @notice Called during an upgrade to publish a new delegate and deprecate any in-use ones
@@ -120,13 +120,13 @@ contract RocketMegapoolFactory is RocketBase, RocketMegapoolFactoryInterface {
         uint256 meta = getUint(metaKey);
         uint128 head = uint128(meta);
         uint128 tail = uint128(meta >> 128);
-        // Expiry blocks should be sequential, but just in case we'll only advance the head if none before it have expired
+        // Expiry times should be sequential, but just in case we'll only advance the head if none before it have expired
         bool deprecatedOne = false;
         // Iterate over "in-use" delegates and deprecate them if they are yet to expire
         for (uint256 i = head; i < tail; ++i) {
             RocketMegapoolDelegateBaseInterface delegate = RocketMegapoolDelegateBaseInterface(getAddress(bytes32(setKey + i)));
-            uint256 expiry = delegate.getExpirationBlock();
-            if (expiry == 0 || block.number < expiry) {
+            uint256 expiry = delegate.getExpirationTime();
+            if (expiry == 0 || block.timestamp < expiry) {
                 // This delegate is still "in-use" so set the expiry block into the future
                 delegate.deprecate();
                 deprecatedOne = true;
