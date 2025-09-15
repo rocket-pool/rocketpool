@@ -17,7 +17,6 @@ import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '.
 const hre = require('hardhat');
 const ethers = hre.ethers;
 
-const launchValue = '32'.ether;
 const milliToWei = 1000000000000000n;
 
 export async function getValidatorInfo(megapool, index) {
@@ -219,6 +218,8 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
 
     assertBN.equal(nodeBondDelta + nodeQueuedBondDelta, bondAmount, 'Incorrect node capital');
     assertBN.equal(userCapitalDelta + userQueuedCapitalDelta, '32'.ether - bondAmount, 'Incorrect user capital');
+
+    const launchValue = '32'.ether;
 
     if (minipoolInQueue) {
         // Validator will never be assigned if a minipool exists in the queue as it is serviced first
