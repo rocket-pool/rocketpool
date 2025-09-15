@@ -1454,18 +1454,24 @@ export default function() {
                 await megapool.delegateUpgrade();
             });
 
-            it(printTitle('node', 'can not use expired delegate'), async () => {
+            it(printTitle('node', 'expired delegate automatically upgrades'), async () => {
                 const rocketMegapoolFactory = await RocketMegapoolFactory.deployed();
                 // Execute delegate upgrade via helper contract
                 await upgradeHelper.upgradeDelegate(newDelegate.target);
                 const oldDelegateExpiry = await rocketMegapoolFactory.getDelegateExpiry(oldDelegate.target);
                 // Fast-forward until just before delegate expires
                 await helpers.time.increaseTo(oldDelegateExpiry - 10n);
-                await megapool.connect(node).getValidatorCount();
+                await megapool.connect(node).claim();
+                // Check delegate is old
+                assert.equal(await megapool.connect(node).getDelegate(), oldDelegate.target);
                 // Fast-forward until after delegate expires
                 await helpers.time.increaseTo(oldDelegateExpiry + 10n);
-                // Fail to call a function on the old delegate
-                await shouldRevert(megapool.connect(node).getValidatorCount(), 'Used expired delegate', 'Delegate has expired');
+                // Check effective delegate is the new one
+                assert.equal(await megapool.connect(node).getEffectiveDelegate(), newDelegate.target);
+                // Execute a method to force the upgrade
+                await megapool.connect(node).claim();
+                // Check stored delegate is new
+                assert.equal(await megapool.connect(node).getDelegate(), newDelegate.target);
             });
 
             it(printTitle('node', 'can use latest delegate'), async () => {

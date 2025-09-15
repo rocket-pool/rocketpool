@@ -67,7 +67,10 @@ contract RocketMegapoolProxy is RocketMegapoolProxyInterface, RocketMegapoolStor
         if (useLatestDelegate) {
             delegateContract = getContractAddress("rocketMegapoolDelegate");
         } else {
-            require(!getDelegateExpired(), "Delegate has expired");
+            // Force delegate upgrade on expiry
+            if (getDelegateExpired()) {
+                _delegateUpgrade();
+            }
             delegateContract = rocketMegapoolDelegate;
         }
         // Check for contract existence
@@ -87,6 +90,12 @@ contract RocketMegapoolProxy is RocketMegapoolProxyInterface, RocketMegapoolStor
             address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
             require(msg.sender == nodeAddress || msg.sender == withdrawalAddress, "Only the node operator can access this method");
         }
+        // Perform upgrade
+        _delegateUpgrade();
+    }
+
+    /// @dev Internal implementation of delegate upgrade
+    function _delegateUpgrade() internal {
         // Only succeed if there is a new delegate to upgrade to
         address oldDelegate = rocketMegapoolDelegate;
         address newDelegate = getContractAddress("rocketMegapoolDelegate");
@@ -125,9 +134,13 @@ contract RocketMegapoolProxy is RocketMegapoolProxyInterface, RocketMegapoolStor
         return rocketMegapoolDelegate;
     }
 
-    /// @notice Returns the delegate which will be used when calling this megapool taking into account useLatestDelegate setting
+    /// @notice Returns the delegate which will be used when calling this megapool taking into account
+    ///         useLatestDelegate setting and expired delegate
     function getEffectiveDelegate() external override view returns (address) {
-        return useLatestDelegate ? getContractAddress("rocketMegapoolDelegate") : rocketMegapoolDelegate;
+        if (useLatestDelegate || getDelegateExpired()) {
+            return getContractAddress("rocketMegapoolDelegate");
+        }
+        return rocketMegapoolDelegate;
     }
 
     /// @notice Returns true if the megapools current delegate has expired
