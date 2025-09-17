@@ -72,7 +72,7 @@ library SSZ {
             let right := and(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000000000000000000000, mload(add(0x40, pubkey)))
             mstore(0x20, right)
 
-            let result := staticcall(84, 0x02, 0x00, 0x40, 0x00, 0x20)
+            let result := staticcall(gas(), 0x02, 0x00, 0x40, 0x00, 0x20)
             if iszero(result) {
                 revert(0,0)
             }
@@ -87,7 +87,7 @@ library SSZ {
             mstore(0x00, _left)
             mstore(0x20, _right)
 
-            let result := staticcall(84, 0x02, 0x00, 0x40, 0x00, 0x20)
+            let result := staticcall(gas(), 0x02, 0x00, 0x40, 0x00, 0x20)
             if iszero(result) {
                 revert(0,0)
             }

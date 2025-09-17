@@ -784,7 +784,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             mstore(0x20, and(mload(add(pubkey, 0x40)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000000000000000000000))
 
         // temp[0x00] = sha256([0x00:0x40])
-            result := staticcall(84, 0x02, 0x00, 0x40, temp, 0x20)
+            result := staticcall(gas(), 0x02, 0x00, 0x40, temp, 0x20)
             if iszero(result) {
                 revert(0, 0)
             }
@@ -793,13 +793,13 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             mstore(add(temp, 0x20), withdrawalCredentials)
 
         // temp[0x00] = sha256(temp[0x00:0x40])
-            result := staticcall(84, 0x02, temp, 0x40, temp, 0x20)
+            result := staticcall(gas(), 0x02, temp, 0x40, temp, 0x20)
             if iszero(result) {
                 revert(0, 0)
             }
 
         // temp[0x20] = sha256(signature[0x00:0x40])
-            result := staticcall(84, 0x02, add(signature, 0x20), 0x40, add(temp, 0x20), 0x20)
+            result := staticcall(gas(), 0x02, add(signature, 0x20), 0x40, add(temp, 0x20), 0x20)
             if iszero(result) {
                 revert(0, 0)
             }
@@ -810,7 +810,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             mstore(0x20, 0)
 
         // [0x20] = sha256([0x00:0x40])
-            result := staticcall(84, 0x02, 0x00, 0x40, 0x20, 0x20)
+            result := staticcall(gas(), 0x02, 0x00, 0x40, 0x20, 0x20)
             if iszero(result) {
                 revert(0, 0)
             }
@@ -819,7 +819,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             mstore(0x00, mload(add(temp, 0x20)))
 
         // [0x20] = sha256([0x00:0x40])
-            result := staticcall(84, 0x02, 0x00, 0x40, 0x20, 0x20)
+            result := staticcall(gas(), 0x02, 0x00, 0x40, 0x20, 0x20)
             if iszero(result) {
                 revert(0, 0)
             }
@@ -836,7 +836,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             mstore8(0x07, shr(0x38, amount))
 
         // [0x20] = sha256([0x00:0x40])
-            result := staticcall(84, 0x02, 0x00, 0x40, 0x20, 0x20)
+            result := staticcall(gas(), 0x02, 0x00, 0x40, 0x20, 0x20)
             if iszero(result) {
                 revert(0, 0)
             }
@@ -845,7 +845,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             mstore(0x00, mload(temp))
 
         // [0x00] = sha256([0x00:0x40])
-            result := staticcall(84, 0x02, 0x00, 0x40, 0x00, 0x20)
+            result := staticcall(gas(), 0x02, 0x00, 0x40, 0x00, 0x20)
             if iszero(result) {
                 revert(0, 0)
             }
