@@ -472,7 +472,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     /// @param _validatorId The megapool-managed ID of the validator requesting funds
     /// @param _amount The amount of ETH requested by the node operator
     /// @param _expressQueue Whether to consume an express ticket to be placed in the express queue
-    function requestFunds(uint256 _bondAmount, uint32 _validatorId, uint256 _amount, bool _expressQueue) external onlyRegisteredMegapool(msg.sender) {
+    function requestFunds(uint256 _bondAmount, uint32 _validatorId, uint256 _amount, bool _expressQueue) external onlyRegisteredMegapool(msg.sender) onlyThisLatestContract {
         // Validate arguments
         require(_bondAmount % milliToWei == 0, "Invalid supplied amount");
         require(_amount % milliToWei == 0, "Invalid requested amount");
@@ -520,7 +520,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     /// @dev Called from a megapool to remove an entry in the validator queue and returns funds to node by credit mechanism
     /// @param _validatorId Internal ID of the validator to be removed
     /// @param _expressQueue Whether the entry is in the express queue or not
-    function exitQueue(address _nodeAddress, uint32 _validatorId, bool _expressQueue) external onlyRegisteredMegapool(msg.sender) {
+    function exitQueue(address _nodeAddress, uint32 _validatorId, bool _expressQueue) external onlyRegisteredMegapool(msg.sender) onlyThisLatestContract {
         LinkedListStorageInterface linkedListStorage = LinkedListStorageInterface(getContractAddress("linkedListStorage"));
         LinkedListStorageInterface.DepositQueueKey memory key = LinkedListStorageInterface.DepositQueueKey({
             receiver: msg.sender,
@@ -555,14 +555,14 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     }
 
     /// @dev Called from megapool to increase a node operator's credit
-    function applyCredit(address _nodeAddress, uint256 _amount) override external onlyRegisteredMegapool(msg.sender) {
+    function applyCredit(address _nodeAddress, uint256 _amount) override external onlyRegisteredMegapool(msg.sender) onlyThisLatestContract {
         // Add to node's credit for the amount supplied
         addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress)), _amount);
     }
 
     /// @notice Allows node operator to withdraw any ETH credit they have as rETH
     /// @param _amount Amount in ETH to withdraw
-    function withdrawCredit(uint256 _amount) override external onlyRegisteredNode(msg.sender) {
+    function withdrawCredit(uint256 _amount) override external onlyRegisteredNode(msg.sender) onlyThisLatestContract {
         // Check deposits are enabled
         RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
         require(rocketDAOProtocolSettingsDeposit.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
@@ -681,14 +681,14 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     }
 
     /// @dev Called by a megapool during a bond reduction to adjust its capital ratio
-    function reduceBond(address _nodeAddress, uint256 _amount) override external onlyRegisteredMegapool(msg.sender) {
+    function reduceBond(address _nodeAddress, uint256 _amount) override external onlyRegisteredMegapool(msg.sender) onlyThisLatestContract {
         // Update collateral balances
         _increaseETHBorrowed(_nodeAddress, _amount);
         _decreaseETHBonded(_nodeAddress, _amount);
     }
 
     /// @dev Called by a megapool when exiting to handle change in capital ratio
-    function fundsReturned(address _nodeAddress, uint256 _nodeAmount, uint256 _userAmount) override external onlyRegisteredMegapool(msg.sender) {
+    function fundsReturned(address _nodeAddress, uint256 _nodeAmount, uint256 _userAmount) override external onlyRegisteredMegapool(msg.sender) onlyThisLatestContract {
         // Update collateral balances
         _decreaseETHBonded(_nodeAddress, _nodeAmount);
         _decreaseETHBorrowed(_nodeAddress, _userAmount);
