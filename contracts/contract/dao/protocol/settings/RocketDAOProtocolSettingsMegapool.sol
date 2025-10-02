@@ -25,6 +25,7 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
         _setSettingUint("notify.threshold", 12 hours);                           // Time before withdrawable_epoch a node operator must notify exit (RPIP-72)
         _setSettingUint("late.notify.fine", 0.05 ether);                         // Fine applied to node operator for not notifying exit in time (RPIP-72)
         _setSettingUint("user.distribute.window.length", 7 days);                // How long a user must wait before distributing someone else's megapool (RPIP-72)
+        _setSettingUint("megapool.penalty.threshold", 0.51 ether);               // Percentage of trusted members that must vote in favour of a penalty
         // Update deploy flag
         require (!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed"))), "Already initialised");
         setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
@@ -47,6 +48,8 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
                 require(_value <= 0.5 ether, "Fine must be less than or equal to 0.5 ETH");             // Per RPIP-72
             } else if (settingKey == keccak256(abi.encodePacked("user.distribute.window.length"))) {
                 require(_value >= 1 days && _value <= 30 days, "Value must be between 1 and 30 days");  // Per RPIP-72
+            } else if (settingKey == keccak256(bytes("megapool.penalty.threshold"))) {
+                require(_value >= 0.51 ether, "Penalty threshold must be 51% or higher");
             }
         }
         // Update setting now
@@ -81,5 +84,10 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
     /// @notice Returns the amount of time a user must wait before distributing another node's megapool
     function getUserDistributeWindowLength() override external view returns (uint256) {
         return getSettingUint("user.distribute.window.length");
+    }
+
+    /// @notice Returns the percentage of trusted members that must vote in favour of a penalty
+    function getPenaltyThreshold() override external view returns (uint256) {
+        return getSettingUint("megapool.penalty.threshold");
     }
 }

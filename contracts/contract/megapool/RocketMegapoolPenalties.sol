@@ -111,7 +111,8 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
         require(!getBool(penaltyAppliedKey), "Penalty already applied");
         // Check for majority
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        if (calcBase * _submissionCount / rocketDAONodeTrusted.getMemberCount() > 0.5 ether) {
+        RocketDAOProtocolSettingsMegapoolInterface rocketDAOProtocolSettingsMegapool = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
+        if (calcBase * _submissionCount / rocketDAONodeTrusted.getMemberCount() >= rocketDAOProtocolSettingsMegapool.getPenaltyThreshold()) {
             // Apply penalty and mark as applied
             applyPenalty(_megapool, _amount);
             setBool(penaltyAppliedKey, true);

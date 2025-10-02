@@ -110,7 +110,7 @@ contract RocketNetworkPenalties is RocketBase, RocketNetworkPenaltiesInterface {
         // Check for majority
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
-        if (calcBase * _submissionCount / rocketDAONodeTrusted.getMemberCount() > rocketDAOProtocolSettingsNetwork.getNodePenaltyThreshold()) {
+        if (calcBase * _submissionCount / rocketDAONodeTrusted.getMemberCount() >= rocketDAOProtocolSettingsNetwork.getNodePenaltyThreshold()) {
             // Apply penalty and mark as applied
             setBool(penaltyAppliedKey, true);
             applyPenalty(_minipool);
