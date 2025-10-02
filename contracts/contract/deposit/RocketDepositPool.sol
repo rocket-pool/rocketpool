@@ -44,7 +44,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     event FundsRequested(address indexed receiver, uint256 validatorId, uint256 amount, bool expressQueue, uint256 time);
     event FundsAssigned(address indexed receiver, uint256 amount, uint256 time);
     event QueueExited(address indexed nodeAddress, uint256 time);
-    event CreditWithdrawn(address indexed receiver, uint256 amount, uint256 time);
+    event CreditWithdrawn(address indexed nodeAddress, uint256 amount, uint256 time);
 
     // Structs
     struct MinipoolAssignment {
@@ -563,27 +563,43 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     /// @notice Allows node operator to withdraw any ETH credit they have as rETH
     /// @param _amount Amount in ETH to withdraw
     function withdrawCredit(uint256 _amount) override external onlyRegisteredNode(msg.sender) onlyThisLatestContract {
+        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(msg.sender);
+        _withdrawCreditFor(msg.sender, withdrawalAddress, _amount);
+    }
+
+    /// @notice Allows node operator to withdraw any ETH credit they have as rETH from their withdrawal address
+    /// @param _nodeAddress Address of the node operator
+    /// @param _amount Amount in ETH to withdraw
+    function withdrawCreditFor(address _nodeAddress, uint256 _amount) override public onlyRegisteredNode(_nodeAddress) onlyThisLatestContract {
+        // Check caller
+        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
+        require(msg.sender == withdrawalAddress, "Must be called from withdrawal address");
+        // Withdraw credit
+        _withdrawCreditFor(_nodeAddress, withdrawalAddress, _amount);
+    }
+
+    /// @dev Withdraws credit from a given node operator as rETH
+    function _withdrawCreditFor(address _nodeAddress, address _recipient, uint256 _amount) internal {
         // Check deposits are enabled
         RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
         require(rocketDAOProtocolSettingsDeposit.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
         // Check node operator has sufficient credit
-        uint256 credit = getUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)));
+        uint256 credit = getUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress)));
         require(credit >= _amount, "Amount exceeds credit available");
         // Account for balance changes
-        subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), _amount);
+        subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress)), _amount);
         // Note: The funds are already stored in RocketVault under RocketDepositPool so no ETH transfer is required
         // Get the node operator's withdrawal address
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-        address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(msg.sender);
         // Calculate deposit fee
         unchecked { // depositFee < msg.value
             uint256 depositFee = _amount * rocketDAOProtocolSettingsDeposit.getDepositFee() / calcBase;
             uint256 depositNet = _amount - depositFee;
-            // Mint rETH to node
-            rocketTokenRETH.mint(depositNet, nodeWithdrawalAddress);
+            // Mint rETH to recipient address
+            rocketTokenRETH.mint(depositNet, _recipient);
         }
         // Emit event
-        emit CreditWithdrawn(msg.sender, _amount, block.timestamp);
+        emit CreditWithdrawn(_nodeAddress, _amount, block.timestamp);
     }
 
     /// @notice Gets the receiver next to be assigned and whether it can be assigned immediately

@@ -860,6 +860,18 @@ export default function() {
                 await withdrawCredit(node, '2'.ether);
             });
 
+            it(printTitle('node', 'can reduce bond to new requirement and use credit to mint rETH from their withdrawal address'), async () => {
+                await reduceBond(megapool, '2'.ether);
+                // Fail to withdraw credit from random address
+                await shouldRevert(
+                    withdrawCredit(node, '2'.ether, random),
+                    'Was able to withdraw credit from random address',
+                    'Must be called from withdrawal address'
+                );
+                // Withdraw credit from withdrawal address
+                await withdrawCredit(node, '2'.ether, nodeWithdrawalAddress);
+            });
+
             it(printTitle('node', 'can reduce bond to new requirement and use some credit for another validator and some for rETH'), async () => {
                 await reduceBond(megapool, '2'.ether);
                 await withdrawCredit(node, '1'.ether);

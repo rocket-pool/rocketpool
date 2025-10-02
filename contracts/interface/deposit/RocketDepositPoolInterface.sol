@@ -23,6 +23,7 @@ interface RocketDepositPoolInterface {
     function reduceBond(address _nodeAddress, uint256 _amount) external;
     function fundsReturned(address _nodeAddress, uint256 _nodeAmount, uint256 _userAmount) external;
     function withdrawCredit(uint256 _amount) external;
+    function withdrawCreditFor(address _nodeAddress, uint256 _amount) external;
     function getQueueTop() external view returns (address receiver, bool assignmentPossible, uint256 headMovedBlock);
     function getQueueIndex() external view returns (uint256);
     function getMinipoolQueueLength() external view returns (uint256);

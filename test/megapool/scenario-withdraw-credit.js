@@ -6,7 +6,7 @@ import {
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 
-export async function withdrawCredit(node, amount) {
+export async function withdrawCredit(node, amount, from = node) {
     const rocketDepositPool = await RocketDepositPool.deployed();
     const rocketStorage = await RocketStorage.deployed();
     const rocketTokenRETH = await RocketTokenRETH.deployed();
@@ -37,7 +37,11 @@ export async function withdrawCredit(node, amount) {
 
     const dataBefore = await getData();
 
-    await rocketDepositPool.connect(node).withdrawCredit(amount);
+    if (from === node) {
+        await rocketDepositPool.connect(from).withdrawCredit(amount);
+    } else {
+        await rocketDepositPool.connect(from).withdrawCreditFor(node.address, amount);
+    }
 
     const dataAfter = await getData();
 
