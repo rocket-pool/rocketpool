@@ -45,11 +45,14 @@ contract RocketDAOSecurityUpgrade is RocketBase, RocketDAOSecurityUpgradeInterfa
     function proposeVeto(string memory _proposalMessage, uint256 _upgradeProposalID) override external onlySecurityMember() onlyLatestContract("rocketDAOSecurityUpgrade", address(this)) returns (uint256) {
         // Load contracts
         RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
+        RocketDAOSecurityInterface daoSecurity = RocketDAOSecurityInterface(getContractAddress("rocketDAOSecurity"));
         RocketDAOProtocolSettingsSecurityInterface rocketDAOProtocolSettingsSecurity = RocketDAOProtocolSettingsSecurityInterface(getContractAddress("rocketDAOProtocolSettingsSecurity"));
+        // Calculate veto quorum required
+        uint256 vetoQuorum =  daoSecurity.getMemberCount() * rocketDAOProtocolSettingsSecurity.getUpgradeVetoQuorum();
         // Construct veto payload
         bytes memory payload = abi.encodeWithSelector(this.proposalVeto.selector, _upgradeProposalID);
         // Create the proposal
-        return daoProposal.add(msg.sender, "rocketDAOSecurityUpgrade", _proposalMessage, block.timestamp + 1, rocketDAOProtocolSettingsSecurity.getVoteTime(), rocketDAOProtocolSettingsSecurity.getExecuteTime(), rocketDAOProtocolSettingsSecurity.getUpgradeVetoQuorum(), payload);
+        return daoProposal.add(msg.sender, "rocketDAOSecurityUpgrade", _proposalMessage, block.timestamp + 1, rocketDAOProtocolSettingsSecurity.getVoteTime(), rocketDAOProtocolSettingsSecurity.getExecuteTime(), vetoQuorum, payload);
     }
 
     /// @notice Vote on a proposal

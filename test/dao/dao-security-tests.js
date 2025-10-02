@@ -234,6 +234,13 @@ export default function() {
                 await helpers.time.increase((await getDAOProposalStartTime(proposalID) - timeCurrent) + 2);
                 // Now lets vote
                 await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
+                // Can not execute before quorum
+                await shouldRevert(
+                    daoNodeTrustedExecute(proposalID, { from: registeredNodeTrusted1 }),
+                    'Was able to execute before quorum',
+                    'Proposal has not succeeded, has expired or has already been executed'
+                );
+                // Vote from second member
                 await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
                 // Proposal has passed, we can now execute it and start the upgrade delay
                 await daoNodeTrustedExecute(proposalID, { from: registeredNodeTrusted1 });
