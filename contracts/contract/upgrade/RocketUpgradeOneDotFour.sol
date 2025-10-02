@@ -90,6 +90,9 @@ contract RocketUpgradeOneDotFour is RocketBase {
         // Add new security council allowed parameter
         setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "network", "network.node.commission.share.security.council.adder")), true);
 
+        // Add missing security council permission for rewards submission enabled
+        setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "network", "network.submit.rewards.enabled")), true);
+
         // Deposit settings
         {
             bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "deposit"));
