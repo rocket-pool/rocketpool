@@ -179,42 +179,42 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
 
     /// @dev Pays out any outstanding amounts to the recipient of a contract
     function payOutContract(string memory _contractName) internal {
+        // Load contracts
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        IERC20 rplToken = IERC20(getContractAddress("rocketTokenRPL"));
+        // Check contract exists
         uint256 contractKey = uint256(keccak256(abi.encodePacked("dao.protocol.treasury.contract", _contractName)));
-
+        require(getBool(bytes32(contractKey + existsOffset)) == true, "Contract does not exist");
+        // Get time of last payout
         uint256 lastPaymentTime = getUint(bytes32(contractKey + lastPaymentOffset));
-
         // Payments haven't started yet (nothing to do)
         if (block.timestamp < lastPaymentTime) {
             return;
         }
-
+        // Calculate how many periods have passed
         uint256 periodLength = getUint(bytes32(contractKey + periodLengthOffset));
         uint256 periodsToPay = (block.timestamp - lastPaymentTime) / periodLength;
-
         uint256 periodsPaid = getUint(bytes32(contractKey + periodsPaidOffset));
         uint256 numPeriods = getUint(bytes32(contractKey + numPeriodsOffset));
-
         // Calculate how many periods to pay
         if (periodsToPay + periodsPaid > numPeriods) {
             periodsToPay = numPeriods - periodsPaid;
         }
-
-        // Already paid up to date
+        // Check if already paid up to date
         if (periodsToPay == 0) {
             return;
         }
-
+        // Calculate how much to pay for unpaid periods
         address recipientAddress = getAddress(bytes32(contractKey + recipientOffset));
         uint256 amountPerPeriod = getUint(bytes32(contractKey + amountOffset));
         uint256 amountToPay = periodsToPay * amountPerPeriod;
-
+        // Check for adequate vault balance
+        require(amountToPay <= rocketVault.balanceOfToken("rocketClaimDAO", rplToken), "Insufficient treasury balance for payout");
         // Update last paid timestamp and periods paid
         setUint(bytes32(contractKey + lastPaymentOffset), lastPaymentTime + (periodsToPay * periodLength));
         setUint(bytes32(contractKey + periodsPaidOffset), periodsPaid + periodsToPay);
-
         // Add to the recipient's balance
         addUint(keccak256(abi.encodePacked("dao.protocol.treasury.balance", recipientAddress)), amountToPay);
-
         // Emit event
         emit RPLTreasuryContractPayment(_contractName, recipientAddress, amountToPay, block.timestamp);
     }

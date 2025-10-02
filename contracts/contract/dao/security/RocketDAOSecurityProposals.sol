@@ -156,7 +156,10 @@ contract RocketDAOSecurityProposals is RocketBase, RocketDAOSecurityProposalsInt
     /// @param _memberAddress The address of the member to kick
     function proposalKick(address _memberAddress) override public onlyLatestContract("rocketDAOProtocolProposals", msg.sender) {
         // Load contracts
+        RocketDAOSecurityInterface daoSecurity = RocketDAOSecurityInterface(getContractAddress("rocketDAOSecurity"));
         RocketDAOSecurityActionsInterface daoActionsContract = RocketDAOSecurityActionsInterface(getContractAddress("rocketDAOSecurityActions"));
+        // Check valid member
+        require(daoSecurity.getMemberIsValid(_memberAddress), "This node is not part of the security council");
         // Kick them now
         daoActionsContract.actionKick(_memberAddress);
     }
@@ -165,7 +168,12 @@ contract RocketDAOSecurityProposals is RocketBase, RocketDAOSecurityProposalsInt
     /// @param _memberAddresses An array of addresses of the members to kick
     function proposalKickMulti(address[] calldata _memberAddresses) override public onlyLatestContract("rocketDAOProtocolProposals", msg.sender) {
         // Load contracts
+        RocketDAOSecurityInterface daoSecurity = RocketDAOSecurityInterface(getContractAddress("rocketDAOSecurity"));
         RocketDAOSecurityActionsInterface daoActionsContract = RocketDAOSecurityActionsInterface(getContractAddress("rocketDAOSecurityActions"));
+        // Check valid members
+        for (uint256 i = 0; i < _memberAddresses.length; ++i) {
+            require(daoSecurity.getMemberIsValid(_memberAddresses[i]), "This node is not part of the security council");
+        }
         // Kick them now
         daoActionsContract.actionKickMulti(_memberAddresses);
     }
@@ -175,6 +183,11 @@ contract RocketDAOSecurityProposals is RocketBase, RocketDAOSecurityProposalsInt
     /// @param _newMemberId A unique identifier for the new member
     /// @param _newMemberAddress The address of the member to invite
     function proposalReplace(address _existingMemberAddress, string calldata _newMemberId, address _newMemberAddress) override external onlyLatestContract("rocketDAOProtocolProposals", msg.sender) {
+        // Load contracts
+        RocketDAOSecurityInterface daoSecurity = RocketDAOSecurityInterface(getContractAddress("rocketDAOSecurity"));
+        // Check valid member
+        require(daoSecurity.getMemberIsValid(_existingMemberAddress), "This node is not part of the security council");
+        // Kick and invite
         proposalKick(_existingMemberAddress);
         proposalInvite(_newMemberId, _newMemberAddress);
     }

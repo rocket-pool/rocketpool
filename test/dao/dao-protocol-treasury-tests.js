@@ -45,6 +45,13 @@ export default function() {
             await bootstrapTreasuryUpdateContract("Test contract", recipient1.address, '10'.ether, oneDay, 1, { from: owner });
         });
 
+        it(printTitle('recipient', 'can not payout non-existing contract'), async () => {
+            await shouldRevert(
+                payOutContracts(["Invalid contract"], {from: recipient1}),
+                'Was able to pay out non-existing contract',
+                'Contract does not exist'
+            );
+        });
 
         it(printTitle('recipient', 'can payout and withdraw RPL from a recurring contract'), async () => {
             // Send RPL to treasury
@@ -142,16 +149,18 @@ export default function() {
         });
 
 
-        it(printTitle('recipient', 'cannot withdraw RPL if treasury cannot afford it'), async () => {
+        it(printTitle('recipient', 'cannot payout contract if treasury cannot afford it'), async () => {
             // Create a new contract for 5 RPL/day
             const currentTime = await helpers.time.latest();
             await bootstrapTreasuryNewContract("Test contract", recipient1.address, '5'.ether, oneDay, currentTime, 1, { from: owner });
             // Wait a day
             await helpers.time.increase(oneDay + 1);
             // Execute a payout
-            await payOutContracts(["Test contract"], {from: recipient1});
-            // Try to withdraw (and fail)
-            await shouldRevert(withdrawBalance(recipient1, {from: recipient1}), 'Was able to withdraw in excess of treasury', 'Insufficient treasury balance for withdrawal');
+            await shouldRevert(
+                payOutContracts(["Test contract"], {from: recipient1}),
+                'Was able to pay out greater than treasury balance',
+                'Insufficient treasury balance for payout'
+            );
         });
     });
 }

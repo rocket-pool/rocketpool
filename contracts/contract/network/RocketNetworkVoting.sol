@@ -86,7 +86,6 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
     /// @param _rplPrice The price of RPL in ETH
     /// @param _maxStakePercent The maximum RPL percentage that counts towards voting power
     function calculateVotingPower(uint256 _rplStake, uint256 _bondedETH, uint256 _rplPrice, uint256 _maxStakePercent) internal pure returns (uint256) {
-        // Get contracts
         uint256 maximumStake = _bondedETH * _maxStakePercent / _rplPrice;
         if (_rplStake > maximumStake) {
             _rplStake = maximumStake;
@@ -98,9 +97,15 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
     /// @notice Called by a registered node to set their delegate address
     /// @param _newDelegate The address of the node operator to delegate voting power to
     function setDelegate(address _newDelegate) external override onlyRegisteredNode(msg.sender) onlyRegisteredNode(_newDelegate) {
+        // Get contracts
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
+        // Prevent setting to same value
         bytes32 key = keccak256(abi.encodePacked("node.delegate", msg.sender));
+        address existingDelegate = address(uint160(rocketNetworkSnapshots.latestValue(key)));
+        require(_newDelegate != existingDelegate, "Delegate already set to value");
+        // Record new delegate
         rocketNetworkSnapshots.push(key, uint224(uint160(_newDelegate)));
+        // Emit event
         emit DelegateSet(msg.sender, _newDelegate, block.timestamp);
     }
 

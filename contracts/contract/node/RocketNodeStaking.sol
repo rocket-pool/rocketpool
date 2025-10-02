@@ -161,7 +161,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @param _nodeAddress The address of the node operator allowing the caller
     /// @param _caller The address you wish to allow
     /// @param _allowed Whether the address is allowed or denied
-    function setStakeRPLForAllowed(address _nodeAddress, address _caller, bool _allowed) override public onlyRPLWithdrawalAddressOrNode(_nodeAddress) {
+    function setStakeRPLForAllowed(address _nodeAddress, address _caller, bool _allowed) override public onlyRPLWithdrawalAddressOrNode(_nodeAddress) onlyRegisteredNode(_nodeAddress) {
         // Set the value
         setBool(keccak256(abi.encodePacked("node.stake.for.allowed", _nodeAddress, _caller)), _allowed);
         // Log it
@@ -329,7 +329,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @param _from The node to transfer from
     /// @param _to The node to transfer to
     /// @param _amount The amount of RPL to transfer
-    function transferRPL(address _from, address _to, uint256 _amount) override external onlyLatestNetworkContract() onlyRegisteredNode(_from) {
+    function transferRPL(address _from, address _to, uint256 _amount) override external onlyLatestNetworkContract() onlyRegisteredNode(_from) onlyRegisteredNode(_to) {
         // Check sender has enough RPL
         require(getNodeStakedRPL(_from) >= _amount, "Sender has insufficient RPL");
         // Transfer the stake

@@ -47,6 +47,9 @@ contract RocketDAOSecurityUpgrade is RocketBase, RocketDAOSecurityUpgradeInterfa
         RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
         RocketDAOSecurityInterface daoSecurity = RocketDAOSecurityInterface(getContractAddress("rocketDAOSecurity"));
         RocketDAOProtocolSettingsSecurityInterface rocketDAOProtocolSettingsSecurity = RocketDAOProtocolSettingsSecurityInterface(getContractAddress("rocketDAOProtocolSettingsSecurity"));
+        RocketDAONodeTrustedUpgradeInterface rocketDAONodeTrustedUpgrade = RocketDAONodeTrustedUpgradeInterface(getContractAddress("rocketDAONodeTrustedUpgrade"));
+        // Check proposal is pending
+        require(rocketDAONodeTrustedUpgrade.getState(_upgradeProposalID) == RocketDAONodeTrustedUpgradeInterface.UpgradeProposalState.Pending);
         // Calculate veto quorum required
         uint256 vetoQuorum =  daoSecurity.getMemberCount() * rocketDAOProtocolSettingsSecurity.getUpgradeVetoQuorum();
         // Construct veto payload

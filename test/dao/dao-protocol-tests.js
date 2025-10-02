@@ -775,6 +775,15 @@ export default function() {
                     await shouldRevert(daoProtocolSubmitRoot(propId, subRootIndex, pollard, { from: proposer }), 'Accepted invalid hash', 'Invalid hash');
                 });
 
+                it(printTitle('voter', 'can not set delegate to same value'), async () => {
+                    await nodeSetDelegate(nodes[1].address, { from: nodes[0] });
+                    await shouldRevert(
+                        nodeSetDelegate(nodes[1].address, { from: nodes[0] }),
+                        'Was able to set delegate to same value',
+                        'Delegate already set to value'
+                    );
+                });
+
                 /**
                  * Override Votes
                  */
@@ -934,10 +943,6 @@ export default function() {
                  */
 
                 it(printTitle('proposer', 'can invite a security council member'), async () => {
-                    // Create a minipool with a node to use as a challenger
-                    let challenger = node1;
-                    await createNode(1, challenger);
-
                     // Invite security council member
                     let ABI = ['function proposalSecurityInvite(string,address)'];
                     let iface = new ethers.Interface(ABI);
@@ -970,10 +975,6 @@ export default function() {
                     await setDAOProtocolBootstrapSecurityInvite('Member', securityMember1, { from: owner });
                     await daoSecurityMemberJoin({ from: securityMember1 });
 
-                    // Create a minipool with a node to use as a challenger
-                    let challenger = node1;
-                    await createNode(1, challenger);
-
                     // Invite security council member
                     let ABI = ['function proposalSecurityKick(address)'];
                     let iface = new ethers.Interface(ABI);
@@ -999,6 +1000,77 @@ export default function() {
 
                     // Member should no longer exists
                     assert.equal(await getDAOSecurityMemberIsValid(securityMember1), false, 'Member still exists in council');
+                });
+
+                it(printTitle('proposer', 'can not kick a security council member that does not exist'), async () => {
+                    // Setup
+                    await setDAOProtocolBootstrapSecurityInvite('Member', securityMember1, { from: owner });
+                    await daoSecurityMemberJoin({ from: securityMember1 });
+
+                    // Invite security council member
+                    let ABI = ['function proposalSecurityKick(address)'];
+                    let iface = new ethers.Interface(ABI);
+                    let proposalCalldata = iface.encodeFunctionData('proposalSecurityKick', [random.address]);
+
+                    // Create a valid proposal
+                    const {
+                        propId,
+                        leaves,
+                    } = await createValidProposal('Kick security member from the council', proposalCalldata);
+
+                    // Wait for proposal wait period to end
+                    await helpers.time.increase(voteDelayTime + 1);
+
+                    // Vote all in favour
+                    await voteAll(propId, leaves, voteStates.For);
+
+                    // Skip the full vote period
+                    await helpers.time.increase(votePhase1Time + votePhase2Time + 1);
+
+                    // Execute the proposal
+                    await shouldRevert(
+                        daoProtocolExecute(propId, { from: proposer }),
+                        'Was able to kick non-existing member',
+                        'This node is not part of the security council'
+                    );
+                });
+
+                it(printTitle('proposer', 'can replace a security council member'), async () => {
+                    // Setup
+                    await setDAOProtocolBootstrapSecurityInvite('Member', securityMember1, { from: owner });
+                    await daoSecurityMemberJoin({ from: securityMember1 });
+
+                    // Invite security council member
+                    let ABI = ['function proposalSecurityReplace(address, string, address)'];
+                    let iface = new ethers.Interface(ABI);
+                    let proposalCalldata = iface.encodeFunctionData('proposalSecurityReplace', [securityMember1.address, 'Replaced Member 1', random.address]);
+
+                    // Create a valid proposal
+                    const {
+                        propId,
+                        leaves,
+                    } = await createValidProposal('Replace security council member', proposalCalldata);
+
+                    // Wait for proposal wait period to end
+                    await helpers.time.increase(voteDelayTime + 1);
+
+                    // Vote all in favour
+                    await voteAll(propId, leaves, voteStates.For);
+
+                    // Skip the full vote period
+                    await helpers.time.increase(votePhase1Time + votePhase2Time + 1);
+
+                    // Execute the proposal
+                    await daoProtocolExecute(propId, { from: proposer });
+
+                    // Accept on new member address
+                    await daoSecurityMemberJoin({ from: random });
+
+                    // Old member should no longer exists
+                    assert.equal(await getDAOSecurityMemberIsValid(securityMember1), false, 'Member still exists in council');
+
+                    // New member should exit
+                    assert.equal(await getDAOSecurityMemberIsValid(random), true, 'Member is not in council');
                 });
 
                 /**

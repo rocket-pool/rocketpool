@@ -20,8 +20,6 @@ import {AddressSetStorageInterface} from "../../interface/util/AddressSetStorage
 import {MinipoolStatus} from "../../types/MinipoolStatus.sol";
 import {RocketBase} from "../RocketBase.sol";
 
-pragma abicoder v2;
-
 /// @notice Node registration and management
 contract RocketNodeManager is RocketBase, RocketNodeManagerInterface, RocketVaultWithdrawerInterface {
 
@@ -344,7 +342,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface, RocketVaul
     /// @notice Designates which network a node would like their rewards relayed to
     /// @param _nodeAddress Address of the node to set reward network for
     /// @param _network ID of the network
-    function setRewardNetwork(address _nodeAddress, uint256 _network) override external onlyLatestContract("rocketNodeManager", address(this)) {
+    function setRewardNetwork(address _nodeAddress, uint256 _network) override external onlyLatestContract("rocketNodeManager", address(this)) onlyRegisteredNode(_nodeAddress) {
         // Confirm the transaction is from the node's current withdrawal address
         address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
         require(withdrawalAddress == msg.sender, "Only a tx from a node's withdrawal address can change reward network");
