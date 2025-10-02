@@ -13,7 +13,7 @@ contract RocketDAOProtocolSettingsSecurity is RocketDAOProtocolSettings, RocketD
         // Initialise settings on deployment
         if (!rocketStorage.getDeployedStatus()) {
             // Set defaults
-            _setSettingUint("members.quorum", 0.5 ether);        // Member quorum threshold that must be met for proposals to pass (51%)
+            _setSettingUint("members.quorum", 0.51 ether);       // Member quorum threshold that must be met for proposals to pass (51%)
             _setSettingUint("members.leave.time", 4 weeks);      // How long a member must give notice for before manually leaving the security council
             _setSettingUint("proposal.vote.time", 2 weeks);      // How long a proposal can be voted on
             _setSettingUint("proposal.execute.time", 4 weeks);   // How long a proposal can be executed after its voting period is finished
