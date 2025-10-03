@@ -33,10 +33,15 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
         if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             bytes32 settingKey = keccak256(bytes(_settingPath));
             if(settingKey == keccak256(bytes("node.voting.power.stake.maximum"))) {
+                require(_value >= 1 ether && _value <= 5 ether, "Value must be >= 100% & <= 500%");
                 // Redirect the setting change to push a new value into the snapshot system instead
                 RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
                 rocketNetworkSnapshots.push(settingKey, uint224(_value));
                 return;
+            } else if(settingKey == keccak256(bytes("reduced.bond"))) {
+                require(_value >= 1 ether && _value <= 4 ether, "Value must be >= 1 ETH & <= 4 ETH");
+            } else if(settingKey == keccak256(bytes("node.unstaking.period"))) {
+                require(_value <= 6 weeks, "Value must be <= 6 weeks");
             }
         }
         // Update setting now

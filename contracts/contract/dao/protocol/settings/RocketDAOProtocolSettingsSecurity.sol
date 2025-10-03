@@ -46,20 +46,19 @@ contract RocketDAOProtocolSettingsSecurity is RocketDAOProtocolSettings, RocketD
         if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             bytes32 settingKey = keccak256(abi.encodePacked(_settingPath));
             if(settingKey == keccak256(abi.encodePacked("members.quorum"))) {
-                // >= 51% & < 75% (RPIP-33)
                 require(_value >= 0.51 ether && _value <= 0.75 ether, "Quorum setting must be >= 51% & <= 75%");
             } else if(settingKey == keccak256(abi.encodePacked("members.leave.time"))) {
-                // < 14 days (RPIP-33)
                 require(_value < 14 days, "Value must be < 14 days");
             } else if(settingKey == keccak256(abi.encodePacked("proposal.vote.time"))) {
-                // >= 1 day (RPIP-33)
                 require(_value >= 1 days, "Value must be >= 1 day");
             } else if(settingKey == keccak256(abi.encodePacked("proposal.execute.time"))) {
-                // >= 1 day (RPIP-33)
                 require(_value >= 1 days, "Value must be >= 1 day");
             } else if(settingKey == keccak256(abi.encodePacked("proposal.action.time"))) {
-                // >= 1 day (RPIP-33)
                 require(_value >= 1 days, "Value must be >= 1 day");
+            } else if(settingKey == keccak256(abi.encodePacked("upgradeveto.quorum"))) {
+                require(_value >= 0.33 ether && _value <= 1 ether, "Quorum setting must be >= 51% & <= 75%");
+            } else if(settingKey == keccak256(abi.encodePacked("upgrade.delay"))) {
+                require(_value >= 1 days && _value <= 30 days, "Value must be >= 1 day & <= 30 days");
             }
         }
         // Update setting now

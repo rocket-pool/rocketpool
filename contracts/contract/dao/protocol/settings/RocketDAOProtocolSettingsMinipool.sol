@@ -13,7 +13,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "minipool") {
         version = 4;
-        // Initialize settings on deployment
+        // Initialise settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
             setSettingBool("minipool.submit.withdrawable.enabled", false);
@@ -37,11 +37,9 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
             if(settingKey == keccak256(abi.encodePacked("minipool.launch.timeout"))) {
                 RocketDAONodeTrustedSettingsMinipoolInterface rocketDAONodeTrustedSettingsMinipool = RocketDAONodeTrustedSettingsMinipoolInterface(getContractAddress("rocketDAONodeTrustedSettingsMinipool"));
                 require(_value >= (rocketDAONodeTrustedSettingsMinipool.getScrubPeriod() + 1 hours), "Launch timeout must be greater than scrub period");
-                // >= 12 hours (RPIP-33)
                 require(_value >= 12 hours, "Launch timeout must be greater than 12 hours");
             } else if(settingKey == keccak256(abi.encodePacked("minipool.maximum.penalty.count"))) {
-                // >= 2500 (RPIP-52)
-                require(_value >= 2500, "Maximum penalty count must be equal or greater than 2500");
+                require(_value >= 1000 ether && _value <= 5000 ether, "Value must be >= 1000 ETH & <= 5000 ETH");
             }
         }
         // Update setting now

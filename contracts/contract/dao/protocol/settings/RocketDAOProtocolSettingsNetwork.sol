@@ -59,10 +59,11 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             } else if (settingKey == keccak256(bytes("network.node.fee.maximum"))) {
                 require(_value >= 0.05 ether && _value <= 0.2 ether, "The node fee maximum must be a value between 5% and 20%");
             } else if (settingKey == keccak256(bytes("network.submit.balances.frequency"))) {
-                require(_value >= 1 hours, "The submit frequency must be >= 1 hour");
+                require(_value >= 1 hours && _value <= 7 days, "Value must be >= 1 hour & <= 7 days");
             } else if (settingKey == keccak256(bytes("network.max.reth.balance.delta"))) {
-                // RPIP-61 guardrail
                 require(_value >= 0.01 ether, "The max rETH balance delta must be >= 1%");
+            } else if (settingKey == keccak256(bytes("network.reth.collateral.target"))) {
+                require(_value <= 0.5 ether, "Value must be <= 50%");
             } else if (settingKey == keccak256(bytes("network.node.commission.share.security.council.adder"))) {
                 return _setNodeShareSecurityCouncilAdder(_value);
             } else if (settingKey == keccak256(bytes("network.node.commission.share"))) {
@@ -72,6 +73,7 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             } else if (settingKey == keccak256(bytes("network.pdao.share"))) {
                 return _setProtocolDAOShare(_value);
             }
+
             // Update setting now
             _setSettingUint(_settingPath, _value);
         } else {
