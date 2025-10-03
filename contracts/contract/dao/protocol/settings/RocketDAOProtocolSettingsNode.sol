@@ -23,6 +23,7 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
             _setSettingUint("node.per.minipool.stake.maximum", 1.5 ether);      // 150% of node ETH value (bonded ETH)
             _setSettingUint("reduced.bond", 4 ether);                           // 4 ETH (RPIP-42)
             _setSettingUint("node.unstaking.period", 28 days);                  // 28 days (RPIP-30)
+            _setSettingUint("node.withdrawal.cooldown", 0);                     // No cooldown (RPIP-30)
             // Update deployed flag
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -41,6 +42,8 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
             } else if(settingKey == keccak256(bytes("reduced.bond"))) {
                 require(_value >= 1 ether && _value <= 4 ether, "Value must be >= 1 ETH & <= 4 ETH");
             } else if(settingKey == keccak256(bytes("node.unstaking.period"))) {
+                require(_value <= 6 weeks, "Value must be <= 6 weeks");
+            } else if(settingKey == keccak256(bytes("node.withdrawal.cooldown"))) {
                 require(_value <= 6 weeks, "Value must be <= 6 weeks");
             }
         }
@@ -103,8 +106,13 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
         return amounts;
     }
 
-    /// @notice Returns the amount of time that must be waiting after unstaking RPL before it can be returned
+    /// @notice Returns the amount of time that must be waited after unstaking RPL before it can be returned
     function getUnstakingPeriod() override external view returns (uint256) {
         return getSettingUint("node.unstaking.period");
+    }
+
+    /// @notice Returns the amount of time that must be waited after staking RPL before it can be unstaked again
+    function getWithdrawalCooldown() override external view returns (uint256) {
+        return getSettingUint("node.withdrawal.cooldown");
     }
 }

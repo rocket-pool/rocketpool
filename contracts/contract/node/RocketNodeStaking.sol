@@ -1,22 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.30;
 
-import "../../interface/RocketVaultInterface.sol";
-
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
-import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
-import "../../interface/network/RocketNetworkPricesInterface.sol";
-import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
-import "../../interface/network/RocketNetworkVotingInterface.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
-import "../../interface/node/RocketNodeStakingInterface.sol";
-import "../../interface/token/RocketTokenRPLInterface.sol";
-import "../../interface/util/AddressSetStorageInterface.sol";
-import "../../interface/util/IERC20.sol";
-import "../RocketBase.sol";
-import "../network/RocketNetworkSnapshots.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
+import {RocketVaultInterface} from "../../interface/RocketVaultInterface.sol";
+import {RocketDAOProtocolSettingsNodeInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
+import {RocketMinipoolManagerInterface} from "../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import {RocketNetworkPricesInterface} from "../../interface/network/RocketNetworkPricesInterface.sol";
+import {RocketNetworkSnapshotsInterface} from "../../interface/network/RocketNetworkSnapshotsInterface.sol";
+import {RocketNodeManagerInterface} from "../../interface/node/RocketNodeManagerInterface.sol";
+import {RocketNodeStakingInterface} from "../../interface/node/RocketNodeStakingInterface.sol";
+import {RocketTokenRPLInterface} from "../../interface/token/RocketTokenRPLInterface.sol";
+import {IERC20} from "../../interface/util/IERC20.sol";
+import {IERC20Burnable} from "../../interface/util/IERC20Burnable.sol";
+import {RocketBase} from "../RocketBase.sol";
 
 /// @notice Handles staking of RPL by node operators
 contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
@@ -192,8 +188,12 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
 
     /// @dev Internal implementation for staking process
     function _stakeRPLFor(address _nodeAddress, uint256 _amount) internal {
+        // Transfer RPL in and increase stake
         transferRPLIn(msg.sender, _amount);
         increaseNodeRPLStake(_nodeAddress, _amount);
+        // Update last staked time
+        setNodeLastStakeTime(_nodeAddress);
+        // Emit event
         emit RPLStaked(_nodeAddress, msg.sender, _amount, block.timestamp);
     }
 
@@ -252,6 +252,10 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         uint256 unstakingPeriod = rocketDAOProtocolSettingsNode.getUnstakingPeriod();
         uint256 timeSinceLastUnstake = block.timestamp - lastUnstakeTime;
         if (timeSinceLastUnstake <= unstakingPeriod) {
+            return 0;
+        }
+        // Check withdrawal cooldown
+        if (block.timestamp - getNodeRPLStakedTime(_nodeAddress) < rocketDAOProtocolSettingsNode.getWithdrawalCooldown()) {
             return 0;
         }
         // Retrieve amount of RPL in unstaking state
@@ -366,9 +370,9 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         uint256 rplSlashAmount = calcBase * _ethSlashAmount / rocketNetworkPrices.getRPLPrice();
         // Cap slashed amount to node's RPL stake
         uint256 rplStake = getNodeLegacyStakedRPL(_nodeAddress);
-        if (rplSlashAmount > rplStake) { rplSlashAmount = rplStake; }
+        if (rplSlashAmount > rplStake) {rplSlashAmount = rplStake;}
         // Transfer slashed amount to auction contract
-        if(rplSlashAmount > 0) rocketVault.transferToken("rocketAuctionManager", IERC20(getContractAddress("rocketTokenRPL")), rplSlashAmount);
+        if (rplSlashAmount > 0) rocketVault.transferToken("rocketAuctionManager", IERC20(getContractAddress("rocketTokenRPL")), rplSlashAmount);
         // Update RPL stake amounts
         decreaseNodeLegacyRPLStake(_nodeAddress, rplSlashAmount);
         // Mark minipool as slashed
@@ -426,7 +430,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Check node operator has sufficient RPL to reduce
         uint256 legacyStakedRPL = getNodeLegacyStakedRPL(_nodeAddress);
         uint256 lockedRPL = getNodeLockedRPL(_nodeAddress);
-        require (
+        require(
             uint256(totalStakedRPL) >= _amount + lockedRPL &&
             uint256(totalStakedRPL) >= _amount + legacyStakedRPL,
             "Insufficient RPL stake to reduce"
@@ -450,13 +454,13 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         uint256 legacyStakedRPL = getUint(legacyKey);
         // Check amount after decrease does not fall below minimum requirement for minipool bond
         uint256 maximumStakedRPL = getNodeMaximumRPLStakeForMinipools(_nodeAddress);
-        require (
+        require(
             legacyStakedRPL >= _amount + maximumStakedRPL,
             "Insufficient legacy staked RPL"
         );
         uint256 lockedRPL = getNodeLockedRPL(_nodeAddress);
         // Check node has enough unlocked RPL for the reduction
-        require (
+        require(
             uint256(totalStakedRPL) >= _amount + lockedRPL,
             "Insufficient RPL stake to reduce"
         );
@@ -546,7 +550,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @dev If legacy RPL balance has not been migrated, migrate it. Otherwise, do nothing
     function migrateLegacy(address _nodeAddress, uint256 _amount) private {
         bytes32 migratedKey = keccak256(abi.encodePacked("rpl.legacy.staked.node.migrated", _nodeAddress));
-        if (getBool(migratedKey) ) {
+        if (getBool(migratedKey)) {
             return;
         }
         bytes32 legacyKey = keccak256(abi.encodePacked("rpl.legacy.staked.node.amount", _nodeAddress));
@@ -573,6 +577,11 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @dev Sets the time of the given node operator's unstake to the current block time
     function setNodeLastUnstakeTime(address _nodeAddress) internal {
         setUint(keccak256(abi.encodePacked("rpl.megapool.unstake.time", _nodeAddress)), block.timestamp);
+    }
+
+    /// @dev Sets the time of the given node operator's stake to the current block time
+    function setNodeLastStakeTime(address _nodeAddress) internal {
+        setUint(keccak256(abi.encodePacked("rpl.staked.node.time", _nodeAddress)), block.timestamp);
     }
 
     /// @dev Implements caller restrictions (per RPIP-31):

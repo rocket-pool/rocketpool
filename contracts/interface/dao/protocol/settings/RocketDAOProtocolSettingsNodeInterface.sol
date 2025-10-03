@@ -13,4 +13,5 @@ interface RocketDAOProtocolSettingsNodeInterface {
     function getReducedBond() external view returns (uint256);
     function getBaseBondArray() external view returns (uint256[] memory);
     function getUnstakingPeriod() external view returns (uint256);
+    function getWithdrawalCooldown() external view returns (uint256);
 }

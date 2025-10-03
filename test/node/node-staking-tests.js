@@ -1,5 +1,10 @@
 import { before, describe, it } from 'mocha';
-import { RocketDAONodeTrustedSettingsMinipool, RocketNodeStaking, StakeHelper } from '../_utils/artifacts';
+import {
+    RocketDAONodeTrustedSettingsMinipool,
+    RocketDAOProtocolSettingsNode,
+    RocketNodeStaking,
+    StakeHelper,
+} from '../_utils/artifacts';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import {
@@ -21,6 +26,7 @@ import { globalSnapShot, snapshotDescribe } from '../_utils/snapshotting';
 import { unstakeRpl, unstakeRplFor } from './scenario-unstake-rpl';
 import { assertBN } from '../_helpers/bn';
 import { unstakeLegacyRpl, unstakeLegacyRplFor } from './scenario-unstake-legacy-rpl';
+import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -199,6 +205,33 @@ export default function() {
             // Assert balances
             await assertBalances(node, 0n, '3000'.ether);
             await assertUnstakingBalance(node, '1000'.ether);
+        });
+
+        it(printTitle('node operator', 'can not withdraw RPL if unstaking period has passed, but withdrawal cooldown has not'), async () => {
+            // Set cooldown to 5 days
+            const withdrawalCooldown = 60 * 60 * 24 * 5;
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.withdrawal.cooldown', withdrawalCooldown, { from: owner });
+            // Stake 1,000 megapool RPL
+            await nodeStakeRPL('1000'.ether, { from: node });
+            // Unstake 1,000 RPL
+            await unstakeRpl('1000'.ether, { from: node });
+            // Assert balances
+            await assertBalances(node, 0n, '0'.ether);
+            await assertUnstakingBalance(node, '1000'.ether);
+            // Wait 28 days (unstaking period)
+            await helpers.time.increase(60 * 60 * 24 * 28 + 1);
+            // Stake another 1 RPL to reset cooldown
+            await nodeStakeRPL('1'.ether, { from: node });
+            // Should be unable to withdraw due to cooldown
+            await shouldRevert(
+                withdrawRpl({ from: node }),
+                'Was able to withdraw before cooldown',
+                'No available unstaking RPL to withdraw'
+            );
+            // Wait 5 days
+            await helpers.time.increase(withdrawalCooldown + 1);
+            // Should be able to withdraw now
+            await withdrawRpl({ from: node });
         });
 
         it(printTitle('node operator', 'can unstake RPL from RPL withdrawal address'), async () => {

@@ -120,8 +120,9 @@ contract RocketUpgradeOneDotFour is RocketBase {
         {
             bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "node"));
             // Initialised reduced_bond and unstaking_period setting per RPIP-42 and RPIP-30
-            setUint(keccak256(abi.encodePacked(settingNameSpace, "reduced.bond")), 4 ether);                    // 4 ether (RPIP-42)
-            setUint(keccak256(abi.encodePacked(settingNameSpace, "node.unstaking.period")), 28 days);           // 28 days (RPIP-30)
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "reduced.bond")), 4 ether);              // 4 ether (RPIP-42)
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "node.unstaking.period")), 28 days);     // 28 days (RPIP-30)
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "node.withdrawal.cooldown")), 0);        // No cooldown (RPIP-30)
         }
 
         // Minipool settings
