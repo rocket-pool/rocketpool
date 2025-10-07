@@ -39,7 +39,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
                 require(_value >= (rocketDAONodeTrustedSettingsMinipool.getScrubPeriod() + 1 hours), "Launch timeout must be greater than scrub period");
                 require(_value >= 12 hours, "Launch timeout must be greater than 12 hours");
             } else if(settingKey == keccak256(abi.encodePacked("minipool.maximum.penalty.count"))) {
-                require(_value >= 1000 ether && _value <= 5000 ether, "Value must be >= 1000 ETH & <= 5000 ETH");
+                require(_value >= 1000 && _value <= 5000, "Value must be >= 1000 & <= 5000");
             }
         }
         // Update setting now
