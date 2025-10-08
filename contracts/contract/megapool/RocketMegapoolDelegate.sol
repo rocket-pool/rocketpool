@@ -252,6 +252,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         validator.lastRequestedBond = 0;
         validator.lastRequestedValue = 0;
         validators[_validatorId] = validator;
+        // Delete prestake signature
+        delete prestakeSignatures[_validatorId];
         // Emit event
         emit MegapoolValidatorDequeued(_validatorId, block.timestamp);
     }

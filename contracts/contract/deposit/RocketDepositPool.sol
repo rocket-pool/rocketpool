@@ -584,10 +584,11 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
         require(rocketDAOProtocolSettingsDeposit.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
         // Check node operator has sufficient credit
-        uint256 credit = getUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress)));
+        bytes32 creditKey = keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress));
+        uint256 credit = getUint(creditKey);
         require(credit >= _amount, "Amount exceeds credit available");
         // Account for balance changes
-        subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress)), _amount);
+        subUint(creditKey, _amount);
         // Note: The funds are already stored in RocketVault under RocketDepositPool so no ETH transfer is required
         // Get the node operator's withdrawal address
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));

@@ -138,7 +138,6 @@ contract RocketNetworkPenalties is RocketBase, RocketNetworkPenaltiesInterface {
         uint256 currentTotal = uint256(currentRunningTotal) - earlierRunningTotal;
         require(currentTotal < maxPenalty, "Max penalty exceeded");
         uint256 currentMaxPenalty = maxPenalty - currentTotal;
-        require(currentMaxPenalty > 0, "Max penalty exceeded");
         // Insert new running total
         rocketNetworkSnapshots.push(penaltyKey, currentRunningTotal + 1);
         // Increment the penalty count on this minipool
