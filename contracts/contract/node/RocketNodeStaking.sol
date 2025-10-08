@@ -421,6 +421,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     }
 
     /// @dev Decreases a node operator's megapool staked RPL amount
+    /// @param _nodeAddress Address of node to decrease megapool staked RPL for
     /// @param _amount Amount to decrease by
     function decreaseNodeMegapoolRPLStake(address _nodeAddress, uint256 _amount) private {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
@@ -443,6 +444,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     }
 
     /// @dev Decreases a node operator's legacy staked RPL amount
+    /// @param _nodeAddress Address of node to decrease legacy staked RPL for
     /// @param _amount Amount to decrease by
     function decreaseNodeLegacyRPLStake(address _nodeAddress, uint256 _amount) private {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
@@ -452,10 +454,10 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Check amount does not exceed amount staked
         bytes32 legacyKey = keccak256(abi.encodePacked("rpl.legacy.staked.node.amount", _nodeAddress));
         uint256 legacyStakedRPL = getUint(legacyKey);
-        // Check amount after decrease does not fall below minimum requirement for minipool bond
-        uint256 maximumStakedRPL = getNodeMaximumRPLStakeForMinipools(_nodeAddress);
+        // Check amount after decrease does not fall below minimum required
+        uint256 minimumLegacyStakedRPL = getNodeMinimumLegacyRPLStake(_nodeAddress);
         require(
-            legacyStakedRPL >= _amount + maximumStakedRPL,
+            legacyStakedRPL >= _amount + minimumLegacyStakedRPL,
             "Insufficient legacy staked RPL"
         );
         uint256 lockedRPL = getNodeLockedRPL(_nodeAddress);
@@ -535,16 +537,16 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         return (ethTotal * calcBase) / (ethTotal - borrowedETH);
     }
 
-    /// @notice Returns a node's maximum RPL stake to fully collateralise their minipools
+    /// @notice Returns the minimum amount of legacy staked RPL a node must have after unstaking
     /// @param _nodeAddress The address of the node operator to calculate for
-    function getNodeMaximumRPLStakeForMinipools(address _nodeAddress) public view returns (uint256) {
+    function getNodeMinimumLegacyRPLStake(address _nodeAddress) public view returns (uint256) {
         // Load contracts
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
-        // Retrieve variables
-        uint256 maximumStakePercent = rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake();
-        uint256 bondedETH = getNodeMinipoolETHBonded(_nodeAddress);
-        return bondedETH * maximumStakePercent / rocketNetworkPrices.getRPLPrice();
+        // Calculate and return minimum
+        uint256 minimumRPLStakePercent = rocketDAOProtocolSettingsNode.getMinimumLegacyRPLStake();
+        uint256 borrowedETH = getNodeMinipoolETHBorrowed(_nodeAddress);
+        return borrowedETH * minimumRPLStakePercent / rocketNetworkPrices.getRPLPrice();
     }
 
     /// @dev If legacy RPL balance has not been migrated, migrate it. Otherwise, do nothing

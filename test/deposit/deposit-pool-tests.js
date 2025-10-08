@@ -141,11 +141,6 @@ export default function() {
             });
             // Disable deposit assignment
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', false, { from: owner });
-            // Stake RPL to cover minipools
-            let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake * 3n;
-            await mintRPL(owner, trustedNode, rplStake);
-            await nodeStakeRPL(rplStake, { from: trustedNode });
             // Deposit and queue up some validators
             await userDeposit({ from: staker, value: '100'.ether });
             for (let i = 0; i < 3; ++i) {

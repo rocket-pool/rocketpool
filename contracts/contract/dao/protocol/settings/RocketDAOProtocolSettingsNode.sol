@@ -19,11 +19,10 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
             setSettingBool("node.smoothing.pool.registration.enabled", true);
             setSettingBool("node.deposit.enabled", false);
             setSettingBool("node.vacant.minipools.enabled", false);
-            _setSettingUint("node.per.minipool.stake.minimum", 0.1 ether);      // 10% of user ETH value (borrowed ETH)
-            _setSettingUint("node.per.minipool.stake.maximum", 1.5 ether);      // 150% of node ETH value (bonded ETH)
             _setSettingUint("reduced.bond", 4 ether);                           // 4 ETH (RPIP-42)
             _setSettingUint("node.unstaking.period", 28 days);                  // 28 days (RPIP-30)
             _setSettingUint("node.withdrawal.cooldown", 0);                     // No cooldown (RPIP-30)
+            _setSettingUint("node.minimum.legacy.staked.rpl", 0.15 ether);      // 15% of borrowed ETH (RPIP-30)
             // Update deployed flag
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -76,16 +75,6 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
         return getSettingBool("node.vacant.minipools.enabled");
     }
 
-    // Minimum RPL stake per minipool as a fraction of assigned user ETH value
-    function getMinimumPerMinipoolStake() override external view returns (uint256) {
-        return getSettingUint("node.per.minipool.stake.minimum");
-    }
-
-    // Maximum RPL stake per minipool as a fraction of assigned user ETH value
-    function getMaximumPerMinipoolStake() override external view returns (uint256) {
-        return getSettingUint("node.per.minipool.stake.maximum");
-    }
-
     // Maximum staked RPL that applies to voting power per minipool as a fraction of assigned user ETH value
     function getMaximumStakeForVotingPower() override external view returns (uint256) {
         bytes32 settingKey = keccak256(bytes("node.voting.power.stake.maximum"));
@@ -114,5 +103,10 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
     /// @notice Returns the amount of time that must be waited after staking RPL before it can be unstaked again
     function getWithdrawalCooldown() override external view returns (uint256) {
         return getSettingUint("node.withdrawal.cooldown");
+    }
+
+    /// @notice Returns the amount of legacy staked RPL required by a node after unstaking as percentage of their borrowed ETH
+    function getMinimumLegacyRPLStake() override external view returns (uint256) {
+        return getSettingUint("node.minimum.legacy.staked.rpl");
     }
 }

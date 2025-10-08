@@ -40,9 +40,8 @@ export default function() {
             // Register node & set withdrawal address
             await registerNode({ from: node });
 
-            // Stake RPL to cover minipools
-            let minipoolRplStake = await getMinipoolMaximumRPLStake();
-            let rplStake = minipoolRplStake * 2n;
+            // Stake RPL for voting power
+            let rplStake = '1200'.ether;
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, { from: node });
 

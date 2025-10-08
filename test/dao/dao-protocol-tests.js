@@ -291,9 +291,8 @@ export default function() {
         });
 
         async function createNode(validatorCount, node) {
-            // Stake RPL to cover minipools
-            let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake * validatorCount.BN;
+            // Stake RPL for voting power
+            let rplStake = '100'.ether * validatorCount.BN;
             const nodeCount = await getNodeCount();
             await registerNode({ from: node });
             nodeMap[node.address] = Number(nodeCount);

@@ -7,11 +7,10 @@ interface RocketDAOProtocolSettingsNodeInterface {
     function getSmoothingPoolRegistrationEnabled() external view returns (bool);
     function getDepositEnabled() external view returns (bool);
     function getVacantMinipoolsEnabled() external view returns (bool);
-    function getMinimumPerMinipoolStake() external view returns (uint256);
-    function getMaximumPerMinipoolStake() external view returns (uint256);
     function getMaximumStakeForVotingPower() external view returns (uint256);
     function getReducedBond() external view returns (uint256);
     function getBaseBondArray() external view returns (uint256[] memory);
     function getUnstakingPeriod() external view returns (uint256);
     function getWithdrawalCooldown() external view returns (uint256);
+    function getMinimumLegacyRPLStake() external view returns (uint256);
 }

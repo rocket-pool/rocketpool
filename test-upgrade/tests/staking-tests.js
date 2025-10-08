@@ -1,11 +1,15 @@
 import { executeUpgrade } from '../_helpers/upgrade';
-import { RocketNetworkVoting, RocketNodeStaking } from '../../test/_utils/artifacts';
+import { RocketDAOProtocolSettingsNode, RocketNetworkVoting, RocketNodeStaking } from '../../test/_utils/artifacts';
 import { assertBN } from '../../test/_helpers/bn';
-import { getMinipoolMinimumRPLStake, stakeMinipool } from '../../test/_helpers/minipool';
+import { stakeMinipool } from '../../test/_helpers/minipool';
 import { createMinipool } from '../_helpers/minipool';
 import { userDeposit } from '../../test/_helpers/deposit';
 import { nodeDeposit } from '../../test/_helpers/megapool';
 import { BigSqrt } from '../../test/_helpers/bigmath';
+import { submitPrices } from '../../test/network/scenario-submit-prices';
+import { setNodeTrusted } from '../../test/_helpers/node';
+import { shouldRevert } from '../../test/_utils/testing';
+import { setDAOProtocolBootstrapSetting } from '../../test/dao/scenario-dao-protocol-bootstrap';
 
 const { beforeEach, describe, before, it } = require('mocha');
 const { globalSnapShot } = require('../../test/_utils/snapshotting');
@@ -30,6 +34,9 @@ export default function() {
         let owner,
             node,
             nodeWithdrawalAddress,
+            trustedNode1,
+            trustedNode2,
+            trustedNode3,
             random;
 
         let upgradeContract;
@@ -41,6 +48,9 @@ export default function() {
                 owner,
                 node,
                 nodeWithdrawalAddress,
+                trustedNode1,
+                trustedNode2,
+                trustedNode3,
                 random,
             ] = await ethers.getSigners();
 
@@ -133,6 +143,62 @@ export default function() {
              *
              */
             assertBN.equal(votingPower, BigSqrt('3000'.ether * '1'.ether));
+        });
+
+        it(printTitle('node', 'can unstake legacy staked RPL down to 15% of borrowed ETH'), async () => {
+            // Register node
+            await registerNode({ from: node });
+            // Register trusted nodes
+            await registerNode({ from: trustedNode1 });
+            await registerNode({ from: trustedNode2 });
+            await registerNode({ from: trustedNode3 });
+            await setNodeTrusted(trustedNode1, 'saas_1', 'node@home.com', owner);
+            await setNodeTrusted(trustedNode2, 'saas_2', 'node@home.com', owner);
+            await setNodeTrusted(trustedNode3, 'saas_3', 'node@home.com', owner);
+            // Set RPL price to 0.1 ETH
+            let block = await ethers.provider.getBlockNumber();
+            let slotTimestamp = '1600000000';
+            let rplPrice = '0.1'.ether;
+            await submitPrices(block, slotTimestamp, rplPrice, { from: trustedNode1 });
+            await submitPrices(block, slotTimestamp, rplPrice, { from: trustedNode2 });
+            await submitPrices(block, slotTimestamp, rplPrice, { from: trustedNode3 });
+            // Mint 1000 RPL and stake
+            await mintRPL(owner, node, '1000'.ether);
+            await stakeRPL(node, '1000'.ether);
+            // Create a 8 ETH minipool
+            const minipool = (await createMinipool({ from: node, value: '8'.ether })).connect(node);
+            // Perform a user deposit with enough to assign the minipool
+            await userDeposit({ from: random, value: '24'.ether });
+            // Confirm prelaunch status
+            const status = await minipool.getStatus();
+            assertBN.equal(status, 1n)
+            // Execute upgrade
+            await executeUpgrade(owner, upgradeContract, rocketStorageAddress);
+            // Set minimum stake setting to 15%
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, "node.minimum.legacy.staked.rpl", '0.15'.ether, { from: owner });
+            // Check minimum stake
+            /**
+             * With 1x 8 ETH minipool, borrowed ETH is 24 ETH
+             * At 0.1 ETH per RPL, the minimum should be 15% of 240 RPL
+             * Minimum is therefore 36 RPL
+             */
+            const rocketNodeStaking = await RocketNodeStaking.deployed();
+            const minimumStake = await rocketNodeStaking.getNodeMinimumLegacyRPLStake(node.address);
+            assertBN.equal(minimumStake, '36'.ether);
+            // Should not be able to unstake below 36 RPL (1000 - 36 = 964)
+            await shouldRevert(
+                unstakeLegacyRpl('965'.ether, { from: node }),
+                'Was able to unstake below 15% minimum',
+                'Insufficient legacy staked RPL'
+            );
+            // Should be able to unstake to 36 RPL
+            await unstakeLegacyRpl('964'.ether, { from: node });
+            // Should not be able to unstake any more
+            await shouldRevert(
+                unstakeLegacyRpl(1n, { from: node }),
+                'Was able to unstake below 15% minimum',
+                'Insufficient legacy staked RPL'
+            );
         });
     });
 }

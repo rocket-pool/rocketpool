@@ -39,7 +39,7 @@ interface RocketNodeStakingInterface {
     function getNodeMegapoolETHBorrowed(address _nodeAddress) external view returns (uint256);
     function getNodeMinipoolETHBorrowed(address _nodeAddress) external view returns (uint256);
 
-    function getNodeMaximumRPLStakeForMinipools(address _nodeAddress) external view returns (uint256);
+    function getNodeMinimumLegacyRPLStake(address _nodeAddress) external view returns (uint256);
     function getNodeETHCollateralisationRatio(address _nodeAddress) external view returns (uint256);
 
     // Internal (not callable by users)
