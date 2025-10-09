@@ -187,6 +187,7 @@ contract RocketDAOSecurityProposals is RocketBase, RocketDAOSecurityProposalsInt
         RocketDAOSecurityInterface daoSecurity = RocketDAOSecurityInterface(getContractAddress("rocketDAOSecurity"));
         // Check valid member
         require(daoSecurity.getMemberIsValid(_existingMemberAddress), "This node is not part of the security council");
+        require(_existingMemberAddress != _newMemberAddress, "New member address must not be the same");
         // Kick and invite
         proposalKick(_existingMemberAddress);
         proposalInvite(_newMemberId, _newMemberAddress);

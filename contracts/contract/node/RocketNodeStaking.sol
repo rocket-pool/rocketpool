@@ -336,6 +336,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     function transferRPL(address _from, address _to, uint256 _amount) override external onlyLatestNetworkContract() onlyRegisteredNode(_from) onlyRegisteredNode(_to) {
         // Check sender has enough RPL
         require(getNodeStakedRPL(_from) >= _amount, "Sender has insufficient RPL");
+        require(_from != _to, "Cannot transfer to same address");
         // Transfer the stake
         decreaseNodeRPLStake(_from, _amount);
         increaseNodeRPLStake(_to, _amount);
