@@ -56,7 +56,7 @@ contract RocketDAOProtocolSettingsSecurity is RocketDAOProtocolSettings, RocketD
             } else if(settingKey == keccak256(bytes("proposal.action.time"))) {
                 require(_value >= 1 days, "Value must be >= 1 day");
             } else if(settingKey == keccak256(bytes("upgradeveto.quorum"))) {
-                require(_value >= 0.33 ether && _value <= 1 ether, "Quorum setting must be >= 51% & <= 75%");
+                require(_value >= 0.33 ether && _value <= 1 ether, "Quorum setting must be >= 33% & <= 100%");
             } else if(settingKey == keccak256(bytes("upgrade.delay"))) {
                 require(_value >= 1 days && _value <= 30 days, "Value must be >= 1 day & <= 30 days");
             }
