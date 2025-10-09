@@ -45,19 +45,19 @@ contract RocketDAOProtocolSettingsSecurity is RocketDAOProtocolSettings, RocketD
         // Some safety guards for certain settings
         if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             bytes32 settingKey = keccak256(abi.encodePacked(_settingPath));
-            if(settingKey == keccak256(abi.encodePacked("members.quorum"))) {
+            if(settingKey == keccak256(bytes("members.quorum"))) {
                 require(_value >= 0.51 ether && _value <= 0.75 ether, "Quorum setting must be >= 51% & <= 75%");
-            } else if(settingKey == keccak256(abi.encodePacked("members.leave.time"))) {
+            } else if(settingKey == keccak256(bytes("members.leave.time"))) {
                 require(_value < 14 days, "Value must be < 14 days");
-            } else if(settingKey == keccak256(abi.encodePacked("proposal.vote.time"))) {
+            } else if(settingKey == keccak256(bytes("proposal.vote.time"))) {
                 require(_value >= 1 days, "Value must be >= 1 day");
-            } else if(settingKey == keccak256(abi.encodePacked("proposal.execute.time"))) {
+            } else if(settingKey == keccak256(bytes("proposal.execute.time"))) {
                 require(_value >= 1 days, "Value must be >= 1 day");
-            } else if(settingKey == keccak256(abi.encodePacked("proposal.action.time"))) {
+            } else if(settingKey == keccak256(bytes("proposal.action.time"))) {
                 require(_value >= 1 days, "Value must be >= 1 day");
-            } else if(settingKey == keccak256(abi.encodePacked("upgradeveto.quorum"))) {
+            } else if(settingKey == keccak256(bytes("upgradeveto.quorum"))) {
                 require(_value >= 0.33 ether && _value <= 1 ether, "Quorum setting must be >= 51% & <= 75%");
-            } else if(settingKey == keccak256(abi.encodePacked("upgrade.delay"))) {
+            } else if(settingKey == keccak256(bytes("upgrade.delay"))) {
                 require(_value >= 1 days && _value <= 30 days, "Value must be >= 1 day & <= 30 days");
             }
         }

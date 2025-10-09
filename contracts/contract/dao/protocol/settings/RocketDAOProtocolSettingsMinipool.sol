@@ -34,11 +34,11 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
         // Some safety guards for certain settings
         if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             bytes32 settingKey = keccak256(abi.encodePacked(_settingPath));
-            if(settingKey == keccak256(abi.encodePacked("minipool.launch.timeout"))) {
+            if(settingKey == keccak256(bytes("minipool.launch.timeout"))) {
                 RocketDAONodeTrustedSettingsMinipoolInterface rocketDAONodeTrustedSettingsMinipool = RocketDAONodeTrustedSettingsMinipoolInterface(getContractAddress("rocketDAONodeTrustedSettingsMinipool"));
                 require(_value >= (rocketDAONodeTrustedSettingsMinipool.getScrubPeriod() + 1 hours), "Launch timeout must be greater than scrub period");
                 require(_value >= 12 hours, "Launch timeout must be greater than 12 hours");
-            } else if(settingKey == keccak256(abi.encodePacked("minipool.maximum.penalty.count"))) {
+            } else if(settingKey == keccak256(bytes("minipool.maximum.penalty.count"))) {
                 require(_value >= 1000 && _value <= 5000, "Value must be >= 1000 & <= 5000");
             }
         }

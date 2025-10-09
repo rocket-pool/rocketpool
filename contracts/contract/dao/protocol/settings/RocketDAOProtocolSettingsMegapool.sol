@@ -38,15 +38,15 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
         if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Some safety guards for certain settings
             bytes32 settingKey = keccak256(abi.encodePacked(_settingPath));
-            if (settingKey == keccak256(abi.encodePacked("megapool.time.before.dissolve"))) {
+            if (settingKey == keccak256(bytes("megapool.time.before.dissolve"))) {
                 require(_value >= 10 days && _value <= 60 days, "Value must be >= 10 days & <= 60 days");
-            } else if (settingKey == keccak256(abi.encodePacked("maximum.megapool.eth.penalty"))) {
+            } else if (settingKey == keccak256(bytes("maximum.megapool.eth.penalty"))) {
                 require(_value >= 300 ether && _value <= 5000 ether, "Value must be >= 300 ETH & <= 5000 ETH");
             } else if (settingKey == keccak256(bytes("notify.threshold"))) {
                 require(_value >= 2 hours && _value <= 24 hours, "Value must be >= 2 hours & <= 24 hours");
-            } else if (settingKey == keccak256(abi.encodePacked("late.notify.fine"))) {
+            } else if (settingKey == keccak256(bytes("late.notify.fine"))) {
                 require(_value >= 0.01 ether && _value <= 0.5 ether, "Value must be >= 0.01 ETH & <= 0.5 ETH");
-            } else if (settingKey == keccak256(abi.encodePacked("user.distribute.window.length"))) {
+            } else if (settingKey == keccak256(bytes("user.distribute.window.length"))) {
                 require(_value >= 1 days && _value <= 30 days, "Value must be between 1 and 30 days");
             } else if (settingKey == keccak256(bytes("megapool.penalty.threshold"))) {
                 require(_value >= 0.51 ether, "Penalty threshold must be 51% or higher");

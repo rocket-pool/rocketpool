@@ -35,9 +35,9 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
         // Some safety guards for certain settings
         if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             bytes32 settingKey = keccak256(bytes(_settingPath));
-            if (settingKey == keccak256(abi.encodePacked("deposit.fee"))) {
+            if (settingKey == keccak256(bytes("deposit.fee"))) {
                 require(_value < 0.01 ether, "Fee must be less than 1%");
-            } else if (settingKey == keccak256(abi.encodePacked("express.queue.rate"))) {
+            } else if (settingKey == keccak256(bytes("express.queue.rate"))) {
                 require(_value > 0, "Rate must be greater than 0");
             }
         }
