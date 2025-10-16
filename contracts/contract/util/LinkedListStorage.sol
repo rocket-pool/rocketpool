@@ -198,7 +198,10 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
 
         if (nextIndex > 0) {
             // Not the last item
-            setUint(keccak256(abi.encodePacked(_namespace, ".prev", nextIndex)), prevIndex);
+            // If prevIndex == 0, it was already deleted in the preceding conditional branch
+            if (prevIndex != 0) {
+                setUint(keccak256(abi.encodePacked(_namespace, ".prev", nextIndex)), prevIndex);
+            }
         } else {
             // Last item
             // clear the 64 bits used to stored the 'end' pointer
@@ -229,7 +232,7 @@ contract LinkedListStorage is RocketBase, LinkedListStorageInterface {
         packed |= uint256(_item.requestedValue);
     }
 
-    /// @notice unpacks an uint256 value into a deposit queue struct 
+    /// @notice unpacks an uint256 value into a deposit queue struct
     /// @param _packedValue the packed deposit queue value 
     function _unpackItem(uint256 _packedValue) internal pure returns (DepositQueueValue memory item) {
         item.receiver = address(uint160(_packedValue >> receiverOffset));
