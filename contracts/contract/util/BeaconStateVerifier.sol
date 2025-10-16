@@ -150,7 +150,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         SSZ.Path memory path = SSZ.from(4, 3); // 0b100 (BeaconBlockHeader -> body_root)
         path = SSZ.concat(path, SSZ.from(9, 4)); // 0b1001 (BeaconBlockBody -> execution_payload)
         path = SSZ.concat(path, SSZ.from(14, 5)); // 0b01110 (ExecutionPayload -> withdrawals)
-        path = SSZ.concat(path, SSZ.intoVector(_withdrawalNum, 5)); // withdrawals -> withdrawals[n]
+        path = SSZ.concat(path, SSZ.intoList(_withdrawalNum, 4)); // withdrawals -> withdrawals[n]
         return path;
     }
 }
