@@ -174,6 +174,25 @@ export default function() {
             await nodeDepositMulti(node, deposits);
         });
 
+        it(printTitle('node', 'can not deposit multi with excess msg.value'), async () => {
+            const deposits = [
+                {
+                    bondAmount: '4'.ether,
+                    useExpressTicket: false,
+                },
+                {
+                    bondAmount: '4'.ether,
+                    useExpressTicket: false,
+                },
+            ];
+
+            await shouldRevert(
+                nodeDepositMulti(node, deposits, 0n, '8.1'.ether),
+                'Deposited multiple with excess msg.value',
+                'Excess bond value supplied'
+            );
+        });
+
         it(printTitle('node', 'can not perform multi deposit with no deposits'), async () => {
             await deployMegapool({ from: node });
             const deposits = [];

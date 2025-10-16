@@ -259,7 +259,7 @@ export async function nodeDeposit(node, bondAmount = '4'.ether, useExpressTicket
     assert.equal(validatorInfo.pubkey, '0x' + depositData.pubkey.toString('hex'), 'Incorrect validator pubkey');
 }
 
-export async function nodeDepositMulti(node, deposits, creditAmount = 0n) {
+export async function nodeDepositMulti(node, deposits, creditAmount = 0n, value = null) {
     const [
         rocketNodeDeposit,
         rocketNodeManager,
@@ -308,7 +308,7 @@ export async function nodeDepositMulti(node, deposits, creditAmount = 0n) {
     }
 
     // Construct deposit data for prestake
-    let msgValue = totalBond - creditAmount;
+    let msgValue = value === null ? (totalBond - creditAmount) : value;
 
     async function getData() {
         let data = await Promise.all([

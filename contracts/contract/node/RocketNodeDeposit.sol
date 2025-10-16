@@ -186,6 +186,8 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
             // Sum bond total
             totalBond += deposit.bondAmount;
         }
+        // Check if node accidentally sent too high msg.value
+        require(msg.value <= totalBond, "Excess bond value supplied");
         // Check if node sent full bond amount of if we need to use credit/balance
         uint256 balanceToUse = 0;
         if (msg.value < totalBond) {
