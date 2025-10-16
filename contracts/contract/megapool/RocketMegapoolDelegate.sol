@@ -555,8 +555,9 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         // Check required state
         require(validator.locked, "Validator not locked");
         require(_slot >= validator.lockedSlot, "Proof is older than challenge");
-        // Update validator state to unlocked
+        // Update validator state to unlocked and reset locked slot
         validator.locked = false;
+        validator.lockedSlot = 0;
         // Decrement locked validator counter
         numLockedValidators -= 1;
         validators[_validatorId] = validator;
@@ -586,6 +587,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         // If validator was locked, notifying exit unlocks it
         if (validator.locked) {
             validator.locked = false;
+            validator.lockedSlot = 0;
             numLockedValidators -= 1;
         }
         validators[_validatorId] = validator;
