@@ -538,7 +538,6 @@ export default function() {
 
         it(printTitle('trusted node', 'can apply a penalty to a megapool'), async () => {
             await deployMegapool({ from: node });
-
             await votePenalty(megapool, 0n, '1'.ether, trustedNode1);
             await votePenalty(megapool, 0n, '1'.ether, trustedNode2);
             await shouldRevert(votePenalty(megapool, 0n, '1'.ether, trustedNode3), 'Applied penalty past majority', 'Penalty already applied');
@@ -547,11 +546,17 @@ export default function() {
         it(printTitle('trusted node', 'can not apply penalty greater than max'), async () => {
             const maxPenaltyAmount = '2500'.ether;
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMegapool, 'maximum.megapool.eth.penalty', maxPenaltyAmount, { from: owner });
-
             await deployMegapool({ from: node });
-
-            await votePenalty(megapool, 0n, '2501'.ether, trustedNode1);
-            await shouldRevert(votePenalty(megapool, 0n, '2501'.ether, trustedNode2), 'Max penalty exceeded', 'Max penalty exceeded');
+            // Apply a penalty of 1250
+            await votePenalty(megapool, 0n, maxPenaltyAmount / 2n, trustedNode1);
+            await votePenalty(megapool, 0n, maxPenaltyAmount / 2n, trustedNode2);
+            // Try to apply a penalty of 1251 to exceed the maximum
+            await votePenalty(megapool, 1n, maxPenaltyAmount / 2n + 1n, trustedNode1);
+            await shouldRevert(
+                votePenalty(megapool, 1n, maxPenaltyAmount / 2n + 1n, trustedNode2),
+                'Was able to exceed maximum',
+                'Max penalty exceeded'
+            );
         });
 
         it(printTitle('trusted node', 'can apply another penalty only after 50400 blocks'), async () => {
@@ -569,6 +574,17 @@ export default function() {
             const megapoolDebtAfter = await megapool.getDebt();
             const debtDelta = megapoolDebtAfter - megapoolDebtBefore;
             assertBN.equal(debtDelta, '2500'.ether);
+        });
+
+        it(printTitle('trusted node', 'can not vote for a penalty greater than maximum'), async () => {
+            const maxPenaltyAmount = '2500'.ether;
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMegapool, 'maximum.megapool.eth.penalty', maxPenaltyAmount, { from: owner });
+            await deployMegapool({ from: node });
+            await shouldRevert(
+                votePenalty(megapool, 0n, maxPenaltyAmount + 1n, trustedNode1),
+                'Was able to vote for a penalty greater than maximum',
+                'Penalty exceeds maximum'
+            );
         });
 
         it(printTitle('misc', 'should calculate rewards on an empty megapool'), async () => {

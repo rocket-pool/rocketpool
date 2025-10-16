@@ -39,6 +39,10 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
     function penalise(address _megapool, uint256 _block, uint256 _amount) override external onlyTrustedNode(msg.sender) onlyRegisteredMegapool(_megapool) {
         require(_amount > 0, "Invalid penalty amount");
         require(_block < block.number, "Invalid block number");
+        // Sanity check amount does not exceed max penalty
+        RocketDAOProtocolSettingsMegapoolInterface rocketDAOProtocolSettingsMegapool = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
+        uint256 maxPenalty = rocketDAOProtocolSettingsMegapool.getMaximumEthPenalty();
+        require(_amount <= maxPenalty, "Penalty exceeds maximum");
         // Get submission keys
         bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("megapool.penalty.submission", msg.sender, _megapool, _block, _amount));
         bytes32 submissionCountKey = keccak256(abi.encodePacked("megapool.penalty.submission", _megapool, _block, _amount));
