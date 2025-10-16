@@ -54,7 +54,7 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         key = keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress));
         uint256 borrowedETH = uint256(rocketNetworkSnapshots.lookupRecent(key, _block, 5));
 
-        // Get active minipools to calculate borrowed ETH
+        // Get active minipools to calculate bonded ETH
         key = keccak256(abi.encodePacked("minipools.active.count", _nodeAddress));
         uint256 activeMinipools = rocketNetworkSnapshots.lookupRecent(key, _block, 5);
 
