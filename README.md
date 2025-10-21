@@ -45,3 +45,4 @@ Our friendly community are available to help via our discord.
 <a target="_blank" href="https://discord.gg/rocketpool">
   <img src="https://dcbadge.limes.pink/api/server/https://discord.gg/rocketpool">
 </a>
+Welcome to rETH Minipools Rocket Pool's decentralized staking minipools — New contributor, start your first rETH mint with the Node Operator tutorial. Tip: Use Oracle DAO for reports!
