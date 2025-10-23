@@ -32,8 +32,8 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
     /// @notice Accept incoming ETH from the deposit pool
     receive() external payable onlyLatestContract("rocketDepositPool", msg.sender) {}
 
-    /// @notice Accept incoming ETH from the vault
-    function receiveVaultWithdrawalETH() external payable {}
+    /// @dev Callback required to receive ETH withdrawal from the vault
+    function receiveVaultWithdrawalETH() override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyLatestContract("rocketVault", msg.sender) {}
 
     /// @notice Returns the bond requirement for the given number of validators
     /// @param _numValidators The number of validator to calculate the bond requirement for
@@ -92,14 +92,8 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface, RocketVaul
     /// @param _nodeAddress Address of the node operator to increase deposit balance for
     /// @param _amount Amount to increase deposit credit balance by
     function increaseDepositCreditBalance(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeDeposit", address(this)) {
-        // Accept calls from network contracts or registered minipools
-        require(
-            (
-                getBool(keccak256(abi.encodePacked("minipool.exists", msg.sender))) ||
-                getBool(keccak256(abi.encodePacked("contract.exists", msg.sender)))
-            ),
-            "Invalid or outdated network contract"
-        );
+        // Accept calls from registered minipools
+        require(getBool(keccak256(abi.encodePacked("minipool.exists", msg.sender))), "Invalid or outdated network contract");
         // Increase credit balance
         addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress)), _amount);
     }

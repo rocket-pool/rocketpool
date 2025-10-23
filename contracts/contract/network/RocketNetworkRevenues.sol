@@ -30,6 +30,14 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
         _;
     }
 
+    /// @dev Only allows calls from the pDAO setting contract
+    modifier onlyProtocolDAO() {
+        if(msg.sender != getAddress(keccak256(abi.encodePacked("contract.address", "rocketDAOProtocolSettingsNetwork")))) {
+            revert("Invalid or outdated network contract");
+        }
+        _;
+    }
+
     /// @notice Used following an upgrade or new deployment to initialise the revenue split system
     /// @param _initialNodeShare The initial value to for the node share
     /// @param _initialVoterShare The initial value to for the voter share
@@ -89,9 +97,9 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
         _setShare(voterShareKey, _newShare);
     }
 
-    /// @notice Called by a pDAO governance contract or security council to update the `pdao_share` parameter
+    /// @notice Called by a pDAO governance contract to update the `pdao_share` parameter
     /// @param _newShare The value to set the `pdao_share` to
-    function setProtocolDAOShare(uint256 _newShare) external override onlyProtocolOrSecurityDAO {
+    function setProtocolDAOShare(uint256 _newShare) external override onlyProtocolDAO {
         _setShare(protocolDAOShareKey, _newShare);
     }
 

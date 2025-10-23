@@ -32,8 +32,8 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface, RocketVaul
     /// @dev Needs to freely accept ETH withdrawn from the smoothing pool
     receive() payable external {}
 
-    /// @dev Needs to freely accept ETH withdrawn from the vault
-    function receiveVaultWithdrawalETH() external payable {}
+    /// @dev Callback required to receive ETH withdrawal from the vault
+    function receiveVaultWithdrawalETH() override external payable onlyLatestContract("rocketRewardsPool", address(this)) onlyLatestContract("rocketVault", msg.sender) {}
 
     /// @notice Accepts incoming ETH from megapool distributions for voter share into vault
     function depositVoterShare() override payable external {

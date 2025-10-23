@@ -255,6 +255,6 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketMerkleDistributorMa
         return claimedWord & mask == mask;
     }
 
-    /// @notice Allow receiving ETH from RocketVault, no action required
-    function receiveVaultWithdrawalETH() external override payable {}
+    /// @dev Callback required to receive ETH withdrawal from the vault
+    function receiveVaultWithdrawalETH() override external payable onlyLatestContract("rocketMerkleDistributorMainnet", address(this)) onlyLatestContract("rocketVault", msg.sender) {}
 }

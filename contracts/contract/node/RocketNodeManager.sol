@@ -37,10 +37,8 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface, RocketVaul
         version = 5;
     }
 
-    /// @notice Accepts ETH withdrawn from the vault
-    function receiveVaultWithdrawalETH() external payable {
-        // Do nothing
-    }
+    /// @dev Callback required to receive ETH withdrawal from the vault
+    function receiveVaultWithdrawalETH() override external payable onlyLatestContract("rocketNodeManager", address(this)) onlyLatestContract("rocketVault", msg.sender) {}
 
     /// @notice Get the number of nodes in the network
     function getNodeCount() override public view returns (uint256) {
@@ -523,6 +521,10 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface, RocketVaul
     /// @dev Used when a withdrawal address is unable to accept ETH rewards and allows node operator to claim them later
     /// @param _nodeAddress Address of the node operator to increase unclaimed rewards for
     function addUnclaimedRewards(address _nodeAddress) external payable onlyRegisteredNode(_nodeAddress) {
+        // Only a node's distributor can add unclaimed rewards
+        RocketNodeDistributorFactoryInterface rocketNodeDistributorFactor = RocketNodeDistributorFactoryInterface(getContractAddress("rocketNodeDistributorFactory"));
+        address proxyAddress = rocketNodeDistributorFactor.getProxyAddress(_nodeAddress);
+        require(msg.sender == proxyAddress, "Only distributor can add unclaimed rewards");
         // Deposit funds into vault and increase balance
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         rocketVault.depositEther{value: msg.value}();

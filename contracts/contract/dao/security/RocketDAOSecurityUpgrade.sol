@@ -23,8 +23,8 @@ contract RocketDAOSecurityUpgrade is RocketBase, RocketDAOSecurityUpgradeInterfa
 
     /// @dev Only allow certain contracts to execute methods
     modifier onlyExecutingContracts() {
-        // Methods are either executed by bootstrapping methods in rocketDAONodeTrusted or by people executing passed proposals in rocketDAOProposal
-        require(msg.sender == getContractAddress("rocketDAOProtocol") || msg.sender == getContractAddress("rocketDAOProposal"), "Sender is not permitted to access executing methods");
+        // Methods are executed by people executing passed proposals in rocketDAOProposal
+        require(msg.sender == getContractAddress("rocketDAOProposal"), "Sender is not permitted to access executing methods");
         _;
     }
 

@@ -56,9 +56,14 @@ contract RocketMegapoolFactory is RocketBase, RocketMegapoolFactoryInterface {
         return getBool(keccak256(abi.encodePacked("megapool.exists", contractAddress)));
     }
 
-    /// @notice Deploys a megapool for the given node operator (only callable by other network contracts)
+    /// @notice Deploys a megapool for the given node operator
     /// @param _nodeAddress Owning node operator's address
-    function deployContract(address _nodeAddress) override public onlyLatestNetworkContract onlyLatestContract("rocketMegapoolFactory", address(this)) returns (address) {
+    function deployContract(address _nodeAddress) override public onlyLatestContract("rocketNodeManager", msg.sender) onlyLatestContract("rocketMegapoolFactory", address(this)) returns (address) {
+        return _deployContract(_nodeAddress);
+    }
+
+    /// @dev Deploys a megapool contract for the given node operator
+    function _deployContract(address _nodeAddress) internal returns (address) {
         // Ensure rocketMegapoolBase is setAddress
         address rocketMegapoolProxy = getContractAddress("rocketMegapoolProxy");
         require(rocketMegapoolProxy != address(0), "Invalid proxy");
@@ -78,12 +83,12 @@ contract RocketMegapoolFactory is RocketBase, RocketMegapoolFactoryInterface {
 
     /// @notice Returns megapool address for given node, deploys if it doesn't exist yet
     /// @param _nodeAddress Owning node operator's address
-    function getOrDeployContract(address _nodeAddress) override external onlyLatestNetworkContract onlyLatestContract("rocketMegapoolFactory", address(this)) returns (address) {
+    function getOrDeployContract(address _nodeAddress) override external onlyLatestContract("rocketNodeDeposit", msg.sender) onlyLatestContract("rocketMegapoolFactory", address(this)) returns (address) {
         address contractAddress = getExpectedAddress(_nodeAddress);
         if (getBool(keccak256(abi.encodePacked("megapool.exists", contractAddress)))) {
             return contractAddress;
         }
-        return deployContract(_nodeAddress);
+        return _deployContract(_nodeAddress);
     }
 
     /// @notice Returns the expiration time of the given delegate (or 0 if not deprecated yet)

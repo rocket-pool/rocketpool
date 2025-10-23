@@ -64,6 +64,15 @@ export default function() {
             assertBN.equal(unclaimedRewards, '0.5'.ether);
         });
 
+        it(printTitle('node', 'can not manually add unclaimed rewards'), async () => {
+            const rocketNodeManager = await RocketNodeManager.deployed();
+            await shouldRevert(
+                rocketNodeManager.connect(node1).addUnclaimedRewards(node1.address, { value: '1'.ether }),
+                'Was able to call addUnclaimedRewards',
+                'Only distributor can add unclaimed rewards'
+            );
+        });
+
         it(printTitle('node', 'can distribute rewards directly to withdrawal address'), async () => {
             // Set node withdrawal address to reverting helper
             await setNodeWithdrawalAddress(node1.address, node1WithdrawalAddress.address, { from: node1 });
