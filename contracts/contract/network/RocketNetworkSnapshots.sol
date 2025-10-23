@@ -105,7 +105,7 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
     }
 
     /// @dev Inserts a value into a snapshot set
-    function _insert(bytes32 _key, uint224 _value) private {
+    function _insert(bytes32 _key, uint224 _value) internal {
         uint32 blockNumber = uint32(block.number);
         uint256 pos = length(_key);
 
@@ -132,7 +132,7 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
         uint32 _block,
         uint256 _low,
         uint256 _high
-    ) private view returns (uint256) {
+    ) internal view returns (uint256) {
         while (_low < _high) {
             uint256 mid = Math.average(_low, _high);
             if (_blockAt(_key, mid) > _block) {
@@ -145,7 +145,7 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
     }
 
     /// @dev Loads and decodes a checkpoint entry
-    function _load(bytes32 _key, uint256 _pos) private view returns (Checkpoint224 memory) {
+    function _load(bytes32 _key, uint256 _pos) internal view returns (Checkpoint224 memory) {
         bytes32 key = bytes32(uint256(_key) + _pos);
         bytes32 raw = rocketStorage.getBytes32(key);
         Checkpoint224 memory result;
@@ -155,21 +155,21 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
     }
 
     /// @dev Returns the block number of an entry at given position in the snapshot set
-    function _blockAt(bytes32 _key, uint256 _pos) private view returns (uint32) {
+    function _blockAt(bytes32 _key, uint256 _pos) internal view returns (uint32) {
         bytes32 key = bytes32(uint256(_key) + _pos);
         bytes32 raw = rocketStorage.getBytes32(key);
         return uint32(uint256(raw) >> 224);
     }
 
     /// @dev Returns the value at given position in the snapshot set
-    function _valueAt(bytes32 _key, uint256 _pos) private view returns (uint224) {
+    function _valueAt(bytes32 _key, uint256 _pos) internal view returns (uint224) {
         bytes32 key = bytes32(uint256(_key) + _pos);
         bytes32 raw = rocketStorage.getBytes32(key);
         return uint224(uint256(raw));
     }
 
     /// @dev Pushes a new entry into the checkpoint set
-    function _push(bytes32 _key, Checkpoint224 memory _item) private {
+    function _push(bytes32 _key, Checkpoint224 memory _item) internal {
         bytes32 lengthKey = keccak256(abi.encodePacked("snapshot.length", _key));
         uint256 snapshotLength = rocketStorage.getUint(lengthKey);
         bytes32 key = bytes32(uint256(_key) + snapshotLength);
@@ -178,13 +178,13 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
     }
 
     /// @dev Stores an entry into the checkpoint set
-    function _set(bytes32 _key, uint256 _pos, Checkpoint224 memory _item) private {
+    function _set(bytes32 _key, uint256 _pos, Checkpoint224 memory _item) internal {
         bytes32 key = bytes32(uint256(_key) + _pos);
         rocketStorage.setBytes32(key, _encode(_item));
     }
 
     /// @dev Encodes an entry into its 256 bit representation
-    function _encode(Checkpoint224 memory _item) private pure returns (bytes32) {
+    function _encode(Checkpoint224 memory _item) internal pure returns (bytes32) {
         return bytes32(
             uint256(_item._block) << 224 | uint256(_item._value)
         );

@@ -77,7 +77,7 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         key = keccak256(bytes("node.voting.power.stake.maximum"));
         uint256 maximumStakePercent = uint256(rocketNetworkSnapshots.lookupRecent(key, _block, 2));
 
-        return calculateVotingPower(rplStake, bondedETH, rplPrice, maximumStakePercent);
+        return _calculateVotingPower(rplStake, bondedETH, rplPrice, maximumStakePercent);
     }
 
     /// @dev Calculates and returns a node's voting power based on the given inputs
@@ -85,7 +85,7 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
     /// @param _bondedETH Sum total of a node's bonded ETH
     /// @param _rplPrice The price of RPL in ETH
     /// @param _maxStakePercent The maximum RPL percentage that counts towards voting power
-    function calculateVotingPower(uint256 _rplStake, uint256 _bondedETH, uint256 _rplPrice, uint256 _maxStakePercent) internal pure returns (uint256) {
+    function _calculateVotingPower(uint256 _rplStake, uint256 _bondedETH, uint256 _rplPrice, uint256 _maxStakePercent) internal pure returns (uint256) {
         uint256 maximumStake = _bondedETH * _maxStakePercent / _rplPrice;
         if (_rplStake > maximumStake) {
             _rplStake = maximumStake;

@@ -49,7 +49,7 @@ contract RocketNetworkPenalties is RocketBase, RocketNetworkPenaltiesInterface {
         uint256 submissionCount = getUint(submissionCountKey) + 1;
         setUint(submissionCountKey, submissionCount);
         // Maybe execute
-        maybeApplyPenalty(_minipool, _block, submissionCount);
+        _maybeApplyPenalty(_minipool, _block, submissionCount);
         // Emit event
         emit PenaltySubmitted(msg.sender, _minipool, _block, block.timestamp);
     }
@@ -62,7 +62,7 @@ contract RocketNetworkPenalties is RocketBase, RocketNetworkPenaltiesInterface {
         bytes32 submissionCountKey = keccak256(abi.encodePacked("minipool.penalty.submission", _minipool, _block));
         uint256 submissionCount = getUint(submissionCountKey);
         // Apply penalty if relevant conditions are met
-        maybeApplyPenalty(_minipool, _block, submissionCount);
+        _maybeApplyPenalty(_minipool, _block, submissionCount);
     }
 
     /// @notice Returns the running total of penalties at a given block
@@ -103,7 +103,7 @@ contract RocketNetworkPenalties is RocketBase, RocketNetworkPenaltiesInterface {
     /// @dev If a penalty has not been applied and hit majority, execute the penalty
     /// @param _minipool Address of the accused minipool
     /// @param _block Block that the theft occurred (used for uniqueness)
-    function maybeApplyPenalty(address _minipool, uint256 _block, uint256 _submissionCount) internal {
+    function _maybeApplyPenalty(address _minipool, uint256 _block, uint256 _submissionCount) internal {
         // Check this penalty hasn't already reach majority and been applied
         bytes32 penaltyAppliedKey = keccak256(abi.encodePacked("minipool.penalty.submission.applied", _minipool, _block));
         require(!getBool(penaltyAppliedKey), "Penalty already applied");
@@ -113,14 +113,14 @@ contract RocketNetworkPenalties is RocketBase, RocketNetworkPenaltiesInterface {
         if (calcBase * _submissionCount / rocketDAONodeTrusted.getMemberCount() >= rocketDAOProtocolSettingsNetwork.getNodePenaltyThreshold()) {
             // Apply penalty and mark as applied
             setBool(penaltyAppliedKey, true);
-            applyPenalty(_minipool);
+            _applyPenalty(_minipool);
             // Emit event
             emit PenaltyApplied(_minipool, _block, block.timestamp);
         }
     }
 
     /// @dev Applies a penalty up to given amount, honouring the max penalty parameter
-    function applyPenalty(address _minipool) internal {
+    function _applyPenalty(address _minipool) internal {
         // Get contracts
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
@@ -141,7 +141,7 @@ contract RocketNetworkPenalties is RocketBase, RocketNetworkPenaltiesInterface {
         // Insert new running total
         rocketNetworkSnapshots.push(penaltyKey, currentRunningTotal + 1);
         // Increment the penalty count on this minipool
-        incrementMinipoolPenaltyCount(_minipool);
+        _incrementMinipoolPenaltyCount(_minipool);
     }
 
     /// @notice Returns the number of penalties for a given minipool
@@ -151,7 +151,7 @@ contract RocketNetworkPenalties is RocketBase, RocketNetworkPenaltiesInterface {
     }
 
     /// @dev Increments the number of penalties against given minipool and updates penalty rate appropriately
-    function incrementMinipoolPenaltyCount(address _minipool) internal {
+    function _incrementMinipoolPenaltyCount(address _minipool) internal {
         // Get contracts
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         // Calculate penalty count key

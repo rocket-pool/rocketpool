@@ -25,7 +25,7 @@ contract BlockRoots is BlockRootsInterface {
     /// @param _slot Slot to lookup block root for
     function getBlockRoot(uint64 _slot) external override view returns (bytes32) {
         // Make sure the slot is recent enough that it will exist in the beaconRoots contract
-        uint256 slotTimestamp = getTimestampFromSlot(_slot + 1);
+        uint256 slotTimestamp = _getTimestampFromSlot(_slot + 1);
         uint256 earliestTimestamp = block.timestamp - (beaconRootsHistoryBufferLength * secondsPerSlot);
         require (slotTimestamp > earliestTimestamp, "Slot too old");
         // Walk forwards from the given timestamp 1 slot at a time until block root is found
@@ -43,7 +43,7 @@ contract BlockRoots is BlockRootsInterface {
     }
 
     /// @dev Calculates a slot timestamp
-    function getTimestampFromSlot(uint64 _slot) internal view returns (uint256) {
+    function _getTimestampFromSlot(uint64 _slot) internal view returns (uint256) {
         return genesisBlockTimestamp + (uint256(_slot) * secondsPerSlot);
     }
 }

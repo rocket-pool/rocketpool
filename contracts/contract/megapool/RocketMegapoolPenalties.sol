@@ -53,7 +53,7 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
         uint256 submissionCount = getUint(submissionCountKey) + 1;
         setUint(submissionCountKey, submissionCount);
         // Maybe execute
-        maybeApplyPenalty(_megapool, _block, _amount, submissionCount);
+        _maybeApplyPenalty(_megapool, _block, _amount, submissionCount);
         // Emit event
         emit PenaltySubmitted(msg.sender, _megapool, _block, _amount, block.timestamp);
     }
@@ -67,7 +67,7 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
         bytes32 submissionCountKey = keccak256(abi.encodePacked("megapool.penalty.submission", _megapool, _block, _amount));
         uint256 submissionCount = getUint(submissionCountKey);
         // Apply penalty if relevant conditions are met
-        maybeApplyPenalty(_megapool, _block, _amount, submissionCount);
+        _maybeApplyPenalty(_megapool, _block, _amount, submissionCount);
     }
 
     /// @notice Returns the running total of penalties at a given block
@@ -109,7 +109,7 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
     /// @param _megapool Address of the accused megapool
     /// @param _block Block that the theft occurred (used for uniqueness)
     /// @param _amount Amount in ETH of the penalty
-    function maybeApplyPenalty(address _megapool, uint256 _block, uint256 _amount, uint256 _submissionCount) internal {
+    function _maybeApplyPenalty(address _megapool, uint256 _block, uint256 _amount, uint256 _submissionCount) internal {
         // Check this penalty hasn't already reach majority and been applied
         bytes32 penaltyAppliedKey = keccak256(abi.encodePacked("megapool.penalty.submission.applied", _megapool, _block, _amount));
         require(!getBool(penaltyAppliedKey), "Penalty already applied");
@@ -118,7 +118,7 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
         RocketDAOProtocolSettingsMegapoolInterface rocketDAOProtocolSettingsMegapool = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
         if (calcBase * _submissionCount / rocketDAONodeTrusted.getMemberCount() >= rocketDAOProtocolSettingsMegapool.getPenaltyThreshold()) {
             // Apply penalty and mark as applied
-            applyPenalty(_megapool, _amount);
+            _applyPenalty(_megapool, _amount);
             setBool(penaltyAppliedKey, true);
             // Emit event
             emit PenaltyApplied(_megapool, _block, _amount, block.timestamp);
@@ -126,7 +126,7 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
     }
 
     /// @dev Applies a penalty up to given amount, honouring the max penalty parameter
-    function applyPenalty(address _megapool, uint256 _amount) internal {
+    function _applyPenalty(address _megapool, uint256 _amount) internal {
         // Get contracts
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         RocketDAOProtocolSettingsMegapoolInterface rocketDAOProtocolSettingsMegapool = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));

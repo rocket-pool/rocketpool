@@ -105,9 +105,9 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
             protocolDAOShare = _getCurrentShare(rocketNetworkSnapshots, protocolDAOShareKey);
         } else {
             require(_sinceBlock < block.number, "Block must be in the past");
-            nodeShare = getAverageSince(rocketNetworkSnapshots, _sinceBlock, nodeShareKey);
-            voterShare = getAverageSince(rocketNetworkSnapshots, _sinceBlock, voterShareKey);
-            protocolDAOShare = getAverageSince(rocketNetworkSnapshots, _sinceBlock, protocolDAOShareKey);
+            nodeShare = _getAverageSince(rocketNetworkSnapshots, _sinceBlock, nodeShareKey);
+            voterShare = _getAverageSince(rocketNetworkSnapshots, _sinceBlock, voterShareKey);
+            protocolDAOShare = _getAverageSince(rocketNetworkSnapshots, _sinceBlock, protocolDAOShareKey);
         }
         uint256 rethCommission = nodeShare + voterShare + protocolDAOShare;
         rethShare = 1 ether - rethCommission;
@@ -115,7 +115,7 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
     }
 
     /// @notice Calculates the time-weighted average since a given block
-    function getAverageSince(RocketNetworkSnapshotsInterface _rocketNetworkSnapshots, uint256 _sinceBlock, bytes32 _key) internal view returns (uint256) {
+    function _getAverageSince(RocketNetworkSnapshotsInterface _rocketNetworkSnapshots, uint256 _sinceBlock, bytes32 _key) internal view returns (uint256) {
         (bool checkpointExists, uint32 checkpointBlock, uint224 checkpointValue) = _rocketNetworkSnapshots.latest(_key);
         require(checkpointExists, "RocketNetworkRevenues is not initialised");
         if (checkpointBlock <= _sinceBlock) {
@@ -141,7 +141,7 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
     }
 
     /// @dev Calculates the cumulative value of the accumulator at a given block
-    function getAccumulatorAt(RocketNetworkSnapshotsInterface _rocketNetworkSnapshots, bytes32 _key, uint256 _block) internal view returns (uint256) {
+    function _getAccumulatorAt(RocketNetworkSnapshotsInterface _rocketNetworkSnapshots, bytes32 _key, uint256 _block) internal view returns (uint256) {
         (bool checkpointExists, uint32 checkpointBlock, uint224 checkpointValue) = _rocketNetworkSnapshots.lookupCheckpoint(_key, uint32(_block));
         require(checkpointExists, "RocketNetworkRevenues is not initialised");
         bytes32 valueKey = bytes32(uint256(_key) + checkpointBlock);
@@ -163,7 +163,7 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
     /// @param _newShare Value to set it to
     function _setShare(bytes32 _key, uint256 _newShare) internal {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
-        uint256 currentAccum = getAccumulatorAt(rocketNetworkSnapshots, _key, block.number);
+        uint256 currentAccum = _getAccumulatorAt(rocketNetworkSnapshots, _key, block.number);
         rocketNetworkSnapshots.push(_key, uint224(currentAccum));
         uint256 newShareScaled = _newShare / shareScale;
         bytes32 valueKey = bytes32(uint256(_key) + block.number);

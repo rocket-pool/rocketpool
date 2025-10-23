@@ -211,7 +211,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     /// @dev Deposits incoming funds into rETH buffer and excess into vault then performs assignment
     function processDeposit() internal {
         // Direct deposit ETH to rETH until target collateral is reached
-        uint256 toReth = getRethCollateralShortfall();
+        uint256 toReth = _getRethCollateralShortfall();
         if (toReth > msg.value) {
             toReth = msg.value;
         }
@@ -227,7 +227,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     }
 
     /// @dev Returns the shortfall in ETH from the target collateral rate of rETH
-    function getRethCollateralShortfall() internal returns (uint256) {
+    function _getRethCollateralShortfall() internal returns (uint256) {
         // Load contracts
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         RocketNetworkBalancesInterface rocketNetworkBalances = RocketNetworkBalancesInterface(getContractAddress("rocketNetworkBalances"));
@@ -441,11 +441,11 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         subUint(nodeBalanceKey, nodeBalanceUsed);
         setUint(queueIndexKey, queueIndex);
         subUint(requestedTotalKey, totalSent);
-        setQueueMoved(expressHeadMoved, standardHeadMoved);
+        _setQueueMoved(expressHeadMoved, standardHeadMoved);
     }
 
     /// @dev Stores block number when the queues moved
-    function setQueueMoved(bool expressHeadMoved, bool standardHeadMoved) internal {
+    function _setQueueMoved(bool expressHeadMoved, bool standardHeadMoved) internal {
         uint256 packed = getUint(queueMovedKey);
         uint128 express = expressHeadMoved ? uint128(block.number) : uint128(packed >> 0);
         uint128 standard = standardHeadMoved ? uint128(block.number) : uint128(packed >> 128);
@@ -500,12 +500,12 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         if (_expressQueue) {
             uint256 expressQueueLength = linkedListStorage.getLength(expressQueueNamespace);
             if (expressQueueLength == 1) {
-                setQueueMoved(true, false);
+                _setQueueMoved(true, false);
             }
         } else {
             uint256 standardQueueLength = linkedListStorage.getLength(standardQueueNamespace);
             if (standardQueueLength == 1) {
-                setQueueMoved(false, true);
+                _setQueueMoved(false, true);
             }
         }
         {
@@ -539,12 +539,12 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             rocketNodeManager.refundExpressTicket(_nodeAddress);
             // Update head moved block
             if (isAtHead) {
-                setQueueMoved(true, false);
+                _setQueueMoved(true, false);
             }
         } else {
             // Update head moved block
             if (isAtHead) {
-                setQueueMoved(false, true);
+                _setQueueMoved(false, true);
             }
         }
         // Remove bond from node balance
@@ -712,7 +712,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     }
 
     /// @dev Increases the amount of ETH supplied by a node operator as bond
-    function _increaseETHBonded(address _nodeAddress, uint256 _amount) private {
+    function _increaseETHBonded(address _nodeAddress, uint256 _amount) internal {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         bytes32 key = keccak256(abi.encodePacked("megapool.eth.provided.node.amount", _nodeAddress));
         uint256 ethBonded = uint256(rocketNetworkSnapshots.latestValue(key)) + _amount;
@@ -720,13 +720,13 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     }
 
     /// @dev Increases the amount of ETH borrowed by a node operator
-    function _increaseETHBorrowed(address _nodeAddress, uint256 _amount) private {
+    function _increaseETHBorrowed(address _nodeAddress, uint256 _amount) internal {
         bytes32 key = keccak256(abi.encodePacked("megapool.eth.matched.node.amount", _nodeAddress));
         addUint(key, _amount);
     }
 
     /// @dev Decreases the amount of ETH bonded by a node operator as bond
-    function _decreaseETHBonded(address _nodeAddress, uint256 _amount) private {
+    function _decreaseETHBonded(address _nodeAddress, uint256 _amount) internal {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         bytes32 key = keccak256(abi.encodePacked("megapool.eth.provided.node.amount", _nodeAddress));
         uint256 ethBonded = uint256(rocketNetworkSnapshots.latestValue(key)) - _amount;
@@ -734,7 +734,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     }
 
     /// @dev Decreases the amount of ETH borrowed by a node operator
-    function _decreaseETHBorrowed(address _nodeAddress, uint256 _amount) private {
+    function _decreaseETHBorrowed(address _nodeAddress, uint256 _amount) internal {
         bytes32 key = keccak256(abi.encodePacked("megapool.eth.matched.node.amount", _nodeAddress));
         subUint(key, _amount);
     }

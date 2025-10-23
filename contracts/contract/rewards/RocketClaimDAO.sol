@@ -122,7 +122,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
         uint256 lastPaymentTime = getUint(bytes32(contractKey + lastPaymentOffset));
         // Payout contract per existing parameters if contract has already started
         if (block.timestamp > lastPaymentTime) {
-            payOutContract(_contractName);
+            _payOutContract(_contractName);
         }
         // Update the contract
         setAddress(bytes32(contractKey + recipientOffset), _recipientAddress);
@@ -159,7 +159,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
     function payOutContracts(string[] calldata _contractNames) override external onlyLatestContract("rocketClaimDAO", address(this)) {
         uint256 contractNamesLength = _contractNames.length;
         for (uint256 i = 0; i < contractNamesLength; ++i) {
-            payOutContract(_contractNames[i]);
+            _payOutContract(_contractNames[i]);
         }
     }
 
@@ -169,7 +169,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
         uint256 contractNamesLength = _contractNames.length;
         for (uint256 i = 0; i < contractNamesLength; ++i) {
             // Payout contract
-            payOutContract(_contractNames[i]);
+            _payOutContract(_contractNames[i]);
             // Withdraw to contract recipient
             uint256 contractKey = uint256(keccak256(abi.encodePacked("dao.protocol.treasury.contract", _contractNames[i])));
             address recipient = getAddress(bytes32(contractKey + recipientOffset));
@@ -178,7 +178,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
     }
 
     /// @dev Pays out any outstanding amounts to the recipient of a contract
-    function payOutContract(string memory _contractName) internal {
+    function _payOutContract(string memory _contractName) internal {
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         IERC20 rplToken = IERC20(getContractAddress("rocketTokenRPL"));

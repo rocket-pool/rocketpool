@@ -167,7 +167,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @notice Increases the calling node operator's megapool staked RPL by transferring RPL from msg.sender
     function stakeRPL(uint256 _amount) override external onlyRegisteredNode(msg.sender) {
         // Check caller here and skip `stakeRPLFor` to avoid unnecessary check for rocketMerkleDistributorMainnet caller
-        require(callerAllowedFor(msg.sender), "Not allowed to stake for");
+        require(_callerAllowedFor(msg.sender), "Not allowed to stake for");
         _stakeRPLFor(msg.sender, _amount);
     }
 
@@ -179,7 +179,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     function stakeRPLFor(address _nodeAddress, uint256 _amount) override external onlyRegisteredNode(_nodeAddress) {
         // Must be node's RPL withdrawal address if set or the node's address or an allow listed address or rocketMerkleDistributorMainnet
         if (msg.sender != getAddress(keccak256(abi.encodePacked("contract.address", "rocketMerkleDistributorMainnet")))) {
-            if (!callerAllowedFor(_nodeAddress)) {
+            if (!_callerAllowedFor(_nodeAddress)) {
                 require(getBool(keccak256(abi.encodePacked("node.stake.for.allowed", _nodeAddress, msg.sender))), "Not allowed to stake for");
             }
         }
@@ -189,10 +189,10 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @dev Internal implementation for staking process
     function _stakeRPLFor(address _nodeAddress, uint256 _amount) internal {
         // Transfer RPL in and increase stake
-        transferRPLIn(msg.sender, _amount);
-        increaseNodeRPLStake(_nodeAddress, _amount);
+        _transferRPLIn(msg.sender, _amount);
+        _increaseNodeRPLStake(_nodeAddress, _amount);
         // Update last staked time
-        setNodeLastStakeTime(_nodeAddress);
+        _setNodeLastStakeTime(_nodeAddress);
         // Emit event
         emit RPLStaked(_nodeAddress, msg.sender, _amount, block.timestamp);
     }
@@ -207,7 +207,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @param _nodeAddress Address of node to unstake for
     /// @param _amount Amount of RPL to unstake
     function unstakeRPLFor(address _nodeAddress, uint256 _amount) override public onlyRegisteredNode(_nodeAddress) {
-        require(callerAllowedFor(_nodeAddress), "Not allowed to unstake for");
+        require(_callerAllowedFor(_nodeAddress), "Not allowed to unstake for");
         _unstakeRPLFor(_nodeAddress, _amount);
     }
 
@@ -216,10 +216,10 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Withdraw any RPL that has been unstaking long enough
         _withdrawUnstakingRPL(_nodeAddress);
         // Move RPL from staking to unstaking
-        decreaseNodeMegapoolRPLStake(_nodeAddress, _amount);
+        _decreaseNodeMegapoolRPLStake(_nodeAddress, _amount);
         addUint(keccak256(abi.encodePacked("rpl.megapool.unstaking.amount", _nodeAddress)), _amount);
         // Reset the unstake time
-        setNodeLastUnstakeTime(_nodeAddress);
+        _setNodeLastUnstakeTime(_nodeAddress);
         // Emit event
         emit RPLUnstaked(_nodeAddress, _amount, block.timestamp);
     }
@@ -232,7 +232,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @notice Withdraws any available unstaking RPL back to the node's RPL withdrawal address
     /// @param _nodeAddress Address of node to withdraw for
     function withdrawRPLFor(address _nodeAddress) override public onlyRegisteredNode(_nodeAddress) {
-        require(callerAllowedFor(_nodeAddress), "Not allowed to withdraw for");
+        require(_callerAllowedFor(_nodeAddress), "Not allowed to withdraw for");
         _withdrawRPLFor(_nodeAddress);
     }
 
@@ -267,7 +267,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Update unstaked value
         setUint(unstakingKey, 0);
         // Perform transfer
-        transferRPLOut(_nodeAddress, amountToWithdraw);
+        _transferRPLOut(_nodeAddress, amountToWithdraw);
         return amountToWithdraw;
     }
 
@@ -281,7 +281,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @param _nodeAddress Address of the node operator to withdraw legacy RPL for
     /// @param _amount The amount of RPL to withdraw
     function unstakeLegacyRPLFor(address _nodeAddress, uint256 _amount) override public onlyRegisteredNode(_nodeAddress) {
-        require(callerAllowedFor(_nodeAddress), "Not allowed to unstake legacy RPL for");
+        require(_callerAllowedFor(_nodeAddress), "Not allowed to unstake legacy RPL for");
         _unstakeLegacyRPL(_nodeAddress, _amount);
     }
 
@@ -290,10 +290,10 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Withdraw any RPL that has been unstaking long enough
         _withdrawUnstakingRPL(_nodeAddress);
         // Move RPL from staking to unstaking
-        decreaseNodeLegacyRPLStake(_nodeAddress, _amount);
+        _decreaseNodeLegacyRPLStake(_nodeAddress, _amount);
         addUint(keccak256(abi.encodePacked("rpl.megapool.unstaking.amount", _nodeAddress)), _amount);
         // Reset the unstake time
-        setNodeLastUnstakeTime(_nodeAddress);
+        _setNodeLastUnstakeTime(_nodeAddress);
         // Emit event
         emit RPLLegacyUnstaked(_nodeAddress, _amount, block.timestamp);
     }
@@ -338,8 +338,8 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         require(getNodeStakedRPL(_from) >= _amount, "Sender has insufficient RPL");
         require(_from != _to, "Cannot transfer to same address");
         // Transfer the stake
-        decreaseNodeRPLStake(_from, _amount);
-        increaseNodeRPLStake(_to, _amount);
+        _decreaseNodeRPLStake(_from, _amount);
+        _increaseNodeRPLStake(_to, _amount);
         // Emit event
         emit RPLTransferred(_from, _to, _amount, block.timestamp);
     }
@@ -351,7 +351,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Check sender has enough RPL
         require(getNodeStakedRPL(_from) >= _amount, "Node has insufficient RPL");
         // Decrease the stake amount
-        decreaseNodeRPLStake(_from, _amount);
+        _decreaseNodeRPLStake(_from, _amount);
         // Withdraw the RPL to this contract
         rocketVault.withdrawToken(address(this), rplToken, _amount);
         // Execute the token burn
@@ -375,7 +375,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Transfer slashed amount to auction contract
         if (rplSlashAmount > 0) rocketVault.transferToken("rocketAuctionManager", IERC20(getContractAddress("rocketTokenRPL")), rplSlashAmount);
         // Update RPL stake amounts
-        decreaseNodeLegacyRPLStake(_nodeAddress, rplSlashAmount);
+        _decreaseNodeLegacyRPLStake(_nodeAddress, rplSlashAmount);
         // Mark minipool as slashed
         setBool(keccak256(abi.encodePacked("minipool.rpl.slashed", msg.sender)), true);
         // Emit RPL slashed event
@@ -384,11 +384,11 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
 
     /// @dev Increases a node operator's megapool staked RPL amount
     /// @param _amount How much to increase staked RPL by
-    function increaseNodeRPLStake(address _nodeAddress, uint256 _amount) private {
+    function _increaseNodeRPLStake(address _nodeAddress, uint256 _amount) internal {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         bytes32 key = keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress));
         (,, uint224 value) = rocketNetworkSnapshots.latest(key);
-        migrateLegacy(_nodeAddress, uint256(value));
+        _migrateLegacy(_nodeAddress, uint256(value));
         rocketNetworkSnapshots.push(key, value + uint224(_amount));
         // Increase total
         addUint(totalKey, _amount);
@@ -397,11 +397,11 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
 
     /// @dev Decreases a node operator's staked RPL, first taking from their legacy than their megapool staked RPL
     ///      Does not check conditions for minimum stake requirements
-    function decreaseNodeRPLStake(address _nodeAddress, uint256 _amount) private {
+    function _decreaseNodeRPLStake(address _nodeAddress, uint256 _amount) internal {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         bytes32 key = keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress));
         (,, uint224 totalStakedRPL) = rocketNetworkSnapshots.latest(key);
-        migrateLegacy(_nodeAddress, uint256(totalStakedRPL));
+        _migrateLegacy(_nodeAddress, uint256(totalStakedRPL));
         // Take from megapool amount if not enough legacy
         uint256 legacyStakedRPL = getNodeLegacyStakedRPL(_nodeAddress);
         uint256 legacyAmount = _amount;
@@ -424,11 +424,11 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @dev Decreases a node operator's megapool staked RPL amount
     /// @param _nodeAddress Address of node to decrease megapool staked RPL for
     /// @param _amount Amount to decrease by
-    function decreaseNodeMegapoolRPLStake(address _nodeAddress, uint256 _amount) private {
+    function _decreaseNodeMegapoolRPLStake(address _nodeAddress, uint256 _amount) internal {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         bytes32 key = keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress));
         (,, uint224 totalStakedRPL) = rocketNetworkSnapshots.latest(key);
-        migrateLegacy(_nodeAddress, uint256(totalStakedRPL));
+        _migrateLegacy(_nodeAddress, uint256(totalStakedRPL));
         // Check node operator has sufficient RPL to reduce
         uint256 legacyStakedRPL = getNodeLegacyStakedRPL(_nodeAddress);
         uint256 lockedRPL = getNodeLockedRPL(_nodeAddress);
@@ -447,11 +447,11 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @dev Decreases a node operator's legacy staked RPL amount
     /// @param _nodeAddress Address of node to decrease legacy staked RPL for
     /// @param _amount Amount to decrease by
-    function decreaseNodeLegacyRPLStake(address _nodeAddress, uint256 _amount) private {
+    function _decreaseNodeLegacyRPLStake(address _nodeAddress, uint256 _amount) internal {
         RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         bytes32 key = keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress));
         (,, uint224 totalStakedRPL) = rocketNetworkSnapshots.latest(key);
-        migrateLegacy(_nodeAddress, uint256(totalStakedRPL));
+        _migrateLegacy(_nodeAddress, uint256(totalStakedRPL));
         // Check amount does not exceed amount staked
         bytes32 legacyKey = keccak256(abi.encodePacked("rpl.legacy.staked.node.amount", _nodeAddress));
         uint256 legacyStakedRPL = getUint(legacyKey);
@@ -551,7 +551,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     }
 
     /// @dev If legacy RPL balance has not been migrated, migrate it. Otherwise, do nothing
-    function migrateLegacy(address _nodeAddress, uint256 _amount) private {
+    function _migrateLegacy(address _nodeAddress, uint256 _amount) internal {
         bytes32 migratedKey = keccak256(abi.encodePacked("rpl.legacy.staked.node.migrated", _nodeAddress));
         if (getBool(migratedKey)) {
             return;
@@ -562,14 +562,14 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     }
 
     /// @dev Transfers RPL out of vault into node's withdrawal address
-    function transferRPLOut(address _nodeAddress, uint256 _amount) internal {
+    function _transferRPLOut(address _nodeAddress, uint256 _amount) internal {
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         address rplWithdrawalAddress = rocketNodeManager.getNodeRPLWithdrawalAddress(_nodeAddress);
         rocketVault.withdrawToken(rplWithdrawalAddress, IERC20(getContractAddress("rocketTokenRPL")), _amount);
     }
 
     /// @dev Transfers RPL from msg.sender into vault
-    function transferRPLIn(address _nodeAddress, uint256 _amount) internal {
+    function _transferRPLIn(address _nodeAddress, uint256 _amount) internal {
         // Transfer RPL tokens
         require(rplToken.transferFrom(_nodeAddress, address(this), _amount), "Could not transfer RPL to staking contract");
         // Deposit RPL tokens to vault
@@ -578,19 +578,19 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     }
 
     /// @dev Sets the time of the given node operator's unstake to the current block time
-    function setNodeLastUnstakeTime(address _nodeAddress) internal {
+    function _setNodeLastUnstakeTime(address _nodeAddress) internal {
         setUint(keccak256(abi.encodePacked("rpl.megapool.unstake.time", _nodeAddress)), block.timestamp);
     }
 
     /// @dev Sets the time of the given node operator's stake to the current block time
-    function setNodeLastStakeTime(address _nodeAddress) internal {
+    function _setNodeLastStakeTime(address _nodeAddress) internal {
         setUint(keccak256(abi.encodePacked("rpl.staked.node.time", _nodeAddress)), block.timestamp);
     }
 
     /// @dev Implements caller restrictions (per RPIP-31):
     ///         - If a node’s RPL withdrawal address is unset, the call MUST come from one of: the node’s primary withdrawal address, or the node’s address
     ///         - If a node’s RPL withdrawal address is set, the call MUST come from the current RPL withdrawal address
-    function callerAllowedFor(address _nodeAddress) internal view returns (bool) {
+    function _callerAllowedFor(address _nodeAddress) internal view returns (bool) {
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         if (rocketNodeManager.getNodeRPLWithdrawalAddressIsSet(_nodeAddress)) {
             address rplWithdrawalAddress = rocketNodeManager.getNodeRPLWithdrawalAddress(_nodeAddress);

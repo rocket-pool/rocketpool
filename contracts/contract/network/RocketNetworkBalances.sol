@@ -23,7 +23,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     }
 
     /// @notice Sets the block number which balances are current for
-    function setBalancesBlock(uint256 _value) private {
+    function _setBalancesBlock(uint256 _value) internal {
         setUint(keccak256("network.balances.updated.block"), _value);
     }
 
@@ -33,7 +33,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     }
 
     /// @notice Sets the timestamp of the last balance update
-    function setBalancesTimestamp(uint256 _value) private {
+    function _setBalancesTimestamp(uint256 _value) internal {
         setUint(keccak256("network.balances.updated.timestamp"), _value);
     }
 
@@ -43,7 +43,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     }
 
     /// @notice Sets the current RP network total ETH balance
-    function setTotalETHBalance(uint256 _value) private {
+    function _setTotalETHBalance(uint256 _value) internal {
         setUint(keccak256("network.balance.total"), _value);
     }
 
@@ -53,7 +53,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     }
 
     /// @notice Sets the current RP network staking ETH balance
-    function setStakingETHBalance(uint256 _value) private {
+    function _setStakingETHBalance(uint256 _value) internal {
         setUint(keccak256("network.balance.staking"), _value);
     }
 
@@ -63,7 +63,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     }
 
     /// @notice Sets the current RP network total rETH supply
-    function setTotalRETHSupply(uint256 _value) private {
+    function _setTotalRETHSupply(uint256 _value) internal {
         setUint(keccak256("network.balance.reth.supply"), _value);
     }
 
@@ -107,7 +107,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         // Check submission count & update network balances
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         if (calcBase * submissionCount / rocketDAONodeTrusted.getMemberCount() >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()) {
-            updateBalances(_block, _slotTimestamp, _totalEth, _stakingEth, _rethSupply);
+            _updateBalances(_block, _slotTimestamp, _totalEth, _stakingEth, _rethSupply);
         }
     }
 
@@ -128,18 +128,18 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         // Check submission count & update network balances
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         require(calcBase * submissionCount / rocketDAONodeTrusted.getMemberCount() >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold(), "Consensus has not been reached");
-        updateBalances(_block, _slotTimestamp, _totalEth, _stakingEth, _rethSupply);
+        _updateBalances(_block, _slotTimestamp, _totalEth, _stakingEth, _rethSupply);
     }
 
     /// @dev Internal method to update network balances
-    function updateBalances(uint256 _block, uint256 _slotTimestamp, uint256 _totalEth, uint256 _stakingEth, uint256 _rethSupply) private {
+    function _updateBalances(uint256 _block, uint256 _slotTimestamp, uint256 _totalEth, uint256 _stakingEth, uint256 _rethSupply) internal {
         // Check enough time has passed (RPIP-61)
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         uint256 frequency = rocketDAOProtocolSettingsNetwork.getSubmitBalancesFrequency();
         uint256 lastTimestamp = getBalancesTimestamp();
         uint256 minimumTimestamp = lastTimestamp + (frequency * 95 / 100);
         require(block.timestamp >= minimumTimestamp, "Not enough time has passed");
-        setBalancesTimestamp(block.timestamp);
+        _setBalancesTimestamp(block.timestamp);
         // Check rETH delta is within allowed range (RPIP-61)
         uint256 currentTotalEthBalance = getTotalETHBalance();
         // Bypass the delta restriction on first balance update
@@ -157,10 +157,10 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
             }
         }
         // Update balances
-        setBalancesBlock(_block);
-        setTotalETHBalance(_totalEth);
-        setStakingETHBalance(_stakingEth);
-        setTotalRETHSupply(_rethSupply);
+        _setBalancesBlock(_block);
+        _setTotalETHBalance(_totalEth);
+        _setStakingETHBalance(_stakingEth);
+        _setTotalRETHSupply(_rethSupply);
         // Emit balances updated event
         emit BalancesUpdated(_block, _slotTimestamp, _totalEth, _stakingEth, _rethSupply, block.timestamp);
     }

@@ -54,7 +54,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface, RocketVaul
     }
 
     /// @notice Increment the reward index
-    function incrementRewardIndex() private {
+    function _incrementRewardIndex() internal {
         addUint(keccak256("rewards.snapshot.index"), 1);
     }
 
@@ -231,14 +231,14 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface, RocketVaul
     }
 
     /// @notice Executes reward snapshot and sends assets to the relays for distribution to reward recipients
-    function _executeRewardSnapshot(RewardSubmission calldata _submission) private {
+    function _executeRewardSnapshot(RewardSubmission calldata _submission) internal {
         // Get contract
         RocketTokenRPLInterface rplContract = RocketTokenRPLInterface(getContractAddress("rocketTokenRPL"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Execute inflation if required
         rplContract.inflationMintTokens();
         // Increment the reward index and update the claim interval timestamp
-        incrementRewardIndex();
+        _incrementRewardIndex();
         uint256 claimIntervalTimeStart = getClaimIntervalTimeStart();
         uint256 claimIntervalTimeEnd = claimIntervalTimeStart + (getClaimIntervalTime() * _submission.intervalsPassed);
         // Emit reward snapshot event

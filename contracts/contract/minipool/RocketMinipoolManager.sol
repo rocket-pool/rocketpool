@@ -412,7 +412,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Get current active minipool count for this node operator (before we insert into address set in case it uses fallback calc)
         uint256 activeMinipoolCount = getNodeActiveMinipoolCount(_nodeAddress);
         // Create minipool contract
-        address contractAddress = deployContract(_nodeAddress, _salt);
+        address contractAddress = _deployContract(_nodeAddress, _salt);
         // Initialise minipool data
         setBool(keccak256(abi.encodePacked("minipool.exists", contractAddress)), true);
         // Add minipool to indexes
@@ -516,7 +516,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     /// @dev Internal logic to set a minipool's pubkey, reverts if pubkey already set
     /// @param _pubkey The pubkey to set for the calling minipool
-    function _setMinipoolPubkey(address _minipool, bytes calldata _pubkey) private {
+    function _setMinipoolPubkey(address _minipool, bytes calldata _pubkey) internal {
         // Check validator pubkey is not in use
         require(getMinipoolByPubkey(_pubkey) == address(0x0), "Validator pubkey is in use");
         // Load contracts
@@ -556,7 +556,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     /// @dev Performs a CREATE2 deployment of a minipool contract with given salt
     /// @param _nodeAddress The owning node operator's address
     /// @param _salt A salt used in determining the minipool's address
-    function deployContract(address _nodeAddress, uint256 _salt) private returns (address) {
+    function _deployContract(address _nodeAddress, uint256 _salt) internal returns (address) {
         RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
         return rocketMinipoolFactory.deployContract(_nodeAddress, _salt);
     }
