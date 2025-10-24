@@ -330,10 +330,18 @@ export default function() {
             await exitQueue(node, 3);
             // NO should receive 4 ETH credit
             assertBN.equal(await rocketNodeDeposit.getNodeDepositCredit(node.address), '4'.ether);
-            // Perform 2 new deposits with credit at the reduced bond
+            // NO is over bonded, so should not be able to create a new validator with 2 ETH bond
+            await shouldRevert(
+                nodeDeposit(node, '2'.ether, false, '2'.ether),
+                'Was able to increase bond while over bonded',
+                'Bond requirement not met'
+            );
+            // NO is overbonded by 2 ETH, so should only be able to make validators with 1 ETH bond (prestake value)
+            await nodeDeposit(node, '1'.ether, false, '1'.ether);
+            await nodeDeposit(node, '1'.ether, false, '1'.ether);
+            // NO is now at bond requirement, perform a new deposit with credit at the reduced bond to use up the credit
             await nodeDeposit(node, '2'.ether, false, '2'.ether);
-            await nodeDeposit(node, '2'.ether, false, '2'.ether);
-            // Used up all credit
+            // Used up all credit, should fail to use credit now
             await shouldRevert(nodeDeposit(node, '2'.ether, false, '2'.ether), 'Exceeded credit', 'Insufficient credit');
         });
 

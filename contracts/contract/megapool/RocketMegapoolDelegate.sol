@@ -174,6 +174,22 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         return bytes32((uint256(0x01) << 248) | uint256(uint160(address(this))));
     }
 
+    /// @notice Returns the bond requirement for a new validator
+    function getNewValidatorBondRequirement() override public view returns (uint256) {
+        RocketNodeDepositInterface rocketNodeDeposit = _getRocketNodeDeposit();
+        uint256 newBondRequirement = rocketNodeDeposit.getBondRequirement(getActiveValidatorCount() + 1);
+        uint256 effectiveBond = nodeBond + nodeQueuedBond;
+        if (newBondRequirement > effectiveBond) {
+            if (newBondRequirement - effectiveBond < prestakeValue) {
+                return prestakeValue;
+            } else {
+                return newBondRequirement - effectiveBond;
+            }
+        } else {
+            return prestakeValue;
+        }
+    }
+
     /// @notice Creates a new validator for this megapool
     /// @param _bondAmount The bond amount supplied by the node operator
     /// @param _useExpressTicket If an express ticket should be used
@@ -182,15 +198,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     /// @param _depositDataRoot Merkle root of the deposit data
     function newValidator(uint256 _bondAmount, bool _useExpressTicket, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external onlyRocketNodeDeposit {
         // Check bond and debt requirements
-        {
-            RocketNodeDepositInterface rocketNodeDeposit = _getRocketNodeDeposit();
-            uint256 newBondRequirement = rocketNodeDeposit.getBondRequirement(getActiveValidatorCount() + 1);
-            uint256 effectiveBond = nodeBond + nodeQueuedBond;
-            if (newBondRequirement > effectiveBond) {
-                require(_bondAmount + effectiveBond == newBondRequirement, "Bond requirement not met");
-            }
-            require(debt == 0, "Cannot create validator while debt exists");
-        }
+        require(_bondAmount == getNewValidatorBondRequirement(), "Bond requirement not met");
+        require(debt == 0, "Cannot create validator while debt exists");
         // Setup new validator
         RocketDepositPoolInterface rocketDepositPool = _getRocketDepositPool();
         uint32 validatorId = uint32(numValidators);
