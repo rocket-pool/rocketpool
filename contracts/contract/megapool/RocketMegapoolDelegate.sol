@@ -386,11 +386,11 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         }
         // Recycle ETH
         assignedValue -= recycleValue - prestakeValue;
+        RocketDepositPoolInterface rocketDepositPool = _getRocketDepositPool();
         if (userShare > 0) {
-            RocketDepositPoolInterface rocketDepositPool = _getRocketDepositPool();
             rocketDepositPool.recycleDissolvedDeposit{value: userShare}();
-            rocketDepositPool.fundsReturned(nodeAddress, nodeShare, userShare);
         }
+        rocketDepositPool.fundsReturned(nodeAddress, nodeShare, userShare);
         refundValue += nodeShare - prestakeValue;
         // Emit event
         emit MegapoolValidatorDissolved(_validatorId, block.timestamp);
