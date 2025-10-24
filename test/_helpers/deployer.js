@@ -198,6 +198,7 @@ export class RocketPoolDeployer {
         this.addStage('Deploy immutable contracts', 30, [
                 async () => this.deployNetworkContract('rocketVault'),
                 async () => this.deployNetworkContract('rocketTokenRETH'),
+                async () => this.deployNetworkContract('rocketTokenRPL'),
             ],
         );
 
@@ -448,6 +449,7 @@ export class RocketPoolDeployer {
             // Iterate over steps and execute
             for (let i = 0; i < stage.steps.length; ++i) {
                 await stage.steps[i]();
+                await new Promise((resolve) => setTimeout(resolve, 5000));
             }
 
             this.logDepth -= 2;
