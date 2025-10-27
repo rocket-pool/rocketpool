@@ -23,7 +23,7 @@ import {
     RocketDepositPool,
     RocketMegapoolDelegate,
     RocketMegapoolFactory,
-    RocketMegapoolManager,
+    RocketMegapoolManager, RocketNetworkRevenues,
     RocketNodeDeposit,
     RocketStorage,
     RocketTokenRETH,
@@ -1129,6 +1129,59 @@ export default function() {
                 await stakeMegapoolValidator(megapool, 1);
             });
 
+            it(printTitle('node', 'can calculate rewards correctly when capital ratio changes over time'), async () => {
+                const rocketNetworkRevenues = await RocketNetworkRevenues.deployed();
+                // Adjust reduced.bond to 2 ETH
+                await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
+                // Create 2 validators with 4 ETH bond each
+                await nodeDeposit(node);
+                await nodeDeposit(node);
+                await stakeMegapoolValidator(megapool, 0);
+                await stakeMegapoolValidator(megapool, 1);
+                // Increase time to impact the time-weighted calculations
+                const lastDistributionTime = await megapool.getLastDistributionTime();
+                await helpers.time.increaseTo(lastDistributionTime + 99n);
+                // Check ratio
+                assertBN.equal(await rocketNetworkRevenues.getNodeCapitalRatio(node.address), '8'.ether);
+                // Create 1 more validators with 2 ETH bond
+                await nodeDeposit(node, '2'.ether);
+                await stakeMegapoolValidator(megapool, 2);
+                // Increase time so that we have as much time at the old ratio as we do at the new one
+                await helpers.time.increaseTo(lastDistributionTime + 199n);
+                // Mock rewards
+                await mockRewards(megapool, '1'.ether);
+                const pendingRewards = await megapool.getPendingRewards();
+                assertBN.equal(pendingRewards, '1'.ether);
+                // Check ratio
+                assertBN.equal(await rocketNetworkRevenues.getNodeCapitalRatio(node.address), '9.6'.ether);
+                /*
+                    Check average ratio over past 200 seconds
+
+                    100 seconds of 1/8 ratio
+                    100 seconds of 1/9.6  ratio
+
+                    ((100 * 8) + (100 * 9.6)) / 200 = 8.8
+                 */
+                assertBN.equal(await rocketNetworkRevenues.getNodeAverageCapitalRatioSince(node.address, lastDistributionTime), '8.8'.ether)
+                /*
+                    Rewards: 1 ETH
+                    Avg. Collat Ratio: 1/8.8
+                    Node Portion: 0.1136 ETH
+                    User Portion: 0.8864 ETH
+                    Commission: 0.8864 * 5% = 0.04432 ETH
+                    Node Share: 0.04432 + 0.1136 = 0.1579 ETH
+                    Voter Share: 0.8864 * 9% = 0.07977 ETH
+                    rETH Share: 1 - 0.1579 - 0.07977 = 0.76233 ETH
+
+                    Note: calculations on-chain are of 3 fixed point precision
+                 */
+                const rewardSplit = await megapool.calculatePendingRewards();
+                assertBN.almostEqual(rewardSplit[0], '0.1579'.ether, '0.0001'.ether); // Node
+                assertBN.almostEqual(rewardSplit[1], '0.07977'.ether, '0.0001'.ether); // Voter
+                assertBN.equal(rewardSplit[2], '0'.ether);                             // pDAO
+                assertBN.almostEqual(rewardSplit[3], '0.76233'.ether, '0.0001'.ether); // User
+            });
+
             snapshotDescribe('With staking validator', () => {
                 before(async () => {
                     await deployMegapool({ from: node });
@@ -1144,7 +1197,6 @@ export default function() {
                     await mockRewards(megapool, '1'.ether);
                     const pendingRewards = await megapool.getPendingRewards();
                     assertBN.equal(pendingRewards, '1'.ether);
-
                     /*
                         Rewards: 1 ETH
                         Collat Ratio: 1/8

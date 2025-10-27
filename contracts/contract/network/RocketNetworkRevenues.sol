@@ -70,19 +70,19 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
     /// @notice Returns the current node share value
     function getCurrentNodeShare() external override view returns (uint256) {
         RocketNetworkSnapshotsTimeInterface rocketNetworkSnapshotsTime = RocketNetworkSnapshotsTimeInterface(getContractAddress("rocketNetworkSnapshotsTime"));
-        return _getCurrentShare(rocketNetworkSnapshotsTime, nodeShareKey);
+        return _getCurrentShare(rocketNetworkSnapshotsTime, nodeShareKey, false);
     }
 
     /// @notice Returns the current voter share value
     function getCurrentVoterShare() external override view returns (uint256) {
         RocketNetworkSnapshotsTimeInterface rocketNetworkSnapshotsTime = RocketNetworkSnapshotsTimeInterface(getContractAddress("rocketNetworkSnapshotsTime"));
-        return _getCurrentShare(rocketNetworkSnapshotsTime, voterShareKey);
+        return _getCurrentShare(rocketNetworkSnapshotsTime, voterShareKey, false);
     }
 
     /// @notice Returns the current pDAO share value
     function getCurrentProtocolDAOShare() external override view returns (uint256) {
         RocketNetworkSnapshotsTimeInterface rocketNetworkSnapshotsTime = RocketNetworkSnapshotsTimeInterface(getContractAddress("rocketNetworkSnapshotsTime"));
-        return _getCurrentShare(rocketNetworkSnapshotsTime, protocolDAOShareKey);
+        return _getCurrentShare(rocketNetworkSnapshotsTime, protocolDAOShareKey, false);
     }
 
     /// @notice Called by a pDAO governance contract or security council to update the `node_operator_commission_share` parameter
@@ -108,24 +108,62 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
     function calculateSplit(uint256 _sinceTime) external override view returns (uint256 nodeShare, uint256 voterShare, uint256 protocolDAOShare, uint256 rethShare) {
         RocketNetworkSnapshotsTimeInterface rocketNetworkSnapshotsTime = RocketNetworkSnapshotsTimeInterface(getContractAddress("rocketNetworkSnapshotsTime"));
         if (_sinceTime == block.timestamp) {
-            nodeShare = _getCurrentShare(rocketNetworkSnapshotsTime, nodeShareKey);
-            voterShare = _getCurrentShare(rocketNetworkSnapshotsTime, voterShareKey);
-            protocolDAOShare = _getCurrentShare(rocketNetworkSnapshotsTime, protocolDAOShareKey);
+            nodeShare = _getCurrentShare(rocketNetworkSnapshotsTime, nodeShareKey, true);
+            voterShare = _getCurrentShare(rocketNetworkSnapshotsTime, voterShareKey, true);
+            protocolDAOShare = _getCurrentShare(rocketNetworkSnapshotsTime, protocolDAOShareKey, true);
         } else {
             require(_sinceTime < block.timestamp, "Time must be in the past");
-            nodeShare = _getAverageSince(rocketNetworkSnapshotsTime, _sinceTime, nodeShareKey);
-            voterShare = _getAverageSince(rocketNetworkSnapshotsTime, _sinceTime, voterShareKey);
-            protocolDAOShare = _getAverageSince(rocketNetworkSnapshotsTime, _sinceTime, protocolDAOShareKey);
+            nodeShare = _getAverageSince(rocketNetworkSnapshotsTime, _sinceTime, nodeShareKey, true);
+            voterShare = _getAverageSince(rocketNetworkSnapshotsTime, _sinceTime, voterShareKey, true);
+            protocolDAOShare = _getAverageSince(rocketNetworkSnapshotsTime, _sinceTime, protocolDAOShareKey, true);
         }
         uint256 rethCommission = nodeShare + voterShare + protocolDAOShare;
         rethShare = 1 ether - rethCommission;
         return (nodeShare, voterShare, protocolDAOShare, rethShare);
     }
 
-    /// @notice Calculates the time-weighted average since a given timestamp
-    function _getAverageSince(RocketNetworkSnapshotsTimeInterface _rocketNetworkSnapshotsTime, uint256 _sinceTime, bytes32 _key) internal view returns (uint256) {
+    /// @notice Called by a Megapool when its capital ratio changes to keep track of average
+    /// @param _nodeAddress Address of the node operator
+    /// @param _value New capital ratio
+    function setNodeCapitalRatio(address _nodeAddress, uint256 _value) external override onlyRegisteredMegapool(msg.sender) onlyLatestContract("rocketNetworkRevenues", address(this)) {
+        // Compute the key
+        bytes32 key = keccak256(abi.encodePacked("node.capital.ratio", _nodeAddress));
+        // Get the existing value
+        bytes32 valueKey = bytes32(uint256(key) + block.timestamp);
+        uint256 existingValue = getUint(valueKey);
+        // Don't store an entry if the capital ratio hasn't changed
+        if (existingValue != _value)  {
+            _setShare(key, _value);
+        }
+    }
+
+    /// @notice Returns the current capital ratio of the given node operator
+    /// @param _nodeAddress Address of the node operator to query the value for
+    function getNodeCapitalRatio(address _nodeAddress) external override view returns (uint256) {
+        RocketNetworkSnapshotsTimeInterface rocketNetworkSnapshots = RocketNetworkSnapshotsTimeInterface(getContractAddress("rocketNetworkSnapshotsTime"));
+        bytes32 key = keccak256(abi.encodePacked("node.capital.ratio", _nodeAddress));
+        return _getCurrentShare(rocketNetworkSnapshots, key, false);
+    }
+
+    /// @notice Returns the average capital ratio of the given node operator since a given block
+    /// @param _nodeAddress Address of the node operator to query the value for
+    /// @param _sinceTime The timestamp to calculate the average since
+    function getNodeAverageCapitalRatioSince(address _nodeAddress, uint256 _sinceTime) external override view returns (uint256) {
+        RocketNetworkSnapshotsTimeInterface rocketNetworkSnapshots = RocketNetworkSnapshotsTimeInterface(getContractAddress("rocketNetworkSnapshotsTime"));
+        bytes32 key = keccak256(abi.encodePacked("node.capital.ratio", _nodeAddress));
+        if (_sinceTime == block.timestamp) {
+           return _getCurrentShare(rocketNetworkSnapshots, key, false);
+        } else {
+            require(_sinceTime < block.timestamp, "Time must be in the past");
+            return _getAverageSince(rocketNetworkSnapshots, _sinceTime, key, false);
+        }
+    }
+
+    /// @notice Calculates the time-weighted average since a given block
+    function _getAverageSince(RocketNetworkSnapshotsTimeInterface _rocketNetworkSnapshotsTime, uint256 _sinceTime, bytes32 _key, bool _mustExist) internal view returns (uint256) {
         (bool checkpointExists, uint64 checkpointTime, uint192 checkpointValue) = _rocketNetworkSnapshotsTime.latest(_key);
-        require(checkpointExists, "RocketNetworkRevenues is not initialised");
+        require(!_mustExist || checkpointExists, "Snapshot does not exist");
+        if (!checkpointExists) return 0;
         if (checkpointTime <= _sinceTime) {
             // Value hasn't changed since _sinceTime, so return current
             bytes32 valueKey = bytes32(uint256(_key) + checkpointTime);
@@ -149,9 +187,10 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
     }
 
     /// @dev Calculates the cumulative value of the accumulator at a given timestamp
-    function _getAccumulatorAt(RocketNetworkSnapshotsTimeInterface _rocketNetworkSnapshotsTime, bytes32 _key, uint256 _time) internal view returns (uint256) {
+    function _getAccumulatorAt(RocketNetworkSnapshotsTimeInterface _rocketNetworkSnapshotsTime, bytes32 _key, uint256 _time, bool _mustExist) internal view returns (uint256) {
         (bool checkpointExists, uint64 checkpointTime, uint192 checkpointValue) = _rocketNetworkSnapshotsTime.lookupCheckpoint(_key, uint64(_time));
-        require(checkpointExists, "RocketNetworkRevenues is not initialised");
+        require(!_mustExist || checkpointExists, "Snapshot does not exist");
+        if (!checkpointExists) return 0;
         bytes32 valueKey = bytes32(uint256(_key) + checkpointTime);
         uint256 valueAtTime = getUint(valueKey);
         uint256 timeDuration = (_time - checkpointTime);
@@ -159,9 +198,10 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
     }
 
     /// @dev Convenience method to return the current value given a key
-    function _getCurrentShare(RocketNetworkSnapshotsTimeInterface _rocketNetworkSnapshotsTime, bytes32 _key) internal view returns (uint256) {
+    function _getCurrentShare(RocketNetworkSnapshotsTimeInterface _rocketNetworkSnapshotsTime, bytes32 _key, bool _mustExist) internal view returns (uint256) {
         (bool exists, uint64 timestamp, ) = _rocketNetworkSnapshotsTime.latest(_key);
-        require(exists, "RocketNetworkRevenues is not initialised");
+        require(!_mustExist || exists, "Snapshot does not exist");
+        if (!exists) return 0;
         bytes32 valueKey = bytes32(uint256(_key) + timestamp);
         return getUint(valueKey) * shareScale;
     }
@@ -171,7 +211,7 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
     /// @param _newShare Value to set it to
     function _setShare(bytes32 _key, uint256 _newShare) internal {
         RocketNetworkSnapshotsTimeInterface rocketNetworkSnapshotsTime = RocketNetworkSnapshotsTimeInterface(getContractAddress("rocketNetworkSnapshotsTime"));
-        uint256 currentAccum = _getAccumulatorAt(rocketNetworkSnapshotsTime, _key, block.timestamp);
+        uint256 currentAccum = _getAccumulatorAt(rocketNetworkSnapshotsTime, _key, block.timestamp, false);
         rocketNetworkSnapshotsTime.push(_key, uint192(currentAccum));
         uint256 newShareScaled = _newShare / shareScale;
         bytes32 valueKey = bytes32(uint256(_key) + block.timestamp);

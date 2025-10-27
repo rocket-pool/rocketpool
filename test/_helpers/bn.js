@@ -7,6 +7,13 @@ const _assertBN = {
     equal: function (actual, expected, message) {
         assert.strictEqual(actual, BigInt(expected), message);
     },
+    almostEqual: function (actual, expected, epsilon, message) {
+        if (actual > expected) {
+            assert.equal((actual - expected) < epsilon, true, message);
+        } else {
+            assert.equal((expected - actual) < epsilon, true, message);
+        }
+    },
     notEqual: function (actual, expected, message) {
         assert.notEqual(actual, BigInt(expected), message);
     },

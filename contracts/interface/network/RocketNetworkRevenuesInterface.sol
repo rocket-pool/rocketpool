@@ -10,4 +10,7 @@ interface RocketNetworkRevenuesInterface {
     function setVoterShare(uint256 _newShare) external;
     function setProtocolDAOShare(uint256 _newShare) external;
     function calculateSplit(uint256 _sinceBlock) external view returns (uint256 nodeShare, uint256 voterShare, uint256 protocolDAOShare, uint256 rethShare);
+    function setNodeCapitalRatio(address _nodeAddress, uint256 _value) external;
+    function getNodeCapitalRatio(address _nodeAddress) external view returns (uint256);
+    function getNodeAverageCapitalRatioSince(address _nodeAddress, uint256 _sinceBlock) external view returns (uint256);
 }

@@ -291,6 +291,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         // Reduce node bond
         nodeBond -= _amount;
         userCapital += _amount;
+        // Snapshot capital ratio
+        _snapshotCapitalRatio();
         // Apply credit
         RocketDepositPoolInterface rocketDepositPool = _getRocketDepositPool();
         rocketDepositPool.applyCredit(nodeAddress, _amount);
@@ -324,6 +326,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         nodeBond += assignedNodeBond;
         userQueuedCapital -= assignedUserCapital;
         nodeQueuedBond -= assignedNodeBond;
+        // Snapshot capital ratio
+        _snapshotCapitalRatio();
         // Delete prestake signature for a small gas refund (no longer needed)
         delete prestakeSignatures[_validatorId];
         // Emit event
@@ -396,6 +400,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         unchecked { // Infeasible overflow
             numInactiveValidators += 1;
         }
+        // Snapshot capital ratio
+        _snapshotCapitalRatio();
         // Recycle ETH
         assignedValue -= recycleValue - prestakeValue;
         RocketDepositPoolInterface rocketDepositPool = _getRocketDepositPool();
@@ -521,15 +527,13 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     function calculateRewards(uint256 _amount) public view returns (uint256 nodeRewards, uint256 voterRewards, uint256 protocolDAORewards, uint256 rethRewards) {
         // Early out for edge cases
         if (_amount == 0) return (0, 0, 0, 0);
-        uint256 effectiveNodeBond = nodeBond + nodeQueuedBond;
-        uint256 effectiveUserCapital = userCapital + userQueuedCapital;
-        uint256 totalCapital = effectiveNodeBond + effectiveUserCapital;
-        if (totalCapital == 0) return (_amount, 0, 0, 0);
         // Calculate split based on capital ratio and average commission since last distribute
         RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
         (, uint256 voterShare, uint256 protocolDAOShare, uint256 rethShare) = rocketNetworkRevenues.calculateSplit(lastDistributionTime);
+        uint256 averageCapitalRatio =  rocketNetworkRevenues.getNodeAverageCapitalRatioSince(nodeAddress, lastDistributionTime);
+        if (averageCapitalRatio == 0) return (_amount, 0, 0, 0);
         unchecked {
-            uint256 borrowedPortion = _amount * effectiveUserCapital / (effectiveNodeBond + effectiveUserCapital);
+            uint256 borrowedPortion = _amount - (_amount * calcBase / averageCapitalRatio);
             rethRewards = rethShare * borrowedPortion / calcBase;
             voterRewards = voterShare * borrowedPortion / calcBase;
             protocolDAORewards = protocolDAOShare * borrowedPortion / calcBase;
@@ -706,6 +710,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             RocketDepositPoolInterface rocketDepositPool = _getRocketDepositPool();
             rocketDepositPool.fundsReturned(nodeAddress, nodeShare, userShare);
         }
+        // Snapshot capital ratio
+        _snapshotCapitalRatio();
         // Remove distribution lock
         numExitingValidators -= 1;
         if (numExitingValidators == 0) {
@@ -785,6 +791,19 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     /// @dev Convenience function to return interface to RocketNodeDeposit
     function _getRocketNodeDeposit() internal view returns (RocketNodeDepositInterface) {
         return RocketNodeDepositInterface(rocketStorage.getAddress(rocketNodeDepositKey));
+    }
+
+    /// @dev Calculates the current capital ratio of this Megapool and notifies RocketNetworkRevenues to snapshot it
+    function _snapshotCapitalRatio() internal {
+        RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
+        uint256 capitalRatio;
+        if (nodeBond == 0) {
+            capitalRatio = 0;
+        } else {
+            // Stored as a ratio of total capital / node bond for greater precision
+            capitalRatio = (userCapital + nodeBond) * calcBase / nodeBond;
+        }
+        rocketNetworkRevenues.setNodeCapitalRatio(nodeAddress, capitalRatio);
     }
 
     /// @dev Mirror deposit contract deposit data root calculation but with in-memory bytes instead of calldata

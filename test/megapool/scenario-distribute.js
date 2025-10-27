@@ -1,4 +1,10 @@
-import { RocketStorage, RocketTokenRETH, RocketVault, RocketVoterRewards } from '../_utils/artifacts';
+import {
+    RocketNetworkRevenues,
+    RocketStorage,
+    RocketTokenRETH,
+    RocketVault,
+    RocketVoterRewards,
+} from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 
 const hre = require('hardhat');
@@ -29,7 +35,6 @@ export async function distributeMegapool(megapool) {
     }
 
     const [expectedNodeRewards, expectedVoterRewards, expectedProtocolDAORewards, expectedRethRewards] = await megapool.calculatePendingRewards();
-
     const balancesBefore = await getBalances();
     await megapool.distribute();
     const balancesAfter = await getBalances();
