@@ -21,6 +21,7 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
     function initialise() override public {
         // Set defaults
         _setSettingUint("megapool.time.before.dissolve", 28 days);               // Time that must be waited before dissolving a megapool validator (RPIP-59)
+        _setSettingUint("megapool.dissolve.penalty", 0.05 ether);                // The penalty which is applied to node operators when one of their validators gets dissolved
         _setSettingUint("maximum.megapool.eth.penalty", 612 ether);              // Maximum ETH penalty that can be applied over a rolling 50400 block window (RPIP-42)
         _setSettingUint("notify.threshold", 12 hours);                           // Time before withdrawable_epoch a node operator must notify exit (RPIP-72)
         _setSettingUint("late.notify.fine", 0.05 ether);                         // Fine applied to node operator for not notifying exit in time (RPIP-72)
@@ -64,6 +65,11 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
     /// @notice Returns how long after an assignment a watcher must wait to dissolve a megapool validator (seconds)
     function getTimeBeforeDissolve() override external view returns (uint256) {
         return getSettingUint("megapool.time.before.dissolve");
+    }
+
+    /// @notice Returns the penalty applied to a NO for having a validator dissolved
+    function getDissolvePenalty() override external view returns (uint256) {
+        return getSettingUint("megapool.dissolve.penalty");
     }
 
     /// @notice Returns the maximum amount a megapool can be penalised in 50,400 consecutive slots (~7 days)

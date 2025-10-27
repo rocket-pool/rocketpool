@@ -374,12 +374,15 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         ValidatorInfo memory validator = validators[_validatorId];
         // Check current status
         require(validator.inPrestake, "Validator not prestaked");
-        // Ensure scrub period has passed before allowing dissolution
+        // Ensure time-before-dissolve period has passed before allowing proof-less dissolution
+        RocketDAOProtocolSettingsMegapoolInterface rocketDAOProtocolSettingsMegapool = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
         if (msg.sender != rocketStorage.getAddress(rocketMegapoolManagerKey)) {
-            RocketDAOProtocolSettingsMegapoolInterface rocketDAOProtocolSettingsMegapool = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
             uint256 timeBeforeDissolve = rocketDAOProtocolSettingsMegapool.getTimeBeforeDissolve();
             require(block.timestamp > validator.lastAssignmentTime + timeBeforeDissolve, "Not enough time has passed");
         }
+        // Apply a penalty by increasing debt
+        uint256 dissolvePenalty = rocketDAOProtocolSettingsMegapool.getDissolvePenalty();
+        _increaseDebt(dissolvePenalty);
         // Update validator info
         validator.inPrestake = false;
         validator.dissolved = true;

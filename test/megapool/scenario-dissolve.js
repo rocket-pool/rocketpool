@@ -1,5 +1,10 @@
 import { getMegapoolForNode } from '../_helpers/megapool';
-import { RocketMegapoolManager, RocketNodeStaking } from '../_utils/artifacts';
+import {
+    RocketDAOProtocolSettingsMegapool,
+    RocketDAOProtocolSettingsNode,
+    RocketMegapoolManager,
+    RocketNodeStaking,
+} from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 
 export async function dissolveValidator(node, validatorIndex, from = node, proof = null) {
@@ -7,11 +12,14 @@ export async function dissolveValidator(node, validatorIndex, from = node, proof
 
     const [
         rocketNodeStaking,
+        rocketDAOProtocolSettingsMegapool,
     ] = await Promise.all([
         RocketNodeStaking.deployed(),
+        RocketDAOProtocolSettingsMegapool.deployed()
     ]);
 
     const nodeAddress = await megapool.getNodeAddress();
+    const dissolvePenalty = await rocketDAOProtocolSettingsMegapool.getDissolvePenalty();
 
     async function getData() {
         return await Promise.all([
@@ -21,9 +29,10 @@ export async function dissolveValidator(node, validatorIndex, from = node, proof
             rocketNodeStaking.getNodeMegapoolETHBonded(nodeAddress),
             megapool.getNodeBond(),
             megapool.getUserCapital(),
+            megapool.getDebt(),
         ]).then(
-            ([nodeEthBorrowed, nodeEthBonded, nodeMegapoolEthBorrowed, nodeMegapoolEthBonded, nodeBond, userCapital]) =>
-                ({ nodeEthBorrowed, nodeEthBonded, nodeMegapoolEthBorrowed, nodeMegapoolEthBonded, nodeBond, userCapital }),
+            ([nodeEthBorrowed, nodeEthBonded, nodeMegapoolEthBorrowed, nodeMegapoolEthBonded, nodeBond, userCapital, debt]) =>
+                ({ nodeEthBorrowed, nodeEthBonded, nodeMegapoolEthBorrowed, nodeMegapoolEthBonded, nodeBond, userCapital, debt }),
         );
     }
 
@@ -58,6 +67,7 @@ export async function dissolveValidator(node, validatorIndex, from = node, proof
         nodeMegapoolEthBorrowed:data2.nodeMegapoolEthBorrowed - data1.nodeMegapoolEthBorrowed,
         nodeBond:data2.nodeBond - data1.nodeBond,
         userCapital: data2.userCapital - data1.userCapital,
+        debt: data2.debt - data1.debt,
     }
 
     assertBN.equal(deltas.nodeEthBonded, expectedNodeBondChange);
@@ -69,4 +79,5 @@ export async function dissolveValidator(node, validatorIndex, from = node, proof
     assertBN.equal(data2.userCapital, data2.nodeMegapoolEthBorrowed);
     assertBN.equal(data2.nodeBond, data2.nodeMegapoolEthBonded);
     assertBN.equal(deltas.nodeBond + deltas.userCapital, -'32'.ether);
+    assertBN.equal(deltas.debt, dissolvePenalty);
 }
