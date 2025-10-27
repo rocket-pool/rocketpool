@@ -11,12 +11,6 @@ export async function deployRocketPool() {
     const [signer] = await ethers.getSigners();
     const deployer = new RocketPoolDeployer(signer, { logging: false });
 
-    // Replace mocked contracts
-    deployer.contractPlan['blockRoots'] = {
-        constructorArgs: [],
-        artifact: artifacts.require('BlockRootsMock'),
-    }
-
     deployer.contractPlan['beaconStateVerifier'] = {
         constructorArgs: () => deployer.defaultConstructorArgs(),
         artifact: artifacts.require('BeaconStateVerifierMock'),

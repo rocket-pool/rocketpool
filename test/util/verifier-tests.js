@@ -4,6 +4,7 @@ import { artifacts, BeaconStateVerifier, BlockRootsMock } from '../_utils/artifa
 import * as assert from 'assert';
 import { shouldRevert } from '../_utils/testing';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
+import { globalSnapShot } from '../_utils/snapshotting';
 
 const hre = require('hardhat');
 const ethers = hre.ethers;
@@ -18,6 +19,8 @@ export default function() {
 
         // Setup
         before(async () => {
+            await globalSnapShot();
+
             [
                 owner,
                 node,
@@ -25,9 +28,36 @@ export default function() {
             ] = await ethers.getSigners();
         });
 
+        it(printTitle('BeaconStateVerifier', 'Can verify slot with state proof'), async () => {
+            const beaconStateVerifier = await BeaconStateVerifier.deployed();
+
+            const witnesses = [
+                "0x107700ea94f26790066a7b5d248efdb9ead6d3a8265d69aa9a7466104a8359d2",
+                "0x96a9cb37455ee3201aed37c6bd0598f07984571e5f0593c99941cb50af942cb1",
+                "0xfb9369c355197b96acb9ac274ac94f6312078687edb1538fe8f0f718e55f8d22",
+                "0x2f5e4432933c270f8c6d55b0e5bda1f771a8e6ffbcc222469eed4aa8e548d7a7",
+                "0x4a1cdba46459907ad2e90e7781f1d6073cf605c7606449342b50a8eb9e5b137a",
+                "0xfd0a4ea0112343eba60ae9a15bef34084e4df95fb5d34166a722f94edde023d2",
+                "0xfcfc159f32c11dda7e315ff5d981cb1a247e4d26b3c2dc0f2aa3b842c5262a4f",
+                "0xed688fdbfba04ce68e541cd09db8ea609fd951dd06b7dc171f337dcfb4e7774c",
+                "0xd3b4850ac5f8ec9a4cc48295f972656a9b2ba8d35e665cd53c51a8bb448f9a63"
+            ];
+
+            const blockRoot = '0x26e397dd184ab83558a241a65847bf02406e26835b5a186fb0a2e05690958ad2';
+            const slot = 11821055n;
+            const slotTimestamp = (slot * 12n + 1606824023n) + 12n;
+            await beaconStateVerifier.setBlockRoot(slotTimestamp, blockRoot);
+
+            const correctProof = {
+                slot: slot,
+                witnesses: witnesses,
+            }
+
+            assert.equal(await beaconStateVerifier.verifySlot(slotTimestamp, correctProof), true);
+        });
+
         it(printTitle('BeaconStateVerifier', 'Can verify validator with state proof'), async () => {
             const beaconStateVerifier = await BeaconStateVerifier.deployed();
-            const blockRoots = await BlockRootsMock.deployed();
 
             const witnesses = [
                 '0xdac075cf29676e5da6a30cb2c2fab90b2661e0b921c599b384399380ae9ab5ab',
@@ -83,11 +113,14 @@ export default function() {
             ];
 
             const blockRoot = '0x26e397dd184ab83558a241a65847bf02406e26835b5a186fb0a2e05690958ad2';
-            const slot = 11821055;
-            await blockRoots.setBlockRoot(slot, blockRoot);
+            const slot = 11821055n;
+            const slotTimestamp = (slot * 12n + 1606824023n) + 12n;
+            await beaconStateVerifier.setBlockRoot(slotTimestamp, blockRoot);
+
+            const tooOldSlot = 100000n;
+            const tooOldSlotTimestamp = (tooOldSlot * 12n + 1606824023n) + 12n;
 
             const correctProof = {
-                slot: slot,
                 validatorIndex: 1060378,
                 validator: {
                     pubkey: '0xb6544b67c27a9d9f460bd839b1a42d4edf4fedd2567a631ffe473f047acd539257dd326e5c969a08a5ae07db6fd8616c',
@@ -103,7 +136,6 @@ export default function() {
             };
 
             const incorrectProof = {
-                slot: slot,
                 validatorIndex: 1060378,
                 validator: {
                     pubkey: '0xb6544b67c27a9d9f460bd839b1a42d4edf4fedd2567a631ffe473f047acd539257dd326e5c969a08a5ae07db6fd8616c',
@@ -122,7 +154,6 @@ export default function() {
             };
 
             const invalidWitnessLengthProof = {
-                slot: slot,
                 validatorIndex: 1060378,
                 validator: {
                     pubkey: '0xb6544b67c27a9d9f460bd839b1a42d4edf4fedd2567a631ffe473f047acd539257dd326e5c969a08a5ae07db6fd8616c',
@@ -140,7 +171,6 @@ export default function() {
             };
 
             const invalidCredentialsProof = {
-                slot: slot,
                 validatorIndex: 1060378,
                 validator: {
                     pubkey: '0xb6544b67c27a9d9f460bd839b1a42d4edf4fedd2567a631ffe473f047acd539257dd326e5c969a08a5ae07db6fd8616c',
@@ -156,7 +186,6 @@ export default function() {
             };
 
             const tooOldProof = {
-                slot: 100000n,
                 validatorIndex: 1060378,
                 validator: {
                     pubkey: '0xb6544b67c27a9d9f460bd839b1a42d4edf4fedd2567a631ffe473f047acd539257dd326e5c969a08a5ae07db6fd8616c',
@@ -172,23 +201,22 @@ export default function() {
             };
 
             await shouldRevert(
-                beaconStateVerifier.verifyValidator(tooOldProof),
+                beaconStateVerifier.verifyValidator(tooOldSlotTimestamp, tooOldSlot, tooOldProof),
                 'Accepted pre-electra proof',
                 'Invalid proof',
             );
             await shouldRevert(
-                beaconStateVerifier.verifyValidator(invalidWitnessLengthProof),
+                beaconStateVerifier.verifyValidator(slotTimestamp, slot, invalidWitnessLengthProof),
                 'Accepted invalid witness length',
                 'Invalid witness length',
             );
-            assert.equal(await beaconStateVerifier.verifyValidator(incorrectProof), false);
-            assert.equal(await beaconStateVerifier.verifyValidator(invalidCredentialsProof), false);
-            assert.equal(await beaconStateVerifier.verifyValidator(correctProof), true);
+            assert.equal(await beaconStateVerifier.verifyValidator(slotTimestamp, slot, incorrectProof), false);
+            assert.equal(await beaconStateVerifier.verifyValidator(slotTimestamp, slot, invalidCredentialsProof), false);
+            assert.equal(await beaconStateVerifier.verifyValidator(slotTimestamp, slot, correctProof), true);
         });
 
         it(printTitle('BeaconStateVerifier', 'Can verify withdrawal with state proof'), async () => {
             const beaconStateVerifier = await BeaconStateVerifier.deployed();
-            const blockRoots = await BlockRootsMock.deployed();
 
             const witnesses = [
                 '0x56ebcae55f5161bd71226301b4c751ef433864c820c8d09361ca1a74758dd72c', '0x162cc35aa31a7cf1790ca34860c7e7a63f1ab2529f66d99fa1a872aea0bcf529',
@@ -215,11 +243,14 @@ export default function() {
             ];
 
             const blockRoot = '0xe39be859f0aaa98d1c269252388115284366451b58ed082801593dbbfccd1876';
-            const slot = 11834166;
-            await blockRoots.setBlockRoot(slot, blockRoot);
+            const slot = 11834166n;
+            const slotTimestamp = (slot * 12n + 1606824023n) + 12n;
+            await beaconStateVerifier.setBlockRoot(slotTimestamp, blockRoot);
+
+            const tooOldSlot = 100000n;
+            const tooOldSlotTimestamp = (tooOldSlot * 12n + 1606824023n) + 12n;
 
             const correctProof = {
-                slot: slot,
                 withdrawalSlot: 11825974n,
                 withdrawalNum: 0n,
                 withdrawal: {
@@ -232,7 +263,6 @@ export default function() {
             };
 
             const invalidProof = {
-                slot: slot,
                 withdrawalSlot: 11825974n,
                 withdrawalNum: 0n,
                 withdrawal: {
@@ -248,7 +278,6 @@ export default function() {
             };
 
             const invalidWitnessLengthProof = {
-                slot: slot,
                 withdrawalSlot: 11825974n,
                 withdrawalNum: 0n,
                 withdrawal: {
@@ -263,7 +292,6 @@ export default function() {
             };
 
             const incorrectAmountProof = {
-                slot: slot,
                 withdrawalSlot: 11825974n,
                 withdrawalNum: 0n,
                 withdrawal: {
@@ -276,7 +304,6 @@ export default function() {
             };
 
             const tooOldProof = {
-                slot: 100000n,
                 withdrawalSlot: 11825974n,
                 withdrawalNum: 0n,
                 withdrawal: {
@@ -289,7 +316,6 @@ export default function() {
             };
 
             const tooNewProof = {
-                slot: slot,
                 withdrawalSlot: slot,
                 withdrawalNum: 0n,
                 withdrawal: {
@@ -302,7 +328,6 @@ export default function() {
             };
 
             const tooOldWithdrawalProof = {
-                slot: slot,
                 withdrawalSlot: 1000000n,
                 withdrawalNum: 0n,
                 withdrawal: {
@@ -315,33 +340,32 @@ export default function() {
             };
 
             await shouldRevert(
-                beaconStateVerifier.verifyWithdrawal(tooOldProof),
+                beaconStateVerifier.verifyWithdrawal(tooOldSlotTimestamp, tooOldSlot, tooOldProof),
                 'Accepted pre-electra proof',
                 'Invalid proof',
             );
             await shouldRevert(
-                beaconStateVerifier.verifyWithdrawal(tooOldWithdrawalProof),
+                beaconStateVerifier.verifyWithdrawal(slotTimestamp, slot, tooOldWithdrawalProof),
                 'Accepted pre-electra proof',
                 'Invalid proof',
             );
             await shouldRevert(
-                beaconStateVerifier.verifyWithdrawal(tooNewProof),
+                beaconStateVerifier.verifyWithdrawal(slotTimestamp, slot, tooNewProof),
                 'Accepted too recent proof',
                 'Invalid slot for proof',
             );
             await shouldRevert(
-                beaconStateVerifier.verifyWithdrawal(invalidWitnessLengthProof),
+                beaconStateVerifier.verifyWithdrawal(slotTimestamp, slot, invalidWitnessLengthProof),
                 'Accepted invalid witness length',
                 'Invalid witness length',
             );
-            assert.equal(await beaconStateVerifier.verifyWithdrawal(invalidProof), false);
-            assert.equal(await beaconStateVerifier.verifyWithdrawal(incorrectAmountProof), false);
-            assert.equal(await beaconStateVerifier.verifyWithdrawal(correctProof), true);
+            assert.equal(await beaconStateVerifier.verifyWithdrawal(slotTimestamp, slot, invalidProof), false);
+            assert.equal(await beaconStateVerifier.verifyWithdrawal(slotTimestamp, slot, incorrectAmountProof), false);
+            assert.equal(await beaconStateVerifier.verifyWithdrawal(slotTimestamp, slot, correctProof), true);
         });
 
         it(printTitle('BeaconStateVerifier', 'Can verify historical withdrawal with state proof'), async () => {
             const beaconStateVerifier = await BeaconStateVerifier.deployed();
-            const blockRoots = await BlockRootsMock.deployed();
 
             const witnesses = [
                 '0x74cfc71c3b83d9ebf5efd08392c92a9dda42503dcad6803c73891d9053a70320',
@@ -413,10 +437,10 @@ export default function() {
 
             const blockRoot = '0xe39be859f0aaa98d1c269252388115284366451b58ed082801593dbbfccd1876';
             const slot = 11834166n;
-            await blockRoots.setBlockRoot(slot, blockRoot);
+            const slotTimestamp = (slot * 12n + 1606824023n) + 12n;
+            await beaconStateVerifier.setBlockRoot(slotTimestamp, blockRoot);
 
             const correctProof = {
-                slot: slot,
                 withdrawalSlot: 11813956n,
                 withdrawalNum: 0n,
                 withdrawal: {
@@ -428,79 +452,7 @@ export default function() {
                 witnesses: witnesses,
             };
 
-            assert.equal(await beaconStateVerifier.verifyWithdrawal(correctProof), true);
-        });
-
-        it(printTitle('BlockRoots', 'Returns the correct block hash'), async () => {
-            // Choose genesis time 1000 slots ago
-            const block = await ethers.provider.getBlock();
-            const beaconGenesisTime = (BigInt(block.timestamp) / 12n * 12n) - (1000n * 12n);
-            const secondsPerSlot = 12n
-
-            const BeaconRootsMock = artifacts.require('BeaconRootsMock');
-            const BlockRoots = artifacts.require('BlockRoots');
-            const beaconRootsMock = await BeaconRootsMock.new();
-            const blockRoots = await BlockRoots.new(beaconGenesisTime, secondsPerSlot, 8191n, beaconRootsMock.target);
-
-            const root1 = '0x0000000000000000000000000000000000000000000000000000000000000001'
-            const root2 = '0x0000000000000000000000000000000000000000000000000000000000000002'
-            const root3 = '0x0000000000000000000000000000000000000000000000000000000000000003'
-
-            async function setParentBlockRoot(slot, root) {
-                await beaconRootsMock.setParentBlockRoot(beaconGenesisTime + (slot * secondsPerSlot), root);
-            }
-
-            await setParentBlockRoot(501n, root1);
-            await setParentBlockRoot(502n, root2);
-            // Simulate 2 skipped slots
-            await setParentBlockRoot(505n, root3);
-
-            assert.equal(await blockRoots.getBlockRoot(500n), root1);
-            assert.equal(await blockRoots.getBlockRoot(501n), root2);
-            assert.equal(await blockRoots.getBlockRoot(502n), root3);
-            assert.equal(await blockRoots.getBlockRoot(503n), root3);
-            assert.equal(await blockRoots.getBlockRoot(504n), root3);
-            await shouldRevert(
-                blockRoots.getBlockRoot(505n),
-                "Did not revert on invalid slot",
-                "Block root is not available"
-            );
-        });
-
-        it(printTitle('BlockRoots', 'Fails to return a block root for a slot that is too old'), async () => {
-            const block = await ethers.provider.getBlock();
-            const beaconGenesisTime = (BigInt(block.timestamp) / 12n * 12n);
-            const secondsPerSlot = 12n
-
-            const BeaconRootsMock = artifacts.require('BeaconRootsMock');
-            const BlockRoots = artifacts.require('BlockRoots');
-            const beaconRootsMock = await BeaconRootsMock.new();
-            const blockRoots = await BlockRoots.new(beaconGenesisTime, secondsPerSlot, 10n, beaconRootsMock.target);
-
-            await time.increaseTo(beaconGenesisTime + (secondsPerSlot * 100n));
-
-            /**
-             * We've set the genesis time such that we are now at slot 100
-             * And we've set the history buffer length to 10
-             *
-             * That means the EVM theoretically has parent block hashes for slots 91 to 100 or in other words, the
-             * block hashes for blocks in slots 90 to 99
-             *
-             * Therefore, retrieving the block hash for 89 should revert with "Slot too old" but not 90
-             */
-
-            await shouldRevert(
-                blockRoots.getBlockRoot(89n),
-                "Was able to get old block root",
-                "Slot too old"
-            );
-
-            // We didn't actually mock the parent block hash so just check that we don't revert with "Slot too old"
-            await shouldRevert(
-                blockRoots.getBlockRoot(90n),
-                "Incorrectly reverted with slot too old",
-                "Block root is not available"
-            );
+            assert.equal(await beaconStateVerifier.verifyWithdrawal(slotTimestamp, slot, correctProof), true);
         });
     });
 }

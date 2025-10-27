@@ -15,14 +15,14 @@ contract RocketUpgradeOneDotFour is RocketBase {
     bool internal executed;
 
     // Upgrade ABIs
-    address[35] public addresses;
-    string[35] public abis;
+    address[34] public addresses;
+    string[34] public abis;
 
     // Construct
     constructor(
         RocketStorageInterface _rocketStorageAddress,
-        address[35] memory _addresses,
-        string[35] memory _abis
+        address[34] memory _addresses,
+        string[34] memory _abis
     ) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
@@ -47,12 +47,11 @@ contract RocketUpgradeOneDotFour is RocketBase {
         _addContract("rocketMegapoolManager", addresses[3], abis[3]);
         _addContract("linkedListStorage", addresses[8], abis[8]);
         _addContract("rocketNetworkRevenues", addresses[20], abis[20]);
-        _addContract("blockRoots", addresses[25], abis[25]);
-        _addContract("beaconStateVerifier", addresses[26], abis[26]);
+        _addContract("beaconStateVerifier", addresses[25], abis[25]);
         _addContract("rocketDAOProtocolSettingsMegapool", addresses[15], abis[15]);
         _addContract("rocketDAOSecurityUpgrade", addresses[17], abis[17]);
-        _addContract("rocketMegapoolPenalties", addresses[33], abis[33]);
-        _addContract("rocketNetworkSnapshotsTime", addresses[34], abis[34]);
+        _addContract("rocketMegapoolPenalties", addresses[32], abis[32]);
+        _addContract("rocketNetworkSnapshotsTime", addresses[33], abis[33]);
 
         // Upgrade existing contracts
         _upgradeContract("rocketNodeManager", addresses[4], abis[4]);
@@ -71,16 +70,16 @@ contract RocketUpgradeOneDotFour is RocketBase {
         _upgradeContract("rocketDAOProtocolSettingsMinipool", addresses[16], abis[16]);
         _upgradeContract("rocketDAONodeTrustedUpgrade", addresses[19], abis[19]);
         _upgradeContract("rocketDAOSecurityProposals", addresses[18], abis[18]);
-        _upgradeContract("rocketNodeDistributorDelegate", addresses[27], abis[27]);
+        _upgradeContract("rocketNodeDistributorDelegate", addresses[26], abis[26]);
         _upgradeContract("rocketRewardsPool", addresses[24], abis[24]);
-        _upgradeContract("rocketClaimDAO", addresses[28], abis[28]);
-        _upgradeContract("rocketMinipoolBondReducer", addresses[29], abis[29]);
-        _upgradeContract("rocketMinipoolManager", addresses[30], abis[30]);
-        _upgradeContract("rocketNetworkVoting", addresses[31], abis[31]);
-        _upgradeContract("rocketMerkleDistributorMainnet", addresses[32], abis[32]);
+        _upgradeContract("rocketClaimDAO", addresses[27], abis[27]);
+        _upgradeContract("rocketMinipoolBondReducer", addresses[28], abis[28]);
+        _upgradeContract("rocketMinipoolManager", addresses[29], abis[29]);
+        _upgradeContract("rocketNetworkVoting", addresses[30], abis[30]);
+        _upgradeContract("rocketMerkleDistributorMainnet", addresses[31], abis[31]);
 
         // Initialise the rewards relay address
-        InitialiseInterface(addresses[32]).initialise();
+        InitialiseInterface(addresses[31]).initialise();
 
         // Initialise the megapool factory
         InitialiseInterface(addresses[1]).initialise();

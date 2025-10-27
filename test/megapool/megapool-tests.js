@@ -43,13 +43,33 @@ import { dissolveValidator } from './scenario-dissolve';
 import { challengeValidator } from './scenario-challenge';
 import { repayDebt } from './scenario-repay-debt';
 import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '../_utils/beacon';
+import { beaconGenesisTime, getCurrentEpoch, getSlotForBlock } from '../_helpers/beaconchain';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
 const ethers = hre.ethers;
 
 const farFutureEpoch = 2n ** 64n - 1n;
-const beaconGenesisTime = 1606824023;
+
+async function getCurrentTime() {
+    const latestBlock = await ethers.provider.getBlock('latest');
+    return latestBlock.timestamp;
+}
+
+async function getValidPrestakeValidator(megapool, index) {
+    const info = await getValidatorInfo(megapool, index);
+    const withdrawalCredentials = await megapool.getWithdrawalCredentials();
+    return {
+        pubkey: info.pubkey,
+        withdrawalCredentials: withdrawalCredentials,
+        effectiveBalance: '1'.ether / '1'.gwei,
+        slashed: false,
+        activationEligibilityEpoch: 0n,
+        activationEpoch: 0n,
+        exitEpoch: farFutureEpoch,
+        withdrawableEpoch: farFutureEpoch,
+    };
+}
 
 export default function() {
     describe('Megapools', () => {
@@ -67,7 +87,8 @@ export default function() {
         const secondsPerSlot = 12;
         const slotsPerEpoch = 32;
 
-        const userDistributeTime = (30 * 24 * 60 * 60); // 90 days
+        const userDistributeTime = 1575;                 // Approx 7 days @ 12s/block
+        const userDistributeShortfallTime = 6750;        // Approx 30 days @ 12s/block
 
         async function mockRewards(megapool, amount = '1'.ether) {
             await owner.sendTransaction({
@@ -196,7 +217,7 @@ export default function() {
             await shouldRevert(
                 nodeDepositMulti(node, deposits, 0n, '8.1'.ether),
                 'Deposited multiple with excess msg.value',
-                'Excess bond value supplied'
+                'Excess bond value supplied',
             );
         });
 
@@ -341,7 +362,7 @@ export default function() {
             await shouldRevert(
                 nodeDeposit(node, '2'.ether, false, '2'.ether),
                 'Was able to increase bond while over bonded',
-                'Bond requirement not met'
+                'Bond requirement not met',
             );
             // NO is overbonded by 2 ETH, so should only be able to make validators with 1 ETH bond (prestake value)
             await nodeDeposit(node, '1'.ether, false, '1'.ether);
@@ -414,8 +435,8 @@ export default function() {
             megapool = await getMegapoolForNode(node);
             await shouldRevert(
                 megapool.distribute(),
-                "Was able to distribute",
-                "No first validator"
+                'Was able to distribute',
+                'No first validator',
             );
         });
 
@@ -610,7 +631,7 @@ export default function() {
             await shouldRevert(
                 votePenalty(megapool, 1n, maxPenaltyAmount / 2n + 1n, trustedNode2),
                 'Was able to exceed maximum',
-                'Max penalty exceeded'
+                'Max penalty exceeded',
             );
         });
 
@@ -639,7 +660,7 @@ export default function() {
             await shouldRevert(
                 votePenalty(megapool, 0n, maxPenaltyAmount + 1n, trustedNode1),
                 'Was able to vote for a penalty greater than maximum',
-                'Penalty exceeds maximum'
+                'Penalty exceeds maximum',
             );
         });
 
@@ -777,14 +798,18 @@ export default function() {
                 const validSlot = BigInt((await getCurrentEpoch() + 1) * 32);
 
                 const validProof = {
-                    slot: validSlot,
-                    validatorIndex: info.validatorIndex,
+                    validatorIndex: 0n,
                     validator: validValidator,
                     witnesses: [],
                 };
 
+                const slotProof = {
+                    slot: validSlot,
+                    witnesses: [],
+                };
+
                 await shouldRevert(
-                    rocketMegapoolManager.notifyNotExit(megapool.target, 1n, validProof),
+                    rocketMegapoolManager.notifyNotExit(megapool.target, 1n, await getCurrentTime(), validProof, slotProof),
                     'Was able to notify not exit on non-locked validator',
                     'Validator not locked',
                 );
@@ -806,32 +831,32 @@ export default function() {
                     withdrawableEpoch: farFutureEpoch,
                 };
 
-                const validSlot = BigInt((await getCurrentEpoch() + 1) * 32);
+                const currentTime = await getCurrentTime();
 
                 const validProof = {
-                    slot: validSlot,
-                    validatorIndex: info.validatorIndex,
+                    validatorIndex: 0n,
                     validator: validValidator,
                     witnesses: [],
                 };
 
                 const tooOldProof = {
                     slot: 1n,
-                    validatorIndex: info.validatorIndex,
+                    validatorIndex: 0n,
                     validator: validValidator,
                     witnesses: [],
                 };
 
-                const wrongValidatorIndexProof = {
-                    slot: validSlot,
-                    validatorIndex: info.validatorIndex + 1n,
-                    validator: validValidator,
+                const wrongPubkeyProof = {
+                    validatorIndex: 0n,
+                    validator: {
+                        ...validValidator,
+                        pubkey: '0x01',
+                    },
                     witnesses: [],
                 };
 
                 const exitingValidatorProof = {
-                    slot: validSlot,
-                    validatorIndex: info.validatorIndex,
+                    validatorIndex: 0n,
                     validator: {
                         ...validValidator,
                         withdrawableEpoch: await getCurrentEpoch(),
@@ -839,26 +864,36 @@ export default function() {
                     witnesses: [],
                 };
 
+                const tooOldSlotProof = {
+                    slot: 1n,
+                    witnesses: [],
+                };
+
+                const slotProof = {
+                    slot: currentTime,
+                    witnesses: [],
+                };
+
                 await shouldRevert(
-                    rocketMegapoolManager.notifyNotExit(megapool.target, 0n, tooOldProof),
+                    rocketMegapoolManager.notifyNotExit(megapool.target, 0n, currentTime - 60, tooOldProof, tooOldSlotProof),
                     'Invalid proof accepted',
                     'Proof is older than challenge',
                 );
 
                 await shouldRevert(
-                    rocketMegapoolManager.notifyNotExit(megapool.target, 0n, wrongValidatorIndexProof),
+                    rocketMegapoolManager.notifyNotExit(megapool.target, 0n, currentTime, wrongPubkeyProof, slotProof),
                     'Invalid proof accepted',
-                    'Invalid proof',
+                    'Pubkey does not match',
                 );
 
                 await shouldRevert(
-                    rocketMegapoolManager.notifyNotExit(megapool.target, 0n, exitingValidatorProof),
+                    rocketMegapoolManager.notifyNotExit(megapool.target, 0n, currentTime, exitingValidatorProof, slotProof),
                     'Invalid proof accepted',
-                    'Validator is exiting',
+                    'Validator already exiting',
                 );
 
                 // Correct proof should work
-                await rocketMegapoolManager.notifyNotExit(megapool.target, 0n, validProof);
+                await rocketMegapoolManager.notifyNotExit(megapool.target, 0n, currentTime, validProof, slotProof);
 
                 const infoAfter = await getValidatorInfo(megapool, 0);
                 assert.equal(infoAfter.locked, false);
@@ -938,7 +973,7 @@ export default function() {
                 await shouldRevert(
                     withdrawCredit(node, '2'.ether, random),
                     'Was able to withdraw credit from random address',
-                    'Must be called from withdrawal address'
+                    'Must be called from withdrawal address',
                 );
                 // Withdraw credit from withdrawal address
                 await withdrawCredit(node, '2'.ether, nodeWithdrawalAddress);
@@ -1065,36 +1100,35 @@ export default function() {
                 await dissolveValidator(node, 0, random, incorrectCredentials);
             });
 
-            it(printTitle('random', 'can not dissolve validator immediately with correct credentials'), async () => {
+            it(printTitle('random', 'can not dissolve validator immediately with compliant validator'), async () => {
                 await nodeDeposit(node);
                 const info = await getValidatorInfo(megapool, 0);
                 const withdrawalCredentials = await megapool.getWithdrawalCredentials();
-                const correctCredentials = {
+                const correctProof = {
                     slot: 0n,
                     validatorIndex: 0n,
                     validator: {
                         pubkey: info.pubkey,
                         withdrawalCredentials: withdrawalCredentials,
-                        effectiveBalance: 0n,
+                        effectiveBalance: '1'.ether / '1'.gwei,
                         slashed: false,
                         activationEligibilityEpoch: 0n,
                         activationEpoch: 0n,
-                        exitEpoch: 0n,
-                        withdrawableEpoch: 0n,
+                        exitEpoch: farFutureEpoch,
+                        withdrawableEpoch: farFutureEpoch,
                     },
                     witnesses: [],
                 };
                 await shouldRevert(
-                    dissolveValidator(node, 0, random, correctCredentials),
+                    dissolveValidator(node, 0, random, correctProof),
                     'Was able to dissolve validator',
-                    'Valid withdrawal credentials',
+                    'Validator is compliant',
                 );
             });
 
             it(printTitle('random', 'can not dissolve a validator immediately with non-matching pubkey'), async () => {
                 await nodeDeposit(node);
                 const incorrectPubkey = {
-                    slot: 0n,
                     validatorIndex: 0n,
                     validator: {
                         pubkey: '0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
@@ -1115,6 +1149,76 @@ export default function() {
                 );
             });
 
+            it(printTitle('random', 'can dissolve an invalid validator immediately (invalid withdrawal_credentials)'), async () => {
+                await nodeDeposit(node);
+                const invalidProof = {
+                    slot: 0n,
+                    validatorIndex: 0n,
+                    validator: {
+                        ...await getValidPrestakeValidator(megapool, 0n),
+                        withdrawalCredentials: '0x0100000000000000000000000000000000000000000000000000000000000000',
+                    },
+                    witnesses: [],
+                };
+                await dissolveValidator(node, 0, random, invalidProof);
+            });
+
+            it(printTitle('random', 'can dissolve an invalid validator immediately (slashed)'), async () => {
+                await nodeDeposit(node);
+                const invalidProof = {
+                    slot: 0n,
+                    validatorIndex: 0n,
+                    validator: {
+                        ...await getValidPrestakeValidator(megapool, 0n),
+                        slashed: true
+                    },
+                    witnesses: [],
+                };
+                await dissolveValidator(node, 0, random, invalidProof);
+            });
+
+            it(printTitle('random', 'can dissolve an invalid validator immediately (invalid withdrawable_epoch)'), async () => {
+                await nodeDeposit(node);
+                const invalidProof = {
+                    slot: 0n,
+                    validatorIndex: 0n,
+                    validator: {
+                        ...await getValidPrestakeValidator(megapool, 0n),
+                        withdrawableEpoch: 100n,
+                    },
+                    witnesses: [],
+                };
+                await dissolveValidator(node, 0, random, invalidProof);
+            });
+
+            it(printTitle('random', 'can dissolve an invalid validator immediately (invalid exit_epoch)'), async () => {
+                await nodeDeposit(node);
+                const invalidProof = {
+                    slot: 0n,
+                    validatorIndex: 0n,
+                    validator: {
+                        ...await getValidPrestakeValidator(megapool, 0n),
+                        exitEpoch: 100n,
+                    },
+                    witnesses: [],
+                };
+                await dissolveValidator(node, 0, random, invalidProof);
+            });
+
+            it(printTitle('random', 'can dissolve an invalid validator immediately (invalid balance)'), async () => {
+                await nodeDeposit(node);
+                const invalidProof = {
+                    slot: 0n,
+                    validatorIndex: 0n,
+                    validator: {
+                        ...await getValidPrestakeValidator(megapool, 0n),
+                        effectiveBalance: '32'.ether / '1'.ether,
+                    },
+                    witnesses: [],
+                };
+                await dissolveValidator(node, 0, random, invalidProof);
+            });
+
             it(printTitle('node', 'can perform stake operation on pre-stake validator'), async () => {
                 await nodeDeposit(node);
                 await stakeMegapoolValidator(megapool, 0);
@@ -1126,28 +1230,99 @@ export default function() {
                 await stakeMegapoolValidator(megapoolRandom, 0);
             });
 
-            it(printTitle('node', 'can not stake with invalid withdrawal credentials'), async () => {
+            it(printTitle('node', 'can not stake with invalid validator (invalid withdrawal_credentials)'), async () => {
                 const rocketMegapoolManager = await RocketMegapoolManager.deployed();
                 await nodeDeposit(node);
-                const validatorInfo = await getValidatorInfo(megapool, 0);
-                const withdrawalCredentials = Buffer.from('0100000000000000000000000000000000000000000000000000000000000000', 'hex');
                 // Construct a fake proof
                 const proof = {
-                    slot: 0n,
                     validatorIndex: 0n,
                     validator: {
-                        pubkey: validatorInfo.pubkey,
-                        withdrawalCredentials: withdrawalCredentials,
-                        effectiveBalance: 0n,
-                        slashed: false,
-                        activationEligibilityEpoch: 0n,
-                        activationEpoch: 0n,
-                        exitEpoch: 0n,
-                        withdrawableEpoch: 0n,
+                        ...await getValidPrestakeValidator(megapool, 0n),
+                        withdrawalCredentials: Buffer.from('0100000000000000000000000000000000000000000000000000000000000000', 'hex'),
                     },
                     witnesses: [],
                 };
-                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, proof), 'Staked with invalid credentials', 'Invalid withdrawal credentials');
+                const slotProof = {
+                    slot: 0n,
+                    witnesses: [],
+                };
+                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), proof, slotProof), 'Staked with invalid validator', 'Invalid withdrawal credentials');
+            });
+
+            it(printTitle('node', 'can not stake with invalid validator (invalid withdrawable_epoch)'), async () => {
+                const rocketMegapoolManager = await RocketMegapoolManager.deployed();
+                await nodeDeposit(node);
+                // Construct a fake proof
+                const proof = {
+                    validatorIndex: 0n,
+                    validator: {
+                        ...await getValidPrestakeValidator(megapool, 0n),
+                        withdrawableEpoch: 100n
+                    },
+                    witnesses: [],
+                };
+                const slotProof = {
+                    slot: 0n,
+                    witnesses: [],
+                };
+                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), proof, slotProof), 'Staked with invalid validator', 'Validator is withdrawing');
+            });
+
+            it(printTitle('node', 'can not stake with invalid validator (invalid exit_epoch)'), async () => {
+                const rocketMegapoolManager = await RocketMegapoolManager.deployed();
+                await nodeDeposit(node);
+                // Construct a fake proof
+                const proof = {
+                    validatorIndex: 0n,
+                    validator: {
+                        ...await getValidPrestakeValidator(megapool, 0n),
+                        exitEpoch: 100n
+                    },
+                    witnesses: [],
+                };
+                const slotProof = {
+                    slot: 0n,
+                    witnesses: [],
+                };
+                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), proof, slotProof), 'Staked with invalid validator', 'Validator is exiting');
+            });
+
+            it(printTitle('node', 'can not stake with invalid validator (invalid slashed)'), async () => {
+                const rocketMegapoolManager = await RocketMegapoolManager.deployed();
+                await nodeDeposit(node);
+                // Construct a fake proof
+                const proof = {
+                    validatorIndex: 0n,
+                    validator: {
+                        ...await getValidPrestakeValidator(megapool, 0n),
+                        slashed: true
+                    },
+                    witnesses: [],
+                };
+                const slotProof = {
+                    slot: 0n,
+                    witnesses: [],
+                };
+                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), proof, slotProof), 'Staked with invalid validator', 'Validator is slashed');
+            });
+
+            it(printTitle('node', 'can not stake with invalid validator (invalid balance)'), async () => {
+                const rocketMegapoolManager = await RocketMegapoolManager.deployed();
+                await nodeDeposit(node);
+                // Construct a fake proof
+                const proof = {
+                    validatorIndex: 0n,
+                    validator: {
+                        ...await getValidPrestakeValidator(megapool, 0n),
+                        effectiveBalance: '32'.ether / '1'.gwei
+                    },
+                    witnesses: [],
+                };
+                const slotProof = {
+                    slot: 0n,
+                    witnesses: [],
+                };
+                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), proof, slotProof), 'Staked with invalid validator', 'Invalid validator balance');
             });
 
             it(printTitle('node', 'can perform a second stake operation with no rewards available'), async () => {
@@ -1280,15 +1455,10 @@ export default function() {
                     await distributeMegapool(megapool);
                 });
 
-                it(printTitle('node', 'can distribute until withdrawable epoch is reached'), async () => {
+                it(printTitle('node', 'can not distribute after notify exit'), async () => {
                     // Notify exit in 5 epochs
                     const currentEpoch = await getCurrentEpoch();
                     await notifyExitValidator(megapool, 0, currentEpoch + 5);
-                    // Can distribute
-                    await mockRewards(megapool, '1'.ether);
-                    await distributeMegapool(megapool);
-                    // Pass 5 epochs
-                    await waitEpochs(5);
                     // Can't distribute
                     await mockRewards(megapool, '1'.ether);
                     await shouldRevert(distributeMegapool(megapool), 'Was able to distribute', 'Pending validator exit');
@@ -1305,17 +1475,81 @@ export default function() {
                 });
 
                 it(printTitle('node', 'can not notify final balance twice'), async () => {
+                    const validatorId = 0n;
                     const withdrawalEpoch = await getCurrentEpoch();
-                    await notifyExitValidator(megapool, 0, withdrawalEpoch);
-                    await notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner, withdrawalEpoch * 32);
-                    await shouldRevert(notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner, withdrawalEpoch * 32), 'Notified final balance twice', 'Already exited');
+                    await notifyExitValidator(megapool, validatorId, withdrawalEpoch);
+                    await notifyFinalBalanceValidator(megapool, validatorId, '32'.ether, owner, withdrawalEpoch * 32);
+                    await shouldRevert(notifyFinalBalanceValidator(megapool, validatorId, '32'.ether, owner, withdrawalEpoch * 32), 'Notified final balance twice', 'Already exited');
+                });
+
+                it(printTitle('node', 'can not notify final balance with mismatching validator'), async () => {
+                    const withdrawalEpoch = await getCurrentEpoch();
+
+                    // Collect values needed for notify final balance
+                    const validatorId = 0n;
+                    const infoBefore = await getValidatorInfo(megapool, validatorId);
+                    const executionWithdrawalCredentials = Buffer.from(megapool.target.substr(2), 'hex');
+                    const amountInGwei = '32'.ether / '1'.gwei;
+                    const withdrawalCredentials = await megapool.getWithdrawalCredentials();
+                    const withdrawalSlot = withdrawalEpoch * 32;
+                    await helpers.mine();
+                    const latestBlock = await ethers.provider.getBlock('latest');
+                    const currentTime = latestBlock.timestamp;
+
+                    // Notify exit
+                    await notifyExitValidator(megapool, validatorId, withdrawalEpoch);
+
+                    // Construct proofs
+                    const withdrawalProof = {
+                        withdrawalSlot: withdrawalSlot,
+                        withdrawalNum: 0n,
+                        withdrawal: {
+                            index: 0n,
+                            validatorIndex: 1n, // Not matching validatorProof
+                            withdrawalCredentials: executionWithdrawalCredentials,
+                            amountInGwei: amountInGwei,
+                        },
+                        witnesses: [],
+                    };
+                    const validatorProof = {
+                        validatorIndex: 2n, // Not matching withdrawalProof
+                        validator: {
+                            pubkey: infoBefore.pubkey,
+                            withdrawalCredentials: withdrawalCredentials,
+                            withdrawableEpoch: withdrawalEpoch,
+                            // Only above three need to be valid values
+                            effectiveBalance: 0n,
+                            slashed: false,
+                            activationEligibilityEpoch: 0n,
+                            activationEpoch: 0n,
+                            exitEpoch: 0n,
+                        },
+                        witnesses: [],
+                    };
+                    const slotProof = {
+                        slot: await getSlotForBlock(),
+                        witnesses: [],
+                    };
+
+                    // Mock exiting validator by sending final balance to megapool
+                    await owner.sendTransaction({
+                        to: megapool.target,
+                        value: '32'.ether,
+                    });
+
+                    const rocketMegapoolManager = await RocketMegapoolManager.deployed();
+                    await shouldRevert(
+                        rocketMegapoolManager.connect(node).notifyFinalBalance(megapool.target, validatorId, currentTime, withdrawalProof, validatorProof, slotProof),
+                        'Was able to notify final balance with mismatching validators',
+                        'Withdrawal validator not matching',
+                    );
                 });
 
                 it(printTitle('node', 'can not notify final balance from before withdrawal epoch'), async () => {
                     const withdrawalEpoch = await getCurrentEpoch();
                     await notifyExitValidator(megapool, 0, withdrawalEpoch);
                     await shouldRevert(
-                        notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner, withdrawalEpoch * 32 - 1),
+                        notifyFinalBalanceValidator(megapool, 0, '32'.ether, owner, withdrawalEpoch * slotsPerEpoch - 1, withdrawalEpoch),
                         'Was able to notify final balance prior to withdrawal',
                         'Not full withdrawal',
                     );
@@ -1375,16 +1609,35 @@ export default function() {
                     await distributeMegapool(megapool);
                 });
 
-                it(printTitle('random', 'can permissionlessly notify final balance and distribute a validator after user distribute window'), async () => {
+                it(printTitle('random', 'can permissionlessly notify final balance and distribute a validator after user distribute delay'), async () => {
                     // Notify exit and final balance
                     const currentEpoch = await getCurrentEpoch();
                     const megapoolWithRandom = megapool.connect(random);
                     await notifyExitValidator(megapoolWithRandom, 0, currentEpoch);
                     await shouldRevert(notifyFinalBalanceValidator(megapoolWithRandom, 0, '32'.ether, owner, currentEpoch * 32), 'Was able to distribute', 'Not enough time has passed');
                     // Wait the window
-                    await helpers.time.increase(userDistributeTime + slotsPerEpoch * secondsPerSlot + 1);
+                    await helpers.time.increase(userDistributeTime * slotsPerEpoch * secondsPerSlot + 1);
                     // Should work now
                     await notifyFinalBalanceValidator(megapoolWithRandom, 0, '32'.ether, owner, currentEpoch * 32);
+                    // Can distribute
+                    await mockRewards(megapoolWithRandom, '1'.ether);
+                    await distributeMegapool(megapoolWithRandom);
+                });
+
+                it(printTitle('random', 'can permissionlessly notify final balance and distribute a validator with shortfall after user distribute with shortfall delay'), async () => {
+                    // Notify exit and final balance
+                    const currentEpoch = await getCurrentEpoch();
+                    const megapoolWithRandom = megapool.connect(random);
+                    await notifyExitValidator(megapoolWithRandom, 0, currentEpoch);
+                    await shouldRevert(notifyFinalBalanceValidator(megapoolWithRandom, 0, '27'.ether, owner, currentEpoch * 32), 'Was able to distribute', 'Not enough time has passed');
+                    // Wait the regular window
+                    await helpers.time.increase(userDistributeTime * slotsPerEpoch * secondsPerSlot + 1);
+                    // Cannot permissionlessly distribute with shortfall after the standard delay
+                    await shouldRevert(notifyFinalBalanceValidator(megapoolWithRandom, 0, '27'.ether, owner, currentEpoch * 32), 'Was able to distribute', 'Not enough time has passed');
+                    // Wait the remaining shortfall delay
+                    await helpers.time.increase((userDistributeShortfallTime - userDistributeTime) * slotsPerEpoch * secondsPerSlot + 1);
+                    // Should work now
+                    await notifyFinalBalanceValidator(megapoolWithRandom, 0, '27'.ether, owner, currentEpoch * 32);
                     // Can distribute
                     await mockRewards(megapoolWithRandom, '1'.ether);
                     await distributeMegapool(megapoolWithRandom);
@@ -1458,21 +1711,22 @@ export default function() {
                     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMegapool, 'late.notify.fine', fineAmount, { from: owner });
                     // Adjust `reduced_bond` to 2 ETH
                     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
-                    // Notify exit in 112 epochs (1 epoch too late)
+                    // Notify exit in 111 epochs (1 epoch too late)
                     const currentEpoch = await getCurrentEpoch();
-                    await notifyExitValidator(megapool, 0, currentEpoch + 112);
+                    await notifyExitValidator(megapool, 0, currentEpoch + 111);
                     /*
                         NO should receive a 0.01 ETH penalty for submitting late
                      */
                     const nodeDebt = await megapool.getDebt();
                     assertBN.equal(nodeDebt, fineAmount);
                     // Increase time to beyond withdrawable_epoch
-                    await helpers.time.increase(12 * 32 * 112);
+                    const withdrawableEpoch = currentEpoch + 111;
+                    await helpers.time.increase(111 * slotsPerEpoch * secondsPerSlot);
                     // Increase time to beyond user distribute window
-                    await helpers.time.increase(userDistributeTime + 1);
+                    await helpers.time.increase((userDistributeTime + 1) * slotsPerEpoch * slotsPerEpoch + 1);
                     // Submit the final balance from a random account to prevent immediate claim
                     const randomMegapoolRunner = megapool.connect(random);
-                    await notifyFinalBalanceValidator(randomMegapoolRunner, 0, '32'.ether, owner, await getCurrentEpoch() * 32);
+                    await notifyFinalBalanceValidator(randomMegapoolRunner, 0, '32'.ether, owner, withdrawableEpoch * slotsPerEpoch);
                     // Debt should be paid on exit
                     const nodeDebtAfter = await megapool.getDebt();
                     assertBN.equal(nodeDebtAfter, 0n);
@@ -1545,7 +1799,7 @@ export default function() {
                 const rocketStorage = await RocketStorage.deployed();
                 upgradeHelper = await MegapoolUpgradeHelper.deployed();
                 oldDelegate = await RocketMegapoolDelegate.deployed();
-                newDelegate = await RocketMegapoolDelegate.clone(rocketStorage.target, beaconGenesisTime);
+                newDelegate = await RocketMegapoolDelegate.clone(rocketStorage.target);
             });
 
             it(printTitle('random', 'can not upgrade non-expired delegate'), async () => {

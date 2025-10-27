@@ -21,8 +21,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     uint256 constant internal fullDepositValue = 32 ether;
     uint256 constant internal milliToWei = 10 ** 15;
     uint256 constant internal calcBase = 1 ether;
-    uint256 constant internal secondsPerSlot = 12;
-    uint256 constant internal slotsPerEpoch = 32;
 
     // Events
     event MegapoolValidatorEnqueued(uint256 indexed validatorId, uint256 time);
@@ -47,7 +45,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     bytes32 immutable internal rocketNodeDepositKey;
     address payable immutable internal rocketTokenRETH;
     DepositInterface immutable internal casperDeposit;
-    uint256 immutable internal genesisTime;
 
     modifier onlyRocketMegapoolManager() {
         require(msg.sender == rocketStorage.getAddress(rocketMegapoolManagerKey), "Invalid or outdated contract");
@@ -61,8 +58,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
 
     /// @notice Constructor
     /// @param _rocketStorageAddress Address of the deployments RocketStorage
-    /// @param _beaconGenesisTime Chain specific genesis time for calculating current slots and epochs
-    constructor(RocketStorageInterface _rocketStorageAddress, uint256 _beaconGenesisTime) RocketMegapoolDelegateBase(_rocketStorageAddress, 1) {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketMegapoolDelegateBase(_rocketStorageAddress, 1) {
         // Precompute static storage keys
         rocketDepositPoolKey = keccak256(abi.encodePacked("contract.address", "rocketDepositPool"));
         rocketMegapoolManagerKey = keccak256(abi.encodePacked("contract.address", "rocketMegapoolManager"));
@@ -70,8 +66,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         // Prefetch immutable contracts
         rocketTokenRETH = payable(getContractAddress("rocketTokenRETH"));
         casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
-        // Set other immutables
-        genesisTime = _beaconGenesisTime;
     }
 
     /// @notice Gets the Node address associated to this megapool
@@ -99,24 +93,22 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         return numLockedValidators;
     }
 
-    /// @notice Returns the soonest epoch a validator within this megapool can be withdrawn
-    function getSoonestWithdrawableEpoch() external view returns (uint64) {
-        return soonestWithdrawableEpoch;
-    }
-
     /// @notice Returns information about a given validator
     function getValidatorInfo(uint32 _validatorId) override external view returns (ValidatorInfo memory) {
+        require(_validatorId < numValidators, "Validator does not exist");
         return validators[_validatorId];
     }
 
     /// @notice Returns pubkey for a given validator
     function getValidatorPubkey(uint32 _validatorId) override external view returns (bytes memory) {
+        require(_validatorId < numValidators, "Validator does not exist");
         return pubkeys[_validatorId];
     }
 
     /// @notice Returns both validator information and pubkey
     /// @param _validatorId Internal ID of the validator to query
     function getValidatorInfoAndPubkey(uint32 _validatorId) override external view returns (ValidatorInfo memory info, bytes memory pubkey) {
+        require(_validatorId < numValidators, "Validator does not exist");
         info = validators[_validatorId];
         pubkey = pubkeys[_validatorId];
     }
@@ -336,8 +328,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
 
     /// @notice Performs the remaining ETH deposit on the Beacon Chain
     /// @param _validatorId The internal ID of the validator in this megapool
-    /// @param _validatorIndex The validator's index on the beacon chain
-    function stake(uint32 _validatorId, uint64 _validatorIndex) external onlyRocketMegapoolManager {
+    function stake(uint32 _validatorId) external onlyRocketMegapoolManager {
         // Retrieve validator from storage
         ValidatorInfo memory validator = validators[_validatorId];
         // Validate validator status
@@ -357,7 +348,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         validator.lastAssignmentTime = 0;
         validator.lastRequestedBond = 0;
         validator.lastRequestedValue = 0;
-        validator.validatorIndex = _validatorIndex;
         validator.depositValue += uint32(lastRequestedValue - prestakeValue / milliToWei);
         validators[_validatorId] = validator;
         // Perform remaining 31 ETH stake onto beaconchain
@@ -449,10 +439,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     function _distributeAmount(uint256 _rewards) internal {
         // Cannot distribute a megapool with exiting validators
         if (numExitingValidators > 0) {
-            uint256 currentEpoch = _getCurrentEpoch();
-            if (currentEpoch >= soonestWithdrawableEpoch) {
-                revert("Pending validator exit");
-            }
+            revert("Pending validator exit");
         }
         // Cannot distribute if challenged by oDAO
         require(numLockedValidators == 0, "Megapool locked");
@@ -549,15 +536,15 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         require(validator.staked, "Validator not staked");
         require(!validator.exiting, "Already exiting");
         require(!validator.exited, "Already exited");
-        // Only the first challenge increments the lock counter, subsequent challenges only update the lockedSlot
+        // Only the first challenge increments the lock counter, subsequent challenges only update the lockedTime
         if (!validator.locked) {
             validator.locked = true;
             unchecked { // Infeasible overflow
                 numLockedValidators += 1;
             }
         }
-        // Update locked slot to current slot
-        validator.lockedSlot = _getCurrentSlot();
+        // Update lockedTime to current time
+        validator.lockedTime = uint64(block.timestamp);
         validators[_validatorId] = validator;
         // Emit event
         emit MegapoolValidatorLocked(_validatorId, block.timestamp);
@@ -565,15 +552,15 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
 
     /// @notice Unlocks a challenged validator
     /// @param _validatorId Internal ID of the validator to lock
-    /// @param _slot The slot at which it was proved the validator is not exiting
-    function notifyNotExit(uint32 _validatorId, uint64 _slot) override external onlyRocketMegapoolManager {
+    /// @param _slotTimestamp Timestamp of the slot at which it was proved the validator is not exiting
+    function notifyNotExit(uint32 _validatorId, uint64 _slotTimestamp) override external onlyRocketMegapoolManager {
         ValidatorInfo memory validator = validators[_validatorId];
         // Check required state
         require(validator.locked, "Validator not locked");
-        require(_slot >= validator.lockedSlot, "Proof is older than challenge");
-        // Update validator state to unlocked and reset locked slot
+        require(_slotTimestamp >= validator.lockedTime, "Proof is older than challenge");
+        // Update validator state to unlocked
         validator.locked = false;
-        validator.lockedSlot = 0;
+        validator.lockedTime = 0;
         // Decrement locked validator counter
         numLockedValidators -= 1;
         validators[_validatorId] = validator;
@@ -583,8 +570,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
 
     /// @notice Used to notify the megapool that one of its validators is exiting the beaconchain
     /// @param _validatorId Internal ID of the validator to notify exit for
-    /// @param _withdrawableEpoch The proven withdrawable_epoch value for the validator
-    function notifyExit(uint32 _validatorId, uint64 _withdrawableEpoch) override external onlyRocketMegapoolManager {
+    /// @param _recentEpoch A recent epoch
+    function notifyExit(uint32 _validatorId, uint64 _withdrawableEpoch, uint64 _recentEpoch) override external onlyRocketMegapoolManager {
         ValidatorInfo memory validator = validators[_validatorId];
         // Check required state
         require(validator.staked || validator.dissolved, "Not staking or dissolved");
@@ -592,26 +579,21 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         require(!validator.exited, "Already exited");
         // Update validator state to exiting
         validator.exiting = true;
-        validator.withdrawableEpoch = _withdrawableEpoch;
         // Setup distribution lock
         unchecked { // Infeasible overflow
             numExitingValidators += 1;
         }
-        if (_withdrawableEpoch < soonestWithdrawableEpoch || soonestWithdrawableEpoch == 0) {
-            soonestWithdrawableEpoch = _withdrawableEpoch;
-        }
         // If validator was locked, notifying exit unlocks it
         if (validator.locked) {
             validator.locked = false;
-            validator.lockedSlot = 0;
+            validator.lockedTime = 0;
             numLockedValidators -= 1;
         }
         validators[_validatorId] = validator;
         // Apply penalty for late submission
         RocketDAOProtocolSettingsMegapoolInterface rocketDAOProtocolSettingsMegapool = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
         uint256 notifyThreshold = rocketDAOProtocolSettingsMegapool.getNotifyThreshold();
-        uint256 withdrawableTime = genesisTime + (_withdrawableEpoch * secondsPerSlot * slotsPerEpoch);
-        if (block.timestamp + notifyThreshold > withdrawableTime) {
+        if (_recentEpoch > _withdrawableEpoch - notifyThreshold) {
             _increaseDebt(rocketDAOProtocolSettingsMegapool.getLateNotifyFine());
         }
         // Emit event
@@ -622,34 +604,38 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     /// @param _validatorId Internal ID of the validator to notify final balance of
     /// @param _amountInGwei The amount in the final withdrawal
     /// @param _caller The address which is submitted the final balance (i.e. msg.sender passed from RocketMegapoolManager)
-    /// @param _withdrawalSlot The slot containing the withdrawal
-    function notifyFinalBalance(uint32 _validatorId, uint64 _amountInGwei, address _caller, uint64 _withdrawalSlot) override external onlyRocketMegapoolManager {
+    /// @param _withdrawalEpoch The epoch containing the withdrawal
+    /// @param _recentEpoch A recent epoch
+    function notifyFinalBalance(uint32 _validatorId, uint64 _amountInGwei, address _caller, uint64 _withdrawalEpoch, uint64 _recentEpoch) override external onlyRocketMegapoolManager {
         // Perform notification process
-        _notifyFinalBalance(_validatorId, _amountInGwei, _withdrawalSlot);
+        bool incursShortfall = _notifyFinalBalance(_validatorId, _amountInGwei);
         // Trigger a deposit of excess collateral from rETH contract to deposit pool
         RocketTokenRETHInterface(rocketTokenRETH).depositExcessCollateral();
         // If owner is calling, claim immediately
         if (isNodeCalling(_caller)) {
             _claim();
         } else {
-            // Permissionless distribute requires a wait time
+            // Permissionless distribute requires a wait time depending on if the final balance results in a shortfall of user funds
             RocketDAOProtocolSettingsMegapoolInterface rocketDAOProtocolSettingsMegapool = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
-            uint256 distributeWindowStart = rocketDAOProtocolSettingsMegapool.getUserDistributeWindowLength();
-            uint256 withdrawableEpoch = uint256(validators[_validatorId].withdrawableEpoch);
-            uint256 distributableTime = (withdrawableEpoch * secondsPerSlot * slotsPerEpoch + genesisTime) + distributeWindowStart;
-            require(block.timestamp > distributableTime, "Not enough time has passed");
+            if (incursShortfall) {
+                uint256 userDistributeDelay = rocketDAOProtocolSettingsMegapool.getUserDistributeDelayWithShortfall();
+                require(uint256(_recentEpoch) >= _withdrawalEpoch + userDistributeDelay, "Not enough time has passed");
+            } else {
+                uint256 userDistributeDelay = rocketDAOProtocolSettingsMegapool.getUserDistributeDelay();
+                require(uint256(_recentEpoch) >= _withdrawalEpoch + userDistributeDelay, "Not enough time has passed");
+            }
         }
     }
 
     /// @dev Internal implementation of final balance notification process
     /// @param _validatorId Internal ID of the validator to notify final balance of
     /// @param _amountInGwei The amount in the final withdrawal
-    /// @param _withdrawalSlot The slot containing the withdrawal
-    function _notifyFinalBalance(uint32 _validatorId, uint64 _amountInGwei, uint64 _withdrawalSlot) internal {
+    /// @return Returns true if the final balance results in a shortfall of user capital
+    function _notifyFinalBalance(uint32 _validatorId, uint64 _amountInGwei) internal returns (bool) {
         ValidatorInfo memory validator = validators[_validatorId];
         require(!validator.exited, "Already exited");
         require(validator.exiting, "Validator not exiting");
-        require(_withdrawalSlot >= validator.withdrawableEpoch * slotsPerEpoch, "Not full withdrawal");
+        bool incursShortfall = false;
         // Mark as exited
         validator.exited = true;
         validator.exiting = false;
@@ -678,6 +664,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
                 // Pay off any existing debt and any new debt introduced by this exit
                 if (toUser < userShare) {
                     _increaseDebt(userShare - toUser);
+                    incursShortfall = true;
                 }
                 if (toNode > 0 && debt > 0) {
                     if (toNode > debt) {
@@ -714,11 +701,10 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         _snapshotCapitalRatio();
         // Remove distribution lock
         numExitingValidators -= 1;
-        if (numExitingValidators == 0) {
-            soonestWithdrawableEpoch = 0;
-        }
         // Emit event
         emit MegapoolValidatorExited(_validatorId, block.timestamp);
+        // Return true if final balance results in a shortfall
+        return incursShortfall;
     }
 
     /// @notice Applies a penalty via increase debt (only callable from rocketMegapoolPenalties)
@@ -738,23 +724,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     function _reduceDebt(uint256 _amount) internal {
         debt -= _amount;
         emit MegapoolDebtReduced(_amount, block.timestamp);
-    }
-
-    /// @dev Calculates the current epoch on the beacon chain
-    function _getCurrentEpoch() internal view returns (uint256) {
-        unchecked {
-            uint256 currentTime = block.timestamp;
-            uint256 slotsPassed = (currentTime - genesisTime) / secondsPerSlot;
-            return slotsPassed / slotsPerEpoch;
-        }
-    }
-
-    /// @dev Calculates the current slot on the beacon chain
-    function _getCurrentSlot() internal view returns (uint64) {
-        unchecked {
-            uint256 currentTime = block.timestamp;
-            return uint64((currentTime - genesisTime) / secondsPerSlot);
-        }
     }
 
     /// @dev Helper function to send an amount of ETH to the RETH token conract

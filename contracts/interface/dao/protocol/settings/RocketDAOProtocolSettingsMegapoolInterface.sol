@@ -8,6 +8,7 @@ interface RocketDAOProtocolSettingsMegapoolInterface {
     function getMaximumEthPenalty() external view returns (uint256);
     function getNotifyThreshold() external view returns (uint256);
     function getLateNotifyFine() external view returns (uint256);
-    function getUserDistributeWindowLength() external view returns (uint256);
+    function getUserDistributeDelay() external view returns (uint256);
+    function getUserDistributeDelayWithShortfall() external view returns (uint256);
     function getPenaltyThreshold() external view returns (uint256);
 }

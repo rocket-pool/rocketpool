@@ -1,17 +1,18 @@
 import {
-    RocketDepositPool,
-    RocketMegapoolManager, RocketNodeDeposit,
+    RocketMegapoolManager,
+    RocketNodeDeposit,
     RocketStorage,
     RocketTokenRETH,
     RocketVault,
-    RocketVoterRewards,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 import { getValidatorInfo } from '../_helpers/megapool';
 import assert from 'assert';
+import { getSlotForBlock, slotsPerEpoch } from '../_helpers/beaconchain';
 
 const hre = require('hardhat');
 const ethers = hre.ethers;
+const helpers = require('@nomicfoundation/hardhat-network-helpers');
 
 // Notify megapool of exiting validator
 export async function notifyExitValidator(megapool, validatorId, withdrawalEpoch) {
@@ -19,24 +20,27 @@ export async function notifyExitValidator(megapool, validatorId, withdrawalEpoch
     const rocketMegapoolManager = await RocketMegapoolManager.deployed();
 
     async function getData() {
-        let [activeValidatorCount, exitingValidatorCount, soonestWithdrawableEpoch] = await Promise.all([
+        let [activeValidatorCount, exitingValidatorCount] = await Promise.all([
             megapool.getActiveValidatorCount(),
             megapool.getExitingValidatorCount(),
-            megapool.getSoonestWithdrawableEpoch(),
         ]);
-        return { activeValidatorCount, exitingValidatorCount, soonestWithdrawableEpoch };
+        return { activeValidatorCount, exitingValidatorCount };
     }
 
     const withdrawalCredentials = await megapool.getWithdrawalCredentials();
 
-    const infoBefore = await getValidatorInfo(megapool, validatorId)
+    const infoBefore = await getValidatorInfo(megapool, validatorId);
+
+    // Use current time as slot timestamp
+    await helpers.mine();
+    const latestBlock = await ethers.provider.getBlock('latest');
+    const currentTime = latestBlock.timestamp;
 
     // Construct a fake proof
     const proof = {
-        slot: 0,
-        validatorIndex: infoBefore.validatorIndex,
+        validatorIndex: 1n,
         validator: {
-            pubkey: '0x00',
+            pubkey: infoBefore.pubkey,
             withdrawalCredentials: withdrawalCredentials,
             effectiveBalance: 0n,
             slashed: false,
@@ -47,9 +51,13 @@ export async function notifyExitValidator(megapool, validatorId, withdrawalEpoch
         },
         witnesses: [],
     };
+    const slotProof = {
+        slot: await getSlotForBlock(),
+        witnesses: [],
+    };
 
     const dataBefore = await getData();
-    await rocketMegapoolManager.notifyExit(megapool.target, validatorId, proof);
+    await rocketMegapoolManager.notifyExit(megapool.target, validatorId, currentTime, proof, slotProof);
     const dataAfter = await getData();
 
     const info = await getValidatorInfo(megapool, validatorId);
@@ -64,17 +72,10 @@ export async function notifyExitValidator(megapool, validatorId, withdrawalEpoch
 
     assertBN.equal(deltas.activeValidatorCount, 0n);
     assertBN.equal(deltas.exitingValidatorCount, 1n);
-
-    let expectedSoonestWithdrawableEpoch = dataBefore.soonestWithdrawableEpoch;
-    if (dataBefore.soonestWithdrawableEpoch === 0n || withdrawalEpoch < expectedSoonestWithdrawableEpoch) {
-        expectedSoonestWithdrawableEpoch = withdrawalEpoch;
-    }
-
-    assertBN.equal(dataAfter.soonestWithdrawableEpoch, expectedSoonestWithdrawableEpoch);
 }
 
 // Notify validator of final balance
-export async function notifyFinalBalanceValidator(megapool, validatorId, finalBalance, funder, withdrawalSlot) {
+export async function notifyFinalBalanceValidator(megapool, validatorId, finalBalance, funder, withdrawalSlot, withdrawableEpoch = null) {
 
     const rocketStorage = await RocketStorage.deployed();
     const rocketTokenRETH = await RocketTokenRETH.deployed();
@@ -86,7 +87,7 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
     const withdrawalAddress = await rocketStorage.getNodeWithdrawalAddress(nodeAddress);
 
     async function getData() {
-        let [pendingRewards, megapoolBalance, nodeBalance, rethBalance, depositPoolBalance, nodeRefund, activeValidatorCount, exitingValidatorCount, soonestWithdrawableEpoch, nodeBond, userCapital, nodeQueuedBond, userQueuedCapital] = await Promise.all([
+        let [pendingRewards, megapoolBalance, nodeBalance, rethBalance, depositPoolBalance, nodeRefund, activeValidatorCount, exitingValidatorCount, nodeBond, userCapital, nodeQueuedBond, userQueuedCapital] = await Promise.all([
             megapool.getPendingRewards(),
             ethers.provider.getBalance(megapool.target),
             ethers.provider.getBalance(withdrawalAddress),
@@ -95,13 +96,25 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
             megapool.getRefundValue(),
             megapool.getActiveValidatorCount(),
             megapool.getExitingValidatorCount(),
-            megapool.getSoonestWithdrawableEpoch(),
             megapool.getNodeBond(),
             megapool.getUserCapital(),
             megapool.getNodeQueuedBond(),
             megapool.getUserQueuedCapital(),
         ]);
-        return { pendingRewards, megapoolBalance, nodeBalance, rethBalance, depositPoolBalance, nodeRefund, activeValidatorCount, exitingValidatorCount, soonestWithdrawableEpoch, nodeBond, userCapital, nodeQueuedBond, userQueuedCapital };
+        return {
+            pendingRewards,
+            megapoolBalance,
+            nodeBalance,
+            rethBalance,
+            depositPoolBalance,
+            nodeRefund,
+            activeValidatorCount,
+            exitingValidatorCount,
+            nodeBond,
+            userCapital,
+            nodeQueuedBond,
+            userQueuedCapital,
+        };
     }
 
     const data1 = await getData();
@@ -112,24 +125,49 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
         value: finalBalance,
     });
 
-    const withdrawalCredentials = Buffer.from(megapool.target.substr(2), 'hex');
+    const executionWithdrawalCredentials = Buffer.from(megapool.target.substr(2), 'hex');
     const amountInGwei = finalBalance / '1'.gwei;
     const infoBefore = await getValidatorInfo(megapool, validatorId);
 
-    const proof = {
-        slot: withdrawalSlot,
+    const withdrawalCredentials = await megapool.getWithdrawalCredentials();
+
+    // Use current time as slot timestamp
+    await helpers.mine();
+    const latestBlock = await ethers.provider.getBlock('latest');
+    const currentTime = latestBlock.timestamp;
+
+    const withdrawalProof = {
         withdrawalSlot: withdrawalSlot,
         withdrawalNum: 0n,
         withdrawal: {
             index: 0n,
-            validatorIndex: infoBefore.validatorIndex,
-            withdrawalCredentials: withdrawalCredentials,
+            validatorIndex: 2n,
+            withdrawalCredentials: executionWithdrawalCredentials,
             amountInGwei: amountInGwei,
         },
-        witnesses: []
-    }
+        witnesses: [],
+    };
+    const validatorProof = {
+        validatorIndex: 2n,
+        validator: {
+            pubkey: infoBefore.pubkey,
+            withdrawalCredentials: withdrawalCredentials,
+            withdrawableEpoch: withdrawableEpoch ? withdrawableEpoch : withdrawalSlot / slotsPerEpoch,
+            // Only above three need to be valid values
+            effectiveBalance: 0n,
+            slashed: false,
+            activationEligibilityEpoch: 0n,
+            activationEpoch: 0n,
+            exitEpoch: 0n,
+        },
+        witnesses: [],
+    };
+    const slotProof = {
+        slot: await getSlotForBlock(),
+        witnesses: [],
+    };
 
-    await rocketMegapoolManager.connect(megapool.runner).notifyFinalBalance(megapool.target, validatorId, proof);
+    await rocketMegapoolManager.connect(megapool.runner).notifyFinalBalance(megapool.target, validatorId, currentTime, withdrawalProof, validatorProof, slotProof);
     const data2 = await getData();
 
     // Get new bond requirements
@@ -155,7 +193,7 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
         userCapital: data2.userCapital - data1.userCapital,
         nodeQueuedBond: data2.nodeQueuedBond - data1.nodeQueuedBond,
         userQueuedCapital: data2.userQueuedCapital - data1.userQueuedCapital,
-    }
+    };
 
     const nodeCalling = (megapool.runner.address.toLowerCase() === nodeAddress.toLowerCase()) ||
         (megapool.runner.address.toLowerCase() === withdrawalAddress.toLowerCase());
@@ -190,10 +228,5 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
 
     if (!info.dissolved) {
         assertBN.equal(deltas.activeValidatorCount, -1n);
-    }
-
-    // Soonest withdrawable epoch is reset if no validators are exiting
-    if (data2.exitingValidatorCount === 0n) {
-        assertBN.equal(data2.soonestWithdrawableEpoch, 0n);
     }
 }

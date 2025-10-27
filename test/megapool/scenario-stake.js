@@ -5,11 +5,14 @@ import { assertBN } from '../_helpers/bn';
 import { RocketMegapoolManager, RocketNodeStaking } from '../_utils/artifacts';
 
 const milliToWei = 1000000000000000n;
+const prestakeBalance = 1000000000n;
 
 const hre = require('hardhat');
+const ethers = hre.ethers;
 
 let validatorIndex = 0
 const prestakeAmount = '1'.ether
+const farFutureEpoch = '18446744073709551615'.BN;
 
 // Stake a megapool validator
 export async function stakeMegapoolValidator(megapool, index) {
@@ -35,29 +38,35 @@ export async function stakeMegapoolValidator(megapool, index) {
 
     // Construct a fake proof
     const proof = {
-        slot: 0,
         validatorIndex: validatorIndex ++,
         validator: {
             pubkey: validatorInfo.pubkey,
             withdrawalCredentials: withdrawalCredentials,
-            // Only above two need to be valid values
-            effectiveBalance: 0n,
+            withdrawableEpoch: farFutureEpoch,
+            effectiveBalance: prestakeBalance,
             slashed: false,
             activationEligibilityEpoch: 0n,
             activationEpoch: 0n,
-            exitEpoch: 0n,
-            withdrawableEpoch: 0n,
+            exitEpoch: farFutureEpoch,
         },
         witnesses: [],
     };
 
-    let lastAssignedValue = 0n;
+    const slotProof = {
+        slot: 0n,
+        witnesses: [],
+    }
+
     const infoBefore = await getValidatorInfo(megapool, index);
-    lastAssignedValue = infoBefore.lastRequestedValue * milliToWei;
+    const lastAssignedValue = infoBefore.lastRequestedValue * milliToWei;
+
+    // Get current time
+    const latestBlock = await ethers.provider.getBlock('latest');
+    const currentTime = latestBlock.timestamp;
 
     // Perform stake operation
     const data1 = await getData();
-    await rocketMegapoolManager.stake(megapool.target, index, proof);
+    await rocketMegapoolManager.stake(megapool.target, index, currentTime, proof, slotProof);
     const data2 = await getData();
 
     // Check state changes

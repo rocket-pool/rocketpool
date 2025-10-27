@@ -23,9 +23,10 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
         _setSettingUint("megapool.time.before.dissolve", 28 days);               // Time that must be waited before dissolving a megapool validator (RPIP-59)
         _setSettingUint("megapool.dissolve.penalty", 0.05 ether);                // The penalty which is applied to node operators when one of their validators gets dissolved
         _setSettingUint("maximum.megapool.eth.penalty", 612 ether);              // Maximum ETH penalty that can be applied over a rolling 7-day window (RPIP-42)
-        _setSettingUint("notify.threshold", 12 hours);                           // Time before withdrawable_epoch a node operator must notify exit (RPIP-72)
+        _setSettingUint("notify.threshold", 112);                                // Number of epochs before withdrawable_epoch a node operator must notify exit (RPIP-72)
         _setSettingUint("late.notify.fine", 0.05 ether);                         // Fine applied to node operator for not notifying exit in time (RPIP-72)
-        _setSettingUint("user.distribute.window.length", 7 days);                // How long a user must wait before distributing someone else's megapool (RPIP-72)
+        _setSettingUint("user.distribute.delay", 1575);                          // How many epochs a user must wait before distributing someone else's megapool (RPIP-72)
+        _setSettingUint("user.distribute.delay.shortfall", 6750);                // How many epochs a user must wait before distributing someone else's megapool with a shortfall of user funds
         _setSettingUint("megapool.penalty.threshold", 0.51 ether);               // Percentage of trusted members that must vote in favour of a penalty
         // Update deploy flag
         require (!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed"))), "Already initialised");
@@ -44,11 +45,13 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
             } else if (settingKey == keccak256(bytes("maximum.megapool.eth.penalty"))) {
                 require(_value >= 300 ether && _value <= 5000 ether, "Value must be >= 300 ETH & <= 5000 ETH");
             } else if (settingKey == keccak256(bytes("notify.threshold"))) {
-                require(_value >= 2 hours && _value <= 24 hours, "Value must be >= 2 hours & <= 24 hours");
+                require(_value >= 19 && _value <= 456, "Value must be >= 19 epochs & <= 456 epochs");
             } else if (settingKey == keccak256(bytes("late.notify.fine"))) {
                 require(_value >= 0.01 ether && _value <= 0.5 ether, "Value must be >= 0.01 ETH & <= 0.5 ETH");
-            } else if (settingKey == keccak256(bytes("user.distribute.window.length"))) {
-                require(_value >= 1 days && _value <= 30 days, "Value must be between 1 and 30 days");
+            } else if (settingKey == keccak256(bytes("user.distribute.delay"))) {
+                require(_value >= 225 && _value <= 13500, "Value must be >= 225 & <= 13500 epochs");
+            } else if (settingKey == keccak256(bytes("user.distribute.delay.shortfall"))) {
+                require(_value >= 6750 && _value <= 40500, "Value must be >= 6750 & <= 40500 epochs");
             } else if (settingKey == keccak256(bytes("megapool.penalty.threshold"))) {
                 require(_value >= 0.51 ether, "Penalty threshold must be 51% or higher");
             }
@@ -87,9 +90,14 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
         return getSettingUint("late.notify.fine");
     }
 
-    /// @notice Returns the amount of time a user must wait before distributing another node's megapool
-    function getUserDistributeWindowLength() override external view returns (uint256) {
-        return getSettingUint("user.distribute.window.length");
+    /// @notice Returns the number of epochs a user must wait before distributing another node's megapool
+    function getUserDistributeDelay() override external view returns (uint256) {
+        return getSettingUint("user.distribute.delay");
+    }
+
+    /// @notice Returns the number of epochs a user must wait before distributing another node's megapool if the distribute results in a shortfall of user funds
+    function getUserDistributeDelayWithShortfall() override external view returns (uint256) {
+        return getSettingUint("user.distribute.delay.shortfall");
     }
 
     /// @notice Returns the percentage of trusted members that must vote in favour of a penalty

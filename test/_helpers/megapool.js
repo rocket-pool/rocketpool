@@ -39,10 +39,8 @@ export async function getValidatorInfo(megapool, index) {
         exiting: validatorInfo[10],
         locked: validatorInfo[11],
 
-        validatorIndex: validatorInfo[12],
-        exitBalance: validatorInfo[13],
-        withdrawableEpoch: validatorInfo[14],
-        lockedSlot: validatorInfo[15],
+        exitBalance: validatorInfo[12],
+        lockedSlot: validatorInfo[13],
     };
 }
 

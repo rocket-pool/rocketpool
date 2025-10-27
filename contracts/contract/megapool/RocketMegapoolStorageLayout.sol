@@ -36,10 +36,8 @@ abstract contract RocketMegapoolStorageLayout {
         bool exiting;       // Whether the validator is queued to exit on the beaconchain
         bool locked;        // Whether the validator has been locked by the oDAO for not exiting
 
-        uint64 validatorIndex;      // Index of the validator on the beaconchain
         uint64 exitBalance;         // Final balance of the validator at withdrawable_epoch in gwei (amount returned to EL)
-        uint64 withdrawableEpoch;   // The epoch this validator is withdrawable
-        uint64 lockedSlot;          // The slot this validator was challenged about its exit status
+        uint64 lockedTime;          // The slot this validator was challenged about its exit status
     }
 
     //
@@ -82,7 +80,6 @@ abstract contract RocketMegapoolStorageLayout {
 
     uint32 internal numLockedValidators;        // Number of validators currently locked
     uint32 internal numExitingValidators;       // Number of validators currently exiting
-    uint64 internal soonestWithdrawableEpoch;   // The soonest epoch which a validator will become withdrawable
 
     uint256 internal __version1Boundary;        // Unused full slot width boundary
 }

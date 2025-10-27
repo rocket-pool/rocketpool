@@ -6,6 +6,11 @@ import {
     RocketNodeStaking,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
+import { getSlotForBlock } from '../_helpers/beaconchain';
+
+const hre = require('hardhat');
+const ethers = hre.ethers;
+const helpers = require('@nomicfoundation/hardhat-network-helpers');
 
 export async function dissolveValidator(node, validatorIndex, from = node, proof = null) {
     const megapool = await getMegapoolForNode(node)
@@ -55,8 +60,18 @@ export async function dissolveValidator(node, validatorIndex, from = node, proof
     if (proof === null) {
         await megapool.connect(from).dissolveValidator(validatorIndex);
     } else {
+        // Use current time as slot timestamp
+        await helpers.mine();
+        const latestBlock = await ethers.provider.getBlock('latest');
+        const currentTime = latestBlock.timestamp;
+
+        const slotProof = {
+            slot: await getSlotForBlock(),
+            witnesses: [],
+        }
+
         const rocketMegapoolManager = await RocketMegapoolManager.deployed();
-        await rocketMegapoolManager.connect(from).dissolve(megapool.target, validatorIndex, proof)
+        await rocketMegapoolManager.connect(from).dissolve(megapool.target, validatorIndex, currentTime, proof, slotProof)
     }
     const data2 = await getData();
 

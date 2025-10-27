@@ -9,7 +9,6 @@ pragma solidity >0.5.0 <0.9.0;
     }
 
     struct WithdrawalProof {
-        uint64 slot;
         uint64 withdrawalSlot;
         uint16 withdrawalNum;
         Withdrawal withdrawal;
@@ -28,13 +27,18 @@ pragma solidity >0.5.0 <0.9.0;
     }
 
     struct ValidatorProof {
-        uint64 slot;
         uint40 validatorIndex;
         Validator validator;
         bytes32[] witnesses;
     }
 
+    struct SlotProof {
+        uint64 slot;
+        bytes32[] witnesses;
+    }
+
 interface BeaconStateVerifierInterface {
-    function verifyValidator(ValidatorProof calldata _proof) external view returns (bool);
-    function verifyWithdrawal(WithdrawalProof calldata _proof) external view returns (bool);
+    function verifyValidator(uint64 _slotTimestamp, uint64 _slot, ValidatorProof calldata _proof) external view returns (bool);
+    function verifyWithdrawal(uint64 _slotTimestamp, uint64 _slot, WithdrawalProof calldata _proof) external view returns (bool);
+    function verifySlot(uint64 _slotTimestamp, SlotProof calldata _proof) external view returns (bool);
 }

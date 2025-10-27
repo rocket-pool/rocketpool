@@ -29,7 +29,6 @@ const networkContracts = {
     rocketNetworkSnapshots: artifacts.require('RocketNetworkSnapshots'),
     rocketNetworkPenalties: artifacts.require('RocketNetworkPenalties'),
     rocketRewardsPool: artifacts.require('RocketRewardsPool'),
-    blockRoots: artifacts.require('BlockRoots'),
     beaconStateVerifier: artifacts.require('BeaconStateVerifier'),
     rocketNodeDistributorDelegate: artifacts.require('RocketNodeDistributorDelegate'),
     rocketClaimDAO: artifacts.require('RocketClaimDAO'),
@@ -46,7 +45,6 @@ const networkContracts = {
 if (process.env.CHAIN === 'hardhat') {
     // Unit test helper contracts
     networkContracts.beaconStateVerifier = artifacts.require('BeaconStateVerifierMock');
-    networkContracts.blockRoots = artifacts.require('BlockRootsMock');
 }
 
 function compressABI(abi) {
@@ -99,15 +97,6 @@ export async function deployUpgrade(rocketStorageAddress) {
                 addresses[contract] = instance.target;
                 break;
 
-            case 'blockRoots':
-                if (process.env.CHAIN === 'hardhat') {
-                    instance = await networkContracts[contract].new();
-                } else {
-                    instance = await networkContracts[contract].new(genesisBlockTimestamp, secondsPerSlot, beaconRootsHistoryBufferLength, beaconRoots);
-                }
-                addresses[contract] = instance.target;
-                break;
-
             // Upgrade contract
             case 'rocketUpgradeOneDotFour':
                 const args = [
@@ -137,7 +126,6 @@ export async function deployUpgrade(rocketStorageAddress) {
                         addresses.rocketNetworkSnapshots,
                         addresses.rocketNetworkPenalties,
                         addresses.rocketRewardsPool,
-                        addresses.blockRoots,
                         addresses.beaconStateVerifier,
                         addresses.rocketNodeDistributorDelegate,
                         addresses.rocketClaimDAO,
@@ -174,7 +162,6 @@ export async function deployUpgrade(rocketStorageAddress) {
                         compressABI(networkContracts.rocketNetworkSnapshots.abi),
                         compressABI(networkContracts.rocketNetworkPenalties.abi),
                         compressABI(networkContracts.rocketRewardsPool.abi),
-                        compressABI(networkContracts.blockRoots.abi),
                         compressABI(networkContracts.beaconStateVerifier.abi),
                         compressABI(networkContracts.rocketNodeDistributorDelegate.abi),
                         compressABI(networkContracts.rocketClaimDAO.abi),
