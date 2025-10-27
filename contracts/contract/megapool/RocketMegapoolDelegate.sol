@@ -164,9 +164,9 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             - assignedValue;
     }
 
-    /// @notice Returns the block number of the last distribution performed
-    function getLastDistributionBlock() override external view returns (uint256) {
-        return lastDistributionBlock;
+    /// @notice Returns the block timestamp of the last distribution performed
+    function getLastDistributionTime() override external view returns (uint256) {
+        return lastDistributionTime;
     }
 
     /// @notice Returns the expected withdrawal credentials for any validator within this megapool
@@ -341,8 +341,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         // Store last requested value for later
         uint32 lastRequestedValue = validator.lastRequestedValue;
         // If this is the first validator, then set the last distribution block
-        if (lastDistributionBlock == 0) {
-            lastDistributionBlock = block.number;
+        if (lastDistributionTime == 0) {
+            lastDistributionTime = block.timestamp;
         }
         // Account for assigned value
         uint256 assignedUsed = lastRequestedValue * milliToWei - prestakeValue;
@@ -425,7 +425,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     /// @notice Distributes any accrued staking rewards
     function distribute() override public {
         // Prevent calls before a megapool's first validator has been staked
-        require(lastDistributionBlock != 0, "No first validator");
+        require(lastDistributionTime != 0, "No first validator");
         // Calculate split of rewards
         uint256 rewards = getPendingRewards();
         if (rewards == 0) {
@@ -451,8 +451,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         // Cannot distribute if challenged by oDAO
         require(numLockedValidators == 0, "Megapool locked");
         (uint256 nodeAmount, uint256 voterAmount, uint256 protocolDAOAmount, uint256 rethAmount) = calculateRewards(_rewards);
-        // Update last distribution block for use in calculating time-weighted average commission
-        lastDistributionBlock = block.number;
+        // Update last distribution time for use in calculating time-weighted average commission
+        lastDistributionTime = block.timestamp;
         // Maybe repay debt from node share
         if (debt > 0) {
             uint256 amountToRepay = nodeAmount;
@@ -527,7 +527,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         if (totalCapital == 0) return (_amount, 0, 0, 0);
         // Calculate split based on capital ratio and average commission since last distribute
         RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
-        (, uint256 voterShare, uint256 protocolDAOShare, uint256 rethShare) = rocketNetworkRevenues.calculateSplit(lastDistributionBlock);
+        (, uint256 voterShare, uint256 protocolDAOShare, uint256 rethShare) = rocketNetworkRevenues.calculateSplit(lastDistributionTime);
         unchecked {
             uint256 borrowedPortion = _amount * effectiveUserCapital / (effectiveNodeBond + effectiveUserCapital);
             rethRewards = rethShare * borrowedPortion / calcBase;

@@ -91,6 +91,7 @@ const contractNameMap = {
     rocketMinipoolBase: 'RocketMinipoolBase',
     rocketMinipoolBondReducer: 'RocketMinipoolBondReducer',
     rocketNetworkSnapshots: 'RocketNetworkSnapshots',
+    rocketNetworkSnapshotsTime: 'RocketNetworkSnapshotsTime',
     rocketNetworkVoting: 'RocketNetworkVoting',
     rocketDAOProtocolSettingsProposals: 'RocketDAOProtocolSettingsProposals',
     rocketDAOProtocolVerifier: 'RocketDAOProtocolVerifier',

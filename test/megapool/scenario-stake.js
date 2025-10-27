@@ -61,7 +61,7 @@ export async function stakeMegapoolValidator(megapool, index) {
     const data2 = await getData();
 
     // Check state changes
-    const lastDistributionBlock = await megapool.getLastDistributionBlock();
+    const lastDistributionTime = await megapool.getLastDistributionTime();
     const info = await getValidatorInfo(megapool, index);
 
     assert.equal(info.staked, true);
@@ -84,5 +84,5 @@ export async function stakeMegapoolValidator(megapool, index) {
     assertBN.equal(deltas.nodeQueuedBond, 0n);
     assertBN.equal(deltas.assignedValue, -(lastAssignedValue - prestakeAmount));
     assertBN.equal(deltas.validatorCount, 0n);
-    assertBN.notEqual(lastDistributionBlock, 0n);
+    assertBN.notEqual(lastDistributionTime, 0n);
 }

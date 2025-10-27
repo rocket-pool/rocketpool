@@ -32,10 +32,10 @@ export default function() {
             const shareAfter = await rocketNetworkRevenues.getCurrentNodeShare();
             assertBN.equal(shareAfter, '0.10'.ether);
             // Mine 2 blocks
-            await helpers.mine(2);
+            await helpers.time.increase(2);
             // Get calculated shares
-            const currentBlock = await ethers.provider.getBlockNumber();
-            const calculatedShare = await rocketNetworkRevenues.calculateSplit(currentBlock - 3);
+            const block = await ethers.provider.getBlock();
+            const calculatedShare = await rocketNetworkRevenues.calculateSplit(block.timestamp - 3);
             // 1 day of 5% and 2 days of 10% should average out to 8.33% (math is done in 3 decimal fixed point)
             assertBN.equal(calculatedShare[0], '0.08333'.ether);
         });
@@ -46,16 +46,16 @@ export default function() {
             const shareBefore = await rocketNetworkRevenues.getCurrentProtocolDAOShare();
             assertBN.equal(shareBefore, '0'.ether);
             // Mine 10 blocks
-            await helpers.mine(10);
+            await helpers.time.increase(10);
             // Set value to 1% and check
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, "network.pdao.share", '0.01'.ether, { from: owner });
             const shareAfter = await rocketNetworkRevenues.getCurrentProtocolDAOShare();
             assertBN.equal(shareAfter, '0.01'.ether);
             // Mine 2 blocks
-            await helpers.mine(20);
+            await helpers.time.increase(20);
             // Get calculated shares
-            const currentBlock = await ethers.provider.getBlockNumber();
-            const calculatedShare = await rocketNetworkRevenues.calculateSplit(currentBlock - 30);
+            const block = await ethers.provider.getBlock();
+            const calculatedShare = await rocketNetworkRevenues.calculateSplit(block.timestamp - 30);
             // 10 days at 0% and 20 days at 1% should average out to 0.666% (math is done in 3 decimal fixed point)
             assertBN.equal(calculatedShare[2], '0.00666'.ether);
         });
@@ -113,10 +113,10 @@ export default function() {
             const shareAfter = await rocketNetworkRevenues.getCurrentNodeShare();
             assertBN.equal(shareAfter, '0.05'.ether + adder);
             // Mine 2 blocks
-            await helpers.mine(2);
+            await helpers.time.increase(2);
             // Get calculated shares
-            const currentBlock = await ethers.provider.getBlockNumber();
-            const calculatedShare = await rocketNetworkRevenues.calculateSplit(currentBlock - 3);
+            const block = await ethers.provider.getBlock();
+            const calculatedShare = await rocketNetworkRevenues.calculateSplit(block.timestamp - 3);
             // 1 day of 5% and 2 days of 5.5% should average out to 5.33% (math is done in 3 decimal fixed point)
             assertBN.equal(calculatedShare[0], '0.05333'.ether);
         });

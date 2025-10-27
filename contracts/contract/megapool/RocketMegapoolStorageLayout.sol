@@ -74,7 +74,7 @@ abstract contract RocketMegapoolStorageLayout {
 
     uint256 internal debt;            // Amount the owner owes the DP
 
-    uint256 internal lastDistributionBlock; // The block of the last time a distribution of rewards was executed
+    uint256 internal lastDistributionTime; // The block of the last time a distribution of rewards was executed
 
     mapping(uint32 => ValidatorInfo) internal validators;
     mapping(uint32 => bytes) internal prestakeSignatures;

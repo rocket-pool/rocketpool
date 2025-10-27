@@ -2,17 +2,17 @@
 pragma solidity 0.8.30;
 
 import {RocketBase} from "../RocketBase.sol";
-import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 import {RocketDAONodeTrustedInterface} from "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import {RocketDAOProtocolSettingsMegapoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMegapoolInterface.sol";
-import {RocketNetworkSnapshotsInterface} from "../../interface/network/RocketNetworkSnapshotsInterface.sol";
 import {RocketMegapoolDelegateInterface} from "../../interface/megapool/RocketMegapoolDelegateInterface.sol";
 import {RocketMegapoolPenaltiesInterface} from "../../interface/megapool/RocketMegapoolPenaltiesInterface.sol";
+import {RocketNetworkSnapshotsTimeInterface} from "../../interface/network/RocketNetworkSnapshotsTimeInterface.sol";
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 
 /// @notice Applies penalties to megapools for MEV theft
 contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface {
     // Constants
-    uint256 constant internal penaltyMaximumPeriod = 50400;
+    uint256 constant internal penaltyMaximumPeriod = 7 days;
     bytes32 constant internal penaltyKey = keccak256(abi.encodePacked("megapool.running.penalty"));
 
     // Events
@@ -70,36 +70,36 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
         _maybeApplyPenalty(_megapool, _block, _amount, submissionCount);
     }
 
-    /// @notice Returns the running total of penalties at a given block
-    /// @param _block The block to compute running total for
-    function getPenaltyRunningTotalAtBlock(uint32 _block) override external view returns (uint256) {
-        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
-        return rocketNetworkSnapshots.lookup(penaltyKey, _block);
+    /// @notice Returns the running total of penalties at a given time
+    /// @param _time The time to compute running total for
+    function getPenaltyRunningTotalAtTime(uint64 _time) override external view returns (uint256) {
+        RocketNetworkSnapshotsTimeInterface rocketNetworkSnapshots = RocketNetworkSnapshotsTimeInterface(getContractAddress("rocketNetworkSnapshotsTime"));
+        return rocketNetworkSnapshots.lookup(penaltyKey, _time);
     }
 
     /// @notice Returns the running total of penalties at the current block
     function getCurrentPenaltyRunningTotal() override external view returns (uint256) {
-        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
-        (,,uint224 value) =  rocketNetworkSnapshots.latest(penaltyKey);
+        RocketNetworkSnapshotsTimeInterface rocketNetworkSnapshotsTime = RocketNetworkSnapshotsTimeInterface(getContractAddress("rocketNetworkSnapshotsTime"));
+        (,,uint192 value) =  rocketNetworkSnapshotsTime.latest(penaltyKey);
         return uint256(value);
     }
 
     /// @notice Returns the current maximum penalty based on the running total limitation
     function getCurrentMaxPenalty() override external view returns (uint256) {
         // Get contracts
-        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
+        RocketNetworkSnapshotsTimeInterface rocketNetworkSnapshotsTime = RocketNetworkSnapshotsTimeInterface(getContractAddress("rocketNetworkSnapshotsTime"));
         RocketDAOProtocolSettingsMegapoolInterface rocketDAOProtocolSettingsMegapool = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
         // Grab max weekly penalty
         uint256 maxPenalty = rocketDAOProtocolSettingsMegapool.getMaximumEthPenalty();
-        // Get running total from 50400 slots ago
-        uint256 earlierBlock = 0;
-        if (block.number > penaltyMaximumPeriod) {
-            earlierBlock = block.number - penaltyMaximumPeriod;
+        // Get running total from 7 days ago
+        uint256 earlierTime = 0;
+        if (block.timestamp > penaltyMaximumPeriod) {
+            earlierTime = block.timestamp - penaltyMaximumPeriod;
         }
-        uint256 earlierRunningTotal = uint256(rocketNetworkSnapshots.lookup(penaltyKey, uint32(earlierBlock)));
+        uint256 earlierRunningTotal = uint256(rocketNetworkSnapshotsTime.lookup(penaltyKey, uint64(earlierTime)));
         // Get current running total
-        (,, uint224 currentRunningTotal) = rocketNetworkSnapshots.latest(penaltyKey);
-        // Cap the penalty at the maximum amount based on past 50400 blocks
+        (,, uint192 currentRunningTotal) = rocketNetworkSnapshotsTime.latest(penaltyKey);
+        // Cap the penalty at the maximum amount based on past 7 days
         uint256 currentTotal = uint256(currentRunningTotal) - earlierRunningTotal;
         if (currentTotal > maxPenalty) return 0;
         return maxPenalty - currentTotal;
@@ -128,25 +128,25 @@ contract RocketMegapoolPenalties is RocketBase, RocketMegapoolPenaltiesInterface
     /// @dev Applies a penalty up to given amount, honouring the max penalty parameter
     function _applyPenalty(address _megapool, uint256 _amount) internal {
         // Get contracts
-        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
+        RocketNetworkSnapshotsTimeInterface rocketNetworkSnapshotsTime = RocketNetworkSnapshotsTimeInterface(getContractAddress("rocketNetworkSnapshotsTime"));
         RocketDAOProtocolSettingsMegapoolInterface rocketDAOProtocolSettingsMegapool = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
         // Grab max weekly penalty
         uint256 maxPenalty = rocketDAOProtocolSettingsMegapool.getMaximumEthPenalty();
-        // Get running total from 50400 slots ago
-        uint256 earlierBlock = 0;
-        if (block.number > penaltyMaximumPeriod) {
-            earlierBlock = block.number - penaltyMaximumPeriod;
+        // Get running total from 7 days ago
+        uint256 earlierTime = 0;
+        if (block.timestamp > penaltyMaximumPeriod) {
+            earlierTime = block.timestamp - penaltyMaximumPeriod;
         }
-        uint256 earlierRunningTotal = rocketNetworkSnapshots.lookup(penaltyKey, uint32(earlierBlock));
+        uint256 earlierRunningTotal = rocketNetworkSnapshotsTime.lookup(penaltyKey, uint32(earlierTime));
         // Get current running total
-        (,, uint224 currentRunningTotal) = rocketNetworkSnapshots.latest(penaltyKey);
+        (,, uint192 currentRunningTotal) = rocketNetworkSnapshotsTime.latest(penaltyKey);
         // Prevent the running penalty total from exceeding the maximum amount
         uint256 currentTotal = uint256(currentRunningTotal) - earlierRunningTotal;
         require(currentTotal < maxPenalty, "Max penalty exceeded");
         uint256 currentMaxPenalty = maxPenalty - currentTotal;
         require(_amount <= currentMaxPenalty, "Max penalty exceeded");
         // Insert new running total
-        rocketNetworkSnapshots.push(penaltyKey, currentRunningTotal + uint224(_amount));
+        rocketNetworkSnapshotsTime.push(penaltyKey, currentRunningTotal + uint192(_amount));
         // Call megapool to increase debt
         RocketMegapoolDelegateInterface(_megapool).applyPenalty(_amount);
     }

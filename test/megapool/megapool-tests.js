@@ -586,17 +586,18 @@ export default function() {
             );
         });
 
-        it(printTitle('trusted node', 'can apply another penalty only after 50400 blocks'), async () => {
+        it(printTitle('trusted node', 'can apply another penalty only after 7 days'), async () => {
             const maxPenaltyAmount = '2500'.ether;
+            const startTime = await helpers.time.latest();
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMegapool, 'maximum.megapool.eth.penalty', maxPenaltyAmount, { from: owner });
             await deployMegapool({ from: node });
             await votePenalty(megapool, 0n, '2500'.ether, trustedNode1);
             await votePenalty(megapool, 0n, '2500'.ether, trustedNode2);
             const megapoolDebtBefore = await megapool.getDebt();
-            await helpers.mine(50397);
+            await helpers.time.increaseTo(startTime + (60 * 60 * 24 * 7) - 10);
             await votePenalty(megapool, 1n, '2500'.ether, trustedNode1);
             await shouldRevert(votePenalty(megapool, 1n, '2500'.ether, trustedNode2), 'Applied greater penalty', 'Max penalty exceeded');
-            await helpers.mine(3);
+            await helpers.time.increase(20);
             await votePenalty(megapool, 1n, '2500'.ether, trustedNode2);
             const megapoolDebtAfter = await megapool.getDebt();
             const debtDelta = megapoolDebtAfter - megapoolDebtBefore;
