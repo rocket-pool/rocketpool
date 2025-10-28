@@ -19,6 +19,7 @@ import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol
 import {RocketTokenRETHInterface} from "../../interface/token/RocketTokenRETHInterface.sol";
 import {RocketVaultInterface} from "../../interface/RocketVaultInterface.sol";
 import {RocketVaultWithdrawerInterface} from "../../interface/RocketVaultWithdrawerInterface.sol";
+import {RocketMegapoolFactoryInterface} from "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
 
 /// @notice Accepts user deposits and mints rETH; handles assignment of deposited ETH to megapools
 contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaultWithdrawerInterface {
@@ -583,6 +584,11 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Check deposits are enabled
         RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
         require(rocketDAOProtocolSettingsDeposit.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
+        // Ensure no debt exists on the node operator's megapool
+        RocketMegapoolFactoryInterface rocketMegapoolFactory = RocketMegapoolFactoryInterface(getContractAddress("rocketMegapoolFactory"));
+        require(rocketMegapoolFactory.getMegapoolDeployed(_nodeAddress), "Megapool must be deployed");
+        RocketMegapoolDelegateInterface megapool = RocketMegapoolDelegateInterface(rocketMegapoolFactory.getExpectedAddress(_nodeAddress));
+        require(megapool.getDebt() == 0, "Cannot withdraw credit while debt exists");
         // Check node operator has sufficient credit
         bytes32 creditKey = keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeAddress));
         uint256 credit = getUint(creditKey);

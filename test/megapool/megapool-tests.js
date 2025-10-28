@@ -93,6 +93,13 @@ export default function() {
             await helpers.time.increase(seconds);
         }
 
+        async function exitValidator(megapool, index, finalBalance) {
+            const currentEpoch = await getCurrentEpoch();
+            await notifyExitValidator(megapool, index, currentEpoch + 114);
+            await helpers.time.increase(12 * 32 * 114);
+            await notifyFinalBalanceValidator(megapool, index, finalBalance, owner, await getCurrentEpoch() * 32);
+        }
+
         before(async () => {
             await globalSnapShot();
 
@@ -420,6 +427,27 @@ export default function() {
             await withdrawCredit(node, '1'.ether);
             // Fail to withdraw 4 ETH worth of rETH
             await shouldRevert(withdrawCredit(node, '4'.ether), 'Withdrew more rETH than credit', 'Amount exceeds credit available');
+        });
+
+        it(printTitle('node', 'can not withdraw credit as rETH with debt'), async () => {
+            // Enter and exit queue to get a credit
+            await nodeDeposit(node);
+            await exitQueue(node, 0);
+            // Enter queue and perform user deposit to assign
+            await nodeDeposit(node);
+            await userDeposit({ from: random, value: '32'.ether });
+            // Stake validator
+            await stakeMegapoolValidator(megapool, 1);
+            // Exit with a loss to incur a debt
+            await exitValidator(megapool, 1, '32'.ether - '5'.ether);
+            const nodeDebt = await megapool.getDebt();
+            assertBN.equal(nodeDebt, '1'.ether);
+            // Fail to withdraw
+            await shouldRevert(
+                withdrawCredit(node, '1'.ether),
+                'Was able to withdraw credit with debt',
+                'Cannot withdraw credit while debt exists'
+            );
         });
 
         it(printTitle('node', 'can not exit queue twice'), async () => {
@@ -1183,6 +1211,7 @@ export default function() {
             });
 
             snapshotDescribe('With staking validator', () => {
+
                 before(async () => {
                     await deployMegapool({ from: node });
                     await nodeDeposit(node);
@@ -1460,13 +1489,6 @@ export default function() {
                             ethers.provider.getBalance(nodeWithdrawalAddress),
                         ]);
                         return { rethBalance, depositPoolBalance, debt, nodeBalance };
-                    }
-
-                    async function exitValidator(megapool, index, finalBalance) {
-                        const currentEpoch = await getCurrentEpoch();
-                        await notifyExitValidator(megapool, index, currentEpoch + 114);
-                        await helpers.time.increase(12 * 32 * 114);
-                        await notifyFinalBalanceValidator(megapool, index, finalBalance, owner, await getCurrentEpoch() * 32);
                     }
 
                     before(async () => {
