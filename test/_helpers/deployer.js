@@ -154,7 +154,7 @@ export class RocketPoolDeployer {
         this.contractPlan['rocketMinipoolDelegate'].constructorArgs = [];
         this.contractPlan['rocketNodeDistributorDelegate'].constructorArgs = [];
         this.contractPlan['rocketMinipoolBase'].constructorArgs = [];
-        this.contractPlan['beaconStateVerifier'].constructorArgs = () => [this.rocketStorageInstance.target, opts.slotsPerHistoricalRoot, opts.forkSlots, opts.beaconRoots, opts.genesisTime, opts.genesisValidatorRoot];
+        this.contractPlan['beaconStateVerifier'].constructorArgs = () => [this.rocketStorageInstance.target, opts.slotsPerHistoricalRoot, opts.forkSlots, opts.beaconRoots, opts.genesisBlockTimestamp, opts.genesisValidatorRoot];
         this.contractPlan['rocketMegapoolDelegate'].constructorArgs = () => [this.rocketStorageInstance.target];
 
         // Setup deployment

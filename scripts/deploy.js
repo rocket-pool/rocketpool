@@ -56,6 +56,28 @@ const chainOpts = {
         mintDRPL: true,
         setDefaults: true,
     },
+    'private': {
+        deployer: {
+        depositAddress: '0x00000000219ab540356cBB839Cbe05303d7705Fa',
+        rocketTokenRPLFixedSupply: null,
+        genesisBlockTimestamp: 1761825733n,
+        secondsPerSlot: 12n,
+        slotsPerHistoricalRoot: 8192n,
+        beaconRootsHistoryBufferLength: 8191n,
+        beaconRoots: '0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02',
+        genesisValidatorRoot: '0xec9caf9aad26d20776fbd9e03b61dee7e7bd155a32d1593d43c47df730c40f14',
+        forkSlots: [
+            0n, // Altair
+            0n, // Bellatrix
+            0n, // Capella
+            0n, // Deneb
+            0n, // Electra
+        ],
+        },
+        deployStorageHelper: true,
+        mintDRPL: true,
+        setDefaults: true,
+    },
     'hardhat': {
         deployer: { logging: false },
         deployStorageHelper: false,
