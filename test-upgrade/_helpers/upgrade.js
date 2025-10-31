@@ -57,10 +57,9 @@ export async function deployUpgrade(rocketStorageAddress) {
     let upgradeContract;
 
     const genesisBlockTimestamp = 1695902400n;
-    const secondsPerSlot = 12n;
-    const beaconRootsHistoryBufferLength = 8191n;
     const slotsPerHistoricalRoot = 8192n;
     const beaconRoots = '0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02';
+    const genesisValidatorsRoot = '0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95';
     const forkSlots = [
         74240n * 32n,   // Altair
         144896n * 32n,  // Bellatrix
@@ -84,7 +83,7 @@ export async function deployUpgrade(rocketStorageAddress) {
                 break;
 
             case 'rocketMegapoolDelegate':
-                instance = await networkContracts[contract].clone(rocketStorageAddress, genesisBlockTimestamp);
+                instance = await networkContracts[contract].clone(rocketStorageAddress);
                 addresses[contract] = instance.target;
                 break;
 
@@ -92,7 +91,7 @@ export async function deployUpgrade(rocketStorageAddress) {
                 if (process.env.CHAIN === 'hardhat') {
                     instance = await networkContracts[contract].new(rocketStorageAddress);
                 } else {
-                    instance = await networkContracts[contract].clone(rocketStorageAddress, slotsPerHistoricalRoot, forkSlots);
+                    instance = await networkContracts[contract].clone(rocketStorageAddress, slotsPerHistoricalRoot, forkSlots, beaconRoots, genesisBlockTimestamp, genesisValidatorsRoot);
                 }
                 addresses[contract] = instance.target;
                 break;

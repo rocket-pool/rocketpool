@@ -57,7 +57,7 @@ export default function() {
 
         it(printTitle('upgrade', 'updates expected settings'), async () => {
             await executeUpgrade(owner, upgradeContract, rocketStorageAddress);
-            const upgradeBlock = await ethers.provider.getBlockNumber();
+            const upgradeTime = await helpers.time.latest();
 
             const rocketDAOProtocolSettingsDeposit = await RocketDAOProtocolSettingsDeposit.deployed();
             const rocketDAOProtocolSettingsMegapool = await RocketDAOProtocolSettingsMegapool.deployed();
@@ -106,15 +106,16 @@ export default function() {
             assertBN.equal(await rocketDAOProtocolSettingsSecurity.getUpgradeVetoQuorum(), '0.33'.ether);
 
             // RPIP-72
-            assertBN.equal(await rocketDAOProtocolSettingsMegapool.getNotifyThreshold(), 60 * 60 * 12);
+            assertBN.equal(await rocketDAOProtocolSettingsMegapool.getNotifyThreshold(), 112n);
             assertBN.equal(await rocketDAOProtocolSettingsMegapool.getLateNotifyFine(), '0.05'.ether);
-            assertBN.equal(await rocketDAOProtocolSettingsMegapool.getUserDistributeWindowLength(), 60 * 60 * 24 * 7);
+            assertBN.equal(await rocketDAOProtocolSettingsMegapool.getUserDistributeDelay(), 1575n);
+            assertBN.equal(await rocketDAOProtocolSettingsMegapool.getUserDistributeDelayWithShortfall(), 6750n);
 
             // Check protocol version string is set to 1.4
             assert.equal(await rocketStorage.getString(ethers.solidityPackedKeccak256(['string'], ['protocol.version'])), '1.4');
 
             // Check revenue split
-            const split = await rocketNetworkRevenues.calculateSplit(upgradeBlock);
+            const split = await rocketNetworkRevenues.calculateSplit(upgradeTime);
             assertBN.equal(split[0], '0.05'.ether); // Node share
             assertBN.equal(split[1], '0.09'.ether); // Voter share
             assertBN.equal(split[2], '0'.ether);    // Protocol share
