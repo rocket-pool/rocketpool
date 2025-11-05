@@ -29,6 +29,7 @@ const defaultOpts = {
     initialRevenueSplit: ['0.05'.ether, '0.09'.ether, '0'.ether],
     depositAddress: null,
     fixedSupplyTokenAddress: null,
+    deployThirdParty: false,
     genesisBlockTimestamp: 1606824023n,
     genesisValidatorRoot: '0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95',
     secondsPerSlot: 12n,
@@ -224,6 +225,13 @@ export class RocketPoolDeployer {
                 async () => this.setDeploymentStatus(),
             ],
         );
+
+        if (opts.deployThirdParty) {
+            this.addStage('Deploy third party contracts', 200, [
+                    async () => this.deployThirdPartyContracts(),
+                ],
+            );
+        }
     }
 
     log(string = '\n', color = 'gray') {
@@ -458,5 +466,22 @@ export class RocketPoolDeployer {
         }
 
         return this.deployedContracts;
+    }
+
+    async deployThirdPartyContract(artifactName, constructorArgs = []) {
+        const artifact = artifacts.require(artifactName);
+        // Deploy and log result
+        this.log('- Deploying ' + artifact.contractName, 'white');
+        const instance = await artifact.newImmediate(...constructorArgs);
+        const rsTx = await instance.deploymentTransaction();
+        const address = instance.target;
+        this.log(`- Deployed to ${address} @ ${rsTx.hash}`);
+    }
+
+    async deployThirdPartyContracts() {
+        await this.deployThirdPartyContract('EthBalanceChecker');
+        await this.deployThirdPartyContract('Multicall2');
+        await this.deployThirdPartyContract('RocketSignerRegistry');
+        await this.deployThirdPartyContract('UniswapOracleMock');
     }
 }
