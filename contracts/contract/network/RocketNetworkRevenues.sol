@@ -126,13 +126,15 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
     /// @param _nodeAddress Address of the node operator
     /// @param _value New capital ratio
     function setNodeCapitalRatio(address _nodeAddress, uint256 _value) external override onlyRegisteredMegapool(msg.sender) onlyLatestContract("rocketNetworkRevenues", address(this)) {
+        // Sanity check that ratio should never be below 1
+        require(_value >= 1 ether, "Invalid capital ratio");
         // Compute the key
         bytes32 key = keccak256(abi.encodePacked("node.capital.ratio", _nodeAddress));
         // Get the existing value
-        bytes32 valueKey = bytes32(uint256(key) + block.timestamp);
-        uint256 existingValue = getUint(valueKey);
+        RocketNetworkSnapshotsTimeInterface rocketNetworkSnapshotsTime = RocketNetworkSnapshotsTimeInterface(getContractAddress("rocketNetworkSnapshotsTime"));
+        uint256 storedValue = _getCurrentShare(rocketNetworkSnapshotsTime, key, false) / shareScale;
         // Don't store an entry if the capital ratio hasn't changed
-        if (existingValue != _value)  {
+        if (storedValue != _value / shareScale)  {
             _setShare(key, _value);
         }
     }
@@ -152,10 +154,10 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
         RocketNetworkSnapshotsTimeInterface rocketNetworkSnapshotsTime = RocketNetworkSnapshotsTimeInterface(getContractAddress("rocketNetworkSnapshotsTime"));
         bytes32 key = keccak256(abi.encodePacked("node.capital.ratio", _nodeAddress));
         if (_sinceTime == block.timestamp) {
-           return _getCurrentShare(rocketNetworkSnapshotsTime, key, false);
+           return _getCurrentShare(rocketNetworkSnapshotsTime, key, true);
         } else {
             require(_sinceTime < block.timestamp, "Time must be in the past");
-            return _getAverageSince(rocketNetworkSnapshotsTime, _sinceTime, key, false);
+            return _getAverageSince(rocketNetworkSnapshotsTime, _sinceTime, key, true);
         }
     }
 

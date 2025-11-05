@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.30;
 
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 import {DepositInterface} from "../../interface/casper/DepositInterface.sol";
 import {RocketDAOProtocolSettingsMegapoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMegapoolInterface.sol";
 import {RocketDepositPoolInterface} from "../../interface/deposit/RocketDepositPoolInterface.sol";
-import {RocketMegapoolDelegateBase} from "./RocketMegapoolDelegateBase.sol";
 import {RocketMegapoolDelegateInterface} from "../../interface/megapool/RocketMegapoolDelegateInterface.sol";
-import {RocketMegapoolStorageLayout} from "./RocketMegapoolStorageLayout.sol";
 import {RocketNetworkRevenuesInterface} from "../../interface/network/RocketNetworkRevenuesInterface.sol";
 import {RocketNodeDepositInterface} from "../../interface/node/RocketNodeDepositInterface.sol";
 import {RocketRewardsPoolInterface} from "../../interface/rewards/RocketRewardsPoolInterface.sol";
-import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 import {RocketTokenRETHInterface} from "../../interface/token/RocketTokenRETHInterface.sol";
+import {RocketMegapoolDelegateBase} from "./RocketMegapoolDelegateBase.sol";
+import {RocketMegapoolStorageLayout} from "./RocketMegapoolStorageLayout.sol";
 
 /// @notice This contract manages multiple validators belonging to an individual node operator.
 ///         It serves as the withdrawal credentials for all Beacon Chain validators managed by it.
@@ -275,11 +275,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             uint256 maxReduce = effectiveBond - newBondRequirement;
             require(_amount <= maxReduce, "New bond is too low");
         }
-        // Force distribute at previous capital ratio
-        uint256 pendingRewards = getPendingRewards();
-        if (pendingRewards > 0) {
-            _distributeAmount(pendingRewards);
-        }
         // Reduce node bond
         nodeBond -= _amount;
         userCapital += _amount;
@@ -318,8 +313,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         nodeBond += assignedNodeBond;
         userQueuedCapital -= assignedUserCapital;
         nodeQueuedBond -= assignedNodeBond;
-        // Snapshot capital ratio
-        _snapshotCapitalRatio();
         // Delete prestake signature for a small gas refund (no longer needed)
         delete prestakeSignatures[_validatorId];
         // Emit event
@@ -335,10 +328,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         require(validator.inPrestake, "Validator must be pre-staked");
         // Store last requested value for later
         uint32 lastRequestedValue = validator.lastRequestedValue;
-        // If this is the first validator, then set the last distribution block
-        if (lastDistributionTime == 0) {
-            lastDistributionTime = block.timestamp;
-        }
+        // Snapshot capital ratio (sets lastDistributionTime on first validator)
+        _snapshotCapitalRatio();
         // Account for assigned value
         uint256 assignedUsed = lastRequestedValue * milliToWei - prestakeValue;
         assignedValue -= assignedUsed;
@@ -422,27 +413,26 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     function distribute() override public {
         // Prevent calls before a megapool's first validator has been staked
         require(lastDistributionTime != 0, "No first validator");
-        // Calculate split of rewards
-        uint256 rewards = getPendingRewards();
-        if (rewards == 0) {
-            return;
-        }
-        _distributeAmount(rewards);
+        // Distribute pending rewards
+        _distributeAmount(getPendingRewards());
         // If owner is calling, claim immediately
         if (isNodeCalling(msg.sender)) {
             _claim();
         }
     }
 
-    /// @dev Internal implementation of distribute process
+    /// @dev Internal implementation of reward distribution process
     /// @param _rewards Amount of rewards to distribute
     function _distributeAmount(uint256 _rewards) internal {
-        // Cannot distribute a megapool with exiting validators
-        if (numExitingValidators > 0) {
-            revert("Pending validator exit");
-        }
-        // Cannot distribute if challenged by oDAO
+        // Cannot distribute a megapool with exiting or locked validators
+        require(numExitingValidators == 0, "Pending validator exit");
         require(numLockedValidators == 0, "Megapool locked");
+        // Early out if there are no rewards to distribute
+        if (_rewards == 0) {
+            // Last distribution time still gets updated
+            lastDistributionTime = block.timestamp;
+            return;
+        }
         (uint256 nodeAmount, uint256 voterAmount, uint256 protocolDAOAmount, uint256 rethAmount) = calculateRewards(_rewards);
         // Update last distribution time for use in calculating time-weighted average commission
         lastDistributionTime = block.timestamp;
@@ -514,11 +504,14 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     function calculateRewards(uint256 _amount) public view returns (uint256 nodeRewards, uint256 voterRewards, uint256 protocolDAORewards, uint256 rethRewards) {
         // Early out for edge cases
         if (_amount == 0) return (0, 0, 0, 0);
+        if (lastDistributionTime == 0) return (_amount, 0, 0, 0);
         // Calculate split based on capital ratio and average commission since last distribute
         RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
         (, uint256 voterShare, uint256 protocolDAOShare, uint256 rethShare) = rocketNetworkRevenues.calculateSplit(lastDistributionTime);
-        uint256 averageCapitalRatio =  rocketNetworkRevenues.getNodeAverageCapitalRatioSince(nodeAddress, lastDistributionTime);
-        if (averageCapitalRatio == 0) return (_amount, 0, 0, 0);
+        uint256 averageCapitalRatio = rocketNetworkRevenues.getNodeAverageCapitalRatioSince(nodeAddress, lastDistributionTime);
+        // Sanity check input values
+        require(averageCapitalRatio >= calcBase, "Invalid average capital ratio");
+        require(voterShare + protocolDAOShare + rethShare <= calcBase, "Invalid shares");
         unchecked {
             uint256 borrowedPortion = _amount - (_amount * calcBase / averageCapitalRatio);
             rethRewards = rethShare * borrowedPortion / calcBase;
@@ -697,10 +690,10 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
             RocketDepositPoolInterface rocketDepositPool = _getRocketDepositPool();
             rocketDepositPool.fundsReturned(nodeAddress, nodeShare, userShare);
         }
-        // Snapshot capital ratio
-        _snapshotCapitalRatio();
         // Remove distribution lock
         numExitingValidators -= 1;
+        // Snapshot capital ratio
+        _snapshotCapitalRatio();
         // Emit event
         emit MegapoolValidatorExited(_validatorId, block.timestamp);
         // Return true if final balance results in a shortfall
@@ -763,16 +756,20 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     }
 
     /// @dev Calculates the current capital ratio of this Megapool and notifies RocketNetworkRevenues to snapshot it
+    ///      Attempts to distribute rewards at current ratio before snapshotting
     function _snapshotCapitalRatio() internal {
-        RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
-        uint256 capitalRatio;
-        if (nodeBond == 0) {
-            capitalRatio = 0;
-        } else {
-            // Stored as a ratio of total capital / node bond for greater precision
-            capitalRatio = (userCapital + nodeBond) * calcBase / nodeBond;
+        // Try to distribute rewards before updating capital ratio
+        if (numExitingValidators == 0 && numLockedValidators == 0) {
+            _distributeAmount(getPendingRewards());
         }
-        rocketNetworkRevenues.setNodeCapitalRatio(nodeAddress, capitalRatio);
+        // Calculate and send capital ratio to RocketNetworkRevenues for snapshotting
+        RocketNetworkRevenuesInterface rocketNetworkRevenues = RocketNetworkRevenuesInterface(getContractAddress("rocketNetworkRevenues"));
+        if (nodeBond > 0) {
+            // Stored as a ratio of total capital / node bond for greater precision
+            uint256 capitalRatio = (userCapital + nodeBond) * calcBase / nodeBond;
+            rocketNetworkRevenues.setNodeCapitalRatio(nodeAddress, capitalRatio);
+        }
+        // In the case the NO has exited all their validators (nodeBond == 0), we leave the capital ratio at what it was
     }
 
     /// @dev Mirror deposit contract deposit data root calculation but with in-memory bytes instead of calldata

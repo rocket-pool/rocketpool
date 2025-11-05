@@ -1400,6 +1400,7 @@ export default function() {
 
             it(printTitle('node', 'can calculate rewards correctly when capital ratio changes over time'), async () => {
                 const rocketNetworkRevenues = await RocketNetworkRevenues.deployed();
+                const rocketMegapoolManager = await RocketMegapoolManager.deployed();
                 // Adjust reduced.bond to 2 ETH
                 await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
                 // Create 2 validators with 4 ETH bond each
@@ -1407,6 +1408,15 @@ export default function() {
                 await nodeDeposit(node);
                 await stakeMegapoolValidator(megapool, 0);
                 await stakeMegapoolValidator(megapool, 1);
+                // Challenge exit to prevent forced distributions
+                await rocketMegapoolManager.connect(trustedNode1).challengeExit([
+                    {
+                        megapool: megapool.target,
+                        validatorIds: [
+                            0,
+                        ],
+                    },
+                ]);
                 // Increase time to impact the time-weighted calculations
                 const lastDistributionTime = await megapool.getLastDistributionTime();
                 await helpers.time.increaseTo(lastDistributionTime + 99n);
@@ -1416,7 +1426,7 @@ export default function() {
                 await nodeDeposit(node, '2'.ether);
                 await stakeMegapoolValidator(megapool, 2);
                 // Increase time so that we have as much time at the old ratio as we do at the new one
-                await helpers.time.increaseTo(lastDistributionTime + 199n);
+                await helpers.time.increaseTo(lastDistributionTime + 201n);
                 // Mock rewards
                 await mockRewards(megapool, '1'.ether);
                 const pendingRewards = await megapool.getPendingRewards();
@@ -1449,6 +1459,39 @@ export default function() {
                 assertBN.almostEqual(rewardSplit[1], '0.07977'.ether, '0.0001'.ether); // Voter
                 assertBN.equal(rewardSplit[2], '0'.ether);                             // pDAO
                 assertBN.almostEqual(rewardSplit[3], '0.76233'.ether, '0.0001'.ether); // User
+            });
+
+            it(printTitle('node', 'can exit all validators then capital ratio is reset when creating a new one'), async () => {
+                const rocketNetworkRevenues = await RocketNetworkRevenues.deployed();
+                const rocketMegapoolManager = await RocketMegapoolManager.deployed();
+                // Adjust reduced.bond to 2 ETH
+                await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'reduced.bond', '2'.ether, { from: owner });
+                // Create 3 validators
+                await nodeDeposit(node);
+                await nodeDeposit(node);
+                await nodeDeposit(node, '2'.ether);
+                await stakeMegapoolValidator(megapool, 0);
+                await stakeMegapoolValidator(megapool, 1);
+                await stakeMegapoolValidator(megapool, 2);
+                // Capital ratio should be 9.6 as last stake forced distribution and 9.6 is the new ratio
+                assertBN.equal(await rocketNetworkRevenues.getNodeAverageCapitalRatioSince(node.address, await megapool.getLastDistributionTime()), '9.6'.ether);
+                // Exit a validator
+                await exitValidator(megapool, 0, '32'.ether);
+                // Capital ratio should be back to 8
+                assertBN.equal(await rocketNetworkRevenues.getNodeAverageCapitalRatioSince(node.address, await megapool.getLastDistributionTime()), '8'.ether);
+                // Exit remaining 2 validators
+                await exitValidator(megapool, 1, '32'.ether);
+                await exitValidator(megapool, 2, '32'.ether);
+                // Capital ratio should remain at 8
+                assertBN.equal(await rocketNetworkRevenues.getNodeAverageCapitalRatioSince(node.address, await megapool.getLastDistributionTime()), '8'.ether);
+                // Create a new validator
+                await nodeDeposit(node);
+                await stakeMegapoolValidator(megapool, 3);
+                // Capital ratio should remain at 8
+                const lastDistributionTime = await megapool.getLastDistributionTime();
+                assertBN.equal(await rocketNetworkRevenues.getNodeAverageCapitalRatioSince(node.address, lastDistributionTime), '8'.ether);
+                // Last distribution time should have been updated to the latest block where stake occurred
+                assertBN.equal(lastDistributionTime, await helpers.time.latest());
             });
 
             snapshotDescribe('With staking validator', () => {
@@ -1675,12 +1718,19 @@ export default function() {
                     await distributeMegapool(megapool);
                 });
 
-                it(printTitle('random', 'can permissionlessly notify final balance and distribute a validator after user distribute delay'), async () => {
+                it(printTitle('random', 'can not permissionlessly notify final balance and distribute a validator before user distribute delay'), async () => {
                     // Notify exit and final balance
                     const currentEpoch = await getCurrentEpoch();
                     const megapoolWithRandom = megapool.connect(random);
                     await notifyExitValidator(megapoolWithRandom, 0, currentEpoch);
                     await shouldRevert(notifyFinalBalanceValidator(megapoolWithRandom, 0, '32'.ether, owner, currentEpoch * 32), 'Was able to distribute', 'Not enough time has passed');
+                });
+
+                it(printTitle('random', 'can permissionlessly notify final balance and distribute a validator after user distribute delay'), async () => {
+                    // Notify exit and final balance
+                    const currentEpoch = await getCurrentEpoch();
+                    const megapoolWithRandom = megapool.connect(random);
+                    await notifyExitValidator(megapoolWithRandom, 0, currentEpoch);
                     // Wait the window
                     await helpers.time.increase(userDistributeTime * slotsPerEpoch * secondsPerSlot + 1);
                     // Should work now
@@ -1690,16 +1740,32 @@ export default function() {
                     await distributeMegapool(megapoolWithRandom);
                 });
 
-                it(printTitle('random', 'can permissionlessly notify final balance and distribute a validator with shortfall after user distribute with shortfall delay'), async () => {
+                it(printTitle('random', 'can not permissionlessly notify final balance and distribute a validator with shortfall immediately'), async () => {
                     // Notify exit and final balance
                     const currentEpoch = await getCurrentEpoch();
                     const megapoolWithRandom = megapool.connect(random);
                     await notifyExitValidator(megapoolWithRandom, 0, currentEpoch);
                     await shouldRevert(notifyFinalBalanceValidator(megapoolWithRandom, 0, '27'.ether, owner, currentEpoch * 32), 'Was able to distribute', 'Not enough time has passed');
+                });
+
+                it(printTitle('random', 'can permissionlessly notify final balance and distribute a validator with shortfall before user distribute with shortfall delay'), async () => {
+                    // Notify exit and final balance
+                    const currentEpoch = await getCurrentEpoch();
+                    const megapoolWithRandom = megapool.connect(random);
+                    await notifyExitValidator(megapoolWithRandom, 0, currentEpoch);
                     // Wait the regular window
                     await helpers.time.increase(userDistributeTime * slotsPerEpoch * secondsPerSlot + 1);
                     // Cannot permissionlessly distribute with shortfall after the standard delay
                     await shouldRevert(notifyFinalBalanceValidator(megapoolWithRandom, 0, '27'.ether, owner, currentEpoch * 32), 'Was able to distribute', 'Not enough time has passed');
+                });
+
+                it(printTitle('random', 'can permissionlessly notify final balance and distribute a validator with shortfall after user distribute with shortfall delay'), async () => {
+                    // Notify exit and final balance
+                    const currentEpoch = await getCurrentEpoch();
+                    const megapoolWithRandom = megapool.connect(random);
+                    await notifyExitValidator(megapoolWithRandom, 0, currentEpoch);
+                    // Wait the regular window
+                    await helpers.time.increase(userDistributeTime * slotsPerEpoch * secondsPerSlot + 1);
                     // Wait the remaining shortfall delay
                     await helpers.time.increase((userDistributeShortfallTime - userDistributeTime) * slotsPerEpoch * secondsPerSlot + 1);
                     // Should work now
