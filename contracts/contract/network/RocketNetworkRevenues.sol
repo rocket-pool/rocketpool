@@ -140,22 +140,22 @@ contract RocketNetworkRevenues is RocketBase, RocketNetworkRevenuesInterface {
     /// @notice Returns the current capital ratio of the given node operator
     /// @param _nodeAddress Address of the node operator to query the value for
     function getNodeCapitalRatio(address _nodeAddress) external override view returns (uint256) {
-        RocketNetworkSnapshotsTimeInterface rocketNetworkSnapshots = RocketNetworkSnapshotsTimeInterface(getContractAddress("rocketNetworkSnapshotsTime"));
+        RocketNetworkSnapshotsTimeInterface rocketNetworkSnapshotsTime = RocketNetworkSnapshotsTimeInterface(getContractAddress("rocketNetworkSnapshotsTime"));
         bytes32 key = keccak256(abi.encodePacked("node.capital.ratio", _nodeAddress));
-        return _getCurrentShare(rocketNetworkSnapshots, key, false);
+        return _getCurrentShare(rocketNetworkSnapshotsTime, key, false);
     }
 
     /// @notice Returns the average capital ratio of the given node operator since a given block
     /// @param _nodeAddress Address of the node operator to query the value for
     /// @param _sinceTime The timestamp to calculate the average since
     function getNodeAverageCapitalRatioSince(address _nodeAddress, uint256 _sinceTime) external override view returns (uint256) {
-        RocketNetworkSnapshotsTimeInterface rocketNetworkSnapshots = RocketNetworkSnapshotsTimeInterface(getContractAddress("rocketNetworkSnapshotsTime"));
+        RocketNetworkSnapshotsTimeInterface rocketNetworkSnapshotsTime = RocketNetworkSnapshotsTimeInterface(getContractAddress("rocketNetworkSnapshotsTime"));
         bytes32 key = keccak256(abi.encodePacked("node.capital.ratio", _nodeAddress));
         if (_sinceTime == block.timestamp) {
-           return _getCurrentShare(rocketNetworkSnapshots, key, false);
+           return _getCurrentShare(rocketNetworkSnapshotsTime, key, false);
         } else {
             require(_sinceTime < block.timestamp, "Time must be in the past");
-            return _getAverageSince(rocketNetworkSnapshots, _sinceTime, key, false);
+            return _getAverageSince(rocketNetworkSnapshotsTime, _sinceTime, key, false);
         }
     }
 
