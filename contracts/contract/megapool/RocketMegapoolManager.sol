@@ -16,7 +16,7 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
 
     // Constants
     uint256 constant internal farFutureEpoch = 2 ** 64 - 1;
-    uint256 constant internal prestakeBalanceInGwei = 1 ether / 1 gwei;
+    uint256 constant internal activationBalanceInGwei = 32 ether / 1 gwei;
     uint64 constant internal slotsPerEpoch = 32;
     uint256 constant internal slotRecencyThreshold = 1 hours;
 
@@ -87,7 +87,9 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         require(_validatorProof.validator.withdrawalCredentials == withdrawalCredentials, "Invalid withdrawal credentials");
         require(_validatorProof.validator.withdrawableEpoch == farFutureEpoch, "Validator is withdrawing");
         require(_validatorProof.validator.exitEpoch == farFutureEpoch, "Validator is exiting");
-        require(_validatorProof.validator.effectiveBalance == prestakeBalanceInGwei, "Invalid validator balance");
+        require(_validatorProof.validator.effectiveBalance < activationBalanceInGwei, "Invalid validator balance");
+        require(_validatorProof.validator.activationEligibilityEpoch == farFutureEpoch, "Validator is activating");
+        require(_validatorProof.validator.activationEpoch == farFutureEpoch, "Validator is activated");
         require(!_validatorProof.validator.slashed, "Validator is slashed");
         // Verify matching pubkey
         bytes memory pubkey = _megapool.getValidatorPubkey(_validatorId);
@@ -115,7 +117,9 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
             _validatorProof.validator.withdrawalCredentials == withdrawalCredentials &&
             _validatorProof.validator.withdrawableEpoch == farFutureEpoch &&
             _validatorProof.validator.exitEpoch == farFutureEpoch &&
-            _validatorProof.validator.effectiveBalance == prestakeBalanceInGwei &&
+            _validatorProof.validator.effectiveBalance < activationBalanceInGwei &&
+            _validatorProof.validator.activationEligibilityEpoch == farFutureEpoch &&
+            _validatorProof.validator.activationEpoch == farFutureEpoch &&
             _validatorProof.validator.slashed == false
         ) {
             revert("Validator is compliant");

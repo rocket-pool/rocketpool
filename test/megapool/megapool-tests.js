@@ -64,8 +64,8 @@ async function getValidPrestakeValidator(megapool, index) {
         withdrawalCredentials: withdrawalCredentials,
         effectiveBalance: '1'.ether / '1'.gwei,
         slashed: false,
-        activationEligibilityEpoch: 0n,
-        activationEpoch: 0n,
+        activationEligibilityEpoch: farFutureEpoch,
+        activationEpoch: farFutureEpoch,
         exitEpoch: farFutureEpoch,
         withdrawableEpoch: farFutureEpoch,
     };
@@ -1112,8 +1112,8 @@ export default function() {
                         withdrawalCredentials: withdrawalCredentials,
                         effectiveBalance: '1'.ether / '1'.gwei,
                         slashed: false,
-                        activationEligibilityEpoch: 0n,
-                        activationEpoch: 0n,
+                        activationEligibilityEpoch: farFutureEpoch,
+                        activationEpoch: farFutureEpoch,
                         exitEpoch: farFutureEpoch,
                         withdrawableEpoch: farFutureEpoch,
                     },
@@ -1205,6 +1205,34 @@ export default function() {
                 await dissolveValidator(node, 0, random, invalidProof);
             });
 
+            it(printTitle('random', 'can dissolve an invalid validator immediately (invalid activation_eligibility_epoch)'), async () => {
+                await nodeDeposit(node);
+                const invalidProof = {
+                    slot: 0n,
+                    validatorIndex: 0n,
+                    validator: {
+                        ...await getValidPrestakeValidator(megapool, 0n),
+                        activationEligibilityEpoch: 100n,
+                    },
+                    witnesses: [],
+                };
+                await dissolveValidator(node, 0, random, invalidProof);
+            });
+
+            it(printTitle('random', 'can dissolve an invalid validator immediately (invalid activation_epoch)'), async () => {
+                await nodeDeposit(node);
+                const invalidProof = {
+                    slot: 0n,
+                    validatorIndex: 0n,
+                    validator: {
+                        ...await getValidPrestakeValidator(megapool, 0n),
+                        activationEpoch: 100n,
+                    },
+                    witnesses: [],
+                };
+                await dissolveValidator(node, 0, random, invalidProof);
+            });
+
             it(printTitle('random', 'can dissolve an invalid validator immediately (invalid balance)'), async () => {
                 await nodeDeposit(node);
                 const invalidProof = {
@@ -1212,7 +1240,7 @@ export default function() {
                     validatorIndex: 0n,
                     validator: {
                         ...await getValidPrestakeValidator(megapool, 0n),
-                        effectiveBalance: '32'.ether / '1'.ether,
+                        effectiveBalance: '33'.ether / '1'.gwei,
                     },
                     witnesses: [],
                 };
@@ -1285,6 +1313,44 @@ export default function() {
                     witnesses: [],
                 };
                 await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), proof, slotProof), 'Staked with invalid validator', 'Validator is exiting');
+            });
+
+            it(printTitle('node', 'can not stake with invalid validator (invalid activation_eligibility_epoch)'), async () => {
+                const rocketMegapoolManager = await RocketMegapoolManager.deployed();
+                await nodeDeposit(node);
+                // Construct a fake proof
+                const proof = {
+                    validatorIndex: 0n,
+                    validator: {
+                        ...await getValidPrestakeValidator(megapool, 0n),
+                        activationEligibilityEpoch: 100n
+                    },
+                    witnesses: [],
+                };
+                const slotProof = {
+                    slot: 0n,
+                    witnesses: [],
+                };
+                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), proof, slotProof), 'Staked with invalid validator', 'Validator is activating');
+            });
+
+            it(printTitle('node', 'can not stake with invalid validator (invalid activation_epoch)'), async () => {
+                const rocketMegapoolManager = await RocketMegapoolManager.deployed();
+                await nodeDeposit(node);
+                // Construct a fake proof
+                const proof = {
+                    validatorIndex: 0n,
+                    validator: {
+                        ...await getValidPrestakeValidator(megapool, 0n),
+                        activationEpoch: 100n
+                    },
+                    witnesses: [],
+                };
+                const slotProof = {
+                    slot: 0n,
+                    witnesses: [],
+                };
+                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), proof, slotProof), 'Staked with invalid validator', 'Validator is activated');
             });
 
             it(printTitle('node', 'can not stake with invalid validator (invalid slashed)'), async () => {
