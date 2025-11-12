@@ -23,7 +23,8 @@ import {
     RocketDepositPool,
     RocketMegapoolDelegate,
     RocketMegapoolFactory,
-    RocketMegapoolManager, RocketNetworkRevenues,
+    RocketMegapoolManager,
+    RocketNetworkRevenues,
     RocketNodeDeposit,
     RocketStorage,
     RocketTokenRETH,
@@ -43,7 +44,7 @@ import { dissolveValidator } from './scenario-dissolve';
 import { challengeValidator } from './scenario-challenge';
 import { repayDebt } from './scenario-repay-debt';
 import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '../_utils/beacon';
-import { beaconGenesisTime, getCurrentEpoch, getSlotForBlock } from '../_helpers/beaconchain';
+import { beaconGenesisTime } from '../_helpers/beaconchain';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const hre = require('hardhat');
@@ -467,7 +468,7 @@ export default function() {
             await shouldRevert(
                 withdrawCredit(node, '1'.ether),
                 'Was able to withdraw credit with debt',
-                'Cannot withdraw credit while debt exists'
+                'Cannot withdraw credit while debt exists',
             );
         });
 
@@ -996,6 +997,15 @@ export default function() {
                 await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMegapool, 'megapool.time.before.dissolve', dissolvePeriod, { from: owner });
             });
 
+            it(printTitle('node', 'receives any ETH that was already in the megapool prior to first validator stake'), async () => {
+                const preStakeRewards = '0.123'.ether;
+                await nodeDeposit(node);
+                await mockRewards(megapool, preStakeRewards);
+                await stakeMegapoolValidator(megapool, 0);
+                assertBN.equal(await megapool.getRefundValue(), preStakeRewards);
+                assertBN.equal(await megapool.getPendingRewards(), 0n);
+            });
+
             it(printTitle('node', 'can deposit while assignments are disabled and be assigned once enabled again'), async () => {
                 const rocketDepositPool = await RocketDepositPool.deployed();
                 // Disable deposit assignments
@@ -1170,7 +1180,7 @@ export default function() {
                     validatorIndex: 0n,
                     validator: {
                         ...await getValidPrestakeValidator(megapool, 0n),
-                        slashed: true
+                        slashed: true,
                     },
                     witnesses: [],
                 };
@@ -1285,7 +1295,7 @@ export default function() {
                     validatorIndex: 0n,
                     validator: {
                         ...await getValidPrestakeValidator(megapool, 0n),
-                        withdrawableEpoch: 100n
+                        withdrawableEpoch: 100n,
                     },
                     witnesses: [],
                 };
@@ -1304,7 +1314,7 @@ export default function() {
                     validatorIndex: 0n,
                     validator: {
                         ...await getValidPrestakeValidator(megapool, 0n),
-                        exitEpoch: 100n
+                        exitEpoch: 100n,
                     },
                     witnesses: [],
                 };
@@ -1323,7 +1333,7 @@ export default function() {
                     validatorIndex: 0n,
                     validator: {
                         ...await getValidPrestakeValidator(megapool, 0n),
-                        activationEligibilityEpoch: 100n
+                        activationEligibilityEpoch: 100n,
                     },
                     witnesses: [],
                 };
@@ -1342,7 +1352,7 @@ export default function() {
                     validatorIndex: 0n,
                     validator: {
                         ...await getValidPrestakeValidator(megapool, 0n),
-                        activationEpoch: 100n
+                        activationEpoch: 100n,
                     },
                     witnesses: [],
                 };
@@ -1361,7 +1371,7 @@ export default function() {
                     validatorIndex: 0n,
                     validator: {
                         ...await getValidPrestakeValidator(megapool, 0n),
-                        slashed: true
+                        slashed: true,
                     },
                     witnesses: [],
                 };
@@ -1380,7 +1390,7 @@ export default function() {
                     validatorIndex: 0n,
                     validator: {
                         ...await getValidPrestakeValidator(megapool, 0n),
-                        effectiveBalance: '32'.ether / '1'.gwei
+                        effectiveBalance: '32'.ether / '1'.gwei,
                     },
                     witnesses: [],
                 };
@@ -1441,7 +1451,7 @@ export default function() {
 
                     ((100 * 8) + (100 * 9.6)) / 200 = 8.8
                  */
-                assertBN.equal(await rocketNetworkRevenues.getNodeAverageCapitalRatioSince(node.address, lastDistributionTime), '8.8'.ether)
+                assertBN.equal(await rocketNetworkRevenues.getNodeAverageCapitalRatioSince(node.address, lastDistributionTime), '8.8'.ether);
                 /*
                     Rewards: 1 ETH
                     Avg. Collat Ratio: 1/8.8
