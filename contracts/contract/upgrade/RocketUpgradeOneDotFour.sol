@@ -12,22 +12,51 @@ interface InitialiseInterface {
 /// @notice v1.4 Saturn 1 upgrade contract
 contract RocketUpgradeOneDotFour is RocketBase {
     // Whether the upgrade has been performed or not
-    bool internal executed;
+    bool internal executed = false;
 
-    // Upgrade ABIs
-    address[34] public addresses;
-    string[34] public abis;
+    // The deployer address
+    address internal deployer;
+
+    // Upgrade ABIs (split into 2 parts to avoid gas limit)
+    bool public lockedA = false;
+    address[17] public addressesA;
+    string[17] public abisA;
+
+    bool public lockedB = false;
+    address[17] public addressesB;
+    string[17] public abisB;
 
     // Construct
     constructor(
-        RocketStorageInterface _rocketStorageAddress,
-        address[34] memory _addresses,
-        string[34] memory _abis
+        RocketStorageInterface _rocketStorageAddress
     ) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
-        addresses = _addresses;
-        abis = _abis;
+        deployer = msg.sender;
+    }
+
+    // @notice Sets the A addresses and ABIs of the upgrade
+    function setA(
+        address[17] memory _addressesA,
+        string[17] memory _abisA
+    ) external {
+        require(msg.sender == deployer, "Only deployer can set");
+        require(!lockedA, "Already set");
+        lockedA = true;
+        addressesA = _addressesA;
+        abisA = _abisA;
+    }
+
+    // @notice Sets the B addresses and ABIs of the upgrade
+    function setB(
+        address[17] memory _addressesB,
+        string[17] memory _abisB
+    ) external {
+        require(msg.sender == deployer, "Only deployer can set");
+        require(!lockedB, "Already set");
+        lockedB = true;
+        addressesB = _addressesB;
+        abisB = _abisB;
     }
 
     /// @notice Returns the address of the RocketStorage contract
@@ -37,55 +66,56 @@ contract RocketUpgradeOneDotFour is RocketBase {
 
     /// @notice Once this contract has been voted in by oDAO, guardian can perform the upgrade
     function execute() external onlyGuardian {
-        require(!executed);
+        require(lockedA && lockedB, "Addresses not set");
+        require(!executed, "Already executed");
         executed = true;
 
         // Add new contracts
-        _addContract("rocketMegapoolDelegate", addresses[0], abis[0]);
-        _addContract("rocketMegapoolFactory", addresses[1], abis[1]);
-        _addContract("rocketMegapoolProxy", addresses[2], abis[2]);
-        _addContract("rocketMegapoolManager", addresses[3], abis[3]);
-        _addContract("linkedListStorage", addresses[8], abis[8]);
-        _addContract("rocketNetworkRevenues", addresses[20], abis[20]);
-        _addContract("beaconStateVerifier", addresses[25], abis[25]);
-        _addContract("rocketDAOProtocolSettingsMegapool", addresses[15], abis[15]);
-        _addContract("rocketDAOSecurityUpgrade", addresses[17], abis[17]);
-        _addContract("rocketMegapoolPenalties", addresses[32], abis[32]);
-        _addContract("rocketNetworkSnapshotsTime", addresses[33], abis[33]);
+        _addContract("rocketMegapoolDelegate", addressesA[0], abisA[0]);
+        _addContract("rocketMegapoolFactory", addressesA[1], abisA[1]);
+        _addContract("rocketMegapoolProxy", addressesA[2], abisA[2]);
+        _addContract("rocketMegapoolManager", addressesA[3], abisA[3]);
+        _addContract("linkedListStorage", addressesA[8], abisA[8]);
+        _addContract("rocketNetworkRevenues", addressesB[3], abisB[3]);
+        _addContract("beaconStateVerifier", addressesB[8], abisB[8]);
+        _addContract("rocketDAOProtocolSettingsMegapool", addressesA[15], abisA[15]);
+        _addContract("rocketDAOSecurityUpgrade", addressesB[0], abisB[0]);
+        _addContract("rocketMegapoolPenalties", addressesB[15], abisB[15]);
+        _addContract("rocketNetworkSnapshotsTime", addressesB[16], abisB[16]);
 
         // Upgrade existing contracts
-        _upgradeContract("rocketNodeManager", addresses[4], abis[4]);
-        _upgradeContract("rocketNodeDeposit", addresses[5], abis[5]);
-        _upgradeContract("rocketNodeStaking", addresses[6], abis[6]);
-        _upgradeContract("rocketNetworkBalances", addresses[21], abis[21]);
-        _upgradeContract("rocketNetworkPenalties", addresses[23], abis[23]);
-        _upgradeContract("rocketDepositPool", addresses[7], abis[7]);
-        _upgradeContract("rocketNetworkSnapshots", addresses[22], abis[22]);
-        _upgradeContract("rocketDAOProtocol", addresses[9], abis[9]);
-        _upgradeContract("rocketDAOProtocolProposals", addresses[10], abis[10]);
-        _upgradeContract("rocketDAOProtocolSettingsNode", addresses[11], abis[11]);
-        _upgradeContract("rocketDAOProtocolSettingsDeposit", addresses[12], abis[12]);
-        _upgradeContract("rocketDAOProtocolSettingsNetwork", addresses[13], abis[13]);
-        _upgradeContract("rocketDAOProtocolSettingsSecurity", addresses[14], abis[14]);
-        _upgradeContract("rocketDAOProtocolSettingsMinipool", addresses[16], abis[16]);
-        _upgradeContract("rocketDAONodeTrustedUpgrade", addresses[19], abis[19]);
-        _upgradeContract("rocketDAOSecurityProposals", addresses[18], abis[18]);
-        _upgradeContract("rocketNodeDistributorDelegate", addresses[26], abis[26]);
-        _upgradeContract("rocketRewardsPool", addresses[24], abis[24]);
-        _upgradeContract("rocketClaimDAO", addresses[27], abis[27]);
-        _upgradeContract("rocketMinipoolBondReducer", addresses[28], abis[28]);
-        _upgradeContract("rocketMinipoolManager", addresses[29], abis[29]);
-        _upgradeContract("rocketNetworkVoting", addresses[30], abis[30]);
-        _upgradeContract("rocketMerkleDistributorMainnet", addresses[31], abis[31]);
+        _upgradeContract("rocketNodeManager", addressesA[4], abisA[4]);
+        _upgradeContract("rocketNodeDeposit", addressesA[5], abisA[5]);
+        _upgradeContract("rocketNodeStaking", addressesA[6], abisA[6]);
+        _upgradeContract("rocketNetworkBalances", addressesB[4], abisB[4]);
+        _upgradeContract("rocketNetworkPenalties", addressesB[6], abisB[6]);
+        _upgradeContract("rocketDepositPool", addressesA[7], abisA[7]);
+        _upgradeContract("rocketNetworkSnapshots", addressesB[5], abisB[5]);
+        _upgradeContract("rocketDAOProtocol", addressesA[9], abisA[9]);
+        _upgradeContract("rocketDAOProtocolProposals", addressesA[10], abisA[10]);
+        _upgradeContract("rocketDAOProtocolSettingsNode", addressesA[11], abisA[11]);
+        _upgradeContract("rocketDAOProtocolSettingsDeposit", addressesA[12], abisA[12]);
+        _upgradeContract("rocketDAOProtocolSettingsNetwork", addressesA[13], abisA[13]);
+        _upgradeContract("rocketDAOProtocolSettingsSecurity", addressesA[14], abisA[14]);
+        _upgradeContract("rocketDAOProtocolSettingsMinipool", addressesA[16], abisA[16]);
+        _upgradeContract("rocketDAONodeTrustedUpgrade", addressesB[2], abisB[2]);
+        _upgradeContract("rocketDAOSecurityProposals", addressesB[1], abisB[1]);
+        _upgradeContract("rocketNodeDistributorDelegate", addressesB[9], abisB[9]);
+        _upgradeContract("rocketRewardsPool", addressesB[7], abisB[7]);
+        _upgradeContract("rocketClaimDAO", addressesB[10], abisB[10]);
+        _upgradeContract("rocketMinipoolBondReducer", addressesB[11], abisB[11]);
+        _upgradeContract("rocketMinipoolManager", addressesB[12], abisB[12]);
+        _upgradeContract("rocketNetworkVoting", addressesB[13], abisB[13]);
+        _upgradeContract("rocketMerkleDistributorMainnet", addressesB[14], abisB[14]);
 
         // Initialise the rewards relay address
-        InitialiseInterface(addresses[31]).initialise();
+        InitialiseInterface(addressesB[14]).initialise();
 
         // Initialise the megapool factory
-        InitialiseInterface(addresses[1]).initialise();
+        InitialiseInterface(addressesA[1]).initialise();
 
         // Initialise the new megapool settings contract
-        InitialiseInterface(addresses[15]).initialise();
+        InitialiseInterface(addressesA[15]).initialise();
 
         // Add new security council allowed parameter
         setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "network", "network.node.commission.share.security.council.adder")), true);
@@ -141,7 +171,7 @@ contract RocketUpgradeOneDotFour is RocketBase {
         }
 
         // Initialise UARS system
-        RocketNetworkRevenuesInterface rocketNetworkRevenuesInstance = RocketNetworkRevenuesInterface(addresses[20]);
+        RocketNetworkRevenuesInterface rocketNetworkRevenuesInstance = RocketNetworkRevenuesInterface(addressesB[3]);
         rocketNetworkRevenuesInstance.initialise(0.05 ether, 0.09 ether, 0); // 5% node share, 9% voter share, 0% pdao share (RPIP-46)
 
         // Set a protocol version value in storage for convenience with bindings

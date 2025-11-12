@@ -98,7 +98,7 @@ export async function deployUpgrade(rocketStorageAddress) {
 
             // Upgrade contract
             case 'rocketUpgradeOneDotFour':
-                const args = [
+                const setArgsA = [
                     [
                         addresses.rocketMegapoolDelegate,
                         addresses.rocketMegapoolFactory,
@@ -117,23 +117,6 @@ export async function deployUpgrade(rocketStorageAddress) {
                         addresses.rocketDAOProtocolSettingsSecurity,
                         addresses.rocketDAOProtocolSettingsMegapool,
                         addresses.rocketDAOProtocolSettingsMinipool,
-                        addresses.rocketDAOSecurityUpgrade,
-                        addresses.rocketDAOSecurityProposals,
-                        addresses.rocketDAONodeTrustedUpgrade,
-                        addresses.rocketNetworkRevenues,
-                        addresses.rocketNetworkBalances,
-                        addresses.rocketNetworkSnapshots,
-                        addresses.rocketNetworkPenalties,
-                        addresses.rocketRewardsPool,
-                        addresses.beaconStateVerifier,
-                        addresses.rocketNodeDistributorDelegate,
-                        addresses.rocketClaimDAO,
-                        addresses.rocketMinipoolBondReducer,
-                        addresses.rocketMinipoolManager,
-                        addresses.rocketNetworkVoting,
-                        addresses.rocketMerkleDistributorMainnet,
-                        addresses.rocketMegapoolPenalties,
-                        addresses.rocketNetworkSnapshotsTime,
                     ],
                     [
                         compressABI(networkContracts.rocketMegapoolDelegate.abi),
@@ -153,6 +136,29 @@ export async function deployUpgrade(rocketStorageAddress) {
                         compressABI(networkContracts.rocketDAOProtocolSettingsSecurity.abi),
                         compressABI(networkContracts.rocketDAOProtocolSettingsMegapool.abi),
                         compressABI(networkContracts.rocketDAOProtocolSettingsMinipool.abi),
+                    ],
+                ];
+                const setArgsB = [
+                    [
+                        addresses.rocketDAOSecurityUpgrade,
+                        addresses.rocketDAOSecurityProposals,
+                        addresses.rocketDAONodeTrustedUpgrade,
+                        addresses.rocketNetworkRevenues,
+                        addresses.rocketNetworkBalances,
+                        addresses.rocketNetworkSnapshots,
+                        addresses.rocketNetworkPenalties,
+                        addresses.rocketRewardsPool,
+                        addresses.beaconStateVerifier,
+                        addresses.rocketNodeDistributorDelegate,
+                        addresses.rocketClaimDAO,
+                        addresses.rocketMinipoolBondReducer,
+                        addresses.rocketMinipoolManager,
+                        addresses.rocketNetworkVoting,
+                        addresses.rocketMerkleDistributorMainnet,
+                        addresses.rocketMegapoolPenalties,
+                        addresses.rocketNetworkSnapshotsTime,
+                    ],
+                    [
                         compressABI(networkContracts.rocketDAOSecurityUpgrade.abi),
                         compressABI(networkContracts.rocketDAOSecurityProposals.abi),
                         compressABI(networkContracts.rocketDAONodeTrustedUpgrade.abi),
@@ -172,8 +178,10 @@ export async function deployUpgrade(rocketStorageAddress) {
                         compressABI(networkContracts.rocketNetworkSnapshotsTime.abi),
                     ],
                 ];
-                instance = await networkContracts[contract].new(rocketStorageAddress, ...args);
+                instance = await networkContracts[contract].new(rocketStorageAddress);
                 upgradeContract = instance;
+                await upgradeContract.setA(...setArgsA);
+                await upgradeContract.setB(...setArgsB);
                 break;
 
             // All other contracts - pass storage address
@@ -197,7 +205,7 @@ export async function executeUpgrade(owner, upgradeContract, rocketStorageAddres
     // Bootstrap add the upgrade contract and execute
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
     await rocketDAONodeTrusted.connect(owner).bootstrapUpgrade('addContract', 'rocketUpgradeOneDotFour', compressABI(RocketUpgradeOneDotFour.abi), upgradeContract.target);
-    await upgradeContract.connect(owner).execute();
+    const tx = await upgradeContract.connect(owner).execute();
     // Reload contracts from deployment as some were upgraded
     await artifacts.loadFromDeployment(rocketStorageAddress);
 }
