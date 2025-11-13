@@ -10,7 +10,7 @@ import "../util/ERC20Burnable.sol";
 import "../util/SafeMath.sol";
 
 // RPL Governance and utility token
-// Inlfationary with rate determined by DAO
+// Inflationary with rate determined by DAO
 
 contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
 
