@@ -470,7 +470,7 @@ export default function() {
             // Fast forward to this voting period finishing
             await helpers.time.increase((await getDAOProposalEndTime(proposalID) - timeCurrent) + 2);
             // Proposal should be successful, lets execute it
-            await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), 'Member proposal successful to leave DAO when they shouldnt be able too', 'Member count will fall below min required');
+            await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), "Member proposal successful to leave DAO when they shouldn't be able to", 'Member count will fall below min required');
         });
 
         it(printTitle('registeredNodeTrusted1', 'creates a proposal to kick registeredNodeTrusted2 with a 50% fine, it is successful and registeredNodeTrusted2 is kicked and receives 50% of their bond'), async () => {
