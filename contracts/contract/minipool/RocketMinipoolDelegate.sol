@@ -138,7 +138,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         rocketTokenRETH = getContractAddress("rocketTokenRETH");
         // Set local copy of penalty contract
         rocketMinipoolPenalty = getContractAddress("rocketMinipoolPenalty");
-        // Intialise storage state
+        // Initialise storage state
         storageState = StorageState.Initialised;
     }
 
