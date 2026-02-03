@@ -224,7 +224,7 @@ export default function() {
             let rplBondAmount = await daoNodesettings.getRPLBond();
             // Disable bootstrap mode
             await setDaoNodeTrustedBootstrapModeDisabled({ from: guardian });
-            // We only have 2 members now that bootstrap mode is disabled and proposals can only be made with 3, lets get a regular node to join via the emergency method
+            // We only have 2 members now that bootstrap mode is disabled and proposals can only be made with 3, let's get a regular node to join via the emergency method
             // We'll allow the DAO to transfer our RPL bond before joining
             await rplMint(registeredNode3, rplBondAmount);
             await rplAllowanceDAO(registeredNode3, rplBondAmount);
@@ -249,7 +249,7 @@ export default function() {
             let timeCurrent = await helpers.time.latest();
             // Now increase time until the proposal is 'active' and can be voted on
             await helpers.time.increase((await getDAOProposalStartTime(proposalID_1) - timeCurrent) + 2);
-            // Now lets vote for the new members
+            // Now let's vote for the new members
             await daoNodeTrustedVote(proposalID_1, true, { from: registeredNodeTrusted1 });
             await daoNodeTrustedVote(proposalID_1, true, { from: registeredNodeTrusted2 });
             await daoNodeTrustedVote(proposalID_2, true, { from: registeredNodeTrusted1 });
@@ -258,10 +258,10 @@ export default function() {
             timeCurrent = await helpers.time.latest();
             // Fast forward to voting periods finishing
             await helpers.time.increase((await getDAOProposalEndTime(proposalID_1) - timeCurrent) + 2);
-            // Proposal should be successful, lets execute it
+            // Proposal should be successful, let's execute it
             await daoNodeTrustedExecute(proposalID_1, { from: registeredNodeTrusted1 });
             await daoNodeTrustedExecute(proposalID_2, { from: registeredNodeTrusted1 });
-            // Member has now been invited to join, so lets do that
+            // Member has now been invited to join, so let's do that
             // We'll allow the DAO to transfer our RPL bond before joining
             await rplMint(registeredNode1, rplBondAmount);
             await rplAllowanceDAO(registeredNode1, rplBondAmount);
@@ -283,7 +283,7 @@ export default function() {
             timeCurrent = await helpers.time.latest();
             // Now mine blocks until the proposal is 'active' and can be voted on
             await helpers.time.increase((await getDAOProposalStartTime(proposalID_3) - timeCurrent) + 2);
-            // Now lets vote
+            // Now let's vote
             await daoNodeTrustedVote(proposalID_3, true, { from: registeredNodeTrusted1 });
             await daoNodeTrustedVote(proposalID_3, true, { from: registeredNodeTrusted2 });
             await daoNodeTrustedVote(proposalID_3, false, { from: registeredNode1 });
@@ -292,7 +292,7 @@ export default function() {
             timeCurrent = await helpers.time.latest();
             // Fast forward to this voting period finishing
             await helpers.time.increase((await getDAOProposalEndTime(proposalID_3) - timeCurrent) + 2);
-            // Proposal should be successful, lets execute it
+            // Proposal should be successful, let's execute it
             await daoNodeTrustedExecute(proposalID_3, { from: registeredNodeTrusted2 });
             // Member can now leave and collect any RPL bond
             await daoNodeTrustedMemberLeave(registeredNodeTrusted2, { from: registeredNodeTrusted2 });
@@ -321,13 +321,13 @@ export default function() {
             let timeCurrent = await helpers.time.latest();
             // Now increase time until the proposal is 'active' and can be voted on
             await helpers.time.increase((await getDAOProposalStartTime(proposalID) - timeCurrent) + 2);
-            // Now lets vote
+            // Now let's vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNode1 });
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
             await shouldRevert(daoNodeTrustedVote(proposalID, false, { from: registeredNodeTrusted1 }), 'Member voted after proposal has passed', 'Proposal has passed, voting is complete and the proposal can now be executed');
             // Verify the proposal is successful
             assert.equal(await getDAOProposalState(proposalID), proposalStates.Succeeded, 'Proposal state is not succeeded');
-            // Proposal has passed, lets execute it now
+            // Proposal has passed, let's execute it now
             await daoNodeTrustedExecute(proposalID, { from: registeredNode1 });
             // Verify the proposal has executed
             assert.equal(await getDAOProposalState(proposalID), proposalStates.Executed, 'Proposal state is not executed');
@@ -355,7 +355,7 @@ export default function() {
             let timeCurrent = await helpers.time.latest();
             // Now increase time until the proposal is 'active' and can be voted on
             await helpers.time.increase((await getDAOProposalStartTime(proposalID) - timeCurrent) + 2);
-            // Now lets vote
+            // Now let's vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNode1 });
             await daoNodeTrustedVote(proposalID, false, { from: registeredNodeTrusted2 });
             await daoNodeTrustedVote(proposalID, false, { from: registeredNodeTrusted1 });
@@ -384,7 +384,7 @@ export default function() {
             let timeCurrent = await helpers.time.latest();
             // Now increase time until the proposal is 'active' and can be voted on
             await helpers.time.increase((await getDAOProposalStartTime(proposalID) - timeCurrent) + 2);
-            // Now lets vote
+            // Now let's vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
             // Cancel now before it passes
             await daoNodeTrustedCancel(proposalID, { from: registeredNodeTrusted1 });
@@ -464,12 +464,12 @@ export default function() {
             let timeCurrent = await helpers.time.latest();
             // Now increase time until the proposal is 'active' and can be voted on
             await helpers.time.increase((await getDAOProposalStartTime(proposalID) - timeCurrent) + 2);
-            // Now lets vote
+            // Now let's vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
             // Fast forward to this voting period finishing
             await helpers.time.increase((await getDAOProposalEndTime(proposalID) - timeCurrent) + 2);
-            // Proposal should be successful, lets execute it
+            // Proposal should be successful, let's execute it
             await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), 'Member proposal successful to leave DAO when they shouldnt be able too', 'Member count will fall below min required');
         });
 
@@ -494,19 +494,19 @@ export default function() {
             // Get the RPL total supply
             let rplTotalSupply1 = await rocketTokenRPL.totalSupply.call();
             // Add the proposal
-            let proposalID = await daoNodeTrustedPropose('hey guys, this member hasn\'t logged on for weeks, lets boot them with a 33% fine!', proposalCalldata, {
+            let proposalID = await daoNodeTrustedPropose("hey guys, this member hasn't logged on for weeks, let's boot them with a 33% fine!", proposalCalldata, {
                 from: registeredNodeTrusted1,
             });
             // Current time
             let timeCurrent = await helpers.time.latest();
             // Now increase time until the proposal is 'active' and can be voted on
             await helpers.time.increase((await getDAOProposalStartTime(proposalID) - timeCurrent) + 2);
-            // Now lets vote
+            // Now let's vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNode1 });
             await daoNodeTrustedVote(proposalID, false, { from: registeredNodeTrusted2 });   // Don't kick me
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted3 });
-            // Proposal has passed, lets execute it now
+            // Proposal has passed, let's execute it now
             await daoNodeTrustedExecute(proposalID, { from: registeredNode1 });
             // Member should be kicked now, let's check their RPL balance has their 33% bond returned
             let rplBalance = await rocketTokenRPL.balanceOf(registeredNodeTrusted2);
@@ -535,7 +535,7 @@ export default function() {
             let timeCurrent = await helpers.time.latest();
             // Now increase time until the proposal is 'active' and can be voted on
             await helpers.time.increase((await getDAOProposalStartTime(proposalID) - timeCurrent) + 2);
-            // Now lets vote
+            // Now let's vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
             // New member attempts to vote on proposal started before they joined, fails
             await shouldRevert(daoNodeTrustedVote(proposalID, true, { from: registeredNode2 }), 'Member voted on proposal they shouldn\'t be able too', 'Member cannot vote on proposal created before they became a member');
@@ -557,7 +557,7 @@ export default function() {
             let timeCurrent = await helpers.time.latest();
             // Now increase time until the proposal is 'active' and can be voted on
             await helpers.time.increase((await getDAOProposalStartTime(proposalID) - timeCurrent) + 2);
-            // Now lets vote
+            // Now let's vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
             // Fast forward to this voting period finishing and executing period expiring
@@ -584,7 +584,7 @@ export default function() {
             let timeCurrent = await helpers.time.latest();
             // Now increase time until the proposal is 'active' and can be voted on
             await helpers.time.increase((await getDAOProposalStartTime(proposalID) - timeCurrent) + 2);
-            // Now lets vote
+            // Now let's vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
             // Fast forward to this voting period finishing and executing period expiring
@@ -832,12 +832,12 @@ export default function() {
             let timeCurrent = await helpers.time.latest();
             // Now increase time until the proposal is 'active' and can be voted on
             await helpers.time.increase((await getDAOProposalStartTime(proposalID) - timeCurrent) + 2);
-            // Now lets vote
+            // Now let's vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
-            // Proposal has passed, lets execute it now and upgrade the contract
+            // Proposal has passed, let's execute it now and upgrade the contract
             await daoNodeTrustedExecute(proposalID, { from: registeredNode1 });
-            // Lets check if the address matches the upgraded one now
+            // Let's check if the address matches the upgraded one now
             assert.equal(await rocketStorage['getAddress(bytes32)'](ethers.solidityPackedKeccak256(['string', 'string'], ['contract.address', 'rocketNodeManager'])), rocketMinipoolManagerNew.target, 'Contract address was not successfully upgraded');
             assert.equal(await rocketStorage.getBool(ethers.solidityPackedKeccak256(['string', 'address'], ['contract.exists', rocketMinipoolManagerNew.target])), true, 'Contract address was not successfully upgraded');
         });
@@ -862,16 +862,16 @@ export default function() {
             let timeCurrent = await helpers.time.latest();
             // Now increase time until the proposal is 'active' and can be voted on
             await helpers.time.increase((await getDAOProposalStartTime(proposalId1) - timeCurrent) + 2);
-            // Now lets vote for the new members
+            // Now let's vote for the new members
             await daoNodeTrustedVote(proposalId1, true, { from: registeredNodeTrusted1 });
             await daoNodeTrustedVote(proposalId1, true, { from: registeredNodeTrusted2 });
             // Current time
             timeCurrent = await helpers.time.latest();
             // Fast forward to voting periods finishing
             await helpers.time.increase((await getDAOProposalEndTime(proposalId1) - timeCurrent) + 2);
-            // Proposal should be successful, lets execute it
+            // Proposal should be successful, let's execute it
             await daoNodeTrustedExecute(proposalId1, { from: registeredNodeTrusted1 });
-            // Member has now been invited to join, so lets do that
+            // Member has now been invited to join, so let's do that
             // We'll allow the DAO to transfer our RPL bond before joining
             await rplMint(registeredNode1, rplBondAmount);
             await rplAllowanceDAO(registeredNode1, rplBondAmount);
@@ -884,18 +884,18 @@ export default function() {
             // Now we kick the member
             let proposalCalldata2 = rocketDAONodeTrustedProposals.interface.encodeFunctionData('proposalKick', [registeredNode1.address, 0]);
             // Add the proposal
-            let proposalId2 = await daoNodeTrustedPropose('hey guys, this member hasn\'t logged on for weeks, lets boot them with a 33% fine!', proposalCalldata2, {
+            let proposalId2 = await daoNodeTrustedPropose("hey guys, this member hasn't logged on for weeks, let's boot them with a 33% fine!", proposalCalldata2, {
                 from: registeredNodeTrusted1,
             });
             // Current time
             timeCurrent = await helpers.time.latest();
             // Now increase time until the proposal is 'active' and can be voted on
             await helpers.time.increase((await getDAOProposalStartTime(proposalId2) - timeCurrent) + 2);
-            // Now lets vote
+            // Now let's vote
             await daoNodeTrustedVote(proposalId2, true, { from: registeredNodeTrusted1 });
             await daoNodeTrustedVote(proposalId2, true, { from: registeredNodeTrusted2 });
             await daoNodeTrustedVote(proposalId2, true, { from: registeredNodeTrusted3 });
-            // Proposal has passed, lets execute it now
+            // Proposal has passed, let's execute it now
             await daoNodeTrustedExecute(proposalId2, { from: registeredNodeTrusted1 });
             // The new member has now been kicked
             assert.equal(await getDAOMemberIsValid(registeredNode1), false, 'registeredNode1 is still a member of the DAO');

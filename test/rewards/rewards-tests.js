@@ -102,11 +102,11 @@ export default function() {
             let timeCurrent = await helpers.time.latest();
             // Now increase time until the proposal is 'active' and can be voted on
             await helpers.time.increase((await getDAOProposalStartTime(proposalID) - timeCurrent) + 2);
-            // Now lets vote
+            // Now let's vote
             for (const voter of voters) {
                 await daoNodeTrustedVote(proposalID, true, { from: voter });
             }
-            // Proposal has passed, lets execute it now
+            // Proposal has passed, let's execute it now
             await daoNodeTrustedExecute(proposalID, { from: registeredNode1 });
         }
 
