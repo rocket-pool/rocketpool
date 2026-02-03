@@ -216,7 +216,7 @@ export default function() {
         });
 
         // The big test
-        it(printTitle('registeredNodeTrusted1&2', 'create two proposals for two new members that are voted in, one then chooses to leave and is allowed too'), async () => {
+        it(printTitle('registeredNodeTrusted1&2', 'create two proposals for two new members that are voted in, one then chooses to leave and is allowed to'), async () => {
             // Get the DAO settings
             let daoNodesettings = await RocketDAONodeTrustedSettingsMembers.deployed();
             let rocketDAONodeTrustedProposals = await RocketDAONodeTrustedProposals.deployed();
@@ -538,7 +538,7 @@ export default function() {
             // Now lets vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
             // New member attempts to vote on proposal started before they joined, fails
-            await shouldRevert(daoNodeTrustedVote(proposalID, true, { from: registeredNode2 }), 'Member voted on proposal they shouldn\'t be able too', 'Member cannot vote on proposal created before they became a member');
+            await shouldRevert(daoNodeTrustedVote(proposalID, true, { from: registeredNode2 }), "Member voted on proposal they shouldn't be able to", 'Member cannot vote on proposal created before they became a member');
         });
 
         it(printTitle('registeredNodeTrusted2', 'fails to execute a successful proposal after it expires'), async () => {
