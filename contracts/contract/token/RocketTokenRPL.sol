@@ -178,7 +178,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         if (newTokens > 0) {
             // Mint to itself, then allocate tokens for transfer to rewards contract, this will update balance & supply
             _mint(address(this), newTokens);
-            // Initialise itself and allow from it's own balance (cant just do an allow as it could be any user calling this so they are msg.sender)
+            // Initialise itself and allow from its own balance (can't just do an allow as it could be any user calling this so they are msg.sender)
             IERC20 rplInflationContract = IERC20(address(this));
             // Get the current allowance for Rocket Vault
             uint256 vaultAllowance = rplFixedSupplyContract.allowance(rocketVaultAddress, address(this));
