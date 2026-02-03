@@ -26,7 +26,7 @@ contract RocketDAONodeTrustedUpgrade is RocketBase, RocketDAONodeTrustedUpgradeI
     function upgrade(string memory _type, string memory _name, string memory _contractAbi, address _contractAddress) override external onlyLatestContract("rocketDAONodeTrustedProposals", msg.sender) {
         // What action are we performing?
         bytes32 typeHash = keccak256(abi.encodePacked(_type));
-        // Lets do it!
+        // Let's do it!
         if(typeHash == keccak256(abi.encodePacked("upgradeContract"))) _upgradeContract(_name, _contractAddress, _contractAbi);
         if(typeHash == keccak256(abi.encodePacked("addContract"))) _addContract(_name, _contractAddress, _contractAbi);
         if(typeHash == keccak256(abi.encodePacked("upgradeABI"))) _upgradeABI(_name, _contractAbi);

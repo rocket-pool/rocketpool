@@ -126,7 +126,7 @@ contract RocketDAOSecurityProposals is RocketBase, RocketDAOSecurityProposalsInt
     function proposalInvite(string calldata _id, address _memberAddress) override public onlyLatestContract("rocketDAOProtocolProposals", msg.sender) {
         // Their proposal executed, record the block
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.time", "invited", _memberAddress)), block.timestamp);
-        // Ok all good, lets get their invitation and member data setup
+        // Ok all good, let's get their invitation and member data setup
         // They are initially only invited to join, so their membership isn't set as true until they accept it in RocketDAONodeTrustedActions
         _memberInit(_id, _memberAddress);
     }

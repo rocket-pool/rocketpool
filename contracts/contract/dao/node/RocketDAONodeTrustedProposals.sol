@@ -91,7 +91,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     function proposalInvite(string memory _id, string memory _url, address _nodeAddress) override external onlyExecutingContracts onlyRegisteredNode(_nodeAddress) {
         // Their proposal executed, record the block
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.time", "invited", _nodeAddress)), block.timestamp);
-        // Ok all good, lets get their invitation and member data setup
+        // Ok all good, let's get their invitation and member data setup
         // They are initially only invited to join, so their membership isn't set as true until they accept it in RocketDAONodeTrustedActions
         _memberInit(_id, _url, _nodeAddress);
     }
