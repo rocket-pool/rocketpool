@@ -40,7 +40,7 @@ $ npm test
 
 Having issues? Have an idea? Interested in research?
 
-Our friendly community are available to help via our discord.
+Our friendly community is available to help via our discord.
 
 <a target="_blank" href="https://discord.gg/rocketpool">
   <img src="https://dcbadge.limes.pink/api/server/https://discord.gg/rocketpool">
