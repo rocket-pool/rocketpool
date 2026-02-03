@@ -15,7 +15,7 @@ abstract contract RocketBase {
     // Version of the contract
     uint8 public version;
 
-    // The main storage contract where primary persistant storage is maintained
+    // The main storage contract where primary persistent storage is maintained
     RocketStorageInterface rocketStorage = RocketStorageInterface(address(0));
 
 
