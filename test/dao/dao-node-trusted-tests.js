@@ -880,7 +880,7 @@ export default function() {
             // Add a small wait
             await helpers.time.increase(2);
             // Check the member is now valid
-            assert.equal(await getDAOMemberIsValid(registeredNode1), true, 'registeredNode1 is not a membmer of the DAO');
+            assert.equal(await getDAOMemberIsValid(registeredNode1), true, 'registeredNode1 is not a member of the DAO');
             // Now we kick the member
             let proposalCalldata2 = rocketDAONodeTrustedProposals.interface.encodeFunctionData('proposalKick', [registeredNode1.address, 0]);
             // Add the proposal
