@@ -1,3 +1,0 @@
-[submodule "old"]
-	path = old
-	url = git@github.com:rocket-pool/rocketpool.git
