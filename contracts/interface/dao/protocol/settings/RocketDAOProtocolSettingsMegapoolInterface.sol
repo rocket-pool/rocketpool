@@ -11,4 +11,5 @@ interface RocketDAOProtocolSettingsMegapoolInterface {
     function getUserDistributeDelay() external view returns (uint256);
     function getUserDistributeDelayWithShortfall() external view returns (uint256);
     function getPenaltyThreshold() external view returns (uint256);
+    function getExitDeficit() external view returns (uint256);
 }

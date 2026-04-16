@@ -13,7 +13,7 @@ npx hardhat node &>/dev/null &
 sleep 10
 
 # Init submodule
-#git submodule update --init
+git submodule update --init
 
 # Install deps and build
 cd old

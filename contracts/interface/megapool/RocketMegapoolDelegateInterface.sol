@@ -25,6 +25,7 @@ interface RocketMegapoolDelegateInterface is RocketMegapoolDelegateBaseInterface
     function notifyNotExit(uint32 _validatorId, uint64 _slotTimestamp) external;
     function notifyExit(uint32 _validatorId, uint64 _withdrawableEpoch, uint64 _recentEpoch) external;
     function notifyFinalBalance(uint32 _validatorId, uint64 _amountInGwei, address _caller, uint64 _withdrawalEpoch, uint64 _recentEpoch) external;
+    function forceExit(uint32[] calldata _validatorIds, uint256 _feeLimit) external;
     function applyPenalty(uint256 _amount) external;
 
     function getValidatorCount() external view returns (uint32);

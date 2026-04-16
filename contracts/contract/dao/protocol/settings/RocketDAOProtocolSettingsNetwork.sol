@@ -17,7 +17,7 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "network") {
-        version = 4;
+        version = 5;
         // Initialise settings on deployment
         if (!rocketStorage.getDeployedStatus()) {
             // Set defaults
@@ -30,7 +30,7 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             _setSettingUint("network.node.fee.target", 0.15 ether);          // 15%
             _setSettingUint("network.node.fee.maximum", 0.15 ether);         // 15%
             _setSettingUint("network.node.fee.demand.range", 160 ether);
-            _setSettingUint("network.reth.collateral.target", 0.1 ether);
+            _setSettingUint("network.reth.collateral.target", 0.01 ether);  // 1% (RPIP-71)
             _setSettingUint("network.penalty.threshold", 0.51 ether);       // Consensus for penalties requires 51% vote
             _setSettingUint("network.penalty.per.rate", 0.1 ether);         // 10% per penalty
             _setSettingBool("network.submit.rewards.enabled", true);        // Enable reward submission
@@ -40,6 +40,18 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             _setSettingUint("network.pdao.share", 0.00 ether);                                   // 0% (RPIP-72)
             _setSettingUint("network.max.node.commission.share.council.adder", 0.01 ether);      // 1% (RPIP-46)
             _setSettingUint("network.max.reth.balance.delta", 0.02 ether);                       // 2% (RPIP-61)
+            _setSettingUint("deposit.pool.collateral.target", 0.01 ether);  // 1% (RPIP-71)
+            _setSettingBool("megapool.exit.phase", false);                  // false (RPIP-71)
+            _setSettingUint("staking.delay", 28 days);                      // 28 days (RPIP-71)
+            _setSettingUint("tournament.size", 4);                          // 4 (RPIP-71)
+            _setSettingUint("network.cooperative.exit.phase", 72 hours);    // 72 hours (RPIP-80)
+            _setSettingUint("network.did.not.exit.penalty", 0.1 ether);     // 0.1 ETH (RPIP-80)
+            _setSettingUint("network.did.not.exit.cooldown", 28 days);      // 28 days(RPIP-80)
+            _setSettingBool("network.performance.exits.enabled", true);     // true (RPIP-73)
+            _setSettingUint("network.performance.period", 44032);           // ~200 days in epochs (RPIP-73)
+            _setSettingUint("network.performance.proof.buffer", 225);       // 24 hours in epochs (RPIP-73)
+            _setSettingUint("network.performance.threshold", 0.94 ether);   // 94% (RPIP-73)
+            _setSettingUint("network.performance.challenge.period", 24 hours); // 24 hours (RPIP-73)
             // Set deploy flag
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -72,13 +84,42 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
                 return _setVoterShare(_value);
             } else if (settingKey == keccak256(bytes("network.pdao.share"))) {
                 return _setProtocolDAOShare(_value);
+            } else if (settingKey == keccak256(bytes("staking.delay"))) {
+                require(_value < 7 days, "Value must be < 7 days"); // RPIP-71
+            } else if (settingKey == keccak256(bytes("tournament.size"))) {
+                require(_value < 20, "Value must be < 20"); // RPIP-71
+            } else if (settingKey == keccak256(bytes("network.did.not.exit.cooldown"))) {
+                require(_value > 7 days, "Value must be > 7 days"); // RPIP-80
+            } else if (settingKey == keccak256(bytes("network.performance.period"))) {
+                require(_value > 0, "Value must be > 0");
+            } else if (settingKey == keccak256(bytes("network.performance.proof.buffer"))) {
+                require(_value > 1, "Value must be > 1");
+            } else if (settingKey == keccak256(bytes("network.performance.threshold"))) {
+                require(_value > 0 && _value <= 1 ether, "Value must be > 0 and <= 100%");
+            } else if (settingKey == keccak256(bytes("network.performance.challenge.period"))) {
+                require(_value > 0, "Value must be > 0");
             }
-
             // Update setting now
             _setSettingUint(_settingPath, _value);
         } else {
             // Update setting now
             _setSettingUint(_settingPath, _value);
+        }
+    }
+
+    /// @notice Update a setting, overrides inherited setting method with extra checks for this contract
+    function setSettingBool(string memory _settingPath, bool _value) override public onlyDAOProtocolProposal {
+        if (getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
+            // Some safety guards for certain settings
+            bytes32 settingKey = keccak256(bytes(_settingPath));
+            if (settingKey == keccak256(bytes("megapool.exit.phase"))) {
+                require(_value, "Value must be true"); // RPIP-71
+            }
+            // Update setting now
+            _setSettingBool(_settingPath, _value);
+        } else {
+            // Update setting now
+            _setSettingBool(_settingPath, _value);
         }
     }
 
@@ -220,6 +261,66 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             if (allowList[i] == _address) return true;
         }
         return false;
+    }
+
+    /// @notice Returns the deposit pool collateral target as a percentage
+    function getDepositPoolCollateralTarget() override external view returns (uint256) {
+        return getSettingUint("deposit.pool.collateral.target");
+    }
+
+    /// @notice Returns whether the protocol has entered the "Megapool exit phase"
+    function getMegapoolExitPhase() override external view returns (bool) {
+        return getSettingBool("megapool.exit.phase");
+    }
+
+    /// @notice Returns the staking delay
+    function getStakingDelay() override external view returns (uint256) {
+        return getSettingUint("staking.delay");
+    }
+
+    /// @notice Returns the tournament size for redemption selection
+    function getTournamentSize() override external view returns (uint256) {
+        return getSettingUint("tournament.size");
+    }
+
+    /// @notice Returns the cooperative exit phase in hours
+    function getCooperativeExitPhase() override external view returns (uint256) {
+        return getSettingUint("network.cooperative.exit.phase");
+    }
+
+    /// @notice Returns the penalty for not cooperatively exiting
+    function getDidNotExitPenalty() override external view returns (uint256) {
+        return getSettingUint("network.did.not.exit.penalty");
+    }
+
+    /// @notice Returns the cooldown after a failed cooperative exit before the oDAO can try again
+    function getDidNotExitCooldown() override external view returns (uint256) {
+        return getSettingUint("network.did.not.exit.cooldown");
+    }
+
+    /// @notice Returns true if performance exits are globally enabled
+    function getPerformanceExitsEnabled() override external view returns (bool) {
+        return getSettingBool("network.performance.exits.enabled");
+    }
+
+    /// @notice Returns the performance measurement period in epochs
+    function getPerformancePeriod() override external view returns (uint256) {
+        return getSettingUint("network.performance.period");
+    }
+
+    /// @notice Returns the buffer in epochs for generating performance challenge proofs
+    function getPerformanceProofBuffer() override external view returns (uint256) {
+        return getSettingUint("network.performance.proof.buffer");
+    }
+
+    /// @notice Returns the minimum performance threshold as a fraction of 1 ether
+    function getPerformanceThreshold() override external view returns (uint256) {
+        return getSettingUint("network.performance.threshold");
+    }
+
+    /// @notice Returns how long a performance challenge can be defeated before finalisation
+    function getPerformanceChallengePeriod() override external view returns (uint256) {
+        return getSettingUint("network.performance.challenge.period");
     }
 
     /// @notice Called by an explicitly allowed address to modify the security council adder parameter

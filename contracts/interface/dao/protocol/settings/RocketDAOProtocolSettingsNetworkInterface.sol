@@ -28,6 +28,18 @@ interface RocketDAOProtocolSettingsNetworkInterface {
     function getAllowListedControllers() external view returns (address[] memory);
     function getMaxRethDelta() external view returns (uint256);
     function isAllowListedController(address _address) external view returns (bool);
+    function getDepositPoolCollateralTarget() external view returns (uint256);
+    function getMegapoolExitPhase() external view returns (bool);
+    function getStakingDelay() external view returns (uint256);
+    function getTournamentSize() external view returns (uint256);
+    function getCooperativeExitPhase() external view returns (uint256);
+    function getDidNotExitPenalty() external view returns (uint256);
+    function getDidNotExitCooldown() external view returns (uint256);
+    function getPerformanceExitsEnabled() external view returns (bool);
+    function getPerformancePeriod() external view returns (uint256);
+    function getPerformanceProofBuffer() external view returns (uint256);
+    function getPerformanceThreshold() external view returns (uint256);
+    function getPerformanceChallengePeriod() external view returns (uint256);
     function setNodeShareSecurityCouncilAdder(uint256 _value) external;
     function setNodeCommissionShare(uint256 _value) external;
     function setVoterShare(uint256 _value) external;

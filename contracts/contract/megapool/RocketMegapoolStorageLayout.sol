@@ -82,4 +82,12 @@ abstract contract RocketMegapoolStorageLayout {
     uint32 internal numExitingValidators;       // Number of validators currently exiting
 
     uint256 internal __version1Boundary;        // Unused full slot width boundary
+
+    /*
+     * Version 2 state
+     */
+
+
+
+    uint256 internal __version2Boundary;        // Unused full slot width boundary
 }

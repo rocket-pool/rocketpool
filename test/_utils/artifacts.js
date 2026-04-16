@@ -170,3 +170,5 @@ export const MegapoolUpgradeHelper = artifacts.require('MegapoolUpgradeHelper');
 export const StakeHelper = artifacts.require('StakeHelper');
 export const BeaconStateVerifier = artifacts.require('BeaconStateVerifierMock');
 export const RocketNetworkRevenues = artifacts.require('RocketNetworkRevenues');
+export const RocketNetworkRedemptions = artifacts.require('RocketNetworkRedemptions');
+export const RocketUpgradeOneDotFive = artifacts.require('RocketUpgradeOneDotFive');

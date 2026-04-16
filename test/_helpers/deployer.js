@@ -36,6 +36,7 @@ const defaultOpts = {
     slotsPerHistoricalRoot: 8192n,
     beaconRootsHistoryBufferLength: 8191n,
     beaconRoots: '0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02',
+    withdrawalRequestPredeployAddress: '0x00000961Ef480Eb55e80D19ad83579A64c007002',
     logging: true,
     forkSlots: [
         74240n * 32n,   // Altair
@@ -158,7 +159,7 @@ export class RocketPoolDeployer {
         this.contractPlan['rocketNodeDistributorDelegate'].constructorArgs = [];
         this.contractPlan['rocketMinipoolBase'].constructorArgs = [];
         this.contractPlan['beaconStateVerifier'].constructorArgs = () => [this.rocketStorageInstance.target, opts.slotsPerHistoricalRoot, opts.forkSlots, opts.beaconRoots, opts.genesisBlockTimestamp, opts.genesisValidatorRoot];
-        this.contractPlan['rocketMegapoolDelegate'].constructorArgs = () => [this.rocketStorageInstance.target];
+        this.contractPlan['rocketMegapoolDelegate'].constructorArgs = () => [this.rocketStorageInstance.target, opts.withdrawalRequestPredeployAddress];
 
         // Setup deployment
         this.addStage('Deploy storage', 0, [

@@ -10,7 +10,7 @@ import {RocketDAOProtocolSettings} from "./RocketDAOProtocolSettings.sol";
 contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketDAOProtocolSettingsMegapoolInterface {
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "megapool") {
-        version = 1;
+        version = 2;
         // Initialise settings on deployment
         if (!rocketStorage.getDeployedStatus()) {
             initialise();
@@ -28,6 +28,7 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
         _setSettingUint("user.distribute.delay", 1575);                          // How many epochs a user must wait before distributing someone else's megapool (RPIP-72)
         _setSettingUint("user.distribute.delay.shortfall", 6750);                // How many epochs a user must wait before distributing someone else's megapool with a shortfall of user funds
         _setSettingUint("megapool.penalty.threshold", 0.51 ether);               // Percentage of trusted members that must vote in favour of a penalty
+        _setSettingUint("megapool.exit.deficit", 0.2 ether);                     // Amount of deficit a megapool must have before becoming elligible for forced exit (RPIP-44)
         // Update deploy flag
         require (!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed"))), "Already initialised");
         setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
@@ -107,5 +108,10 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
     /// @notice Returns the percentage of trusted members that must vote in favour of a penalty
     function getPenaltyThreshold() override external view returns (uint256) {
         return getSettingUint("megapool.penalty.threshold");
+    }
+
+    /// @notice Returns the amount of deficit a megapool must have to be elligible for forced exit
+    function getExitDeficit() override external view returns (uint256) {
+        return getSettingUint("megapool.exit.deficit");
     }
 }
