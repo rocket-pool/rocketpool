@@ -649,6 +649,7 @@ export default function() {
 
         it(printTitle('trusted node', 'can apply another penalty only after 7 days'), async () => {
             const maxPenaltyAmount = '2500'.ether;
+            await helpers.mine();
             const startTime = await helpers.time.latest();
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMegapool, 'maximum.megapool.eth.penalty', maxPenaltyAmount, { from: owner });
             await deployMegapool({ from: node });
