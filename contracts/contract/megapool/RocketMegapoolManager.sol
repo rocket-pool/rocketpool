@@ -40,10 +40,16 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         setUint(setCountKey, index + 1);
         uint256 encoded = (uint256(uint160(_megapoolAddress)) << 96) | _validatorId;
         setUint(keccak256(abi.encodePacked("megapool.validator.set", index)), encoded);
-        // Add pubkey => megapool mapping and ensure uniqueness
-        bytes32 key = keccak256(abi.encodePacked("validator.megapool", _megapoolAddress, _pubkey));
+        // Add pubkey => megapool mapping and ensure uniqueness across all megapools
+        bytes32 key = keccak256(abi.encodePacked("validator.megapool", _pubkey));
         require(getAddress(key) == address(0x0), "Pubkey in use");
         setAddress(key, _megapoolAddress);
+    }
+
+    /// @notice Returns the megapool that owns a given validator pubkey, or address(0) if unclaimed
+    /// @param _pubkey The validator pubkey to look up
+    function getMegapoolByPubkey(bytes calldata _pubkey) override external view returns (address) {
+        return getAddress(keccak256(abi.encodePacked("validator.megapool", _pubkey)));
     }
 
     /// @notice Returns the last trusted member to execute a challenge

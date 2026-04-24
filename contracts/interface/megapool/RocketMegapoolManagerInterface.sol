@@ -13,6 +13,7 @@ interface RocketMegapoolManagerInterface {
 
     function getValidatorCount() external view returns (uint256);
     function addValidator(address _megapoolAddress, uint32 _validatorId, bytes calldata _pubkey) external;
+    function getMegapoolByPubkey(bytes calldata _pubkey) external view returns (address);
     function getLastChallenger() external view returns (address);
     function getValidatorInfo(uint256 _index) external view returns (bytes memory pubkey, RocketMegapoolStorageLayout.ValidatorInfo memory validatorInfo, address megapool, uint32 validatorId);
     function stake(RocketMegapoolInterface megapool, uint32 _validatorId, uint64 _slotTimestamp, ValidatorProof calldata _proof, SlotProof calldata _slotProof) external;
