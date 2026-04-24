@@ -409,6 +409,46 @@ export default function() {
             );
         });
 
+        it(printTitle('node', 'can not reuse pubkey across megapools'), async () => {
+            // node performs first deposit with a fresh pubkey
+            const pubkey = getValidatorPubkey();
+            const signature = getValidatorSignature();
+            const wc1 = await getMegapoolWithdrawalCredentials(node.address);
+            const depositData1 = {
+                pubkey: pubkey,
+                withdrawalCredentials: Buffer.from(wc1.substr(2), 'hex'),
+                amount: BigInt(1000000000), // gwei
+                signature: signature,
+            };
+            const depositDataRoot1 = getDepositDataRoot(depositData1);
+            const rocketNodeDeposit = await RocketNodeDeposit.deployed();
+            await rocketNodeDeposit.connect(node).deposit('4'.ether, false, pubkey, signature, depositDataRoot1, { value: '4'.ether });
+
+            // node2 (different megapool) attempts to register the same pubkey
+            const wc2 = await getMegapoolWithdrawalCredentials(node2.address);
+            const depositData2 = {
+                pubkey: pubkey,
+                withdrawalCredentials: Buffer.from(wc2.substr(2), 'hex'),
+                amount: BigInt(1000000000), // gwei
+                signature: signature,
+            };
+            const depositDataRoot2 = getDepositDataRoot(depositData2);
+            await shouldRevert(
+                rocketNodeDeposit.connect(node2).deposit('4'.ether, false, pubkey, signature, depositDataRoot2, { value: '4'.ether }),
+                'Was able to reuse pubkey from a different megapool',
+                'Pubkey in use',
+            );
+
+            // Sanity check the new getter resolves the pubkey to node's megapool
+            const rocketMegapoolManager = await RocketMegapoolManager.deployed();
+            const expectedMegapool = (await getMegapoolForNode(node)).target;
+            assert.strictEqual(
+                (await rocketMegapoolManager.getMegapoolByPubkey(pubkey)).toLowerCase(),
+                expectedMegapool.toLowerCase(),
+                'getMegapoolByPubkey did not return the owning megapool',
+            );
+        });
+
         it(printTitle('node', 'can deposit using ETH credit'), async () => {
             // Enter and exit queue to receive a 4 ETH credit
             await nodeDeposit(node, '4'.ether);
