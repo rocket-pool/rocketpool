@@ -409,6 +409,38 @@ export default function() {
             );
         });
 
+        it(printTitle('node', 'can not reuse pubkey across megapools'), async () => {
+            const rocketNodeDeposit = await RocketNodeDeposit.deployed();
+            const pubkey = getValidatorPubkey();
+            const signature = getValidatorSignature();
+
+            const withdrawalCredentials1 = await getMegapoolWithdrawalCredentials(node.address);
+            const depositData1 = {
+                pubkey,
+                withdrawalCredentials: Buffer.from(withdrawalCredentials1.substr(2), 'hex'),
+                amount: BigInt(1000000000), // gwei
+                signature,
+            };
+            const depositDataRoot1 = getDepositDataRoot(depositData1);
+
+            await rocketNodeDeposit.connect(node).deposit('4'.ether, false, pubkey, signature, depositDataRoot1, { value: '4'.ether });
+
+            const withdrawalCredentials2 = await getMegapoolWithdrawalCredentials(node2.address);
+            const depositData2 = {
+                pubkey,
+                withdrawalCredentials: Buffer.from(withdrawalCredentials2.substr(2), 'hex'),
+                amount: BigInt(1000000000), // gwei
+                signature,
+            };
+            const depositDataRoot2 = getDepositDataRoot(depositData2);
+
+            await shouldRevert(
+                rocketNodeDeposit.connect(node2).deposit('4'.ether, false, pubkey, signature, depositDataRoot2, { value: '4'.ether }),
+                'Was able to reuse existing pubkey across megapools',
+                'Pubkey in use',
+            );
+        });
+
         it(printTitle('node', 'can deposit using ETH credit'), async () => {
             // Enter and exit queue to receive a 4 ETH credit
             await nodeDeposit(node, '4'.ether);
