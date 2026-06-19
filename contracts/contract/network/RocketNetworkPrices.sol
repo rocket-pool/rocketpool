@@ -13,6 +13,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     // Constants
     bytes32 immutable priceKey;
     bytes32 immutable blockKey;
+    bytes32 immutable timestampKey;
 
     // Events
     event PricesSubmitted(address indexed from, uint256 block, uint256 slotTimestamp, uint256 rplPrice, uint256 time);
@@ -25,6 +26,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         // Precompute keys
         priceKey = keccak256("network.prices.rpl");
         blockKey = keccak256("network.prices.updated.block");
+        timestampKey = keccak256("network.prices.updated.timestamp");
     }
 
     /// @notice Returns the block number which prices are current for
@@ -35,6 +37,16 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     /// @dev Sets the block number which prices are current for
     function setPricesBlock(uint256 _value) private {
         setUint(blockKey, _value);
+    }
+
+    /// @notice Returns the timestamp of the last price update
+    function getPricesTimestamp() override public view returns (uint256) {
+        return getUint(timestampKey);
+    }
+
+    /// @dev Sets the timestamp of the last price update
+    function setPricesTimestamp(uint256 _value) private {
+        setUint(timestampKey, _value);
     }
 
     /// @notice Returns the current network RPL price in ETH
@@ -66,6 +78,11 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         require(_block < block.number, "Prices can not be submitted for a future block");
         uint256 lastPricesBlock = getPricesBlock();
         require(_block >= lastPricesBlock, "Network prices for a higher block are set");
+        // Check frequency
+        uint256 frequency = rocketDAOProtocolSettingsNetwork.getSubmitPricesFrequency();
+        uint256 lastTimestamp = getPricesTimestamp();
+        uint256 minimumTimestamp = lastTimestamp + (frequency * 95 / 100);
+        require(block.timestamp >= minimumTimestamp, "Price update frequency not met");
         // Get submission keys
         bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("network.prices.submitted.node.key", msg.sender, _block, _slotTimestamp, _rplPrice));
         bytes32 submissionCountKey = keccak256(abi.encodePacked("network.prices.submitted.count", _block, _slotTimestamp, _rplPrice));
@@ -101,6 +118,11 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         // Check block
         require(_block < block.number, "Prices can not be submitted for a future block");
         require(_block > getPricesBlock(), "Network prices for an equal or higher block are set");
+        // Check frequency
+        uint256 frequency = rocketDAOProtocolSettingsNetwork.getSubmitPricesFrequency();
+        uint256 lastTimestamp = getPricesTimestamp();
+        uint256 minimumTimestamp = lastTimestamp + (frequency * 95 / 100);
+        require(block.timestamp >= minimumTimestamp, "Price update frequency not met");
         // Get submission keys
         bytes32 submissionCountKey = keccak256(abi.encodePacked("network.prices.submitted.count", _block, _slotTimestamp, _rplPrice));
         // Get submission count
@@ -119,6 +141,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         // Update price
         setRPLPrice(_rplPrice);
         setPricesBlock(_block);
+        setPricesTimestamp(block.timestamp);
         // Emit prices updated event
         emit PricesUpdated(_block, _slotTimestamp, _rplPrice, block.timestamp);
     }
