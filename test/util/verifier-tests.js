@@ -454,5 +454,99 @@ export default function() {
 
             assert.equal(await beaconStateVerifier.verifyWithdrawal(slotTimestamp, slot, correctProof), true);
         });
+
+        it(printTitle('BeaconStateVerifier', 'Can verify participation proof'), async () => {
+            const beaconStateVerifier = await BeaconStateVerifier.deployed();
+
+            const witnesses = [
+                "0x0707070707070700070707070707070707070707070707070707070707070707",
+                "0x4cb33a347dc9419cb9ac4ec13ca4a5e787eae26310c07b2f94be515d1b2e73e0",
+                "0xd9b9c92cbd19e534c44d3f033ec0233d11af800c45aed841ded829f42229c2c5",
+                "0x10da3fb2b0a24dc495437557f15160b588b364e06cf72c1c9dabc2c58a30a238",
+                "0x186e4645f1079c11f8dc1bb375b2a6644af3d7831c241f8c715e7014f7edabe0",
+                "0xc47890a1c87d84780b0ce1c1e7d0244d14baf33f5cabf8b2d862008cd513d771",
+                "0x98a0ddedf0396c76bd70a9ae6ccbeb3b34ee6f66520772700b59cc6f1c5889f6",
+                "0xa2d9f3d7191a56d460b1c61374fa78c410844b9f259a9594e0b7344bc90568f4",
+                "0x2a0728136610bbd6c0236aa820d2832422568bc1c6f5128b3c5508c43500d056",
+                "0x3c719355eff1070d21cbb99a47d55e6fa6eed8ebc565344ab511120c60228afb",
+                "0x08bb72027cdeb3e00d2388066f1a1c85d347618e6eab1f1a014971b44a2b9030",
+                "0x8a9a6f2e87a0b063e2ac0d83e92370290322c3cfb40a2c4196148e608888584f",
+                "0x0ac9367de9a044401889dd8d4434c01ac927866370eca6f0546276a27b165277",
+                "0xabcf310f1a537657e1ed3ce253b925444884e4a31f49f59ac11fb8b31126a4de",
+                "0x6c6d422a9d949bc807739266b227b789c21d6b01283beacfd44feb77864b9cfa",
+                "0xadeb482f121eb73f2c3b6d1833764b471e37469bba0fcc78eee9e4596079636d",
+                "0xd81c8e074a76fc620ee72a816a92935eaecf246830185fb32e67ecfc4855b09e",
+                "0x8d0d63c39ebade8509e0ae3c9c3876fb5fa112be18f905ecacfecb92057603ab",
+                "0x95eec8b2e541cad4e91de38385f2e046619f54496c2382cb6cacd5b98c26f5a4",
+                "0xf893e908917775b62bff23294dbbe3a1cd8e6cc1c35b4801887b646a6f81f17f",
+                "0xcddba7b592e3133393c16194fac7431abf2f5485ed711db282183c819e08ebaa",
+                "0x8a8d7fe3af8caa085a7639a832001457dfb9128a8061142ad0335629ff23ff9c",
+                "0xfeb3c337d7a51a6fbf00b9e34c52e1c9195c969bd4e7a0bfd51d5c5bed9c1167",
+                "0xe71f0aa83cc32edfbefa9f4d3e0174ca85182eec9f3a09f6a6c0df6377a510d7",
+                "0x31206fa80a50bb6abe29085058f16212212a60eec8f049fecb92d8c8e0a84bc0",
+                "0x21352bfecbeddde993839f614c3dac0a3ee37543f9b412b16199dc158e23b544",
+                "0x619e312724bb6d7c3153ed9de791d764a366b389af13c58bf8a8d90481a46765",
+                "0x7cdd2986268250628d0c10e385c58c6191e6fbe05191bcc04f133f2cea72c1c4",
+                "0x848930bd7ba8cac54661072113fb278869e07bb8587f91392933374d017bcbe1",
+                "0x8869ff2c22b28cc10510d9853292803328be4fb0e80495e8bb8d271f5b889636",
+                "0xb5fe28e79f1b850f8658246ce9b6a1e7b49fc06db7143e8fe0b4f2b0c5523a5c",
+                "0x985e929f70af28d0bdd1a90a808f977f597c7c778c489e98d3bd8910d31ac0f7",
+                "0xc6f67e02e6e4e1bdefb994c6098953f34636ba2b6ca20a4721d2b26a886722ff",
+                "0x1c9a7e5ff1cf48b4ad1582d3f4e4a1004f3b20d8c5a2b71387a4254ad933ebc5",
+                "0x2f075ae229646b6f6aed19a5e372cf295081401eb893ff599b3f9acc0c0d3e7d",
+                "0x5c3b230000000000000000000000000000000000000000000000000000000000",
+                "0x6cf04127db05441cd833107a52be852868890e4317e6a02ab47683aa75964220",
+                "0xfec3fdc80e00709ce186be70cf65668a7e863754509423cde7a91910f4d6e12b",
+                "0x00de1d392bef42a459be17dd38b2863535f6c5701b278e38e6d1cd970073d722",
+                "0x1bc0b706d0be5390cc7f4365d8b1dfcb1af629f0956cef875e74ba66790395ee",
+                "0xe84d58b7616235f05d6bedb7b7fce6b12061b8997a6ca1c38e37417d93bfdcbc",
+                "0x73fb7a866f7bd5a23a51f698c9ea340310c6ced9ce5d96901bc77a9aa0d1f529",
+                "0x58816f44b569df3878011024076159f344b1b3a560f6337db80f45532a423779",
+                "0x3c4f971583180872b757e35e1d624c367168904cbda0fb564ef2bafc041dfc68",
+                "0xe35299eca161608c3fb1fd846336f1912b5e2a5e528e5b90d04a17a67f0d2782",
+                "0xbf0fe304ce12ac5e90436315b3439e33e7ee6f7a8f7cc7c333ab19424656ad6e",
+                "0x33db14c345b836c2b9b3032560cabb690b37d0429955c5a7eefdab810bb64149",
+                "0x499f196bc3c9736435f11e7dc98dc3954352322327a0fb59c5fac341a260b29b",
+                "0x66bc0578aa3899a27816ee8ffdbfb78cf8117d225919d64f245d165c25813168",
+                "0x40dba178521422692da3e8a09c96defb34a5ecb1b51b25272e42187d9f7a53bd",
+                "0x84f28cb3eee9ed7e791e2ac4030f1a31392ab31a65430ae650786948e9db8321",
+                "0x37c3ff993d813d00696584393164d41ebc01f64a51f0afff1121088467e09b03",
+                "0x3f9584e893b9a6d0f120638534017eb45506864469b4c61650aa860789f846c1",
+                "0x114eb513bce2893e1a07953cef9da50f5f0aa1537e22d8a2b9760f6375533177",
+                "0xf55a67ce2ec23b1506c4b07986ba778a194471fff195c314779eda5080613156",
+                "0x4df6b89755125d4f6c5575039a04e22301a5a49ee893c1d27e559e3eeab73da7",
+                "0x017d9db6591f931d7981ecfa4996b677a9e10df4bbb25163e94c479a0fd4f450",
+                "0x1fa4ad97f3ee0f452dbead94d2299a670ed0f7f43883199afdc27a864c1ad6bc",
+                "0x11b3a6297ac9aeffe9a1e770d6277ce0d2077099f3959ee094c4bae15d606e78",
+                "0xb6e2c10c2be8fb935bb713494f22f43d7b95d9d9fc41a078442b6feb77a8356b",
+                "0x73fb7a866f7bd5a23a51f698c9ea340310c6ced9ce5d96901bc77a9aa0d1f529",
+                "0x3df70184579815d555ae58d2fda2a03d67f167bd96eefe6550be8fbf08efe870",
+                "0xd42f8a41dd79f7a8f3409eca4f4f2e9ba73d6b831748d064a4e27ae5517bf08c",
+                "0xd7002a794c3ba66caf47846e755a382d2ce4aafa9b4a8519ffa4171ce5a933e5"
+            ];
+
+            const blockRoot = '0xb41a8613bc0d93b90470f6ac0225989e41fa159c5556af88884c28614132c89e';
+            const proofSlot = 14778001n;
+            const participationSlot = 14778000n;
+            const slotTimestamp = (proofSlot * 12n + 1606824023n) + 12n;
+            await beaconStateVerifier.setBlockRoot(slotTimestamp, blockRoot);
+
+            const correctProof = {
+                participationSlot: participationSlot,
+                validatorIndex: 50n,
+                participationFlagsChunk: '0x0007070707070707070000000000000000000707000707070707070707070700',
+                witnesses: witnesses,
+            };
+
+            assert.equal(await beaconStateVerifier.verifyParticipation(slotTimestamp, proofSlot, correctProof), true);
+            assert.equal(await beaconStateVerifier.verifyParticipation(slotTimestamp, proofSlot, {
+                ...correctProof,
+                participationFlagsChunk: '0x0007070707070707070000000000000000000007000707070707070707070700',
+            }), false);
+            assert.equal(await beaconStateVerifier.verifyParticipation(slotTimestamp, proofSlot, {
+                ...correctProof,
+                participationFlagsChunk: '0x0007070707070707070000000000000000000706000707070707070707070700',
+            }), false);
+        });
     });
 }

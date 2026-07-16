@@ -104,11 +104,9 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
         path = SSZ.concat(path, _pathBeaconStateToPastStateRoot(_slot, _proof.participationSlot));
         path = SSZ.concat(path, _pathBeaconStateToPreviousEpochParticipation(_proof.validatorIndex));
-        // Merkleise the participation flags
-        bytes32 leaf = _merkleiseParticipationFlags(_proof.participationFlags);
         // Restore the block root for the supplied slot
         require(SSZ.length(path) == _proof.witnesses.length, "Invalid witness length");
-        bytes32 computedRoot = SSZ.restoreMerkleRoot(leaf, SSZ.toIndex(path), _proof.witnesses);
+        bytes32 computedRoot = SSZ.restoreMerkleRoot(_proof.participationFlagsChunk, SSZ.toIndex(path), _proof.witnesses);
         // Retrieve and compare the root with what we determined it should be from the given proof
         bytes32 root = _getParentBlockRoot(_slotTimestamp);
         return computedRoot == root;
@@ -179,11 +177,6 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         return SSZ.efficientSha256(a,b);
     }
 
-    /// @dev Returns the SSZ merkleised encoding of participation flags
-    function _merkleiseParticipationFlags(uint8 _flag) internal view returns (bytes32) {
-        return bytes32(uint256(_flag) << 248);
-    }
-
     /// @dev Returns the fork at a given slot
     function _slotToFork(uint64 _slot) internal view returns (Fork) {
         if (_slot >= slotFulu) return Fork.FULU;
@@ -208,10 +201,10 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         return path;
     }
 
-    /// @dev Returns a partial gindex from a BeaconState -> previous_epoch_participation[n]
+    /// @dev Returns a partial gindex from a BeaconState -> previous_epoch_participation[n / 32]
     function _pathBeaconStateToPreviousEpochParticipation(uint40 _validatorIndex) internal view returns (SSZ.Path memory) {
         SSZ.Path memory path = SSZ.from(15, 6); // 0b001111 (BeaconState -> previous_epoch_participation)
-        path = SSZ.concat(path, SSZ.intoList(_validatorIndex, 40)); // previous_epoch_participation -> previous_epoch_participation[n]
+        path = SSZ.concat(path, SSZ.intoList(_validatorIndex / 32, 35)); // previous_epoch_participation -> packed chunk containing n
         return path;
     }
 

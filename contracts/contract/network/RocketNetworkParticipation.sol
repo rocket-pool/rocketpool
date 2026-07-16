@@ -148,7 +148,7 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
         // Response must be for an epoch within the challenge window
         require(_offset < period, "Epoch too high");
         // Participation flags must show that participation did actually occur at the challenged epoch
-        require(validateParticipationFlags(_participationProof.participationFlags), "Invalid participation");
+        require(validateParticipationFlags(getParticipationFlags(_participationProof)), "Invalid participation");
         // Response must be to an epoch that was actually marked as missed
         {
             uint256 participationBit = _offset % 256;
@@ -328,10 +328,17 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
         return result;
     }
 
+    /// @dev Returns true if the given participation flags meet the requirement
     function validateParticipationFlags(uint8 _participationFlags) internal pure returns (bool) {
         return _participationFlags & timelyTargetFlag != 0;
     }
 
+    /// @dev Extracts the target validator's participation flags from a proof
+    function getParticipationFlags(ParticipationProof calldata _proof) internal pure returns (uint8) {
+        return uint8(_proof.participationFlagsChunk[_proof.validatorIndex % 32]);
+    }
+
+    /// @dev Marks the given challenge as defeated
     function defeatChallenge(uint256 _challengeId) internal {
         // Cancel the challenge
         setBool(keccak256(abi.encodePacked("megapool.challenge.responded", _challengeId)), true);

@@ -35,7 +35,7 @@ pragma solidity >0.5.0 <0.9.0;
     struct ParticipationProof {
         uint64 participationSlot;
         uint40 validatorIndex;
-        uint8 participationFlags;
+        bytes32 participationFlagsChunk;
         bytes32[] witnesses;
     }
 
