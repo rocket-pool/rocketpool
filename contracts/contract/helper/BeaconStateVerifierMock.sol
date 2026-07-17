@@ -15,13 +15,15 @@ contract BeaconStateVerifierMock is BeaconStateVerifierInterface {
 
     constructor(RocketStorageInterface _rocketStorageAddress) {
         // Set to mainnet values for use in unit tests with real proofs
-        uint64[5] memory forkSlots;
+        uint64[7] memory forkSlots;
         forkSlots[0] = 74240 * 32;
         forkSlots[1] = 144896 * 32;
         forkSlots[2] = 194048 * 32;
         forkSlots[3] = 269568 * 32;
         forkSlots[4] = 364032 * 32;
-        verifier = new BeaconStateVerifier(_rocketStorageAddress, 8192, forkSlots, address(this), 1606824023, 0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95);
+        forkSlots[5] = 411392 * 32;
+        forkSlots[6] = 14000000;
+        verifier = new BeaconStateVerifier(_rocketStorageAddress, 8192, forkSlots, address(this));
     }
 
     function setDisabled(bool _disabled) external {

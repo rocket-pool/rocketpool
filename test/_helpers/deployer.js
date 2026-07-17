@@ -30,8 +30,6 @@ const defaultOpts = {
     depositAddress: null,
     fixedSupplyTokenAddress: null,
     deployThirdParty: false,
-    genesisBlockTimestamp: 1606824023n,
-    genesisValidatorRoot: '0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95',
     secondsPerSlot: 12n,
     slotsPerHistoricalRoot: 8192n,
     beaconRootsHistoryBufferLength: 8191n,
@@ -43,6 +41,8 @@ const defaultOpts = {
         194048n * 32n,  // Capella
         269568n * 32n,  // Deneb
         364032n * 32n,  // Electra
+        411392n * 32n,  // Fulu
+        18446744073709551615n, // Gloas (not configured)
     ]
 };
 
@@ -157,7 +157,7 @@ export class RocketPoolDeployer {
         this.contractPlan['rocketMinipoolDelegate'].constructorArgs = [];
         this.contractPlan['rocketNodeDistributorDelegate'].constructorArgs = [];
         this.contractPlan['rocketMinipoolBase'].constructorArgs = [];
-        this.contractPlan['beaconStateVerifier'].constructorArgs = () => [this.rocketStorageInstance.target, opts.slotsPerHistoricalRoot, opts.forkSlots, opts.beaconRoots, opts.genesisBlockTimestamp, opts.genesisValidatorRoot];
+        this.contractPlan['beaconStateVerifier'].constructorArgs = () => [this.rocketStorageInstance.target, opts.slotsPerHistoricalRoot, opts.forkSlots, opts.beaconRoots];
         this.contractPlan['rocketMegapoolDelegate'].constructorArgs = () => [this.rocketStorageInstance.target];
 
         // Setup deployment

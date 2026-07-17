@@ -9,6 +9,59 @@ import { globalSnapShot } from '../_utils/snapshotting';
 const hre = require('hardhat');
 const ethers = hre.ethers;
 
+function toLittleEndian(value) {
+    let v = BigInt(value);
+    const result = new Uint8Array(32);
+    for (let i = 0; i < result.length; ++i) {
+        result[i] = Number(v & 0xffn);
+        v >>= 8n;
+    }
+    return ethers.hexlify(result);
+}
+
+function sha256Pair(left, right) {
+    return ethers.sha256(ethers.concat([left, right]));
+}
+
+function makeWitnesses(length) {
+    return Array.from({ length }, (_, i) => ethers.zeroPadValue(ethers.toBeHex(i + 1), 32));
+}
+
+function restoreRoot(leaf, path, witnesses) {
+    let gindex = BigInt(`0b1${path}`);
+    let value = leaf;
+    for (const witness of witnesses) {
+        value = gindex % 2n === 1n ? sha256Pair(witness, value) : sha256Pair(value, witness);
+        gindex /= 2n;
+    }
+    assert.equal(gindex, 1n);
+    return value;
+}
+
+function merkleiseValidator(validator) {
+    const pubkey = ethers.getBytes(validator.pubkey);
+    const pubkeyRoot = sha256Pair(
+        ethers.hexlify(pubkey.slice(0, 32)),
+        ethers.hexlify(new Uint8Array([...pubkey.slice(32), ...new Uint8Array(16)])),
+    );
+    const a = sha256Pair(pubkeyRoot, validator.withdrawalCredentials);
+    const b = sha256Pair(toLittleEndian(validator.effectiveBalance), toLittleEndian(validator.slashed ? 1 : 0));
+    const c = sha256Pair(toLittleEndian(validator.activationEligibilityEpoch), toLittleEndian(validator.activationEpoch));
+    const d = sha256Pair(toLittleEndian(validator.exitEpoch), toLittleEndian(validator.withdrawableEpoch));
+    return sha256Pair(sha256Pair(a, b), sha256Pair(c, d));
+}
+
+function merkleiseWithdrawal(withdrawal) {
+    const addressRoot = ethers.hexlify(new Uint8Array([
+        ...ethers.getBytes(withdrawal.withdrawalCredentials),
+        ...new Uint8Array(12),
+    ]));
+    return sha256Pair(
+        sha256Pair(toLittleEndian(withdrawal.index), toLittleEndian(withdrawal.validatorIndex)),
+        sha256Pair(addressRoot, toLittleEndian(withdrawal.amountInGwei)),
+    );
+}
+
 export default function() {
     describe('BeaconStateVerifier', () => {
         let owner,
@@ -52,6 +105,42 @@ export default function() {
                 slot: slot,
                 witnesses: witnesses,
             }
+
+            assert.equal(await beaconStateVerifier.verifySlot(slotTimestamp, correctProof), true);
+        });
+
+        it(printTitle('BeaconStateVerifier', 'Can verify slot with Fulu state proof'), async () => {
+            const beaconStateVerifier = await BeaconStateVerifier.deployed();
+
+            const slot = 411392n * 32n + 1n;
+            const slotTimestamp = (slot * 12n + 1606824023n) + 12n;
+            // Fulu retains the pre-progressive BeaconState merkleization.
+            const path = '011000010';
+            const witnesses = makeWitnesses(path.length);
+            const blockRoot = restoreRoot(toLittleEndian(slot), path, witnesses);
+            await beaconStateVerifier.setBlockRoot(slotTimestamp, blockRoot);
+
+            assert.equal(await beaconStateVerifier.verifySlot(slotTimestamp, {
+                slot,
+                witnesses,
+            }), true);
+        });
+
+        it(printTitle('BeaconStateVerifier', 'Can verify slot with progressive state proof'), async () => {
+            const beaconStateVerifier = await BeaconStateVerifier.deployed();
+
+            const slot = 14000001n;
+            const slotTimestamp = (slot * 12n + 1606824023n) + 12n;
+            // BeaconBlockHeader.state_root -> ProgressiveContainer BeaconState.slot
+            const path = '01101001';
+            const witnesses = makeWitnesses(path.length);
+            const blockRoot = restoreRoot(toLittleEndian(slot), path, witnesses);
+            await beaconStateVerifier.setBlockRoot(slotTimestamp, blockRoot);
+
+            const correctProof = {
+                slot,
+                witnesses,
+            };
 
             assert.equal(await beaconStateVerifier.verifySlot(slotTimestamp, correctProof), true);
         });
@@ -213,6 +302,36 @@ export default function() {
             assert.equal(await beaconStateVerifier.verifyValidator(slotTimestamp, slot, incorrectProof), false);
             assert.equal(await beaconStateVerifier.verifyValidator(slotTimestamp, slot, invalidCredentialsProof), false);
             assert.equal(await beaconStateVerifier.verifyValidator(slotTimestamp, slot, correctProof), true);
+        });
+
+        it(printTitle('BeaconStateVerifier', 'Can verify validator with progressive state proof'), async () => {
+            const beaconStateVerifier = await BeaconStateVerifier.deployed();
+
+            const slot = 14000002n;
+            const slotTimestamp = (slot * 12n + 1606824023n) + 12n;
+            const validatorIndex = 50;
+            const validator = {
+                pubkey: '0xb6544b67c27a9d9f460bd839b1a42d4edf4fedd2567a631ffe473f047acd539257dd326e5c969a08a5ae07db6fd8616c',
+                withdrawalCredentials: '0x010000000000000000000000b9d7934878b5fb9610b3fe8a5e441e8fad7e293f',
+                effectiveBalance: 32000000000n,
+                slashed: false,
+                activationEligibilityEpoch: 246886n,
+                activationEpoch: 247130n,
+                exitEpoch: farFutureEpoch,
+                withdrawableEpoch: farFutureEpoch,
+            };
+            // BeaconBlockHeader.state_root -> ProgressiveContainer BeaconState.validators
+            // -> ProgressiveList validators[50]
+            const path = '011' + '01100110' + '01110011101';
+            const witnesses = makeWitnesses(path.length);
+            const blockRoot = restoreRoot(merkleiseValidator(validator), path, witnesses);
+            await beaconStateVerifier.setBlockRoot(slotTimestamp, blockRoot);
+
+            assert.equal(await beaconStateVerifier.verifyValidator(slotTimestamp, slot, {
+                validatorIndex,
+                validator,
+                witnesses,
+            }), true);
         });
 
         it(printTitle('BeaconStateVerifier', 'Can verify withdrawal with state proof'), async () => {
@@ -453,6 +572,87 @@ export default function() {
             };
 
             assert.equal(await beaconStateVerifier.verifyWithdrawal(slotTimestamp, slot, correctProof), true);
+        });
+
+        it(printTitle('BeaconStateVerifier', 'Can verify pre-Gloas withdrawal from progressive state proof'), async () => {
+            const beaconStateVerifier = await BeaconStateVerifier.deployed();
+
+            const slot = 14000000n;
+            const withdrawalSlot = slot - 1n;
+            const slotTimestamp = (slot * 12n + 1606824023n) + 12n;
+            const withdrawal = {
+                index: 90000000n,
+                validatorIndex: 50,
+                withdrawalCredentials: '0x42a93a9f5cfda54716c414b6eaf07cf512f46ead',
+                amountInGwei: 32000000000n,
+            };
+            // The state-side path is progressive, while all nodes below the old
+            // block root retain their pre-Gloas paths.
+            const path = '011'
+                + '01100000'
+                + (withdrawalSlot % 8192n).toString(2).padStart(13, '0')
+                + '100'
+                + '1001'
+                + '01110'
+                + '00000';
+            const witnesses = makeWitnesses(path.length);
+            const blockRoot = restoreRoot(merkleiseWithdrawal(withdrawal), path, witnesses);
+            await beaconStateVerifier.setBlockRoot(slotTimestamp, blockRoot);
+
+            assert.equal(await beaconStateVerifier.verifyWithdrawal(slotTimestamp, slot, {
+                withdrawalSlot,
+                withdrawalNum: 0,
+                withdrawal,
+                witnesses,
+            }), true);
+        });
+
+        it(printTitle('BeaconStateVerifier', 'Can verify historical pre-Gloas withdrawal from progressive state proof'), async () => {
+            const beaconStateVerifier = await BeaconStateVerifier.deployed();
+
+            const slot = 14000100n;
+            const withdrawalSlot = 13200000n;
+            const slotTimestamp = (slot * 12n + 1606824023n) + 12n;
+            const withdrawal = {
+                index: 89000000n,
+                validatorIndex: 688322,
+                withdrawalCredentials: '0x42a93a9f5cfda54716c414b6eaf07cf512f46ead',
+                amountInGwei: 19212998n,
+            };
+            const historicalSummaryOffset = (194048n * 32n) / 8192n;
+            const historicalSummaryIndex = withdrawalSlot / 8192n - historicalSummaryOffset;
+            // Progressive BeaconState.historical_summaries, followed by the
+            // unchanged List, HistoricalSummary, block_roots, and old block paths.
+            const path = '011'
+                + '01110000110'
+                + '0' + historicalSummaryIndex.toString(2).padStart(24, '0')
+                + '0'
+                + (withdrawalSlot % 8192n).toString(2).padStart(13, '0')
+                + '100'
+                + '1001'
+                + '01110'
+                + '00000';
+            const witnesses = makeWitnesses(path.length);
+            const blockRoot = restoreRoot(merkleiseWithdrawal(withdrawal), path, witnesses);
+            await beaconStateVerifier.setBlockRoot(slotTimestamp, blockRoot);
+
+            assert.equal(await beaconStateVerifier.verifyWithdrawal(slotTimestamp, slot, {
+                withdrawalSlot,
+                withdrawalNum: 0,
+                withdrawal,
+                witnesses,
+            }), true);
+
+            await shouldRevert(
+                beaconStateVerifier.verifyWithdrawal(slotTimestamp, slot, {
+                    withdrawalSlot: 14000000n,
+                    withdrawalNum: 0,
+                    withdrawal,
+                    witnesses,
+                }),
+                'Accepted post-Gloas withdrawal through the old block path',
+                'Unsupported withdrawal fork',
+            );
         });
     });
 }

@@ -16,10 +16,10 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
     uint64 internal immutable slotCapella;
     uint64 internal immutable slotDeneb;
     uint64 internal immutable slotElectra;
+    uint64 internal immutable slotFulu;
+    uint64 internal immutable slotGloas;
 
     address internal immutable beaconRoots;                         // 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02
-
-    bytes32 internal immutable genesisWitness;
 
     // Enums
     enum Fork {
@@ -28,12 +28,14 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         BELLATRIX,
         CAPELLA,
         DENEB,
-        ELECTRA
+        ELECTRA,
+        FULU,
+        GLOAS
     }
 
     // Construct
-    constructor(RocketStorageInterface _rocketStorageAddress, uint256 _slotsPerHistoricalRoot, uint64[5] memory _forkSlots, address _beaconRoots, uint256 _genesisTime, bytes32 _genesisValidatorRoot) RocketBase(_rocketStorageAddress) {
-        version = 1;
+    constructor(RocketStorageInterface _rocketStorageAddress, uint256 _slotsPerHistoricalRoot, uint64[7] memory _forkSlots, address _beaconRoots) RocketBase(_rocketStorageAddress) {
+        version = 2;
         slotsPerHistoricalRoot = _slotsPerHistoricalRoot;
         beaconRoots = _beaconRoots;
         // Set fork slots
@@ -43,10 +45,10 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         slotCapella = _forkSlots[2];
         slotDeneb = _forkSlots[3];
         slotElectra = _forkSlots[4];
+        slotFulu = _forkSlots[5];
+        slotGloas = _forkSlots[6];
         // Historical summaries started being appended from Capella onwards, depending on the chain we might need an offset
         historicalSummaryOffset = slotCapella / slotsPerHistoricalRoot;
-        // Compute the genesis_time/genesis_validator_root witness to protect slot proofs from changes to beacon state container
-        genesisWitness = SSZ.efficientSha256(SSZ.toLittleEndian(_genesisTime), _genesisValidatorRoot);
     }
 
     /// @notice Verifies a proof about a validator on the beacon chain
@@ -58,7 +60,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         require(_slot >= slotElectra, "Invalid proof");
         // Construct gindex
         SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
-        path = SSZ.concat(path, _pathBeaconStateToValidator(_proof.validatorIndex));
+        path = SSZ.concat(path, _pathBeaconStateToValidator(_slot, _proof.validatorIndex));
         // Restore the block root for the supplied slot
         require(SSZ.length(path) == _proof.witnesses.length, "Invalid witness length");
         bytes32 computedRoot = SSZ.restoreMerkleRoot(_merkleiseValidator(_proof.validator), SSZ.toIndex(path), _proof.witnesses);
@@ -75,6 +77,8 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         // Only support post-electra state proofs
         require(_slot >= slotElectra, "Invalid proof");
         require(_proof.withdrawalSlot >= slotElectra, "Invalid proof");
+        // Post-Gloas withdrawals require a separate ePBS proof route
+        require(_proof.withdrawalSlot < slotGloas, "Unsupported withdrawal fork");
         // Construct gindex
         SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
         path = SSZ.concat(path, _pathBeaconStateToPastBlockRoot(_slot, _proof.withdrawalSlot));
@@ -95,21 +99,11 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
     function verifySlot(uint64 _slotTimestamp, SlotProof calldata _proof) override external view returns(bool) {
         // Only support post-electra state proofs
         require(_proof.slot >= slotElectra, "Invalid proof");
-        /**
-          * genesisWitness represents the merkleised root of genesis_time ++ genesis_validators_root
-          * By checking it against a known-value for the chain we are on, we are protecting from a future hard fork
-          * which modifies the gindex of `slot` which would allow someone to prove an invalid `slot` value.
-          *
-          *         genesisWitness (witness[1])                          ...
-          *           /                    \                        /            \
-          *     genesis_time       genesis_validators_root        slot      fork (witness[0])          ...
-          */
-        require(_proof.witnesses[1] == genesisWitness, "Invalid genesis witness");
         // Retrieve the parent block hash
         bytes32 root = _getParentBlockRoot(_slotTimestamp);
         // Construct gindex
         SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
-        path = SSZ.concat(path, _pathBeaconStateToSlot());
+        path = SSZ.concat(path, _pathBeaconStateToSlot(_proof.slot));
         // Merkleise the slot number
         bytes32 leaf = SSZ.toLittleEndian(uint256(_proof.slot));
         // Restore the block root for the supplied slot
@@ -156,6 +150,8 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
 
     /// @dev Returns the fork at a given slot
     function _slotToFork(uint64 _slot) internal view returns (Fork) {
+        if (_slot >= slotGloas) return Fork.GLOAS;
+        if (_slot >= slotFulu) return Fork.FULU;
         if (_slot >= slotElectra) return Fork.ELECTRA;
         if (_slot >= slotDeneb) return Fork.DENEB;
         if (_slot >= slotCapella) return Fork.CAPELLA;
@@ -171,14 +167,23 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
     }
 
     /// @dev Returns a partial gindex from a BeaconState -> validators[n]
-    function _pathBeaconStateToValidator(uint40 _validatorIndex) internal view returns (SSZ.Path memory) {
-        SSZ.Path memory path = SSZ.from(11, 6); // 0b001011 (BeaconState -> validators)
+    function _pathBeaconStateToValidator(uint64 _slot, uint40 _validatorIndex) internal view returns (SSZ.Path memory) {
+        SSZ.Path memory path;
+        if (_slotToFork(_slot) == Fork.GLOAS) {
+            path = SSZ.intoProgressive(11); // BeaconState -> validators
+            path = SSZ.concat(path, SSZ.intoProgressive(_validatorIndex)); // validators -> validators[n]
+            return path;
+        }
+        path = SSZ.from(11, 6); // 0b001011 (BeaconState -> validators)
         path = SSZ.concat(path, SSZ.intoList(_validatorIndex, 40)); // validators -> validators[n]
         return path;
     }
 
     /// @dev Returns a partial gindex from a BeaconState -> slot
-    function _pathBeaconStateToSlot() internal view returns (SSZ.Path memory) {
+    function _pathBeaconStateToSlot(uint64 _slot) internal view returns (SSZ.Path memory) {
+        if (_slotToFork(_slot) == Fork.GLOAS) {
+            return SSZ.intoProgressive(2); // BeaconState -> slot
+        }
         SSZ.Path memory path = SSZ.from(2, 6); // 0b000010 (BeaconState -> slot)
         return path;
     }
@@ -186,13 +191,14 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
     /// @dev Returns a partial gindex from BeaconState -> block_roots[n] (via historical_summaries if required)
     function _pathBeaconStateToPastBlockRoot(uint64 _slot, uint64 _pastSlot) internal view returns (SSZ.Path memory) {
         bool isHistorical = _isHistoricalProof(_slot, _pastSlot);
+        bool isGloas = _slotToFork(_slot) == Fork.GLOAS;
         SSZ.Path memory path;
         if (isHistorical) {
-            path = SSZ.concat(path, SSZ.from(27, 6)); // 0b001011 (BeaconState -> historical_summaries)
+            path = SSZ.concat(path, isGloas ? SSZ.intoProgressive(27) : SSZ.from(27, 6)); // BeaconState -> historical_summaries
             path = SSZ.concat(path, SSZ.intoList(uint248(uint256(_pastSlot) / slotsPerHistoricalRoot - historicalSummaryOffset), 24)); // historical_summaries -> historical_summaries[n]
             path = SSZ.concat(path, SSZ.from(0, 1)); // 0b0 (HistoricalSummary -> block_summary_root)
         } else {
-            path = SSZ.concat(path, SSZ.from(5, 6)); // 0b000101 (BeaconState -> block_roots)
+            path = SSZ.concat(path, isGloas ? SSZ.intoProgressive(5) : SSZ.from(5, 6)); // BeaconState -> block_roots
         }
         path = SSZ.concat(path, SSZ.intoVector(uint248(_pastSlot % slotsPerHistoricalRoot), 13)); // block_roots -> block_roots[n]
         return path;

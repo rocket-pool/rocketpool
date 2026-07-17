@@ -23,42 +23,42 @@ let rocketUpgradeAddress;
 
 const CHAINS = {
     'hoodi': {
-        genesisBlockTimestamp: 1742213400n,
         slotsPerHistoricalRoot: 8192n,
         beaconRoots: '0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02',
-        genesisValidatorRoot: '0x212f13fc4df078b6cb7db228f1c8307566dcecf900867401a92023d7ba99cb5f',
         forkSlots: [
             0n,             // Altair
             0n,             // Bellatrix
             0n,             // Capella
             0n,             // Deneb
             2048n * 32n,    // Electra
+            50688n * 32n,   // Fulu
+            18446744073709551615n, // Gloas (not configured)
         ],
     },
     'mainnet': {
-        genesisBlockTimestamp: 1606824023n,
         slotsPerHistoricalRoot: 8192n,
         beaconRoots: '0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02',
-        genesisValidatorRoot: '0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95',
         forkSlots: [
             74240n * 32n,   // Altair
             144896n * 32n,  // Bellatrix
             194048n * 32n,  // Capella
             269568n * 32n,  // Deneb
             364032n * 32n,  // Electra
+            411392n * 32n,  // Fulu
+            18446744073709551615n, // Gloas (not configured)
         ],
     },
     'private': {
-        genesisBlockTimestamp: 1762861080n,
         slotsPerHistoricalRoot: 8192n,
         beaconRoots: '0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02',
-        genesisValidatorRoot: '0xec9caf9aad26d20776fbd9e03b61dee7e7bd155a32d1593d43c47df730c40f14',
         forkSlots: [
             0n, // Altair
             0n, // Bellatrix
             0n, // Capella
             0n, // Deneb
             0n, // Electra
+            0n, // Fulu
+            18446744073709551615n, // Gloas (not configured)
         ],
     },
 };
@@ -104,11 +104,9 @@ const networkContracts = {
 async function deployUpgrade(rocketStorageAddress) {
     const [signer] = await ethers.getSigners();
 
-    const genesisBlockTimestamp = CHAINS[process.env.CHAIN].genesisBlockTimestamp;
     const slotsPerHistoricalRoot = CHAINS[process.env.CHAIN].slotsPerHistoricalRoot;
     const beaconRoots = CHAINS[process.env.CHAIN].beaconRoots;
     const forkSlots = CHAINS[process.env.CHAIN].forkSlots;
-    const genesisValidatorRoot = CHAINS[process.env.CHAIN].genesisValidatorRoot;
 
     const deployedContracts = {};
     const contractPlan = {};
@@ -165,7 +163,7 @@ async function deployUpgrade(rocketStorageAddress) {
             case 'beaconStateVerifier':
                 contractPlan[contract] = {
                     artifact: networkContracts[contract],
-                    constructorArgs: [rocketStorageAddress, slotsPerHistoricalRoot, forkSlots, beaconRoots, genesisBlockTimestamp, genesisValidatorRoot],
+                    constructorArgs: [rocketStorageAddress, slotsPerHistoricalRoot, forkSlots, beaconRoots],
                 };
                 break;
 
