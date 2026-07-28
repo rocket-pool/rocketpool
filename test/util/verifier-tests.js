@@ -63,7 +63,7 @@ function merkleiseWithdrawal(withdrawal) {
 }
 
 export default function() {
-    describe('BeaconStateVerifier', () => {
+    describe.only('BeaconStateVerifier', () => {
         let owner,
             node,
             random;
@@ -143,6 +143,39 @@ export default function() {
             };
 
             assert.equal(await beaconStateVerifier.verifySlot(slotTimestamp, correctProof), true);
+        });
+
+        it(printTitle('BeaconStateVerifier', 'Can verify slot with real post-Gloas state proof'), async () => {
+            const beaconRoots = await BeaconStateVerifier.deployed();
+            const rocketStorage = await artifacts.require('RocketStorage').deployed();
+            const verifier = await artifacts.require('BeaconStateVerifier').clone(
+                rocketStorage.target,
+                8192n,
+                [0n, 0n, 0n, 0n, 0n, 0n, 80000n],
+                beaconRoots.target,
+            );
+
+            const slot = 91876n;
+            const slotTimestamp = slot * 12n;
+            const blockRoot = '0x0668b8a83e07c91f25442dc1be473d866e63e8894feacb3fe32e77ae025842f8';
+            await beaconRoots.setBlockRoot(slotTimestamp, blockRoot);
+
+            // Proof generated from real beacon state data on glamsterdam-devnet-7
+            const proof = {
+                slot,
+                witnesses: [
+                    '0x8f9a8573a44269574a9a9c2d932243aaeeb9b88cd1ef1b83b3bea97f06d3bafe',
+                    '0x4bd81940078fe23f5e5a1a91947398245a494241f4c89dce3671fc3aa2d83f7e',
+                    '0x9838085ee6161a592ae32882db45f4fba7b8a325c1df0acae2166492e69738b8',
+                    '0xc024566a00000000000000000000000000000000000000000000000000000000',
+                    '0xffffffffff3f0000000000000000000000000000000000000000000000000000',
+                    '0xafe317bfe6fc694a731849bcf078bd19bce7e7f421a7660b11ed774660cff497',
+                    '0x9e24b79d77a2bdc2c5147f6e07cbd810b1e8c1c8df05ab885d498dfdd6702822',
+                    '0x6190f7eb9b750a4897b973bd5ed8264ca93663bcaffafc3d81796088cadb4a95',
+                ],
+            };
+
+            assert.equal(await verifier.verifySlot(slotTimestamp, proof), true);
         });
 
         it(printTitle('BeaconStateVerifier', 'Can verify validator with state proof'), async () => {
@@ -332,6 +365,63 @@ export default function() {
                 validator,
                 witnesses,
             }), true);
+        });
+
+        it(printTitle('BeaconStateVerifier', 'Can verify validator with real post-Gloas state proof'), async () => {
+            const beaconRoots = await BeaconStateVerifier.deployed();
+            const rocketStorage = await artifacts.require('RocketStorage').deployed();
+            const verifier = await artifacts.require('BeaconStateVerifier').clone(
+                rocketStorage.target,
+                8192n,
+                [0n, 0n, 0n, 0n, 0n, 0n, 90000n],
+                beaconRoots.target,
+            );
+
+            const slot = 91680n;
+            const slotTimestamp = slot * 12n;
+            const blockRoot = '0x92dc3cb65703108285c4e0f6bc40dbc7d11e8b31c1373eb5b70ec0be17ae7138';
+            await beaconRoots.setBlockRoot(slotTimestamp, blockRoot);
+
+            // Proof generated from real beacon state data on glamsterdam-devnet-7
+            const proof = {
+                validatorIndex: 50,
+                validator: {
+                    pubkey: '0x869e6479b06650ab6d2d09816a1a96571f220ee9a34a3671803ad098c9fef8081997eeb1b159fdb73b0689b23bc757d8',
+                    withdrawalCredentials: '0x020000000000000000000000f97e180c050e5ab072211ad2c213eb5aee4df134',
+                    effectiveBalance: 1026000000000n,
+                    slashed: false,
+                    activationEligibilityEpoch: 0,
+                    activationEpoch: 0,
+                    exitEpoch: farFutureEpoch,
+                    withdrawableEpoch: farFutureEpoch,
+                },
+                witnesses: [
+                    '0x055483322e4d385e486bf89fffc2441dc5e0171e87b94b995c43bba73723486c',
+                    '0xa3ae6841bad6ce67077f52a3a5228350022d8b41eb6c72afeff13bbc286542e3',
+                    '0x69944a466f040f194342ef2d9ba958289e52df7ec2d8bc928c00574d35cbbc9c',
+                    '0xba6c4a690a198ae70c1055661666681c9987357ec4a6a8cf0d922b84728f9fa5',
+                    '0x3ac8b9605ac6775e7ed0a2ed7152691d93cef76e93ba4517e3adbfe7a06dc3bc',
+                    '0xd4ed2a4b46532b98fd5ad46398f0807257b22f6d1b07c2c52e0ca16a7b1c01e3',
+                    '0xafbfe83c468859a88c07a6aef6d59b47bf7133830b0fe5029133b5c57c061b76',
+                    '0x3fa144ce1be3852b217eecdaf3ef52e66d6d8d0aec2d27b8a3221284b85940d5',
+                    '0x95bc0549378f2becb7c936f0e1162001857333a71d40e07f9ed1ad119e374ab6',
+                    '0x1832df13c6cfe44ca0b188aa3600f7d1402bb7e1f9fb97d32ecec23b82656566',
+                    '0x38ae070000000000000000000000000000000000000000000000000000000000',
+                    '0x8291b1313b48ce4a868288d6474011affae2a7a7fb494c762e551e4e724495d7',
+                    '0x508eae470c21d09df5b0a91f767d2242e81197e50118848a7f74f2791d0a4cd8',
+                    '0x67a583e404781da630f5577874d1a06a6438aa1ce29c549ea6c06fcdd29b17a9',
+                    '0xaa754c6c77aea6ce2d71ffe86a330770438423d0f8fd958ba0c2335438d8842d',
+                    '0xb9e14c2e281f9d37cb50bc3dbf7b0c750702870b1d7b64066f7f2e61ca895763',
+                    '0xb4ce7071f001882bb95225375549ed88216b247a936e86d5377646720721cfc7',
+                    '0xc024566a00000000000000000000000000000000000000000000000000000000',
+                    '0xffffffffff3f0000000000000000000000000000000000000000000000000000',
+                    '0x0e8f15f4c4fc21419851c19a70b897edbe69a3e3a13c519f9276e1de60425550',
+                    '0x3f80cbbfed9998228414b112af68c9800f4154c5d2e7cc04c309b9fce2e17536',
+                    '0x17535363b2e9d7171b106116cebc34fea3917683832458b4d5e06ccdb01302e0',
+                ],
+            };
+
+            assert.equal(await verifier.verifyValidator(slotTimestamp, slot, proof), true);
         });
 
         it(printTitle('BeaconStateVerifier', 'Can verify withdrawal with state proof'), async () => {
@@ -642,17 +732,175 @@ export default function() {
                 withdrawal,
                 witnesses,
             }), true);
+        });
 
-            await shouldRevert(
-                beaconStateVerifier.verifyWithdrawal(slotTimestamp, slot, {
-                    withdrawalSlot: 14000000n,
-                    withdrawalNum: 0,
-                    withdrawal,
-                    witnesses,
-                }),
-                'Accepted post-Gloas withdrawal through the old block path',
-                'Unsupported withdrawal fork',
+        it(printTitle('BeaconStateVerifier', 'Can verify post-Gloas withdrawal from progressive state proof'), async () => {
+            const beaconStateVerifier = await BeaconStateVerifier.deployed();
+
+            const slot = 14000010n;
+            const withdrawalSlot = 14000000n;
+            const slotTimestamp = (slot * 12n + 1606824023n) + 12n;
+            const withdrawalNum = 3;
+            const withdrawal = {
+                index: 91000000n,
+                validatorIndex: 123456,
+                withdrawalCredentials: '0xf97e180c050e5ab072211ad2c213eb5aee4df134',
+                amountInGwei: 1026000000000n,
+            };
+            // Current BeaconState.state_roots points to the BeaconState at the
+            // withdrawal slot, then the proof enters its ProgressiveList of
+            // payload_expected_withdrawals.
+            const path = '011'
+                + '01100001'
+                + (withdrawalSlot % 8192n).toString(2).padStart(13, '0')
+                + '01110010111'
+                + '01010';
+            const witnesses = makeWitnesses(path.length);
+            const blockRoot = restoreRoot(merkleiseWithdrawal(withdrawal), path, witnesses);
+            await beaconStateVerifier.setBlockRoot(slotTimestamp, blockRoot);
+
+            assert.equal(await beaconStateVerifier.verifyWithdrawal(slotTimestamp, slot, {
+                withdrawalSlot,
+                withdrawalNum,
+                withdrawal,
+                witnesses,
+            }), true);
+        });
+
+        it(printTitle('BeaconStateVerifier', 'Can verify historical post-Gloas withdrawal from progressive state proof'), async () => {
+            const beaconStateVerifier = await BeaconStateVerifier.deployed();
+
+            const slot = 14010000n;
+            const withdrawalSlot = 14000001n;
+            const slotTimestamp = (slot * 12n + 1606824023n) + 12n;
+            const withdrawal = {
+                index: 92000000n,
+                validatorIndex: 654321,
+                withdrawalCredentials: '0x42a93a9f5cfda54716c414b6eaf07cf512f46ead',
+                amountInGwei: 32000000000n,
+            };
+            const historicalSummaryOffset = (194048n * 32n) / 8192n;
+            const historicalSummaryIndex = withdrawalSlot / 8192n - historicalSummaryOffset;
+            // The historical summary's state root leads to the withdrawal-slot
+            // BeaconState and its ProgressiveList of expected withdrawals.
+            const path = '011'
+                + '01110000110'
+                + '0' + historicalSummaryIndex.toString(2).padStart(24, '0')
+                + '1'
+                + (withdrawalSlot % 8192n).toString(2).padStart(13, '0')
+                + '01110010111'
+                + '00';
+            const witnesses = makeWitnesses(path.length);
+            const blockRoot = restoreRoot(merkleiseWithdrawal(withdrawal), path, witnesses);
+            await beaconStateVerifier.setBlockRoot(slotTimestamp, blockRoot);
+
+            assert.equal(await beaconStateVerifier.verifyWithdrawal(slotTimestamp, slot, {
+                withdrawalSlot,
+                withdrawalNum: 0,
+                withdrawal,
+                witnesses,
+            }), true);
+        });
+
+        it(printTitle('BeaconStateVerifier', 'Can verify withdrawal with real historical post-Gloas state proof'), async () => {
+            const beaconRoots = await BeaconStateVerifier.deployed();
+            const rocketStorage = await artifacts.require('RocketStorage').deployed();
+            const verifier = await artifacts.require('BeaconStateVerifier').clone(
+                rocketStorage.target,
+                8192n,
+                [0n, 0n, 0n, 0n, 0n, 0n, 80000n],
+                beaconRoots.target,
             );
+
+            const slot = 91875n;
+            const slotTimestamp = slot * 12n;
+            const blockRoot = '0xafe317bfe6fc694a731849bcf078bd19bce7e7f421a7660b11ed774660cff497';
+            await beaconRoots.setBlockRoot(slotTimestamp, blockRoot);
+
+            // Proof generated from real beacon state data on glamsterdam-devnet-7
+            const proof = {
+                withdrawalSlot: 81101n,
+                withdrawalNum: 1,
+                withdrawal: {
+                    index: 60483n,
+                    validatorIndex: 1,
+                    withdrawalCredentials: '0xf97e180c050e5ab072211ad2c213eb5aee4df134',
+                    amountInGwei: 1897344n,
+                },
+                witnesses: [
+                    '0x35cf4422ca5c70a4f9d75b0419ac7086ce1aef262f285f06cfca048b9fe3c790',
+                    '0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b',
+                    '0x0000000000000000000000000000000000000000000000000000000000000000',
+                    '0xbe027e20a401335975cb10257325264648d5570f38d184cdd50807ba18e4efca',
+                    '0x0300000000000000000000000000000000000000000000000000000000000000',
+                    '0x5472ca2bbb3150e60010acb9397b71d170745563162bf70086e0ac66ce9df3a9',
+                    '0x60b56edfdbad3e8e7bc1b643097a1946da4aa00a75c944129b07b61311c5448d',
+                    '0xc86ed891df471e831499a9a4e8bb8c6a70ca78026aa73efba7187caac4542d35',
+                    '0x371648bcb561d99221bdadf0036379405e86dcf693331639a9a1dfbb2b465871',
+                    '0xbf264ea26c4b0d34aad694ad595c40103d0317694b5b6626dd54ea0d90670fef',
+                    '0x9efde052aa15429fae05bad4d0b1d7c64da64d03d7a1854a588c2cb8430c0d30',
+                    '0x0000000000000000000000000000000000000000000000000000000000000000',
+                    '0x4084ae6839da183f42a6065d965d4989892eb943fa4b967e1025dd5d09c30e28',
+                    '0x7ef2ef413c10b2cad220be1f6fc6ae403050720252fb4943bba16e0bf3cb0193',
+                    '0xc024566a00000000000000000000000000000000000000000000000000000000',
+                    '0xffffffffff3f0000000000000000000000000000000000000000000000000000',
+                    '0x5acbf74bccbc1668fa7bc4c589048dec6742ab4cff6b7ca9bd0340bcb2e76520',
+                    '0xdb44953246de854ef01ddf86430f59b6cba7a708eafe6c7d0871729942575bf4',
+                    '0xf2fd3b54bfa60d73bc4cacb0be1060351dd5e954a4d97e3f67ddefecc972ae85',
+                    '0xbbe449838073e4add373471572733b0b7000c0d869dd42cf833e5ea6bc859ed6',
+                    '0x40024c1bfacaaefacb785eff72486ed38da6c64c78e854cc9665ae1c07ba5cbc',
+                    '0x85d3ea974c5e1cbcf17efd7870df0dddbd8168691b3f3563a436626996764df9',
+                    '0xf1da603db2d167fc270a6ff8ba9f6c53c909d6b573ae3de039026a2e0eab482e',
+                    '0xaf459c0a6fad2d63a1b96e3eb5150afb078a14e02bbb50164d129bd3c98c9388',
+                    '0xdc9ded8b2468d1364ee254023daf5d26b4d133bfa67bad623351b92501491782',
+                    '0xa00ad84cfa920c13ed3b4d163e4cc4318a296c253634a0a9196ba2b325ad232c',
+                    '0x659426a1b743a2035d32c0a082b824f4f69a54b835d4d43183afb889717db5aa',
+                    '0x20a92456a1f9780c73daef6e7713a04970e36ede8ac7951f2cc97a0f0dac75f7',
+                    '0x60add01521f6523d538e5a39b5f003ea8230bb7c537c0aaf3a6786ac4e028baf',
+                    '0x1ce56fa55c57cd1da95a0f5cfe89ed44c92215392bc66fbf2912ea3805c610c2',
+                    '0x3a83f12a5deb65698040501c508724b5398f4c36ba324884ef5a725b5e81eaea',
+                    '0xb94c2c04f5e0ba1a339be7f8e52d78e311126eec231fed7ace719eaef70316c3',
+                    '0xdb56114e00fdd4c1f85c892bf35ac9a89289aaecb1ebd0a96cde606a748b5d71',
+                    '0x17ad9f0312270412b9260d1a590b0eaf58aea8c69b19b6c2ccfcaa823770c231',
+                    '0x536d98837f2dd165a55d5eeae91485954472d56f246df256bf3cae19352a123c',
+                    '0x9efde052aa15429fae05bad4d0b1d7c64da64d03d7a1854a588c2cb8430c0d30',
+                    '0xd88ddfeed400a8755596b21942c1497e114c302e6118290f91e6772976041fa1',
+                    '0x87eb0ddba57e35f6d286673802a4af5975e22506c7cf4c64bb6be5ee11527f2c',
+                    '0x26846476fd5fc54a5d43385167c95144f2643f533cc85bb9d16b782f8d7db193',
+                    '0x506d86582d252405b840018792cad2bf1259f1ef5aa5f887e13cb2f0094f51e1',
+                    '0xffff0ad7e659772f9534c195c815efc4014ef1e1daed4404c06385d11192e92b',
+                    '0x6cf04127db05441cd833107a52be852868890e4317e6a02ab47683aa75964220',
+                    '0xb7d05f875f140027ef5118a2247bbb84ce8f2f0f1123623085daf7960c329f5f',
+                    '0xdf6af5f5bbdb6be9ef8aa618e4bf8073960867171e29676f8b284dea6a08a85e',
+                    '0xb58d900f5e182e3c50ef74969ea16c7726c549757cc23523c369587da7293784',
+                    '0xd49a7502ffcfb0340b1d7885688500ca308161a7f96b62df9d083b71fcc8f2bb',
+                    '0x8fe6b1689256c0d385f42f5bbe2027a22c1996e110ba97c171d3e5948de92beb',
+                    '0x8d0d63c39ebade8509e0ae3c9c3876fb5fa112be18f905ecacfecb92057603ab',
+                    '0x95eec8b2e541cad4e91de38385f2e046619f54496c2382cb6cacd5b98c26f5a4',
+                    '0xf893e908917775b62bff23294dbbe3a1cd8e6cc1c35b4801887b646a6f81f17f',
+                    '0xcddba7b592e3133393c16194fac7431abf2f5485ed711db282183c819e08ebaa',
+                    '0x8a8d7fe3af8caa085a7639a832001457dfb9128a8061142ad0335629ff23ff9c',
+                    '0xfeb3c337d7a51a6fbf00b9e34c52e1c9195c969bd4e7a0bfd51d5c5bed9c1167',
+                    '0xe71f0aa83cc32edfbefa9f4d3e0174ca85182eec9f3a09f6a6c0df6377a510d7',
+                    '0x0b00000000000000000000000000000000000000000000000000000000000000',
+                    '0x0000000000000000000000000000000000000000000000000000000000000000',
+                    '0xe1714ea65a15336cc4994916bc04ded91fb9d492c18b7ecdd022a3eb4f02b7ab',
+                    '0xf66dd3787f3837e791dcf33690cf9b00f06dbeec2634089cb11312d1f85a2a35',
+                    '0x43ee937fb08cc68e8c9b7b081929a61c04fef447a9653605668c716dc1088d44',
+                    '0x10bba43e0d9c849e7ff5ce963bbaa6ba7b77a079d48a70ba5f16d5aeef6e8213',
+                    '0x9efde052aa15429fae05bad4d0b1d7c64da64d03d7a1854a588c2cb8430c0d30',
+                    '0x0000000000000000000000000000000000000000000000000000000000000000',
+                    '0xca603519de9b52de4de0f3716575afad58f87bc4bc987090117dec4aa50ab35f',
+                    '0x6a6d9aeb854adfefbe3a276be86de60b997b031d3807b47cd44556a2cb0423e4',
+                    '0xc024566a00000000000000000000000000000000000000000000000000000000',
+                    '0xffffffffff3f0000000000000000000000000000000000000000000000000000',
+                    '0x55492e39406e501ff86d922bc609755b81e1511e29063b9b3a41d1c120de7a36',
+                    '0x248df14624cb1d8da356e6ba16241810fb159b2eb53762bc01232f61410cae5b',
+                    '0xb528efc784153932f844bfa8da8d8172f47ee1b025921aadf824fe355e31e7b5',
+                ],
+            };
+
+            assert.equal(await verifier.verifyWithdrawal(slotTimestamp, slot, proof), true);
         });
     });
 }

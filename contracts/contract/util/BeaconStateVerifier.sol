@@ -77,12 +77,15 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         // Only support post-electra state proofs
         require(_slot >= slotElectra, "Invalid proof");
         require(_proof.withdrawalSlot >= slotElectra, "Invalid proof");
-        // Post-Gloas withdrawals require a separate ePBS proof route
-        require(_proof.withdrawalSlot < slotGloas, "Unsupported withdrawal fork");
         // Construct gindex
         SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
-        path = SSZ.concat(path, _pathBeaconStateToPastBlockRoot(_slot, _proof.withdrawalSlot));
-        path = SSZ.concat(path, _pathBlockToWithdrawal(_proof.withdrawalNum));
+        if (_slotToFork(_proof.withdrawalSlot) == Fork.GLOAS) {
+            path = SSZ.concat(path, _pathBeaconStateToPastRoot(_slot, _proof.withdrawalSlot, true));
+            path = SSZ.concat(path, _pathBeaconStateToExpectedWithdrawal(_proof.withdrawalNum));
+        } else {
+            path = SSZ.concat(path, _pathBeaconStateToPastRoot(_slot, _proof.withdrawalSlot, false));
+            path = SSZ.concat(path, _pathBlockToWithdrawal(_proof.withdrawalNum));
+        }
         // Merkleise the withdrawal struct
         bytes32 leaf = _merkleiseWithdrawal(_proof.withdrawal);
         // Restore the block root for the supplied slot
@@ -173,38 +176,50 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
             path = SSZ.intoProgressive(11); // BeaconState -> validators
             path = SSZ.concat(path, SSZ.intoProgressive(_validatorIndex)); // validators -> validators[n]
             return path;
+        } else {
+            path = SSZ.from(11, 6); // 0b001011 (BeaconState -> validators)
+            path = SSZ.concat(path, SSZ.intoList(_validatorIndex, 40)); // validators -> validators[n]
+            return path;
         }
-        path = SSZ.from(11, 6); // 0b001011 (BeaconState -> validators)
-        path = SSZ.concat(path, SSZ.intoList(_validatorIndex, 40)); // validators -> validators[n]
-        return path;
     }
 
     /// @dev Returns a partial gindex from a BeaconState -> slot
     function _pathBeaconStateToSlot(uint64 _slot) internal view returns (SSZ.Path memory) {
         if (_slotToFork(_slot) == Fork.GLOAS) {
             return SSZ.intoProgressive(2); // BeaconState -> slot
+        } else {
+            SSZ.Path memory path = SSZ.from(2, 6); // 0b000010 (BeaconState -> slot)
+            return path;
         }
-        SSZ.Path memory path = SSZ.from(2, 6); // 0b000010 (BeaconState -> slot)
-        return path;
     }
 
-    /// @dev Returns a partial gindex from BeaconState -> block_roots[n] (via historical_summaries if required)
-    function _pathBeaconStateToPastBlockRoot(uint64 _slot, uint64 _pastSlot) internal view returns (SSZ.Path memory) {
+    /// @dev Returns a partial gindex from BeaconState -> block_roots[n] or state_roots[n] (via historical_summaries if required)
+    /// @param _stateRoot If true, path is to state_roots[n], otherwise to block_roots[n]
+    function _pathBeaconStateToPastRoot(uint64 _slot, uint64 _pastSlot, bool _stateRoot) internal view returns (SSZ.Path memory) {
         bool isHistorical = _isHistoricalProof(_slot, _pastSlot);
         bool isGloas = _slotToFork(_slot) == Fork.GLOAS;
         SSZ.Path memory path;
         if (isHistorical) {
+            uint248 historicalSummaryField = _stateRoot ? 1 : 0;
             path = SSZ.concat(path, isGloas ? SSZ.intoProgressive(27) : SSZ.from(27, 6)); // BeaconState -> historical_summaries
             path = SSZ.concat(path, SSZ.intoList(uint248(uint256(_pastSlot) / slotsPerHistoricalRoot - historicalSummaryOffset), 24)); // historical_summaries -> historical_summaries[n]
-            path = SSZ.concat(path, SSZ.from(0, 1)); // 0b0 (HistoricalSummary -> block_summary_root)
+            path = SSZ.concat(path, SSZ.from(historicalSummaryField, 1)); // HistoricalSummary -> block_summary_root/state_summary_root
         } else {
-            path = SSZ.concat(path, isGloas ? SSZ.intoProgressive(5) : SSZ.from(5, 6)); // BeaconState -> block_roots
+            uint248 beaconStateField = _stateRoot ? 6 : 5;
+            path = SSZ.concat(path, isGloas ? SSZ.intoProgressive(beaconStateField) : SSZ.from(beaconStateField, 6)); // BeaconState -> block_roots/state_roots
         }
-        path = SSZ.concat(path, SSZ.intoVector(uint248(_pastSlot % slotsPerHistoricalRoot), 13)); // block_roots -> block_roots[n]
+        path = SSZ.concat(path, SSZ.intoVector(uint248(_pastSlot % slotsPerHistoricalRoot), 13)); // block_roots/state_roots -> block_roots[n]/state_roots[n]
         return path;
     }
 
-    /// @dev Returns a partial gindex from BeaconBlockHeader -> withdrwals[n]
+    /// @dev Returns a partial gindex from a Gloas BeaconState -> payload_expected_withdrawals[n]
+    function _pathBeaconStateToExpectedWithdrawal(uint16 _withdrawalNum) internal view returns (SSZ.Path memory) {
+        SSZ.Path memory path = SSZ.intoProgressive(44); // BeaconState -> payload_expected_withdrawals
+        path = SSZ.concat(path, SSZ.intoProgressive(_withdrawalNum)); // payload_expected_withdrawals -> payload_expected_withdrawals[n]
+        return path;
+    }
+
+    /// @dev Returns a partial gindex from BeaconBlockHeader -> withdrawals[n]
     function _pathBlockToWithdrawal(uint16 _withdrawalNum) internal view returns (SSZ.Path memory) {
         SSZ.Path memory path = SSZ.from(4, 3); // 0b100 (BeaconBlockHeader -> body_root)
         path = SSZ.concat(path, SSZ.from(9, 4)); // 0b1001 (BeaconBlockBody -> execution_payload)
