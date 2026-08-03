@@ -33,8 +33,9 @@ interface RocketDAOProtocolSettingsNetworkInterface {
     function getStakingDelay() external view returns (uint256);
     function getTournamentSize() external view returns (uint256);
     function getCooperativeExitPhase() external view returns (uint256);
-    function getDidNotExitPenalty() external view returns (uint256);
-    function getDidNotExitCooldown() external view returns (uint256);
+    function getDidNotExitPenaltyBase() external view returns (uint256);
+    function getDidNotExitBase() external view returns (uint256);
+    function getDidNotExitBackoff() external view returns (uint256);
     function getPerformanceExitsEnabled() external view returns (bool);
     function getPerformancePeriod() external view returns (uint256);
     function getPerformanceProofBuffer() external view returns (uint256);

@@ -8,6 +8,7 @@ interface RocketNetworkExitInterface {
     function getMinipoolCooperativeExitStart(address _minipoolAddress) external view returns (uint256);
     function getMegapoolCooperativeExitStart(address _megapoolAddress, uint32 _validatorId) external view returns (uint256);
     function getMinipoolLastExit(address _minipoolAddress) external view returns (uint256);
+    function getMinipoolExitRequestCount(address _minipoolAddress) external view returns (uint256);
     function requestMinipoolExit(address _minipoolAddress) external;
     function forceMinipoolExit(address _minipoolAddress) external;
     function forceMegapoolExit(address _megapoolAddress, uint32 _validatorId) external;

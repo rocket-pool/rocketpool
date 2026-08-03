@@ -44,9 +44,10 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             _setSettingBool("megapool.exit.phase", false);                  // false (RPIP-71)
             _setSettingUint("staking.delay", 28 days);                      // 28 days (RPIP-71)
             _setSettingUint("tournament.size", 4);                          // 4 (RPIP-71)
-            _setSettingUint("network.cooperative.exit.phase", 72 hours);    // 72 hours (RPIP-80)
-            _setSettingUint("network.did.not.exit.penalty", 0.1 ether);     // 0.1 ETH (RPIP-80)
-            _setSettingUint("network.did.not.exit.cooldown", 28 days);      // 28 days(RPIP-80)
+            _setSettingUint("network.cooperative.exit.phase", 72 hours);         // 72 hours (RPIP-80)
+            _setSettingUint("network.did.not.exit.penalty.base", 0.1 ether);      // 0.1 ETH (RPIP-80)
+            _setSettingUint("network.did.not.exit.base", 28 days);                // 28 days (RPIP-80)
+            _setSettingUint("network.did.not.exit.backoff", 1.5 ether);           // 1.5x (RPIP-80)
             _setSettingBool("network.performance.exits.enabled", true);     // true (RPIP-73)
             _setSettingUint("network.performance.period", 44032);           // ~200 days in epochs (RPIP-73)
             _setSettingUint("network.performance.proof.buffer", 225);       // 24 hours in epochs (RPIP-73)
@@ -88,8 +89,10 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
                 require(_value < 7 days, "Value must be < 7 days"); // RPIP-71
             } else if (settingKey == keccak256(bytes("tournament.size"))) {
                 require(_value < 20, "Value must be < 20"); // RPIP-71
-            } else if (settingKey == keccak256(bytes("network.did.not.exit.cooldown"))) {
+            } else if (settingKey == keccak256(bytes("network.did.not.exit.base"))) {
                 require(_value > 7 days, "Value must be > 7 days"); // RPIP-80
+            } else if (settingKey == keccak256(bytes("network.did.not.exit.backoff"))) {
+                require(_value >= 1 ether, "Value must be >= 1"); // RPIP-80
             } else if (settingKey == keccak256(bytes("network.performance.period"))) {
                 require(_value > 0, "Value must be > 0");
             } else if (settingKey == keccak256(bytes("network.performance.proof.buffer"))) {
@@ -288,14 +291,19 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
         return getSettingUint("network.cooperative.exit.phase");
     }
 
-    /// @notice Returns the penalty for not cooperatively exiting
-    function getDidNotExitPenalty() override external view returns (uint256) {
-        return getSettingUint("network.did.not.exit.penalty");
+    /// @notice Returns the base penalty for not cooperatively exiting
+    function getDidNotExitPenaltyBase() override external view returns (uint256) {
+        return getSettingUint("network.did.not.exit.penalty.base");
     }
 
-    /// @notice Returns the cooldown after a failed cooperative exit before the oDAO can try again
-    function getDidNotExitCooldown() override external view returns (uint256) {
-        return getSettingUint("network.did.not.exit.cooldown");
+    /// @notice Returns the base delay after a failed cooperative exit before the protocol can try again
+    function getDidNotExitBase() override external view returns (uint256) {
+        return getSettingUint("network.did.not.exit.base");
+    }
+
+    /// @notice Returns the backoff multiplier applied to the penalty and delay after each failed exit
+    function getDidNotExitBackoff() override external view returns (uint256) {
+        return getSettingUint("network.did.not.exit.backoff");
     }
 
     /// @notice Returns true if performance exits are globally enabled

@@ -89,8 +89,9 @@ contract RocketUpgradeOneDotFive is RocketBase {
             setUint(keccak256(abi.encodePacked(settingNameSpace, "network.reth.collateral.target")), 0.01 ether);
             // Exit settings per RPIP-80
             setUint(keccak256(abi.encodePacked(settingNameSpace, "network.cooperative.exit.phase")), 72 hours);
-            setUint(keccak256(abi.encodePacked(settingNameSpace, "network.did.not.exit.penalty")), 0.1 ether);
-            setUint(keccak256(abi.encodePacked(settingNameSpace, "network.did.not.exit.cooldown")), 28 days);
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "network.did.not.exit.penalty.base")), 0.1 ether);
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "network.did.not.exit.base")), 28 days);
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "network.did.not.exit.backoff")), 1.5 ether);
             // Performance exit settings per RPIP-73
             setBool(keccak256(abi.encodePacked(settingNameSpace, "network.performance.exits.enabled")), true);
             setUint(keccak256(abi.encodePacked(settingNameSpace, "network.performance.period")), 44032);

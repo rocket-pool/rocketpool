@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.30;
 
+import {Math} from "@openzeppelin4/contracts/utils/math/Math.sol";
+
 import {RocketNodeDepositInterface} from "../../interface/node/RocketNodeDepositInterface.sol";
 import {ValidatorProof, SlotProof, BeaconStateVerifierInterface} from "../../interface/util/BeaconStateVerifierInterface.sol";
 import {RocketBase} from "../RocketBase.sol";
@@ -55,7 +57,13 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
     /// @notice Returns the timestamp of the last exit request for a Minipool (or 0 if never requested)
     /// @param _minipoolAddress The address of the Minipool
     function getMinipoolLastExit(address _minipoolAddress) override public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked("exit.failed.minipool.time", _minipoolAddress)));
+        return getUint(keccak256(abi.encodePacked("exit.last.minipool.time", _minipoolAddress)));
+    }
+
+    /// @notice Returns the number of times a Minipool has been requested to exit
+    /// @param _minipoolAddress The address of the Minipool
+    function getMinipoolExitRequestCount(address _minipoolAddress) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("exit.request.minipool.count", _minipoolAddress)));
     }
 
     /// @notice Requests a specific Minipool to exit cooperatively
@@ -63,13 +71,18 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
     function requestMinipoolExit(address _minipoolAddress) override external onlyLatestNetworkContract {
         // Check this Minipool is clear to exit
         require(getMinipoolCooperativeExitStart(_minipoolAddress) == 0, "Minipool already requested to exit");
-        require(block.timestamp >= getMinipoolLastExit(_minipoolAddress) + getDidNotExitCooldown(), "Not enough time has passed");
+        uint256 requestCount = getMinipoolExitRequestCount(_minipoolAddress);
+        if (requestCount > 0) {
+            uint256 delay = applyBackoff(getDidNotExitBase(), requestCount - 1);
+            require(block.timestamp >= getMinipoolLastExit(_minipoolAddress) + delay, "Not enough time has passed");
+        }
         // Get contracts
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
         RocketMinipoolManagerInterface minipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         // Start the cooperative exit timer and set last exit attempt
         startMinipoolCooperativeExit(_minipoolAddress);
         setMinipoolLastExit(_minipoolAddress);
+        setMinipoolExitRequestCount(_minipoolAddress, requestCount + 1);
         // Increment requested ETH value
         uint256 validatorBond = minipool.getUserDepositBalance();
         increaseRequestedEth(validatorBond, minipoolRequestedEthKey(_minipoolAddress));
@@ -181,6 +194,10 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
         setUint(keccak256(abi.encodePacked("exit.last.minipool.time", _minipoolAddress)), block.timestamp);
     }
 
+    function setMinipoolExitRequestCount(address _minipoolAddress, uint256 _count) internal {
+        setUint(keccak256(abi.encodePacked("exit.request.minipool.count", _minipoolAddress)), _count);
+    }
+
     function clearMinipoolCooperativeExit(address _minipoolAddress) internal {
         deleteUint(keccak256(abi.encodePacked("exit.request.minipool.time", _minipoolAddress)));
     }
@@ -194,14 +211,19 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
         return getNetworkSettings().getCooperativeExitPhase();
     }
 
-    /// @dev Returns the penalty in ETH for not exiting when requested
-    function getDidNotExitPenalty() internal view returns (uint256) {
-        return getNetworkSettings().getDidNotExitPenalty();
+    /// @dev Returns the base penalty in ETH for not exiting when requested
+    function getDidNotExitPenaltyBase() internal view returns (uint256) {
+        return getNetworkSettings().getDidNotExitPenaltyBase();
     }
 
-    /// @dev Returns the penalty in ETH for not exiting when requested
-    function getDidNotExitCooldown() internal view returns (uint256) {
-        return getNetworkSettings().getDidNotExitCooldown();
+    /// @dev Returns the base delay before a Minipool can be requested to exit again
+    function getDidNotExitBase() internal view returns (uint256) {
+        return getNetworkSettings().getDidNotExitBase();
+    }
+
+    /// @dev Returns the backoff multiplier applied after each failed exit
+    function getDidNotExitBackoff() internal view returns (uint256) {
+        return getNetworkSettings().getDidNotExitBackoff();
     }
 
     function getNetworkSettings() internal view returns (RocketDAOProtocolSettingsNetworkInterface) {
@@ -232,13 +254,31 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
     function applyMinipoolPenalty(address _minipoolAddress) internal {
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
         // Minipool penalties are implemented as a percentage, so reverse calculate the required rate to apply the desired fixed amount
-        uint256 penaltyAmount = getDidNotExitPenalty();
+        uint256 requestCount = getMinipoolExitRequestCount(_minipoolAddress);
+        require(requestCount > 0, "Minipool has not been requested to exit");
+        uint256 penaltyAmount = applyBackoff(getDidNotExitPenaltyBase(), requestCount - 1);
         uint256 nodeShare = minipool.getNodeDepositBalance();
         // rate = penaltyAmount / nodeShare
-        uint256 penaltyRate = penaltyAmount * calcBase / nodeShare;
+        uint256 penaltyRate = Math.mulDiv(penaltyAmount, calcBase, nodeShare);
         addUint(keccak256(abi.encodePacked("minipool.penalty.rate", _minipoolAddress)), penaltyRate);
         // Emit event
         emit MinipoolPenalised(_minipoolAddress, penaltyAmount);
+    }
+
+    /// @dev Applies the configured fixed-point backoff to a base value
+    function applyBackoff(uint256 _base, uint256 _exponent) internal view returns (uint256) {
+        uint256 result = calcBase;
+        uint256 multiplier = getDidNotExitBackoff();
+        while (_exponent > 0) {
+            if ((_exponent & 1) == 1) {
+                result = Math.mulDiv(result, multiplier, calcBase);
+            }
+            _exponent >>= 1;
+            if (_exponent > 0) {
+                multiplier = Math.mulDiv(multiplier, multiplier, calcBase);
+            }
+        }
+        return Math.mulDiv(_base, result, calcBase);
     }
 
     function megapoolRequestedEthKey(address _megapoolAddress, uint32 _validatorId) internal pure returns (bytes32) {
