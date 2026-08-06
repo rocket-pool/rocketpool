@@ -63,7 +63,7 @@ function merkleiseWithdrawal(withdrawal) {
 }
 
 export default function() {
-    describe.only('BeaconStateVerifier', () => {
+    describe('BeaconStateVerifier', () => {
         let owner,
             node,
             random;
@@ -732,6 +732,181 @@ export default function() {
                 withdrawal,
                 witnesses,
             }), true);
+        });
+
+        it(printTitle('BeaconStateVerifier', 'Can verify pre-Gloas withdrawal with a post-Gloas proof'), async () => {
+            const beaconRoots = await BeaconStateVerifier.deployed();
+            const rocketStorage = await artifacts.require('RocketStorage').deployed();
+            const verifier = await artifacts.require('BeaconStateVerifier').clone(
+                rocketStorage.target,
+                8192n,
+                [0n, 0n, 0n, 0n, 0n, 0n, 256n],
+                beaconRoots.target,
+            );
+
+            const slot = 300n;
+            const slotTimestamp = slot * 12n;
+            const blockRoot = '0xd10cb38dad5cd1d8b9b8f7ada9d9d197898d8f86fd40497984327e3fa98cfcba';
+            await beaconRoots.setBlockRoot(slotTimestamp, blockRoot);
+
+            // Proof generated from real beacon state data on devnet-7 kurtosis instance
+            const proof = {
+                withdrawalSlot: 128n,
+                withdrawalNum: 0n,
+                withdrawal: {
+                    index: 0n,
+                    validatorIndex: 128n,
+                    withdrawalCredentials: '0xac0dbd462b0cbe487238214d06f62c6837839693',
+                    amountInGwei: 1000000000n,
+                },
+                witnesses: [
+                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
+                    "0xdb56114e00fdd4c1f85c892bf35ac9a89289aaecb1ebd0a96cde606a748b5d71",
+                    "0xc78009fdf07fc56a11f122370658a353aaa542ed63e44c4bc15ff4cd105ab33c",
+                    "0x0100000000000000000000000000000000000000000000000000000000000000",
+                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "0x035ebc957426e55226dcb5eaa8f9eb22594a25b2c1d49f6088e05eb985c17cf8",
+                    "0x2c3f2243d8a2af7c5406d2cd1c57534b3eeb84e68751cd028a2ef4e55cfc49bc",
+                    "0x835150442826c323cfac0bc623de04fbb75737d4ceb13cdf689e3436d4a13ecd",
+                    "0x536d98837f2dd165a55d5eeae91485954472d56f246df256bf3cae19352a123c",
+                    "0xec140f63f5055d9a1ee1d9657832438a710c143a823ecabebaab174cd09372b4",
+                    "0xb46f0c01805fe212e15907981b757e6c496b0cb06664224655613dcec82505bb",
+                    "0x6dd3b9955d892d92338b19976fd07084bfe88a76c3063482b7f30ee60feb2a58",
+                    "0x5f0787b13543bf3b340ee068698e8a7d24161fada100844c8b80edfb8b98a0c2",
+                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
+                    "0x02546a81e3dc8c6d3672bd34ebc4006ba96806806b5447f3c94abf01b6864212",
+                    "0x3a48e57684c4f48a6013fb0837ba89201f42a7c2d64b08edcf0ff888204ad722",
+                    "0xca7cd63bd091beafc3c8d5876368841e907d947f16426bd69abac0fc1a85c71a",
+                    "0x805ab8a3dcf57626b3df95cafc1fa848ab6f4dcaaee12ba8ff787c51f1d14b0e",
+                    "0x23d035bf9529541f165b9f86473a4894f86f9fef3d4a19131f1d1539ace7896c",
+                    "0x6c126a3b729054f4c3affb77f114032dd109e925fdf20f54728792f71260188c",
+                    "0xc385f6e949f0fedbee0b8bf7c6011215e9d195ff63ca1db868dcaf4dce883ac7",
+                    "0x03b621b6a52efcf8c508ea9faae873bc200e66cad30c0dca97895a79d6df1400",
+                    "0x74aa814931fffa8e3173b69ea3266297272b5436d96a450ee0b364f1687d4b73",
+                    "0xde064c568e0f53107c2b0233080e318b169d4b2fe6836c9a77ce8b77b8386b62",
+                    "0x506d86582d252405b840018792cad2bf1259f1ef5aa5f887e13cb2f0094f51e1",
+                    "0xffff0ad7e659772f9534c195c815efc4014ef1e1daed4404c06385d11192e92b",
+                    "0x6cf04127db05441cd833107a52be852868890e4317e6a02ab47683aa75964220",
+                    "0xb7d05f875f140027ef5118a2247bbb84ce8f2f0f1123623085daf7960c329f5f",
+                    "0x7d7899e3c03ae02aa584cf905e875e173ff5e1f9c30aa97f00b13b93b3461b61",
+                    "0x24b7c56b04bb30d26e5838f184f6a878c7ea754b0cfe73f60a38f2ecc8f37058",
+                    "0x4c7ef69b8f7fe24b8464b2169320610e36c162b8e2dcff25f60d613eeefcf443",
+                    "0x7528f941885b71114aa61c9a0235e8dd196738553a7caed5cb04ef41581c9748",
+                    "0x23f09d55890add74d067eea488c2a67e8ade98e6bb8be681cb674f38e979d7e4",
+                    "0xb1f09ee110200c93916b51d51c657861c2bf66d299e7577884939f4e45c13e33",
+                    "0x3cc2726a00000000000000000000000000000000000000000000000000000000",
+                    "0xffffffffff3f0000000000000000000000000000000000000000000000000000",
+                    "0xa88d28583c6e78b0b58455f57fc62ff3923ee8fe94307c5c86e781d4a03818ef",
+                    "0x29b160f50fb5e0258229f9bec8f92a685bb8d3253a51b714f0799036010bc83a",
+                    "0x214f86b5b32b1133e459a3e38fff2dc504aa5534e800dfdffca53d5b5c55c7e8"
+                ],
+            };
+
+            assert.equal(await verifier.verifyWithdrawal(slotTimestamp, slot, proof), true);
+        });
+
+        it(printTitle('BeaconStateVerifier', 'Can verify a historical pre-Gloas withdrawal with a post-Gloas proof'), async () => {
+            const beaconRoots = await BeaconStateVerifier.deployed();
+            const rocketStorage = await artifacts.require('RocketStorage').deployed();
+            const verifier = await artifacts.require('BeaconStateVerifier').clone(
+                rocketStorage.target,
+                8192n,
+                [0n, 0n, 0n, 0n, 0n, 0n, 256n],
+                beaconRoots.target,
+            );
+
+            const slot = 16335n;
+            const slotTimestamp = slot * 12n;
+            const blockRoot = '0x9797704f0bac79644f7960519e52c8a62d47b94d365b060930fb0f29148ddc4d';
+            await beaconRoots.setBlockRoot(slotTimestamp, blockRoot);
+
+            // Proof generated from real beacon state data on devnet-7 kurtosis instance
+            const proof = {
+                withdrawalSlot: 128n,
+                withdrawalNum: 0n,
+                withdrawal: {
+                    index: 0n,
+                    validatorIndex: 128n,
+                    withdrawalCredentials: '0xac0dbd462b0cbe487238214d06f62c6837839693',
+                    amountInGwei: 1000000000n,
+                },
+                witnesses: [
+                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
+                    "0xdb56114e00fdd4c1f85c892bf35ac9a89289aaecb1ebd0a96cde606a748b5d71",
+                    "0xc78009fdf07fc56a11f122370658a353aaa542ed63e44c4bc15ff4cd105ab33c",
+                    "0x0100000000000000000000000000000000000000000000000000000000000000",
+                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "0x035ebc957426e55226dcb5eaa8f9eb22594a25b2c1d49f6088e05eb985c17cf8",
+                    "0x2c3f2243d8a2af7c5406d2cd1c57534b3eeb84e68751cd028a2ef4e55cfc49bc",
+                    "0x835150442826c323cfac0bc623de04fbb75737d4ceb13cdf689e3436d4a13ecd",
+                    "0x536d98837f2dd165a55d5eeae91485954472d56f246df256bf3cae19352a123c",
+                    "0xec140f63f5055d9a1ee1d9657832438a710c143a823ecabebaab174cd09372b4",
+                    "0xb46f0c01805fe212e15907981b757e6c496b0cb06664224655613dcec82505bb",
+                    "0x6dd3b9955d892d92338b19976fd07084bfe88a76c3063482b7f30ee60feb2a58",
+                    "0x5f0787b13543bf3b340ee068698e8a7d24161fada100844c8b80edfb8b98a0c2",
+                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
+                    "0x02546a81e3dc8c6d3672bd34ebc4006ba96806806b5447f3c94abf01b6864212",
+                    "0x3a48e57684c4f48a6013fb0837ba89201f42a7c2d64b08edcf0ff888204ad722",
+                    "0xca7cd63bd091beafc3c8d5876368841e907d947f16426bd69abac0fc1a85c71a",
+                    "0x805ab8a3dcf57626b3df95cafc1fa848ab6f4dcaaee12ba8ff787c51f1d14b0e",
+                    "0x23d035bf9529541f165b9f86473a4894f86f9fef3d4a19131f1d1539ace7896c",
+                    "0x6c126a3b729054f4c3affb77f114032dd109e925fdf20f54728792f71260188c",
+                    "0xc385f6e949f0fedbee0b8bf7c6011215e9d195ff63ca1db868dcaf4dce883ac7",
+                    "0x03b621b6a52efcf8c508ea9faae873bc200e66cad30c0dca97895a79d6df1400",
+                    "0x74aa814931fffa8e3173b69ea3266297272b5436d96a450ee0b364f1687d4b73",
+                    "0xbce837e825a426bef1fa37fb9e17f5d3c7ab13c1ea666867c59604472fe577a4",
+                    "0xe09e5a84014bc0b13db5942e37cb6afb07c7776287d4fc8a4941085394422411",
+                    "0xaa68d10818432e5044c39777f3e5861139e7de24a3d4b80da17890b32e235f4f",
+                    "0x19e2bfe7df34b8d9ec86b2c4252a123e41c0f54d5a9827e34b4933ac5b9e9fe4",
+                    "0x0f928b54dd6c484fb97c5dbf1e769885a0f7e13024dff2450645c86b89ccc8c3",
+                    "0x6690f3dd06a8e9eb2e84be3f99ea3f456cb6c7a81d65e244ebd1d302866b5dec",
+                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
+                    "0xdb56114e00fdd4c1f85c892bf35ac9a89289aaecb1ebd0a96cde606a748b5d71",
+                    "0xc78009fdf07fc56a11f122370658a353aaa542ed63e44c4bc15ff4cd105ab33c",
+                    "0x536d98837f2dd165a55d5eeae91485954472d56f246df256bf3cae19352a123c",
+                    "0x9efde052aa15429fae05bad4d0b1d7c64da64d03d7a1854a588c2cb8430c0d30",
+                    "0xd88ddfeed400a8755596b21942c1497e114c302e6118290f91e6772976041fa1",
+                    "0x87eb0ddba57e35f6d286673802a4af5975e22506c7cf4c64bb6be5ee11527f2c",
+                    "0x26846476fd5fc54a5d43385167c95144f2643f533cc85bb9d16b782f8d7db193",
+                    "0x506d86582d252405b840018792cad2bf1259f1ef5aa5f887e13cb2f0094f51e1",
+                    "0xffff0ad7e659772f9534c195c815efc4014ef1e1daed4404c06385d11192e92b",
+                    "0x6cf04127db05441cd833107a52be852868890e4317e6a02ab47683aa75964220",
+                    "0xb7d05f875f140027ef5118a2247bbb84ce8f2f0f1123623085daf7960c329f5f",
+                    "0xdf6af5f5bbdb6be9ef8aa618e4bf8073960867171e29676f8b284dea6a08a85e",
+                    "0xb58d900f5e182e3c50ef74969ea16c7726c549757cc23523c369587da7293784",
+                    "0xd49a7502ffcfb0340b1d7885688500ca308161a7f96b62df9d083b71fcc8f2bb",
+                    "0x8fe6b1689256c0d385f42f5bbe2027a22c1996e110ba97c171d3e5948de92beb",
+                    "0x8d0d63c39ebade8509e0ae3c9c3876fb5fa112be18f905ecacfecb92057603ab",
+                    "0x95eec8b2e541cad4e91de38385f2e046619f54496c2382cb6cacd5b98c26f5a4",
+                    "0xf893e908917775b62bff23294dbbe3a1cd8e6cc1c35b4801887b646a6f81f17f",
+                    "0xcddba7b592e3133393c16194fac7431abf2f5485ed711db282183c819e08ebaa",
+                    "0x8a8d7fe3af8caa085a7639a832001457dfb9128a8061142ad0335629ff23ff9c",
+                    "0xfeb3c337d7a51a6fbf00b9e34c52e1c9195c969bd4e7a0bfd51d5c5bed9c1167",
+                    "0xe71f0aa83cc32edfbefa9f4d3e0174ca85182eec9f3a09f6a6c0df6377a510d7",
+                    "0x0100000000000000000000000000000000000000000000000000000000000000",
+                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "0x43cc50c4aac18ddc2a979877e061f61ae0cb5297f3632aaff983b20edb935f73",
+                    "0x470f583a6223a7bebf3b229aa4d86cb9ff99bf1f823e90188b0dc429ae5aa33d",
+                    "0xb580979a0a2ec68f5ace0f3ca5c9617d54d2269ddc4229935a983f32eac4ee46",
+                    "0x488b540d3147c1afa154efdb7ad06b5fdb19abdc64893f9a2462b47c9277ca48",
+                    "0x9efde052aa15429fae05bad4d0b1d7c64da64d03d7a1854a588c2cb8430c0d30",
+                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "0x2e24061d69d4cd8df89ea57faf0951834790286902956c75ed38def0eaaf47fd",
+                    "0x101bf9d0f957e385e9036409ff35b25b934c9291c235eb01a0d0b5c09661273a",
+                    "0x3cc2726a00000000000000000000000000000000000000000000000000000000",
+                    "0xffffffffff3f0000000000000000000000000000000000000000000000000000",
+                    "0x334ae2ebcf9073c9e5201883b963198983a69b06e4afa188e8aa9e1e2dac0436",
+                    "0x3605a9246de6cdac8d660e1195c5c8ae75bd62c2da7547d99ae7ff64a02a5d58",
+                    "0x5201d7b825f593f2dae3e1ce7a0e9e9b236fb83768a57a5aeed6c896945d067b"
+                ],
+            };
+
+            assert.equal(await verifier.verifyWithdrawal(slotTimestamp, slot, proof), true);
         });
 
         it(printTitle('BeaconStateVerifier', 'Can verify post-Gloas withdrawal from progressive state proof'), async () => {
