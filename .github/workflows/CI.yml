@@ -5,14 +5,13 @@ jobs:
   run-ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          submodules: recursive
+          node-version: 22
+          cache: npm
       - name: Install Components
-        run: npm install
+        run: npm ci
 
       - name: Run Rocket Pool tests
         run: npm test

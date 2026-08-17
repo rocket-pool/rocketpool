@@ -4,15 +4,24 @@
   "description": "A next generation decentralised Ethereum 2.0 proof of stake protocol",
   "repository": "git@github.com:rocket-pool/rocketpool.git",
   "author": "David Rugendyke <contact@rocketpool.net>",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
-    "compile": "hardhat compile",
-    "deploy": "hardhat run scripts/deploy.js",
-    "test": "hardhat test --bail",
-    "test-deploy": "hardhat test --config hardhat-deploy.config.js --bail",
-    "test-gas": "REPORT_GAS=1 hardhat test --config hardhat-deploy.config.js --bail",
-    "test-fork": "hardhat test --config hardhat-fork.config.js --bail",
-    "test-upgrade": "./scripts/upgrade-test.sh",
-    "coverage": "SOLIDITY_COVERAGE=true hardhat coverage",
+    "compile": "hardhat build",
+    "deploy": "hardhat run scripts/deploy-entry.cjs",
+    "report:node-voting": "node scripts/report-node-voting-enabled.js",
+    "test": "npm run test:types && npm run test:solidity && npm run test:unit:javascript && npm run test:integration",
+    "test:types": "tsc --noEmit",
+    "test:solidity": "hardhat test solidity",
+    "test:unit:javascript": "hardhat test mocha test-entrypoints/javascript-unit-tests.mjs --bail",
+    "test:integration": "hardhat test mocha --config hardhat-test.config.ts --bail",
+    "test:legacy": "hardhat test mocha test-entrypoints/legacy-tests.mjs --bail",
+    "harness:generate-current": "hardhat build && node scripts/generate-current-test-bindings.js",
+    "test-deploy": "hardhat test mocha --config hardhat-deploy.config.ts --bail",
+    "test-gas": "hardhat test mocha --config hardhat-deploy.config.ts --gas-stats --bail",
+    "coverage": "hardhat test --coverage",
     "slither": "slither --filter-paths node_modules,old --exclude conformance-to-solidity-naming-conventions ."
   },
   "devDependencies": {
@@ -23,20 +32,24 @@
     "@babel/runtime": "^7.20.1",
     "@chainsafe/lodestar-types": "^0.5.0",
     "@chainsafe/ssz": "^0.6.1",
-    "@nomicfoundation/hardhat-ethers": "^3.0.8",
-    "@nomicfoundation/hardhat-network-helpers": "^1.0.12",
+    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "3.0.7",
     "@openzeppelin/contracts": "^3.4.0",
     "@openzeppelin4/contracts": "npm:@openzeppelin/contracts@^4.9.2",
+    "@typechain/ethers-v6": "^0.5.1",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.0.0",
+    "@types/pako": "^2.0.4",
     "axios": "1.8.2",
+    "chai": "^5.1.2",
     "dotenv": "^16.0.3",
-    "ethers": "^6.13.3",
-    "hardhat": "2.22.12",
-    "hardhat-gas-reporter": "^2.3.0",
-    "mocha": "^10.1.0",
+    "ethers": "^6.14.0",
+    "forge-std": "github:foundry-rs/forge-std#v1.9.7",
+    "hardhat": "3.12.0",
+    "hardhat-ignore-warnings": "0.3.0",
+    "mocha": "^11.0.0",
     "pako": "^1.0.6",
-    "solidity-coverage": "^0.8.13"
-  },
-  "dependencies": {
-    "hardhat-ignore-warnings": "^0.2.12"
+    "ts-node": "^10.9.2",
+    "typechain": "^8.3.2",
+    "typescript": "^5.9.3"
   }
 }

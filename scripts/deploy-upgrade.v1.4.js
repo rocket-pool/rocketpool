@@ -1,10 +1,15 @@
 const pako = require('pako');
-const { RocketDAONodeTrusted, RocketUpgradeOneDotFour, artifacts } = require('../test/_utils/artifacts.js');
-const hre = require('hardhat');
-const { EtherscanVerifier } = require('../test/_helpers/verify');
+const {
+    disposeHardhatRuntime,
+    ethers,
+    getHardhatRuntime,
+    initialiseTestRuntime,
+} = require('../test-old/_utils/hardhat-runtime');
+const { RocketDAONodeTrusted, RocketUpgradeOneDotFour, artifacts } = require('../test-old/_utils/artifacts.js');
+const { readBuildInfo } = require('./_helpers/build-info');
+const { EtherscanVerifier } = require('../test-old/_helpers/verify');
 const fs = require('fs');
 const path = require('path');
-const ethers = hre.ethers;
 
 function compressABI(abi) {
     return Buffer.from(pako.deflate(JSON.stringify(abi))).toString('base64');
@@ -33,6 +38,7 @@ const CHAINS = {
             0n,             // Capella
             0n,             // Deneb
             2048n * 32n,    // Electra
+            50688n * 32n,   // Fulu
         ],
     },
     'mainnet': {
@@ -46,6 +52,7 @@ const CHAINS = {
             194048n * 32n,  // Capella
             269568n * 32n,  // Deneb
             364032n * 32n,  // Electra
+            411392n * 32n,  // Fulu
         ],
     },
     'private': {
@@ -59,6 +66,7 @@ const CHAINS = {
             0n, // Capella
             0n, // Deneb
             0n, // Electra
+            0n, // Fulu
         ],
     },
 };
@@ -311,7 +319,10 @@ async function deploy() {
         const buildInfoMap = {};
         for (const contract in contracts) {
             const artifact = contracts[contract].artifact;
-            const buildInfo = hre.artifacts.getBuildInfoSync(`${artifact.sourceName}:${artifact.contractName}`);
+            const buildInfo = await readBuildInfo(
+                getHardhatRuntime().artifacts,
+                `${artifact.sourceName}:${artifact.contractName}`,
+            );
             deploymentData.buildInfos[buildInfo.id] = buildInfo;
             buildInfoMap[contract] = buildInfo.id;
         }
@@ -397,23 +408,31 @@ async function verify() {
 }
 
 async function go() {
-    // Deploy contracts
-    await deploy();
+    await initialiseTestRuntime();
+    try {
+        // Deploy contracts
+        await deploy();
 
-    // Optionally verify on Etherscan
-    if (process.env.VERIFY === 'true') {
-        await verify();
-    }
-
-    // Bootstrap upgrade contract
-    if (process.env.BOOTSTRAP === 'true') {
-        await bootstrap();
-
-        // Execute upgrade
-        if (process.env.EXECUTE === 'true') {
-            await execute();
+        // Optionally verify on Etherscan
+        if (process.env.VERIFY === 'true') {
+            await verify();
         }
+
+        // Bootstrap upgrade contract
+        if (process.env.BOOTSTRAP === 'true') {
+            await bootstrap();
+
+            // Execute upgrade
+            if (process.env.EXECUTE === 'true') {
+                await execute();
+            }
+        }
+    } finally {
+        await disposeHardhatRuntime();
     }
 }
 
-go().then(() => process.exit(0));
+go().catch(error => {
+    console.error(error);
+    process.exitCode = 1;
+});

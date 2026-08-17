@@ -1,4 +1,4 @@
-import { EtherscanVerifier } from '../test/_helpers/verify';
+import { EtherscanVerifier } from '../test-old/_helpers/verify';
 import fs from 'fs';
 import path from 'path';
 

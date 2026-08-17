@@ -1,0 +1,365 @@
+{
+  "schemaVersion": 1,
+  "release": "1.4",
+  "source": {
+    "tag": "v1.4",
+    "commit": "fb7d9c428dc3dddc3fbd3e634e3cb365655df89e"
+  },
+  "compilers": [
+    "0.7.6",
+    "0.8.30"
+  ],
+  "artifacts": {
+    "RocketStorage": {
+      "file": "artifacts/RocketStorage.json",
+      "integrity": "sha256:ae3b04d045ab003e613fd1fe22eae3cf47cc93339b455b7957d9d3b84ee69ef0",
+      "sourceName": "contracts/contract/RocketStorage.sol"
+    },
+    "RocketVault": {
+      "file": "artifacts/RocketVault.json",
+      "integrity": "sha256:12bebacdb611185ff0b20b75f48aa1288c70b3397bbd4f976d3e1bc96de45f43",
+      "sourceName": "contracts/contract/RocketVault.sol"
+    },
+    "RocketTokenRPL": {
+      "file": "artifacts/RocketTokenRPL.json",
+      "integrity": "sha256:5d51d952e3afe0dd6f3fab176ee78a9bbbe93568d5c6d941b6e9438a399f153e",
+      "sourceName": "contracts/contract/token/RocketTokenRPL.sol"
+    },
+    "RocketTokenDummyRPL": {
+      "file": "artifacts/RocketTokenDummyRPL.json",
+      "integrity": "sha256:d9c3da8a5324a10c48d1c499104fb39cb2cd1f31e70c84c5e1256b5cf7e7b953",
+      "sourceName": "contracts/contract/token/temp/RocketTokenDummyRPL.sol"
+    },
+    "RocketTokenRETH": {
+      "file": "artifacts/RocketTokenRETH.json",
+      "integrity": "sha256:288a2cf8b50db85daed4fc583b73e649b18636d2756d6471a2fb407ae3788aac",
+      "sourceName": "contracts/contract/token/RocketTokenRETH.sol"
+    },
+    "RocketAuctionManager": {
+      "file": "artifacts/RocketAuctionManager.json",
+      "integrity": "sha256:fc348d79ca3d7d8589bf5aded7004f2e59a791135cae123ea8afe738089092ae",
+      "sourceName": "contracts/contract/auction/RocketAuctionManager.sol"
+    },
+    "RocketDepositPool": {
+      "file": "artifacts/RocketDepositPool.json",
+      "integrity": "sha256:e5c69ed59564a9e4800cafd8b0295b8829f3f462b3e7745ae5d990d407cd5714",
+      "sourceName": "contracts/contract/deposit/RocketDepositPool.sol"
+    },
+    "RocketMinipoolDelegate": {
+      "file": "artifacts/RocketMinipoolDelegate.json",
+      "integrity": "sha256:d186637026f73e3aa474be0b40ad3751fed1e2f09334ecfc1a28f4075dcc31bd",
+      "sourceName": "contracts/contract/minipool/RocketMinipoolDelegate.sol"
+    },
+    "RocketMinipoolManager": {
+      "file": "artifacts/RocketMinipoolManager.json",
+      "integrity": "sha256:5253c0d5617562b1c6f8a2c1781937df2af7b30c306e6295a89fffa67e3549e7",
+      "sourceName": "contracts/contract/minipool/RocketMinipoolManager.sol"
+    },
+    "RocketMinipoolQueue": {
+      "file": "artifacts/RocketMinipoolQueue.json",
+      "integrity": "sha256:89367e1b601d2a3606dc6ce7f7940fcc2f527c37e959cef14c685edacd493dcb",
+      "sourceName": "contracts/contract/minipool/RocketMinipoolQueue.sol"
+    },
+    "RocketMinipoolPenalty": {
+      "file": "artifacts/RocketMinipoolPenalty.json",
+      "integrity": "sha256:b4d4e4b0f403e415e2a79a4b54bd6e5050aefcbbc094fab8e38ed4562cc93b4e",
+      "sourceName": "contracts/contract/minipool/RocketMinipoolPenalty.sol"
+    },
+    "RocketNetworkBalances": {
+      "file": "artifacts/RocketNetworkBalances.json",
+      "integrity": "sha256:fd8e7491b39c402554f14f0a7abede5b34f39f5eb693593e54291ade428b4726",
+      "sourceName": "contracts/contract/network/RocketNetworkBalances.sol"
+    },
+    "RocketNetworkFees": {
+      "file": "artifacts/RocketNetworkFees.json",
+      "integrity": "sha256:a99b78ef82cccc16d56747b862d7cc0d88189fb8e6b0afa695096e8322b217b7",
+      "sourceName": "contracts/contract/network/RocketNetworkFees.sol"
+    },
+    "RocketNetworkPrices": {
+      "file": "artifacts/RocketNetworkPrices.json",
+      "integrity": "sha256:2f5fe35cc385fcb3d0a9e0b71ec3a15e84a567353963d85dc5b2072db4cee070",
+      "sourceName": "contracts/contract/network/RocketNetworkPrices.sol"
+    },
+    "RocketNetworkPenalties": {
+      "file": "artifacts/RocketNetworkPenalties.json",
+      "integrity": "sha256:63f131b1bd7979ae47638ff97915f26896079881f3a08adee12d1c10c13ca307",
+      "sourceName": "contracts/contract/network/RocketNetworkPenalties.sol"
+    },
+    "RocketRewardsPool": {
+      "file": "artifacts/RocketRewardsPool.json",
+      "integrity": "sha256:99b61a688d219f2e2a7887a51260cd1c287155933367de455506c39ffbb4274f",
+      "sourceName": "contracts/contract/rewards/RocketRewardsPool.sol"
+    },
+    "RocketClaimDAO": {
+      "file": "artifacts/RocketClaimDAO.json",
+      "integrity": "sha256:56aad4609148c06b2642f1cb3903fc191acf670f6c33ddf7a002bcf6a8f8cd1c",
+      "sourceName": "contracts/contract/rewards/RocketClaimDAO.sol"
+    },
+    "RocketNodeDeposit": {
+      "file": "artifacts/RocketNodeDeposit.json",
+      "integrity": "sha256:f95df15668b49779c4fa90031fb842e52592edb37e600f12b0fbe1e315b39830",
+      "sourceName": "contracts/contract/node/RocketNodeDeposit.sol"
+    },
+    "RocketNodeManager": {
+      "file": "artifacts/RocketNodeManager.json",
+      "integrity": "sha256:da0baa19df31e88ec022ec4600c9056a39ee5e08ec33707602a79ba566134faa",
+      "sourceName": "contracts/contract/node/RocketNodeManager.sol"
+    },
+    "RocketNodeStaking": {
+      "file": "artifacts/RocketNodeStaking.json",
+      "integrity": "sha256:5d425fa7cade07f83dd2e9a2f9b8e85e2b0c0160e32f603ad43de3b483f959c2",
+      "sourceName": "contracts/contract/node/RocketNodeStaking.sol"
+    },
+    "RocketDAOProposal": {
+      "file": "artifacts/RocketDAOProposal.json",
+      "integrity": "sha256:7399b14d140b7ff3204df7e54ea16451f9cfa2c63e8dc927e29e81a9602ff1f0",
+      "sourceName": "contracts/contract/dao/RocketDAOProposal.sol"
+    },
+    "RocketDAONodeTrusted": {
+      "file": "artifacts/RocketDAONodeTrusted.json",
+      "integrity": "sha256:9346f548295e0903d398bca1e38945e45fa6faef1bdaf79e02f476d7aaa92eb5",
+      "sourceName": "contracts/contract/dao/node/RocketDAONodeTrusted.sol"
+    },
+    "RocketDAONodeTrustedProposals": {
+      "file": "artifacts/RocketDAONodeTrustedProposals.json",
+      "integrity": "sha256:0c54f735f22b7a34d7cc5bd97e565d40b2c27a1fb6a233d3572516328dcb2d4f",
+      "sourceName": "contracts/contract/dao/node/RocketDAONodeTrustedProposals.sol"
+    },
+    "RocketDAONodeTrustedActions": {
+      "file": "artifacts/RocketDAONodeTrustedActions.json",
+      "integrity": "sha256:c0a8e3f657d24fad7545127736e65ab443657348f8f7b9254e2e1a7cced42e86",
+      "sourceName": "contracts/contract/dao/node/RocketDAONodeTrustedActions.sol"
+    },
+    "RocketDAONodeTrustedUpgrade": {
+      "file": "artifacts/RocketDAONodeTrustedUpgrade.json",
+      "integrity": "sha256:7bb87e1a2247fab4a07e566cf2d8a55316495e0e9438c24ad779c3790e9628e0",
+      "sourceName": "contracts/contract/dao/node/RocketDAONodeTrustedUpgrade.sol"
+    },
+    "RocketDAONodeTrustedSettingsMembers": {
+      "file": "artifacts/RocketDAONodeTrustedSettingsMembers.json",
+      "integrity": "sha256:fdf743e8cb6b6f5c717253a2a0d6e147fa790ae84170790b4c5c591dbfc802d9",
+      "sourceName": "contracts/contract/dao/node/settings/RocketDAONodeTrustedSettingsMembers.sol"
+    },
+    "RocketDAONodeTrustedSettingsProposals": {
+      "file": "artifacts/RocketDAONodeTrustedSettingsProposals.json",
+      "integrity": "sha256:92540ca675ebdf935adfc1accec5553aff01f09019f2fae6dedcd97536493d71",
+      "sourceName": "contracts/contract/dao/node/settings/RocketDAONodeTrustedSettingsProposals.sol"
+    },
+    "RocketDAONodeTrustedSettingsMinipool": {
+      "file": "artifacts/RocketDAONodeTrustedSettingsMinipool.json",
+      "integrity": "sha256:f8837e0a94bf2ffdcfcde787fc3b513b16ba3ca51f311aacbd022a825837075e",
+      "sourceName": "contracts/contract/dao/node/settings/RocketDAONodeTrustedSettingsMinipool.sol"
+    },
+    "RocketDAOProtocol": {
+      "file": "artifacts/RocketDAOProtocol.json",
+      "integrity": "sha256:5aa8902187bc19c17fbfcec316e706197f862141c5fab812ce49a2fe9c5f3737",
+      "sourceName": "contracts/contract/dao/protocol/RocketDAOProtocol.sol"
+    },
+    "RocketDAOProtocolProposals": {
+      "file": "artifacts/RocketDAOProtocolProposals.json",
+      "integrity": "sha256:9401df95da35a3f1eec7782908cf71429c42201f4f8b36356dd510e6c2326c29",
+      "sourceName": "contracts/contract/dao/protocol/RocketDAOProtocolProposals.sol"
+    },
+    "RocketDAOProtocolActions": {
+      "file": "artifacts/RocketDAOProtocolActions.json",
+      "integrity": "sha256:698ef6e5c3e27c3972bab1b65a5d84dfba8ca394500bda8f6e7a691b635204f1",
+      "sourceName": "contracts/contract/dao/protocol/RocketDAOProtocolActions.sol"
+    },
+    "RocketDAOProtocolSettingsInflation": {
+      "file": "artifacts/RocketDAOProtocolSettingsInflation.json",
+      "integrity": "sha256:e1f9158b1004bcf83df98a4e59cc6a5e5e562572143f2ee01282c03e252e8315",
+      "sourceName": "contracts/contract/dao/protocol/settings/RocketDAOProtocolSettingsInflation.sol"
+    },
+    "RocketDAOProtocolSettingsRewards": {
+      "file": "artifacts/RocketDAOProtocolSettingsRewards.json",
+      "integrity": "sha256:1831a6a441e63cd7c3e3846995b5072cb306458e583958f462630bdbb5be24ce",
+      "sourceName": "contracts/contract/dao/protocol/settings/RocketDAOProtocolSettingsRewards.sol"
+    },
+    "RocketDAOProtocolSettingsAuction": {
+      "file": "artifacts/RocketDAOProtocolSettingsAuction.json",
+      "integrity": "sha256:2883bae96108636b5eb491cb95ff876419a83ab8ecf04f2ee2fc9950eea976a8",
+      "sourceName": "contracts/contract/dao/protocol/settings/RocketDAOProtocolSettingsAuction.sol"
+    },
+    "RocketDAOProtocolSettingsNode": {
+      "file": "artifacts/RocketDAOProtocolSettingsNode.json",
+      "integrity": "sha256:d41d8a06cf0121b9337a609b01e58d6e75b5f1075c715c4a36d420da70bf7b74",
+      "sourceName": "contracts/contract/dao/protocol/settings/RocketDAOProtocolSettingsNode.sol"
+    },
+    "RocketDAOProtocolSettingsNetwork": {
+      "file": "artifacts/RocketDAOProtocolSettingsNetwork.json",
+      "integrity": "sha256:4d96eb36e13ccf35da525431b8941a0005299904f26a0f4c10896184d34b1fb4",
+      "sourceName": "contracts/contract/dao/protocol/settings/RocketDAOProtocolSettingsNetwork.sol"
+    },
+    "RocketDAOProtocolSettingsDeposit": {
+      "file": "artifacts/RocketDAOProtocolSettingsDeposit.json",
+      "integrity": "sha256:e0a364eb602d4c5cccd213b93de382cb0d79a5c66d387e452bc4a30b8c33f04f",
+      "sourceName": "contracts/contract/dao/protocol/settings/RocketDAOProtocolSettingsDeposit.sol"
+    },
+    "RocketDAOProtocolSettingsMinipool": {
+      "file": "artifacts/RocketDAOProtocolSettingsMinipool.json",
+      "integrity": "sha256:5bdc2f9a9e9aa403e099fedfffd0bc04d846d820622f7fe7a2b3d6b56e90fd0e",
+      "sourceName": "contracts/contract/dao/protocol/settings/RocketDAOProtocolSettingsMinipool.sol"
+    },
+    "RocketMerkleDistributorMainnet": {
+      "file": "artifacts/RocketMerkleDistributorMainnet.json",
+      "integrity": "sha256:771b97ddbe7089b8423a45b85cec528ca980946d54f06ad9a2880a15b2fc48ff",
+      "sourceName": "contracts/contract/rewards/RocketMerkleDistributorMainnet.sol"
+    },
+    "RocketDAONodeTrustedSettingsRewards": {
+      "file": "artifacts/RocketDAONodeTrustedSettingsRewards.json",
+      "integrity": "sha256:287b8993e7ab819f1d6a0bf3180701b6d815bd988979a6f72f2452460ff05c89",
+      "sourceName": "contracts/contract/dao/node/settings/RocketDAONodeTrustedSettingsRewards.sol"
+    },
+    "RocketSmoothingPool": {
+      "file": "artifacts/RocketSmoothingPool.json",
+      "integrity": "sha256:5fb8470af6a6e592136b889459d86712f84d48142adf050ceed0b897fc2a40f1",
+      "sourceName": "contracts/contract/rewards/RocketSmoothingPool.sol"
+    },
+    "RocketNodeDistributorFactory": {
+      "file": "artifacts/RocketNodeDistributorFactory.json",
+      "integrity": "sha256:9cae1cb03b4c54209d6f86003dacbf732869c63d27a6a33d26a8a8de6dadd28a",
+      "sourceName": "contracts/contract/node/RocketNodeDistributorFactory.sol"
+    },
+    "RocketNodeDistributorDelegate": {
+      "file": "artifacts/RocketNodeDistributorDelegate.json",
+      "integrity": "sha256:200fa1b47d85abcf4319aa3b987b9cc9b4d4c5f4c7d39d29fd5f28d7e4373685",
+      "sourceName": "contracts/contract/node/RocketNodeDistributorDelegate.sol"
+    },
+    "RocketMinipoolFactory": {
+      "file": "artifacts/RocketMinipoolFactory.json",
+      "integrity": "sha256:b580e7d4963f8bca59ef7fb5c98e09cadae4dfe740db1ac36c14ee17809e77ed",
+      "sourceName": "contracts/contract/minipool/RocketMinipoolFactory.sol"
+    },
+    "RocketMinipoolBase": {
+      "file": "artifacts/RocketMinipoolBase.json",
+      "integrity": "sha256:57a5dd69d270609841dcc5f24e8eae930fdcfc6dabfe54eb677f675b2f636e24",
+      "sourceName": "contracts/contract/minipool/RocketMinipoolBase.sol"
+    },
+    "RocketMinipoolBondReducer": {
+      "file": "artifacts/RocketMinipoolBondReducer.json",
+      "integrity": "sha256:b2b8329aae179769835ecbe6977a658709fa2a911118de0815f2ef6f00c20c91",
+      "sourceName": "contracts/contract/minipool/RocketMinipoolBondReducer.sol"
+    },
+    "RocketNetworkSnapshots": {
+      "file": "artifacts/RocketNetworkSnapshots.json",
+      "integrity": "sha256:dcb056e9c97815a6c29197a9a184c4abdaaf4d550a8b924f277c100d740f5286",
+      "sourceName": "contracts/contract/network/RocketNetworkSnapshots.sol"
+    },
+    "RocketNetworkVoting": {
+      "file": "artifacts/RocketNetworkVoting.json",
+      "integrity": "sha256:b2c35c4eac333bd076c170a16c5fd086aaeed3ef2d2f940e27873991fc798a65",
+      "sourceName": "contracts/contract/network/RocketNetworkVoting.sol"
+    },
+    "RocketDAOProtocolSettingsProposals": {
+      "file": "artifacts/RocketDAOProtocolSettingsProposals.json",
+      "integrity": "sha256:5ce91032f941c6a5e3c32d74f1a476e445c388459f072d797114bcbd1af85d85",
+      "sourceName": "contracts/contract/dao/protocol/settings/RocketDAOProtocolSettingsProposals.sol"
+    },
+    "RocketDAOProtocolVerifier": {
+      "file": "artifacts/RocketDAOProtocolVerifier.json",
+      "integrity": "sha256:018aea4cfee958c2dda30391aa6aebc5d3e453502279650170e4e8ffb712b6fa",
+      "sourceName": "contracts/contract/dao/protocol/RocketDAOProtocolVerifier.sol"
+    },
+    "RocketDAOSecurity": {
+      "file": "artifacts/RocketDAOSecurity.json",
+      "integrity": "sha256:6eea6c883394001a5f433d163a16faeb8da57ca664626ec96c4cbe565aa660cf",
+      "sourceName": "contracts/contract/dao/security/RocketDAOSecurity.sol"
+    },
+    "RocketDAOSecurityActions": {
+      "file": "artifacts/RocketDAOSecurityActions.json",
+      "integrity": "sha256:bf46773b28c7ee2e6b267ba9148f27d3fc294f1635f5c6570364d8104c47bfef",
+      "sourceName": "contracts/contract/dao/security/RocketDAOSecurityActions.sol"
+    },
+    "RocketDAOSecurityProposals": {
+      "file": "artifacts/RocketDAOSecurityProposals.json",
+      "integrity": "sha256:cbfb13a619cb10246a8917321ca475cd6109838ccbca79060600056e4f151e2a",
+      "sourceName": "contracts/contract/dao/security/RocketDAOSecurityProposals.sol"
+    },
+    "RocketDAOProtocolSettingsSecurity": {
+      "file": "artifacts/RocketDAOProtocolSettingsSecurity.json",
+      "integrity": "sha256:430a6c30a9ace0c8480bde3a4dd2d780c8d7a7960e8ae9dfb9127ad263bf4c82",
+      "sourceName": "contracts/contract/dao/protocol/settings/RocketDAOProtocolSettingsSecurity.sol"
+    },
+    "RocketDAOProtocolProposal": {
+      "file": "artifacts/RocketDAOProtocolProposal.json",
+      "integrity": "sha256:28ebab0318f13b2cbf4f7ce440361d079721a6a61e36578e2cf42a7d0ffdff4a",
+      "sourceName": "contracts/contract/dao/protocol/RocketDAOProtocolProposal.sol"
+    },
+    "AddressQueueStorage": {
+      "file": "artifacts/AddressQueueStorage.json",
+      "integrity": "sha256:b5b85d3c898f6014296d2a820f1aecb6717da6f8cd2cf626b662e98c16ecf97a",
+      "sourceName": "contracts/contract/util/AddressQueueStorage.sol"
+    },
+    "AddressSetStorage": {
+      "file": "artifacts/AddressSetStorage.json",
+      "integrity": "sha256:e3ff19d706bd889d5cdea102e20283aeda86409bcbc025dc84e64338421215cc",
+      "sourceName": "contracts/contract/util/AddressSetStorage.sol"
+    },
+    "RocketNetworkSnapshotsTime": {
+      "file": "artifacts/RocketNetworkSnapshotsTime.json",
+      "integrity": "sha256:2d7f8b0ab30b5a8d2b6e2de5974a94d1806f0fa43c83f153bb62b44a5fac2304",
+      "sourceName": "contracts/contract/network/RocketNetworkSnapshotsTime.sol"
+    },
+    "RocketMegapoolFactory": {
+      "file": "artifacts/RocketMegapoolFactory.json",
+      "integrity": "sha256:0a5d3da052004487adf9461f9494e95ece97559cdc2cf1c7cf2f08e3dec29f56",
+      "sourceName": "contracts/contract/megapool/RocketMegapoolFactory.sol"
+    },
+    "RocketMegapoolProxy": {
+      "file": "artifacts/RocketMegapoolProxy.json",
+      "integrity": "sha256:21d188ba65ff6d3d0a7809b76117dcbb986ab594e1b6f8413bee6064b88bef3d",
+      "sourceName": "contracts/contract/megapool/RocketMegapoolProxy.sol"
+    },
+    "RocketMegapoolManager": {
+      "file": "artifacts/RocketMegapoolManager.json",
+      "integrity": "sha256:a95b00e2bf01f16a305a512be81fdfb0a6f38d70fd1bfb2ba5015abb4166451f",
+      "sourceName": "contracts/contract/megapool/RocketMegapoolManager.sol"
+    },
+    "RocketMegapoolDelegate": {
+      "file": "artifacts/RocketMegapoolDelegate.json",
+      "integrity": "sha256:3c4215b9f64d7571d40db5f1107550eb3a8da5d56b3bd42fc72c1ee21b8d2807",
+      "sourceName": "contracts/contract/megapool/RocketMegapoolDelegate.sol"
+    },
+    "RocketMegapoolPenalties": {
+      "file": "artifacts/RocketMegapoolPenalties.json",
+      "integrity": "sha256:3e907767a844ceaf057ca0292ca3a4a9c2c9aa064152481b8953e2868f087c09",
+      "sourceName": "contracts/contract/megapool/RocketMegapoolPenalties.sol"
+    },
+    "RocketNetworkRevenues": {
+      "file": "artifacts/RocketNetworkRevenues.json",
+      "integrity": "sha256:124c7f812d7dab727d2456137990ca192ba60af694e4435d0ee33ccefcc0a4b7",
+      "sourceName": "contracts/contract/network/RocketNetworkRevenues.sol"
+    },
+    "RocketDAOProtocolSettingsMegapool": {
+      "file": "artifacts/RocketDAOProtocolSettingsMegapool.json",
+      "integrity": "sha256:3059e62ea20d5899d3061237a045261551a76aba35818d6c899caa9519ca195d",
+      "sourceName": "contracts/contract/dao/protocol/settings/RocketDAOProtocolSettingsMegapool.sol"
+    },
+    "RocketDAOSecurityUpgrade": {
+      "file": "artifacts/RocketDAOSecurityUpgrade.json",
+      "integrity": "sha256:12dae66f1a97a87f7e15be0bc1d3fd7dc269b9933be39d00af4d9d285d5d72d9",
+      "sourceName": "contracts/contract/dao/security/RocketDAOSecurityUpgrade.sol"
+    },
+    "BeaconStateVerifier": {
+      "file": "artifacts/BeaconStateVerifier.json",
+      "integrity": "sha256:a2de15a9ffb3785f2691248010c43c5e83a3683e2fa432ed49e152a1f19d0281",
+      "sourceName": "contracts/contract/util/BeaconStateVerifier.sol"
+    },
+    "LinkedListStorage": {
+      "file": "artifacts/LinkedListStorage.json",
+      "integrity": "sha256:1ebc7160eecb1ec5f37105883ac4ea4b40d5bcbfcfcd5a0a546cde26e70b49f2",
+      "sourceName": "contracts/contract/util/LinkedListStorage.sol"
+    },
+    "RocketUpgradeOneDotFour": {
+      "file": "artifacts/RocketUpgradeOneDotFour.json",
+      "integrity": "sha256:7c6bb4de7984fd0c0fde411ae97f2820ad2fbe6d2fa86d03c4f791992a02773d",
+      "sourceName": "contracts/contract/upgrade/RocketUpgradeOneDotFour.sol"
+    },
+    "DepositContract": {
+      "file": "artifacts/DepositContract.json",
+      "integrity": "sha256:eef9b96b565da8e03f2d3271cfc7bee28dcf34dc2655799947562149cfff8231",
+      "sourceName": "contracts/contract/casper/compiled/Deposit"
+    }
+  },
+  "integrity": "sha256:b72e4db713250eb9399ee47a4a367cd5ba4fca37dd1e9c53a363dab491d8713b"
+}

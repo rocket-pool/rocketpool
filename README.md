@@ -31,12 +31,35 @@ Learn more at [https://rocketpool.net](https://rocketpool.net).
   <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/rocket-pool-atlas-test.png?raw=true" alt="Rocket Pool - Testing Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool for Ethereum 2.0 Beacon Chain"/>
 </picture>
 
-To see Rocket Pool in action, clone the repo and run the test suite with the following commands:
+The repository requires Node.js 22. Install dependencies and run every test
+layer with:
+
 ```bash
-$ npm install
-$ npm test
+npm install
+npm test
 ```
 
+The test layers can also be run independently:
+
+```bash
+npm run test:solidity
+npm run test:unit:javascript
+npm run test:integration
+npm run test:types
+npm run test:legacy
+```
+
+Solidity unit tests live in `test-solidity`, and isolated JavaScript unit tests
+live in `test-unit`. The canonical version-aware TypeScript integration suite,
+its harness, and historical release bundles live in `test`. The retired
+JavaScript integration suite remains available in `test-old` through
+`npm run test:legacy`, but is not part of the default `npm test` run.
+
+After contract ABIs change, regenerate the current harness bindings with:
+
+```bash
+npm run harness:generate-current
+```
 
 Having issues? Have an idea? Interested in research?
 

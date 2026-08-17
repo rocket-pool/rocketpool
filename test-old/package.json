@@ -1,0 +1,6 @@
+{
+  "type": "commonjs",
+  "imports": {
+    "#hardhat-runtime": "./_utils/hardhat-runtime.js"
+  }
+}
