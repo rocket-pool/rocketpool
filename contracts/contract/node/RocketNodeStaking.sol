@@ -578,6 +578,8 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Deposit RPL tokens to vault
         require(rplToken.approve(address(rocketVault), _amount), "Could not approve vault RPL deposit");
         rocketVault.depositToken("rocketNodeStaking", rplToken, _amount);
+        // Revoke remaining allowance to prevent stale approval front-running
+        require(rplToken.approve(address(rocketVault), 0), "Could not revoke vault RPL approval");
     }
 
     /// @dev Sets the time of the given node operator's unstake to the current block time

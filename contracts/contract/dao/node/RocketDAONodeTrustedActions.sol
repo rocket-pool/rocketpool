@@ -103,6 +103,8 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         require(rplInflationContract.approve(rocketVaultAddress, rplBondAmount), "Approval for RocketVault to spend RocketDAONodeTrusted RPL bond tokens was not successful");
         // Let vault know it can move these tokens to itself now and credit the balance to this contract
         rocketVault.depositToken(getContractName(address(this)), IERC20(rocketTokenRPLAddress), rplBondAmount);
+        // Revoke remaining allowance to prevent stale approval front-running
+        require(rplInflationContract.approve(rocketVaultAddress, 0), "Could not revoke RocketVault RPL approval");
         // Add them as a member now that they have accepted the invitation and record the size of the bond they paid
         _memberAdd(_nodeAddress, rplBondAmount);
         // Log it
