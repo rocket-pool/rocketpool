@@ -49,7 +49,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Version
-        version = 2;
+        version = 3;
     }
 
     /// @notice Returns the depth per round
@@ -528,6 +528,9 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         uint256 nodeCount = getUint(bytes32(proposalKey + nodeCountOffset));
         uint256 depth = getMaxDepth(nodeCount);
         uint256 treeIndex = (2 ** depth) + _nodeIndex;
+        // Validate input
+        require(_nodeIndex < nodeCount, "Node was not present at snapshot");
+        require(_witness.length == depth, "Invalid witness length");
         // Reconstruct leaf node
         Types.Node memory leaf;
         leaf.sum = _votingPower;

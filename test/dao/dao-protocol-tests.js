@@ -18,6 +18,7 @@ import {
     RocketDAOProtocolSettingsNetwork,
     RocketDAOProtocolSettingsProposals,
     RocketDAOProtocolSettingsRewards,
+    RocketNodeManager,
 } from '../_utils/artifacts';
 import {
     cloneLeaves,
@@ -324,6 +325,13 @@ export default function() {
             await nodeDepositMulti(node, deposits);
             // Allow RPL locking by default
             await setRPLLockingAllowed(node, true, { from: node });
+        }
+
+        // Creates a new signer with enough ETH to send transactions (the configured account set is exhausted by mockNodeSet)
+        async function fundedWallet() {
+            const wallet = ethers.Wallet.createRandom().connect(ethers.provider);
+            await owner.sendTransaction({ to: wallet.address, value: '1'.ether });
+            return wallet;
         }
 
         async function createValidProposal(name = 'Test proposal', payload = '0x00', block = null) {
@@ -798,6 +806,76 @@ export default function() {
                         nodeSetDelegate(nodes[1].address, { from: nodes[0] }),
                         'Was able to set delegate to same value',
                         'Delegate already set to value',
+                    );
+                });
+
+                it(printTitle('voter', 'can not vote if registered after the proposal snapshot'), async () => {
+                    // Create a proposal before the voter registers
+                    const { propId, leaves } = await createValidProposal();
+                    const nodeIndex = Number(await getNodeCount());
+                    await registerNode({ from: node1 });
+
+                    await helpers.time.increase(voteDelayTime + 1);
+
+                    const voteProof = daoProtocolGenerateVoteProof(leaves, nodeIndex);
+                    await shouldRevert(
+                        daoProtocolVote(propId, voteStates.For, voteProof.sum, nodeIndex, voteProof.witness, { from: node1 }),
+                        'Node registered after proposal was able to vote',
+                        'Node was not present at snapshot',
+                    );
+                });
+
+                it(printTitle('voter', 'can not vote by replaying a witness from a colliding tree index'), async () => {
+                    // Create a proposal, snapshotting the current node set
+                    const { propId, leaves } = await createValidProposal();
+
+                    // Take a valid proof for a node that was present at the snapshot
+                    const victimIndex = nodeMap[nodes[0].address];
+                    const voteProof = daoProtocolGenerateVoteProof(leaves, victimIndex);
+                    assert.notEqual(voteProof.sum, 0n, 'Victim node has no voting power');
+
+                    // The tree is padded out to 2 ** depth leaves, so the witness for victimIndex only proves the
+                    // lowest `depth` bits of the tree index. victimIndex + 2 ** depth shares those bits and would
+                    // therefore accept the same witness
+                    const collidingIndex = victimIndex + leaves.length;
+
+                    // Register filler nodes until the next index handed out is the colliding one
+                    let nodeCount = Number(await getNodeCount());
+                    assert.equal(nodeCount <= collidingIndex, true, 'Node set is already past the colliding index');
+                    while (nodeCount < collidingIndex) {
+                        await registerNode({ from: await fundedWallet() });
+                        nodeCount++;
+                    }
+
+                    // Register the attacker, who lands on the colliding index
+                    const attacker = await fundedWallet();
+                    await registerNode({ from: attacker });
+                    const rocketNodeManager = await RocketNodeManager.deployed();
+                    assert.equal(await rocketNodeManager.getNodeAt(collidingIndex), attacker.address, 'Attacker did not land on the colliding index');
+
+                    await helpers.time.increase(voteDelayTime + 1);
+
+                    // Attempt to vote using the victim's witness and voting power
+                    await shouldRevert(
+                        daoProtocolVote(propId, voteStates.For, voteProof.sum, collidingIndex, voteProof.witness, { from: attacker }),
+                        'Node was able to vote by replaying a witness from a colliding index',
+                        'Node was not present at snapshot',
+                    );
+                });
+
+                it(printTitle('voter', 'can not vote with an invalid witness length'), async () => {
+                    // Create a valid proposal and proof for a node present at the snapshot
+                    const { propId, leaves } = await createValidProposal();
+                    const nodeIndex = nodeMap[nodes[0].address];
+                    const voteProof = daoProtocolGenerateVoteProof(leaves, nodeIndex);
+
+                    await helpers.time.increase(voteDelayTime + 1);
+
+                    // Attempt to vote with a truncated witness
+                    await shouldRevert(
+                        daoProtocolVote(propId, voteStates.For, voteProof.sum, nodeIndex, voteProof.witness.slice(1), { from: nodes[0] }),
+                        'Node was able to vote with an invalid witness length',
+                        'Invalid witness length',
                     );
                 });
 
