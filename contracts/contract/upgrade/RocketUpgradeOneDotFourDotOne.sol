@@ -4,7 +4,7 @@ pragma solidity 0.8.30;
 import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 import {RocketBase} from "../RocketBase.sol";
 
-/// @notice v1.4.1 BeaconStateVerifier upgrade contract
+/// @notice v1.4.1 proof verifier and megapool manager upgrade contract
 contract RocketUpgradeOneDotFourDotOne is RocketBase {
     // Whether the upgrade has been performed or not
     bool internal executed = false;
@@ -12,17 +12,23 @@ contract RocketUpgradeOneDotFourDotOne is RocketBase {
     // Upgrade address and ABI
     address public beaconStateVerifierAddress;
     string public beaconStateVerifierAbi;
+    address public rocketMegapoolManagerAddress;
+    string public rocketMegapoolManagerAbi;
 
     // Construct
     constructor(
         RocketStorageInterface _rocketStorageAddress,
         address _beaconStateVerifierAddress,
-        string memory _beaconStateVerifierAbi
+        string memory _beaconStateVerifierAbi,
+        address _rocketMegapoolManagerAddress,
+        string memory _rocketMegapoolManagerAbi
     ) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
         beaconStateVerifierAddress = _beaconStateVerifierAddress;
         beaconStateVerifierAbi = _beaconStateVerifierAbi;
+        rocketMegapoolManagerAddress = _rocketMegapoolManagerAddress;
+        rocketMegapoolManagerAbi = _rocketMegapoolManagerAbi;
     }
 
     /// @notice Returns the address of the RocketStorage contract
@@ -35,8 +41,9 @@ contract RocketUpgradeOneDotFourDotOne is RocketBase {
         require(!executed, "Already executed");
         executed = true;
 
-        // Upgrade the BeaconStateVerifier
+        // Upgrade contracts
         _upgradeContract("beaconStateVerifier", beaconStateVerifierAddress, beaconStateVerifierAbi);
+        _upgradeContract("rocketMegapoolManager", rocketMegapoolManagerAddress, rocketMegapoolManagerAbi);
 
         // Set a protocol version value in storage for convenience with bindings
         setString(keccak256(abi.encodePacked("protocol.version")), "1.4.1");

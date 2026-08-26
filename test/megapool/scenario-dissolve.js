@@ -8,6 +8,7 @@ import {
 import { assertBN } from '../_helpers/bn';
 import { getSlotForBlock } from '../_helpers/beaconchain';
 import { checkMegapoolInvariants } from '../_helpers/invariants';
+import { encodeValidatorProofV1 } from '../_utils/beacon';
 
 const hre = require('hardhat');
 const ethers = hre.ethers;
@@ -100,7 +101,13 @@ export async function dissolveValidator(node, validatorIndex, from = node, proof
         };
 
         const rocketMegapoolManager = await RocketMegapoolManager.deployed();
-        await rocketMegapoolManager.connect(from).dissolve(megapool.target, validatorIndex, currentTime, proof, slotProof);
+        await rocketMegapoolManager.connect(from).dissolve(
+            megapool.target,
+            validatorIndex,
+            currentTime,
+            1,
+            encodeValidatorProofV1(proof, slotProof),
+        );
     }
     const data2 = await getData();
 

@@ -3,6 +3,7 @@ import assert from 'assert';
 import { assertBN } from '../_helpers/bn';
 import { RocketMegapoolManager } from '../_utils/artifacts';
 import { checkMegapoolInvariants } from '../_helpers/invariants';
+import { encodeValidatorProofV1 } from '../_utils/beacon';
 
 const milliToWei = 1000000000000000n;
 const prestakeBalance = 1000000000n;
@@ -66,7 +67,13 @@ export async function stakeMegapoolValidator(megapool, index) {
 
     // Perform stake operation
     const data1 = await getData();
-    await rocketMegapoolManager.stake(megapool.target, index, currentTime, proof, slotProof);
+    await rocketMegapoolManager.stake(
+        megapool.target,
+        index,
+        currentTime,
+        1,
+        encodeValidatorProofV1(proof, slotProof),
+    );
     const data2 = await getData();
 
     // Check state changes

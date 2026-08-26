@@ -288,7 +288,7 @@ export default function() {
             assertBN.equal(count1 - count2, 1, 'Active minipools did not decrement by 1');
         });
 
-        it.only(printTitle('node operator', 'cannot finalise a withdrawn minipool twice'), async () => {
+        it(printTitle('node operator', 'cannot finalise a withdrawn minipool twice'), async () => {
             // Send enough ETH to allow distribution
             await owner.sendTransaction({
                 to: stakingMinipool.target,

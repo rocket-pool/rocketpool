@@ -6,7 +6,11 @@ import {RocketBase} from "../RocketBase.sol";
 import {RocketMegapoolInterface} from "../../interface/megapool/RocketMegapoolInterface.sol";
 import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 import {RocketMegapoolManagerInterface} from "../../interface/megapool/RocketMegapoolManagerInterface.sol";
-import {BeaconStateVerifierInterface, ValidatorProof, Withdrawal, WithdrawalProof, SlotProof} from "../../interface/util/BeaconStateVerifierInterface.sol";
+import {
+    BeaconStateVerifierInterface,
+    VerifiedValidator,
+    VerifiedFinalBalance
+} from "../../interface/util/BeaconStateVerifierInterface.sol";
 
 /// @notice Handles protocol-level megapool functionality
 contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
@@ -21,7 +25,7 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
     uint256 constant internal slotRecencyThreshold = 1 hours;
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 1;
+        version = 2;
         // Precompute static storage keys
         challengerKey = keccak256("last.trusted.node.megapool.challenger");
         setCountKey = keccak256("megapool.validator.set.count");
@@ -35,7 +39,11 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
     /// @notice Adds a validator record to the global megapool validator set
     /// @param _megapoolAddress Address of the megapool which manages this validator
     /// @param _validatorId Internal validator ID of the new validator
-    function addValidator(address _megapoolAddress, uint32 _validatorId, bytes calldata _pubkey) override external onlyLatestContract("rocketMegapoolManager", address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) {
+    function addValidator(
+        address _megapoolAddress,
+        uint32 _validatorId,
+        bytes calldata _pubkey
+    ) override external onlyLatestContract("rocketMegapoolManager", address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) {
         uint256 index = getUint(setCountKey);
         setUint(setCountKey, index + 1);
         uint256 encoded = (uint256(uint160(_megapoolAddress)) << 96) | _validatorId;
@@ -63,113 +71,122 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         (validatorInfo, pubkey) = rocketMegapool.getValidatorInfoAndPubkey(validatorId);
     }
 
-    /// @notice Verifies a validator state proof then calls stake on the megapool
+    /// @notice Verifies a versioned validator proof then stakes the validator
     /// @param _megapool Address of the megapool which the validator belongs to
     /// @param _validatorId Internal ID of the validator within the megapool
     /// @param _slotTimestamp Timestamp of the slot containing the parent block hash of the slot used for proofs
-    /// @param _validatorProof State proof of the validator
-    /// @param _slotProof State proof of the slot
-    function stake(RocketMegapoolInterface _megapool, uint32 _validatorId, uint64 _slotTimestamp, ValidatorProof calldata _validatorProof, SlotProof calldata _slotProof) override external onlyRegisteredMegapool(address(_megapool)) {
-        // Require a recent proof
-        require(_slotTimestamp + slotRecencyThreshold >= block.timestamp, "Slot proof too old");
-        // Verify state proofs
-        BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
-        require(beaconStateVerifier.verifyValidator(_slotTimestamp, _slotProof.slot, _validatorProof), "Invalid validator proof");
-        require(beaconStateVerifier.verifySlot(_slotTimestamp, _slotProof), "Invalid slot proof");
+    /// @param _proofVersion Version id of the proof
+    /// @param _proofData For version 1, `abi.encode(ValidatorProofBundleV1)`
+    function stake(
+        RocketMegapoolInterface _megapool,
+        uint32 _validatorId,
+        uint64 _slotTimestamp,
+        uint256 _proofVersion,
+        bytes calldata _proofData
+    ) override external onlyRegisteredMegapool(address(_megapool)) {
+        _requireRecentProof(_slotTimestamp);
+        VerifiedValidator memory verified = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier")).verifyValidator(_slotTimestamp, _proofVersion, _proofData);
         bytes32 withdrawalCredentials = _megapool.getWithdrawalCredentials();
         // Verify validator state
-        require(_validatorProof.validator.withdrawalCredentials == withdrawalCredentials, "Invalid withdrawal credentials");
-        require(_validatorProof.validator.withdrawableEpoch == farFutureEpoch, "Validator is withdrawing");
-        require(_validatorProof.validator.exitEpoch == farFutureEpoch, "Validator is exiting");
-        require(_validatorProof.validator.effectiveBalance < activationBalanceInGwei, "Invalid validator balance");
-        require(_validatorProof.validator.activationEligibilityEpoch == farFutureEpoch, "Validator is activating");
-        require(_validatorProof.validator.activationEpoch == farFutureEpoch, "Validator is activated");
-        require(!_validatorProof.validator.slashed, "Validator is slashed");
+        require(verified.validator.withdrawalCredentials == withdrawalCredentials, "Invalid withdrawal credentials");
+        require(verified.validator.withdrawableEpoch == farFutureEpoch, "Validator is withdrawing");
+        require(verified.validator.exitEpoch == farFutureEpoch, "Validator is exiting");
+        require(verified.validator.effectiveBalance < activationBalanceInGwei, "Invalid validator balance");
+        require(verified.validator.activationEligibilityEpoch == farFutureEpoch, "Validator is activating");
+        require(verified.validator.activationEpoch == farFutureEpoch, "Validator is activated");
+        require(!verified.validator.slashed, "Validator is slashed");
         // Verify matching pubkey
         bytes memory pubkey = _megapool.getValidatorPubkey(_validatorId);
-        require(keccak256(_validatorProof.validator.pubkey) == keccak256(pubkey), "Pubkey does not match");
+        require(keccak256(verified.validator.pubkey) == keccak256(pubkey), "Pubkey does not match");
         // Perform the stake
         _megapool.stake(_validatorId);
     }
 
-    /// @notice Immediately dissolves a validator if any validator state is non-compliant
+    /// @notice Verifies a versioned validator proof then dissolves a non-compliant validator
     /// @param _megapool Address of the megapool which the validator belongs to
     /// @param _validatorId Internal ID of the validator within the megapool
     /// @param _slotTimestamp Timestamp of the slot containing the parent block hash of the slot used for proofs
-    /// @param _validatorProof State proof of the validator
-    /// @param _slotProof State proof of the slot
-    function dissolve(RocketMegapoolInterface _megapool, uint32 _validatorId, uint64 _slotTimestamp, ValidatorProof calldata _validatorProof, SlotProof calldata _slotProof) override external onlyRegisteredMegapool(address(_megapool)) {
+    /// @param _proofVersion Version id of the proof
+    /// @param _proofData For version 1, `abi.encode(ValidatorProofBundleV1)`
+    function dissolve(
+        RocketMegapoolInterface _megapool,
+        uint32 _validatorId,
+        uint64 _slotTimestamp,
+        uint256 _proofVersion,
+        bytes calldata _proofData
+    ) override external onlyRegisteredMegapool(address(_megapool)) {
         // Require a recent proof
-        require(_slotTimestamp + slotRecencyThreshold >= block.timestamp, "Slot proof too old");
-        // Verify state proofs
-        BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
-        require(beaconStateVerifier.verifyValidator(_slotTimestamp, _slotProof.slot, _validatorProof), "Invalid validator proof");
-        require(beaconStateVerifier.verifySlot(_slotTimestamp, _slotProof), "Invalid slot proof");
+        _requireRecentProof(_slotTimestamp);
+        VerifiedValidator memory verified = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier")).verifyValidator(_slotTimestamp, _proofVersion, _proofData);
         // Verify compliant validator state
         bytes32 withdrawalCredentials = _megapool.getWithdrawalCredentials();
         if(
-            _validatorProof.validator.withdrawalCredentials == withdrawalCredentials &&
-            _validatorProof.validator.withdrawableEpoch == farFutureEpoch &&
-            _validatorProof.validator.exitEpoch == farFutureEpoch &&
-            _validatorProof.validator.effectiveBalance < activationBalanceInGwei &&
-            _validatorProof.validator.activationEligibilityEpoch == farFutureEpoch &&
-            _validatorProof.validator.activationEpoch == farFutureEpoch &&
-            _validatorProof.validator.slashed == false
+            verified.validator.withdrawalCredentials == withdrawalCredentials &&
+            verified.validator.withdrawableEpoch == farFutureEpoch &&
+            verified.validator.exitEpoch == farFutureEpoch &&
+            verified.validator.effectiveBalance < activationBalanceInGwei &&
+            verified.validator.activationEligibilityEpoch == farFutureEpoch &&
+            verified.validator.activationEpoch == farFutureEpoch &&
+            verified.validator.slashed == false
         ) {
             revert("Validator is compliant");
         }
         // Verify matching pubkey
         bytes memory pubkey = _megapool.getValidatorPubkey(_validatorId);
-        require(keccak256(_validatorProof.validator.pubkey) == keccak256(pubkey), "Pubkey does not match");
+        require(keccak256(verified.validator.pubkey) == keccak256(pubkey), "Pubkey does not match");
         // Dissolve the validator
         _megapool.dissolveValidator(_validatorId);
     }
 
-    /// @notice Verifies a validator state proof then notifies megapool about the exit
+    /// @notice Verifies a versioned validator proof then notifies the validator exit
     /// @param _megapool Address of the megapool which the validator belongs to
     /// @param _validatorId Internal ID of the validator within the megapool
     /// @param _slotTimestamp Timestamp of the slot containing the parent block hash of the slot used for proofs
-    /// @param _validatorProof State proof of the validator
-    /// @param _slotProof State proof of the slot
-    function notifyExit(RocketMegapoolInterface _megapool, uint32 _validatorId, uint64 _slotTimestamp, ValidatorProof calldata _validatorProof, SlotProof calldata _slotProof) override external onlyRegisteredMegapool(address(_megapool)) {
-        // Require a recent proof
-        require(_slotTimestamp + slotRecencyThreshold >= block.timestamp, "Slot proof too old");
-        // Verify state proofs
-        BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
-        require(beaconStateVerifier.verifyValidator(_slotTimestamp, _slotProof.slot, _validatorProof), "Invalid validator proof");
-        require(beaconStateVerifier.verifySlot(_slotTimestamp, _slotProof), "Invalid slot proof");
+    /// @param _proofVersion Version id of the proof
+    /// @param _proofData For version 1, `abi.encode(ValidatorProofBundleV1)`
+    function notifyExit(
+        RocketMegapoolInterface _megapool,
+        uint32 _validatorId,
+        uint64 _slotTimestamp,
+        uint256 _proofVersion,
+        bytes calldata _proofData
+    ) override external onlyRegisteredMegapool(address(_megapool)) {
+        _requireRecentProof(_slotTimestamp);
+        VerifiedValidator memory verified = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier")).verifyValidator(_slotTimestamp, _proofVersion, _proofData);
         // Verify correct withdrawable_epoch
-        require(_validatorProof.validator.withdrawableEpoch < farFutureEpoch, "Validator not exiting");
+        require(verified.validator.withdrawableEpoch < farFutureEpoch, "Validator not exiting");
         // Verify matching pubkey
         bytes memory pubkey = _megapool.getValidatorPubkey(_validatorId);
-        require(keccak256(_validatorProof.validator.pubkey) == keccak256(pubkey), "Pubkey does not match");
+        require(keccak256(verified.validator.pubkey) == keccak256(pubkey), "Pubkey does not match");
         // Verify withdrawalCredentials
         bytes32 withdrawalCredentials = _megapool.getWithdrawalCredentials();
-        require(_validatorProof.validator.withdrawalCredentials == withdrawalCredentials, "Invalid withdrawal credentials");
+        require(verified.validator.withdrawalCredentials == withdrawalCredentials, "Invalid withdrawal credentials");
         // Compute the epoch of the supplied proof
-        uint64 recentEpoch = _slotProof.slot / slotsPerEpoch;
+        uint64 recentEpoch = verified.slot / slotsPerEpoch;
         // Notify megapool
-        _megapool.notifyExit(_validatorId, _validatorProof.validator.withdrawableEpoch, recentEpoch);
+        _megapool.notifyExit(_validatorId, verified.validator.withdrawableEpoch, recentEpoch);
     }
 
-    /// @notice Verifies a validator state proof then notifies megapool that this validator was not exiting at given slot
+    /// @notice Verifies a versioned validator proof then notifies that the validator is not exiting
     /// @param _megapool Address of the megapool which the validator belongs to
     /// @param _validatorId Internal ID of the validator within the megapool
     /// @param _slotTimestamp Timestamp of the slot containing the parent block hash of the slot used for proofs
-    /// @param _validatorProof State proof of the validator
-    /// @param _slotProof State proof of the slot
-    function notifyNotExit(RocketMegapoolInterface _megapool, uint32 _validatorId, uint64 _slotTimestamp, ValidatorProof calldata _validatorProof, SlotProof calldata _slotProof) override external onlyRegisteredMegapool(address(_megapool)) {
-        // Require a recent proof
-        require(_slotTimestamp + slotRecencyThreshold >= block.timestamp, "Slot proof too old");
-        // Verify state proofs
-        BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
-        require(beaconStateVerifier.verifyValidator(_slotTimestamp, _slotProof.slot, _validatorProof), "Invalid validator proof");
-        require(beaconStateVerifier.verifySlot(_slotTimestamp, _slotProof), "Invalid slot proof");
+    /// @param _proofVersion Version id of the proof
+    /// @param _proofData For version 1, `abi.encode(ValidatorProofBundleV1)`
+    function notifyNotExit(
+        RocketMegapoolInterface _megapool,
+        uint32 _validatorId,
+        uint64 _slotTimestamp,
+        uint256 _proofVersion,
+        bytes calldata _proofData
+    ) override external onlyRegisteredMegapool(address(_megapool)) {
+        _requireRecentProof(_slotTimestamp);
+        VerifiedValidator memory verified = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier")).verifyValidator(_slotTimestamp, _proofVersion, _proofData);
         // Verify correct withdrawable_epoch
-        require(_validatorProof.validator.withdrawableEpoch == farFutureEpoch, "Validator already exiting");
+        require(verified.validator.withdrawableEpoch == farFutureEpoch, "Validator already exiting");
         // Verify matching pubkey
         bytes memory pubkey = _megapool.getValidatorPubkey(_validatorId);
-        require(keccak256(_validatorProof.validator.pubkey) == keccak256(pubkey), "Pubkey does not match");
+        require(keccak256(verified.validator.pubkey) == keccak256(pubkey), "Pubkey does not match");
         // Notify the megapool that the specified validator was not exiting at the proven slot
         _megapool.notifyNotExit(_validatorId, _slotTimestamp);
     }
@@ -195,32 +212,29 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         require(totalChallenges <= 50, "Too many challenges");
     }
 
-    /// @notice Verifies a withdrawal state proof then notifies megapool of the final balance
+    /// @notice Verifies a versioned proof then notifies a megapool of a validator's final balance
     /// @param _megapool Address of the megapool which the validator belongs to
     /// @param _validatorId Internal ID of the validator within the megapool
     /// @param _slotTimestamp Timestamp of the slot containing the parent block hash of the slot used for proofs
-    /// @param _withdrawalProof State proof of the withdrawal
-    /// @param _validatorProof State proof of the validator at the same slot as the withdrawal
-    /// @param _slotProof State proof of the slot
-    function notifyFinalBalance(RocketMegapoolInterface _megapool, uint32 _validatorId, uint64 _slotTimestamp, WithdrawalProof calldata _withdrawalProof, ValidatorProof calldata _validatorProof, SlotProof calldata _slotProof) override external onlyRegisteredMegapool(address(_megapool)) {
-        // Require a recent proof
-        require(_slotTimestamp + slotRecencyThreshold >= block.timestamp, "Slot proof too old");
-        // Check that the withdrawal occurred on or after `withdrawable_epoch`
-        uint64 withdrawalEpoch = _withdrawalProof.withdrawalSlot / slotsPerEpoch;
-        require(withdrawalEpoch >= _validatorProof.validator.withdrawableEpoch, "Not full withdrawal");
-        // Verify state proofs
-        BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
-        require(beaconStateVerifier.verifyValidator(_slotTimestamp, _slotProof.slot, _validatorProof), "Invalid validator proof");
-        require(beaconStateVerifier.verifyWithdrawal(_slotTimestamp, _slotProof.slot, _withdrawalProof), "Invalid withdrawal proof");
-        require(beaconStateVerifier.verifySlot(_slotTimestamp, _slotProof), "Invalid slot proof");
-        // Verify withdrawal validator index matches validator index
-        require(_withdrawalProof.withdrawal.validatorIndex == _validatorProof.validatorIndex, "Withdrawal validator not matching");
-        // Verify matching pubkey
+    /// @param _proofVersion Version id of the proof
+    /// @param _proofData Version 1 is `abi.encode(FinalBalanceProofBundleV1)`; version 2 is `abi.encode(FinalBalanceProofBundleV2)`
+    function notifyFinalBalance(
+        RocketMegapoolInterface _megapool,
+        uint32 _validatorId,
+        uint64 _slotTimestamp,
+        uint256 _proofVersion,
+        bytes calldata _proofData
+    ) override external onlyRegisteredMegapool(address(_megapool)) {
+        _requireRecentProof(_slotTimestamp);
+        VerifiedFinalBalance memory verified = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier")).verifyFinalBalance(_slotTimestamp, _proofVersion, _proofData);
+        require(verified.withdrawalCredentials == _megapool.getWithdrawalCredentials(), "Invalid withdrawal credentials");
         bytes memory pubkey = _megapool.getValidatorPubkey(_validatorId);
-        require(keccak256(_validatorProof.validator.pubkey) == keccak256(pubkey), "Pubkey does not match");
-        // Compute the epoch of the supplied proof
-        uint64 recentEpoch = _slotProof.slot / slotsPerEpoch;
-        // Notify megapool
-        _megapool.notifyFinalBalance(_validatorId, _withdrawalProof.withdrawal.amountInGwei, msg.sender, withdrawalEpoch, recentEpoch);
+        require(verified.validatorPubkeyHash == keccak256(pubkey), "Pubkey does not match");
+        _megapool.notifyFinalBalance(_validatorId, verified.amountInGwei, msg.sender, verified.withdrawalEpoch, verified.recentEpoch);
+    }
+
+    /// @dev Rejects stale proof anchors for all proof entrypoints
+    function _requireRecentProof(uint64 _slotTimestamp) internal view {
+        require(_slotTimestamp + slotRecencyThreshold >= block.timestamp, "Slot proof too old");
     }
 }

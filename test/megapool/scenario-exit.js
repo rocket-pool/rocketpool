@@ -10,6 +10,7 @@ import { getValidatorInfo } from '../_helpers/megapool';
 import assert from 'assert';
 import { getSlotForBlock, slotsPerEpoch } from '../_helpers/beaconchain';
 import { checkMegapoolInvariants } from '../_helpers/invariants';
+import { encodeFinalBalanceProofV2, encodeValidatorProofV1 } from '../_utils/beacon';
 
 const hre = require('hardhat');
 const ethers = hre.ethers;
@@ -58,7 +59,13 @@ export async function notifyExitValidator(megapool, validatorId, withdrawalEpoch
     };
 
     const dataBefore = await getData();
-    await rocketMegapoolManager.notifyExit(megapool.target, validatorId, currentTime, proof, slotProof);
+    await rocketMegapoolManager.notifyExit(
+        megapool.target,
+        validatorId,
+        currentTime,
+        1,
+        encodeValidatorProofV1(proof, slotProof),
+    );
     const dataAfter = await getData();
 
     const info = await getValidatorInfo(megapool, validatorId);
@@ -170,7 +177,27 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
         witnesses: [],
     };
 
-    await rocketMegapoolManager.connect(megapool.runner).notifyFinalBalance(megapool.target, validatorId, currentTime, withdrawalProof, validatorProof, slotProof);
+    const previousNextWithdrawalIndexProof = {
+        nextWithdrawalIndex: withdrawalProof.withdrawal.index - withdrawalProof.withdrawalNum,
+        witnesses: [],
+    };
+    const validatorBalanceProof = {
+        balanceChunk: ethers.ZeroHash,
+        witnesses: [],
+    };
+    await rocketMegapoolManager.connect(megapool.runner).notifyFinalBalance(
+        megapool.target,
+        validatorId,
+        currentTime,
+        2,
+        encodeFinalBalanceProofV2(
+            withdrawalProof,
+            validatorProof,
+            slotProof,
+            previousNextWithdrawalIndexProof,
+            validatorBalanceProof,
+        ),
+    );
     const data2 = await getData();
 
     // Calculate new bond requirement

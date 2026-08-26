@@ -44,7 +44,7 @@ import { reduceBond } from './scenario-reduce-bond';
 import { dissolveValidator } from './scenario-dissolve';
 import { challengeValidator } from './scenario-challenge';
 import { repayDebt } from './scenario-repay-debt';
-import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '../_utils/beacon';
+import { encodeFinalBalanceProofV2, encodeValidatorProofV1, getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '../_utils/beacon';
 import { beaconGenesisTime } from '../_helpers/beaconchain';
 
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
@@ -178,6 +178,24 @@ export default function() {
         //
         // General
         //
+
+        it(printTitle('RocketMegapoolManager', 'exposes only canonical versioned proof entrypoints'), async () => {
+            const rocketMegapoolManager = await RocketMegapoolManager.deployed();
+            const proofEntrypoints = ['stake', 'dissolve', 'notifyExit', 'notifyNotExit', 'notifyFinalBalance'];
+            const expectedInputs = ['address', 'uint32', 'uint64', 'uint256', 'bytes'];
+
+            for (const name of proofEntrypoints) {
+                const canonicalFunctions = rocketMegapoolManager.interface.fragments.filter(
+                    fragment => fragment.type === 'function' && fragment.name === name,
+                );
+                const v2Functions = rocketMegapoolManager.interface.fragments.filter(
+                    fragment => fragment.type === 'function' && fragment.name === `${name}V2`,
+                );
+                assert.equal(canonicalFunctions.length, 1, `Unexpected overloads for ${name}`);
+                assert.deepEqual(canonicalFunctions[0].inputs.map(input => input.type), expectedInputs);
+                assert.equal(v2Functions.length, 0, `Deprecated ${name}V2 selector remains`);
+            }
+        });
 
         it(printTitle('node', 'can not upgrade to current delegate'), async () => {
             await deployMegapool({ from: node });
@@ -822,7 +840,13 @@ export default function() {
                 };
 
                 await shouldRevert(
-                    rocketMegapoolManager.notifyNotExit(megapool.target, 1n, await getCurrentTime(), validProof, slotProof),
+                    rocketMegapoolManager.notifyNotExit(
+                        megapool.target,
+                        1n,
+                        await getCurrentTime(),
+                        1,
+                        encodeValidatorProofV1(validProof, slotProof),
+                    ),
                     'Was able to notify not exit on non-locked validator',
                     'Validator not locked',
                 );
@@ -888,25 +912,49 @@ export default function() {
                 };
 
                 await shouldRevert(
-                    rocketMegapoolManager.notifyNotExit(megapool.target, 0n, currentTime - 60, tooOldProof, tooOldSlotProof),
+                    rocketMegapoolManager.notifyNotExit(
+                        megapool.target,
+                        0n,
+                        currentTime - 60,
+                        1,
+                        encodeValidatorProofV1(tooOldProof, tooOldSlotProof),
+                    ),
                     'Invalid proof accepted',
                     'Proof is older than challenge',
                 );
 
                 await shouldRevert(
-                    rocketMegapoolManager.notifyNotExit(megapool.target, 0n, currentTime, wrongPubkeyProof, slotProof),
+                    rocketMegapoolManager.notifyNotExit(
+                        megapool.target,
+                        0n,
+                        currentTime,
+                        1,
+                        encodeValidatorProofV1(wrongPubkeyProof, slotProof),
+                    ),
                     'Invalid proof accepted',
                     'Pubkey does not match',
                 );
 
                 await shouldRevert(
-                    rocketMegapoolManager.notifyNotExit(megapool.target, 0n, currentTime, exitingValidatorProof, slotProof),
+                    rocketMegapoolManager.notifyNotExit(
+                        megapool.target,
+                        0n,
+                        currentTime,
+                        1,
+                        encodeValidatorProofV1(exitingValidatorProof, slotProof),
+                    ),
                     'Invalid proof accepted',
                     'Validator already exiting',
                 );
 
                 // Correct proof should work
-                await rocketMegapoolManager.notifyNotExit(megapool.target, 0n, currentTime, validProof, slotProof);
+                await rocketMegapoolManager.notifyNotExit(
+                    megapool.target,
+                    0n,
+                    currentTime,
+                    1,
+                    encodeValidatorProofV1(validProof, slotProof),
+                );
 
                 const infoAfter = await getValidatorInfo(megapool, 0);
                 assert.equal(infoAfter.locked, false);
@@ -1426,7 +1474,13 @@ export default function() {
 
                 const rocketMegapoolManager = await RocketMegapoolManager.deployed();
                 await shouldRevert(
-                    rocketMegapoolManager.notifyExit(megapool.target, 0n, await getCurrentTime(), invalidProof, slotProof),
+                    rocketMegapoolManager.notifyExit(
+                        megapool.target,
+                        0n,
+                        await getCurrentTime(),
+                        1,
+                        encodeValidatorProofV1(invalidProof, slotProof),
+                    ),
                     'Was able to notify exit on dissolved validator',
                     'Invalid withdrawal credentials',
                 );
@@ -1627,7 +1681,7 @@ export default function() {
                     slot: 0n,
                     witnesses: [],
                 };
-                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), proof, slotProof), 'Staked with invalid validator', 'Invalid withdrawal credentials');
+                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), 1, encodeValidatorProofV1(proof, slotProof)), 'Staked with invalid validator', 'Invalid withdrawal credentials');
             });
 
             it(printTitle('node', 'can not stake with invalid validator (invalid withdrawable_epoch)'), async () => {
@@ -1646,7 +1700,7 @@ export default function() {
                     slot: 0n,
                     witnesses: [],
                 };
-                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), proof, slotProof), 'Staked with invalid validator', 'Validator is withdrawing');
+                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), 1, encodeValidatorProofV1(proof, slotProof)), 'Staked with invalid validator', 'Validator is withdrawing');
             });
 
             it(printTitle('node', 'can not stake with invalid validator (invalid exit_epoch)'), async () => {
@@ -1665,7 +1719,7 @@ export default function() {
                     slot: 0n,
                     witnesses: [],
                 };
-                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), proof, slotProof), 'Staked with invalid validator', 'Validator is exiting');
+                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), 1, encodeValidatorProofV1(proof, slotProof)), 'Staked with invalid validator', 'Validator is exiting');
             });
 
             it(printTitle('node', 'can not stake with invalid validator (invalid activation_eligibility_epoch)'), async () => {
@@ -1684,7 +1738,7 @@ export default function() {
                     slot: 0n,
                     witnesses: [],
                 };
-                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), proof, slotProof), 'Staked with invalid validator', 'Validator is activating');
+                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), 1, encodeValidatorProofV1(proof, slotProof)), 'Staked with invalid validator', 'Validator is activating');
             });
 
             it(printTitle('node', 'can not stake with invalid validator (invalid activation_epoch)'), async () => {
@@ -1703,7 +1757,7 @@ export default function() {
                     slot: 0n,
                     witnesses: [],
                 };
-                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), proof, slotProof), 'Staked with invalid validator', 'Validator is activated');
+                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), 1, encodeValidatorProofV1(proof, slotProof)), 'Staked with invalid validator', 'Validator is activated');
             });
 
             it(printTitle('node', 'can not stake with invalid validator (invalid slashed)'), async () => {
@@ -1722,7 +1776,7 @@ export default function() {
                     slot: 0n,
                     witnesses: [],
                 };
-                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), proof, slotProof), 'Staked with invalid validator', 'Validator is slashed');
+                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), 1, encodeValidatorProofV1(proof, slotProof)), 'Staked with invalid validator', 'Validator is slashed');
             });
 
             it(printTitle('node', 'can not stake with invalid validator (invalid balance)'), async () => {
@@ -1741,7 +1795,7 @@ export default function() {
                     slot: 0n,
                     witnesses: [],
                 };
-                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), proof, slotProof), 'Staked with invalid validator', 'Invalid validator balance');
+                await shouldRevert(rocketMegapoolManager.stake(megapool.target, 0n, await getCurrentTime(), 1, encodeValidatorProofV1(proof, slotProof)), 'Staked with invalid validator', 'Invalid validator balance');
             });
 
             it(printTitle('node', 'can perform a second stake operation with no rewards available'), async () => {
@@ -1992,6 +2046,14 @@ export default function() {
                         slot: await getSlotForBlock(),
                         witnesses: [],
                     };
+                    const previousNextWithdrawalIndexProof = {
+                        nextWithdrawalIndex: withdrawalProof.withdrawal.index - withdrawalProof.withdrawalNum,
+                        witnesses: [],
+                    };
+                    const validatorBalanceProof = {
+                        balanceChunk: ethers.ZeroHash,
+                        witnesses: [],
+                    };
 
                     // Mock exiting validator by sending final balance to megapool
                     await owner.sendTransaction({
@@ -2001,7 +2063,19 @@ export default function() {
 
                     const rocketMegapoolManager = await RocketMegapoolManager.deployed();
                     await shouldRevert(
-                        rocketMegapoolManager.connect(node).notifyFinalBalance(megapool.target, validatorId, currentTime, withdrawalProof, validatorProof, slotProof),
+                        rocketMegapoolManager.connect(node).notifyFinalBalance(
+                            megapool.target,
+                            validatorId,
+                            currentTime,
+                            2,
+                            encodeFinalBalanceProofV2(
+                                withdrawalProof,
+                                validatorProof,
+                                slotProof,
+                                previousNextWithdrawalIndexProof,
+                                validatorBalanceProof,
+                            ),
+                        ),
                         'Was able to notify final balance with mismatching validators',
                         'Withdrawal validator not matching',
                     );
