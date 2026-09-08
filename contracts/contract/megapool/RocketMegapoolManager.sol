@@ -6,6 +6,7 @@ import {RocketBase} from "../RocketBase.sol";
 import {RocketMegapoolInterface} from "../../interface/megapool/RocketMegapoolInterface.sol";
 import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 import {RocketMegapoolManagerInterface} from "../../interface/megapool/RocketMegapoolManagerInterface.sol";
+import {RocketNetworkExitInterface} from "../../interface/network/RocketNetworkExitInterface.sol";
 import {BeaconStateVerifierInterface, ValidatorProof, Withdrawal, WithdrawalProof, SlotProof} from "../../interface/util/BeaconStateVerifierInterface.sol";
 
 /// @notice Handles protocol-level megapool functionality
@@ -150,6 +151,8 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         uint64 recentEpoch = _slotProof.slot / slotsPerEpoch;
         // Notify megapool
         _megapool.notifyExit(_validatorId, _validatorProof.validator.withdrawableEpoch, recentEpoch);
+        // Record voluntary exit accounting, or preserve an existing requested classification
+        RocketNetworkExitInterface(getContractAddress("rocketNetworkExit")).notifyMegapoolExit(address(_megapool), _validatorId);
     }
 
     /// @notice Verifies a validator state proof then notifies megapool that this validator was not exiting at given slot
@@ -222,5 +225,7 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         uint64 recentEpoch = _slotProof.slot / slotsPerEpoch;
         // Notify megapool
         _megapool.notifyFinalBalance(_validatorId, _withdrawalProof.withdrawal.amountInGwei, msg.sender, withdrawalEpoch, recentEpoch);
+        // Reconcile any requested or voluntary exit accounting
+        RocketNetworkExitInterface(getContractAddress("rocketNetworkExit")).notifyMegapoolFinalBalance(address(_megapool), _validatorId);
     }
 }

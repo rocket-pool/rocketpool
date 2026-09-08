@@ -22,6 +22,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     uint256 constant internal fullDepositValue = 32 ether;
     uint256 constant internal milliToWei = 10 ** 15;
     uint256 constant internal calcBase = 1 ether;
+    uint64 internal constant fullExitRequestAmount = 0; // Consensus FULL_EXIT_REQUEST_AMOUNT signals a full validator exit
 
     // Events
     event MegapoolValidatorEnqueued(uint256 indexed validatorId, uint256 time);
@@ -630,41 +631,15 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         }
     }
 
-    /**
-     * @notice Permissionlessly force exit a number of validators to reduce deficit below the exit deficit parameter
-     * @param _validatorIds List of validators to force exit
-     * @param _feeLimit The maximum fee to pay for the EIP-7002 EL exit
-     */
-    function forceExit(uint32[] calldata _validatorIds, uint256 _feeLimit) override external onlyLatestNetworkContract {
-        // Get contracts
-        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-        RocketDAOProtocolSettingsMegapoolInterface rocketDAOProtocolSettingsMegapool = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
-        RocketNodeDepositInterface rocketNodeDeposit = _getRocketNodeDeposit();
-        // Get inputs
-        uint256 credit = rocketDepositPool.getNodeCreditBalance(nodeAddress);
-        (uint256 rewards,,,) = calculatePendingRewards();
-        uint256 exitDeficit = rocketDAOProtocolSettingsMegapool.getExitDeficit();
-        // Calculate the amount of bond that will be released if all currently exiting validators + forced ones fully exit now
-        uint256 numValidatorsToExit = _validatorIds.length;
-        uint256 totalExiting = numValidatorsToExit + numExitingValidators;
-        uint256 bondReleased = nodeBond - rocketNodeDeposit.getBondRequirement(getActiveValidatorCount() - totalExiting);
-        // Project the excess funds available to pay off debt
-        uint256 projectedExcess = credit + rewards + bondReleased;
-        // Check that debt still exceeds exit deficit after taking into account projected excess
-        require (debt >= exitDeficit + projectedExcess, "Deficit too low");
-        // Query fee and validate against limit
-        uint256 fee = _getExitFee();
-        require(fee <= _feeLimit, "Fee limit exceeded");
-        // Iterate supplied validator ids, and trigger force exit
-        for (uint256 i = 0; i < numValidatorsToExit; ++i) {
-            uint32 validatorId = _validatorIds[i];
-            // Mark the validator as exiting (validator state checks are performed here)
-            _markValidatorExiting(validatorId);
-            // Trigger the exit via EIP-7002 EL triggered exit mechanism
-            _triggerExit(validatorId, type(uint64).max, fee);
-            // Emit event
-            emit MegapoolValidatorForceExited(validatorId, block.timestamp);
-        }
+    /// @notice Force exits a validator when instructed by the network exit contract
+    /// @param _validatorId Internal ID of the validator to force exit
+    function forceExit(uint32 _validatorId) override external payable onlyLatestContract("rocketNetworkExit", msg.sender) {
+        // Mark the validator as exiting (validator state checks are performed here)
+        _markValidatorExiting(_validatorId);
+        // Trigger the exit via EIP-7002 EL triggered exit mechanism, forwarding the exact value supplied by RocketNetworkExit
+        _triggerExit(_validatorId, msg.value);
+        // Emit event
+        emit MegapoolValidatorForceExited(_validatorId, block.timestamp);
     }
 
     /**
@@ -848,21 +823,13 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     }
 
     /// @dev Trigger a EIP-7002 execution layer exit for the given validator
-    function _triggerExit(uint32 _validatorId, uint64 _amount, uint256 _fee) internal {
+    function _triggerExit(uint32 _validatorId, uint256 _fee) internal {
         // Retrieve pubkey
         bytes memory pubkey = pubkeys[_validatorId];
         // Queue the withdrawal
-        bytes memory callData = abi.encodePacked(pubkey, _amount);
+        bytes memory callData = abi.encodePacked(pubkey, fullExitRequestAmount);
         (bool result,) = withdrawalRequestPredeployAddress.call{value: _fee}(callData);
         require(result, "Failed to queue withdrawal");
-    }
-
-    /// @dev Returns the exact current EIP-7002 exit fee
-    function _getExitFee() internal view returns (uint256) {
-        (bool result, bytes memory feeRaw) = withdrawalRequestPredeployAddress.staticcall('');
-        require(result, "Withdrawal fee query failed");
-        (uint256 fee) = abi.decode(feeRaw, (uint256));
-        return fee;
     }
 
     /// @dev Mirror deposit contract deposit data root calculation but with in-memory bytes instead of calldata

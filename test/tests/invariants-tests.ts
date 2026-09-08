@@ -1,12 +1,12 @@
 import assert from "assert";
 import { encodeBytes32String, parseEther, solidityPackedKeccak256 } from "ethers";
 
-import { before, describe, it, load } from "../harness";
+import { before, describe, it, load, withImpersonatedSigner } from "../harness";
 import { RocketStorage__factory } from "../harness/bindings/v1_3_1";
 import type { ProtocolContext } from "../harness/context";
 import { getActiveAddress } from "../harness/deployment";
 import { checkProtocolInvariants } from "../harness/invariants";
-import { ethers, network } from "../../test-old/_utils/hardhat-runtime";
+import { network } from "../../test-old/_utils/hardhat-runtime";
 
 const BOND = parseEther("8");
 const NODE_BALANCE_KEY = encodeBytes32String("deposit.pool.node.balance");
@@ -20,26 +20,16 @@ async function withCorruptedUint(
 ): Promise<void> {
     const snapshot = await network.provider.send("evm_snapshot");
     const caller = getActiveAddress(context.deployment, callerContract);
-    let impersonating = false;
-
     try {
-        await network.provider.send("hardhat_impersonateAccount", [caller]);
-        impersonating = true;
-        await network.provider.send("hardhat_setBalance", [
-            caller,
-            "0x56bc75e2d63100000",
-        ]);
-        const signer = await ethers.getSigner(caller);
-        const storage = RocketStorage__factory.connect(
-            context.deployment.rocketStorageAddress,
-            signer,
-        );
-        await (await storage.setUint(key, value)).wait();
-        await callback();
+        await withImpersonatedSigner(caller, async signer => {
+            const storage = RocketStorage__factory.connect(
+                context.deployment.rocketStorageAddress,
+                signer,
+            );
+            await (await storage.setUint(key, value)).wait();
+            await callback();
+        });
     } finally {
-        if (impersonating) {
-            await network.provider.send("hardhat_stopImpersonatingAccount", [caller]);
-        }
         const restored = await network.provider.send("evm_revert", [snapshot]);
         assert.equal(restored, true, "Unable to restore invariant test snapshot");
     }

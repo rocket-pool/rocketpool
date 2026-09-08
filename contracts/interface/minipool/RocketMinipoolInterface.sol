@@ -31,6 +31,7 @@ interface RocketMinipoolInterface {
     function getTotalScrubVotes() external view returns (uint256);
     function calculateNodeShare(uint256 _balance) external view returns (uint256);
     function calculateUserShare(uint256 _balance) external view returns (uint256);
+    function forceExit() external payable;
     function preDeposit(uint256 _bondingValue, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external payable;
     function deposit() external payable;
     function userDeposit() external payable;

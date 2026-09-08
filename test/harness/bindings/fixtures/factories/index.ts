@@ -6,3 +6,4 @@ export { PenaltyTest__factory } from "./PenaltyTest__factory";
 export { RevertOnTransfer__factory } from "./RevertOnTransfer__factory";
 export { RplStakeController__factory } from "./RplStakeController__factory";
 export { StorageHelper__factory } from "./StorageHelper__factory";
+export { WithdrawalRequestPredeployMock__factory } from "./WithdrawalRequestPredeployMock__factory";

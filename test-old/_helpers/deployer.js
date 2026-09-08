@@ -63,6 +63,7 @@ const contractNameMap = {
     rocketMinipoolQueue: 'RocketMinipoolQueue',
     rocketMinipoolPenalty: 'RocketMinipoolPenalty',
     rocketNetworkBalances: 'RocketNetworkBalances',
+    rocketNetworkExit: 'RocketNetworkExit',
     rocketNetworkFees: 'RocketNetworkFees',
     rocketNetworkPrices: 'RocketNetworkPrices',
     rocketNetworkPenalties: 'RocketNetworkPenalties',
@@ -171,6 +172,7 @@ export class RocketPoolDeployer {
         this.contractPlan['rocketMinipoolBase'].constructorArgs = [];
         this.contractPlan['beaconStateVerifier'].constructorArgs = () => [this.rocketStorageInstance.target, opts.slotsPerHistoricalRoot, opts.forkSlots, opts.beaconRoots, opts.genesisBlockTimestamp, opts.genesisValidatorRoot];
         this.contractPlan['rocketMegapoolDelegate'].constructorArgs = () => [this.rocketStorageInstance.target, opts.withdrawalRequestPredeployAddress];
+        this.contractPlan['rocketNetworkExit'].constructorArgs = () => [this.rocketStorageInstance.target, opts.withdrawalRequestPredeployAddress];
 
         // Setup deployment
         this.addStage('Deploy storage', 0, [

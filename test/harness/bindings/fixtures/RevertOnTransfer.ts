@@ -22,18 +22,66 @@ import type {
 
 export interface RevertOnTransferInterface extends Interface {
   getFunction(
-    nameOrSignature: "call" | "enabled" | "setEnabled"
+    nameOrSignature:
+      | "call"
+      | "callbackCount"
+      | "callbackPayload"
+      | "callbackSucceeded"
+      | "callbackTarget"
+      | "enabled"
+      | "setCallback"
+      | "setEnabled"
   ): FunctionFragment;
 
   encodeFunctionData(
     functionFragment: "call",
     values: [AddressLike, BytesLike]
   ): string;
+  encodeFunctionData(
+    functionFragment: "callbackCount",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "callbackPayload",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "callbackSucceeded",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "callbackTarget",
+    values?: undefined
+  ): string;
   encodeFunctionData(functionFragment: "enabled", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "setCallback",
+    values: [AddressLike, BytesLike]
+  ): string;
   encodeFunctionData(functionFragment: "setEnabled", values: [boolean]): string;
 
   decodeFunctionResult(functionFragment: "call", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "callbackCount",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "callbackPayload",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "callbackSucceeded",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "callbackTarget",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "enabled", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "setCallback",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "setEnabled", data: BytesLike): Result;
 }
 
@@ -86,7 +134,21 @@ export interface RevertOnTransfer extends BaseContract {
     "payable"
   >;
 
+  callbackCount: TypedContractMethod<[], [bigint], "view">;
+
+  callbackPayload: TypedContractMethod<[], [string], "view">;
+
+  callbackSucceeded: TypedContractMethod<[], [boolean], "view">;
+
+  callbackTarget: TypedContractMethod<[], [string], "view">;
+
   enabled: TypedContractMethod<[], [boolean], "view">;
+
+  setCallback: TypedContractMethod<
+    [_target: AddressLike, _payload: BytesLike],
+    [void],
+    "nonpayable"
+  >;
 
   setEnabled: TypedContractMethod<[_enabled: boolean], [void], "nonpayable">;
 
@@ -102,8 +164,27 @@ export interface RevertOnTransfer extends BaseContract {
     "payable"
   >;
   getFunction(
+    nameOrSignature: "callbackCount"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "callbackPayload"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "callbackSucceeded"
+  ): TypedContractMethod<[], [boolean], "view">;
+  getFunction(
+    nameOrSignature: "callbackTarget"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
     nameOrSignature: "enabled"
   ): TypedContractMethod<[], [boolean], "view">;
+  getFunction(
+    nameOrSignature: "setCallback"
+  ): TypedContractMethod<
+    [_target: AddressLike, _payload: BytesLike],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "setEnabled"
   ): TypedContractMethod<[_enabled: boolean], [void], "nonpayable">;

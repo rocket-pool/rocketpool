@@ -27,10 +27,12 @@ import "../../interface/minipool/RocketMinipoolBondReducerInterface.sol";
 contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolInterface {
 
     // Constants
-    uint8 public constant override version = 3;                   // Used to identify which delegate contract each minipool is using
+    uint8 public constant override version = 4;                   // Used to identify which delegate contract each minipool is using
     uint256 internal constant calcBase = 1 ether;                 // Fixed point arithmetic uses this for value for precision
     uint256 internal constant legacyPrelaunchAmount = 16 ether;   // The amount of ETH initially deposited when minipool is created (for legacy minipools)
     uint256 internal constant scrubPenalty = 2.4 ether;           // Amount of ETH penalised during a successful scrub
+    address payable internal constant withdrawalRequestPredeployAddress = 0x00000961Ef480Eb55e80D19ad83579A64c007002;
+    uint64 internal constant fullExitRequestAmount = 0; // Consensus FULL_EXIT_REQUEST_AMOUNT signals a full validator exit
 
     // Libs
     using SafeMath for uint;
@@ -46,6 +48,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     event EtherDeposited(address indexed from, uint256 amount, uint256 time);
     event EtherWithdrawn(address indexed to, uint256 amount, uint256 time);
     event EtherWithdrawalProcessed(address indexed executed, uint256 nodeAmount, uint256 userAmount, uint256 totalBalance, uint256 time);
+    event MinipoolForceExited(uint256 time);
 
     // Status getters
     function getStatus() override external view returns (MinipoolStatus) { return status; }
@@ -565,6 +568,21 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         uint256 userPortion = _rewards.sub(nodePortion);
         // Calculate final node amount as combination of node capital, node share and commission on user share
         return nodePortion.add(userPortion.mul(nodeFee).div(calcBase));
+    }
+
+    /// @notice Force exits the validator when instructed by the network exit contract
+    function forceExit() override external payable onlyLatestContract("rocketNetworkExit", msg.sender) onlyInitialised {
+        require(status == MinipoolStatus.Staking, "Minipool is not staking");
+        require(!finalised, "Minipool is finalised");
+        require(!userDistributed, "User capital already distributed");
+        // Retrieve validator pubkey from storage
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        bytes memory validatorPubkey = rocketMinipoolManager.getMinipoolPubkey(address(this));
+        // Queue a full withdrawal through the EIP-7002 predeploy
+        bytes memory callData = abi.encodePacked(validatorPubkey, fullExitRequestAmount);
+        (bool result,) = withdrawalRequestPredeployAddress.call{value: msg.value}(callData);
+        require(result, "Failed to queue withdrawal");
+        emit MinipoolForceExited(block.timestamp);
     }
 
     /// @notice Dissolve the minipool, returning user deposited ETH to the deposit pool.

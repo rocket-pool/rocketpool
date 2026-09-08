@@ -1,5 +1,6 @@
 export { describe, before, it } from "./mocha";
 export { expectRevert } from "./assertions";
+export { asNetworkContract, withImpersonatedSigner } from "./impersonation";
 export { loadContext as load } from "./scope";
 export type { ProtocolContext } from "./context";
 export {

@@ -174,7 +174,7 @@ export interface RocketMegapoolDelegateInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "forceExit",
-    values: [BigNumberish[], BigNumberish]
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "getActiveValidatorCount",
@@ -737,9 +737,9 @@ export interface RocketMegapoolDelegate extends BaseContract {
   distribute: TypedContractMethod<[], [void], "nonpayable">;
 
   forceExit: TypedContractMethod<
-    [_validatorIds: BigNumberish[], _feeLimit: BigNumberish],
+    [_validatorId: BigNumberish],
     [void],
-    "nonpayable"
+    "payable"
   >;
 
   getActiveValidatorCount: TypedContractMethod<[], [bigint], "view">;
@@ -913,11 +913,7 @@ export interface RocketMegapoolDelegate extends BaseContract {
   ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "forceExit"
-  ): TypedContractMethod<
-    [_validatorIds: BigNumberish[], _feeLimit: BigNumberish],
-    [void],
-    "nonpayable"
-  >;
+  ): TypedContractMethod<[_validatorId: BigNumberish], [void], "payable">;
   getFunction(
     nameOrSignature: "getActiveValidatorCount"
   ): TypedContractMethod<[], [bigint], "view">;

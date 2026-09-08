@@ -1,10 +1,10 @@
 import assert from "assert";
 
 import { ethers } from "../../../test-old/_utils/hardhat-runtime";
-import type { ProtocolV14 } from "../../harness";
+import type { ProtocolCurrent, ProtocolV14 } from "../../harness";
 
 export async function submitMinipoolPenaltyScenario(
-    protocol: ProtocolV14,
+    protocol: ProtocolV14 | ProtocolCurrent,
     options: { minipool: string; caller: string; block: bigint },
 ): Promise<void> {
     const address = protocol.minipools.get(options.minipool).address;

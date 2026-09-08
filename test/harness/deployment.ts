@@ -36,6 +36,15 @@ function compressAbi(abi: readonly unknown[]): string {
     return Buffer.from(pako.deflate(JSON.stringify(abi))).toString("base64");
 }
 
+function minipoolProxyAbi(delegateAbi: readonly unknown[], baseAbi: readonly unknown[]): unknown[] {
+    const abi = [...delegateAbi, ...baseAbi].filter(
+        (item: any) => item.type !== "fallback" && item.type !== "receive",
+    );
+    abi.push({ stateMutability: "payable", type: "fallback" });
+    abi.push({ stateMutability: "payable", type: "receive" });
+    return abi;
+}
+
 function addressKey(name: string): string {
     return ethers.solidityPackedKeccak256(["string", "string"], ["contract.address", name]);
 }
@@ -190,12 +199,10 @@ export async function deployV131(): Promise<DeploymentState> {
         );
     }
 
-    const combinedMinipoolAbi = [
-        ...getReleaseArtifact("1.3.1", "RocketMinipoolDelegate").abi,
-        ...getReleaseArtifact("1.3.1", "RocketMinipoolBase").abi,
-    ].filter((item: any) => item.type !== "fallback" && item.type !== "receive");
-    combinedMinipoolAbi.push({ stateMutability: "payable", type: "fallback" });
-    combinedMinipoolAbi.push({ stateMutability: "payable", type: "receive" });
+    const combinedMinipoolAbi = minipoolProxyAbi(
+        getReleaseArtifact("1.3.1", "RocketMinipoolDelegate").abi,
+        getReleaseArtifact("1.3.1", "RocketMinipoolBase").abi,
+    );
     await wait(storage.setString(
         ethers.solidityPackedKeccak256(["string", "string"], ["contract.abi", "rocketMinipool"]),
         compressAbi(combinedMinipoolAbi),
@@ -330,12 +337,15 @@ async function currentArtifact(contractName: string): Promise<ReleaseArtifact> {
 
 const currentUpgradeContracts = {
     rocketMegapoolDelegate: "RocketMegapoolDelegate",
+    rocketMinipoolDelegate: "RocketMinipoolDelegate",
+    rocketMegapoolManager: "RocketMegapoolManager",
     rocketDAOProtocolSettingsMegapool: "RocketDAOProtocolSettingsMegapool",
     rocketNetworkRedemptions: "RocketNetworkRedemptions",
     rocketDAOProtocolSettingsNetwork: "RocketDAOProtocolSettingsNetwork",
     beaconStateVerifier: "BeaconStateVerifierMock",
     rocketNetworkParticipation: "RocketNetworkParticipation",
     rocketNetworkExit: "RocketNetworkExit",
+    rocketNetworkPenalties: "RocketNetworkPenalties",
 } as const;
 
 export async function upgradeToCurrent(state: DeploymentState): Promise<void> {
@@ -348,7 +358,9 @@ export async function upgradeToCurrent(state: DeploymentState): Promise<void> {
     for (const [logicalName, artifactName] of Object.entries(currentUpgradeContracts)) {
         const artifact = await currentArtifact(artifactName);
         let args: readonly unknown[] = [state.rocketStorageAddress];
-        if (logicalName === "rocketMegapoolDelegate") {
+        if (logicalName === "rocketMinipoolDelegate") {
+            args = [];
+        } else if (logicalName === "rocketMegapoolDelegate" || logicalName === "rocketNetworkExit") {
             args = [state.rocketStorageAddress, WITHDRAWAL_REQUEST_PREDEPLOY];
         }
         deployed.set(logicalName, {
@@ -361,9 +373,14 @@ export async function upgradeToCurrent(state: DeploymentState): Promise<void> {
     const upgradeArtifact = await currentArtifact("RocketUpgradeOneDotFive");
     const upgrade = await deployArtifact(guardian, upgradeArtifact, [state.rocketStorageAddress]);
     const names = Object.keys(currentUpgradeContracts);
+    const contractAbis = names.map(name => compressAbi(deployed.get(name)!.artifact.abi));
+    const combinedMinipoolAbi = minipoolProxyAbi(
+        deployed.get("rocketMinipoolDelegate")!.artifact.abi,
+        getReleaseArtifact("1.4", "RocketMinipoolBase").abi,
+    );
     await wait(upgrade.set(
         await Promise.all(names.map(name => deployed.get(name)!.instance.getAddress())),
-        names.map(name => compressAbi(deployed.get(name)!.artifact.abi)),
+        [...contractAbis, compressAbi(combinedMinipoolAbi)],
     ));
 
     const trustedUpgradeEntry = state.active.get("rocketDAONodeTrustedUpgrade");

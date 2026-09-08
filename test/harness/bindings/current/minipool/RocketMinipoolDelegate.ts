@@ -36,6 +36,7 @@ export interface RocketMinipoolDelegateInterface extends Interface {
       | "dissolve"
       | "distributeBalance"
       | "finalise"
+      | "forceExit"
       | "getDepositType"
       | "getFinalised"
       | "getNodeAddress"
@@ -76,6 +77,7 @@ export interface RocketMinipoolDelegateInterface extends Interface {
       | "EtherDeposited"
       | "EtherWithdrawalProcessed"
       | "EtherWithdrawn"
+      | "MinipoolForceExited"
       | "MinipoolPrestaked"
       | "MinipoolPromoted"
       | "MinipoolScrubbed"
@@ -109,6 +111,7 @@ export interface RocketMinipoolDelegateInterface extends Interface {
     values: [boolean]
   ): string;
   encodeFunctionData(functionFragment: "finalise", values?: undefined): string;
+  encodeFunctionData(functionFragment: "forceExit", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "getDepositType",
     values?: undefined
@@ -239,6 +242,7 @@ export interface RocketMinipoolDelegateInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "finalise", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "forceExit", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getDepositType",
     data: BytesLike
@@ -414,6 +418,18 @@ export namespace EtherWithdrawnEvent {
   export interface OutputObject {
     to: string;
     amount: bigint;
+    time: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace MinipoolForceExitedEvent {
+  export type InputTuple = [time: BigNumberish];
+  export type OutputTuple = [time: bigint];
+  export interface OutputObject {
     time: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
@@ -600,6 +616,8 @@ export interface RocketMinipoolDelegate extends BaseContract {
 
   finalise: TypedContractMethod<[], [void], "nonpayable">;
 
+  forceExit: TypedContractMethod<[], [void], "payable">;
+
   getDepositType: TypedContractMethod<[], [bigint], "view">;
 
   getFinalised: TypedContractMethod<[], [boolean], "view">;
@@ -719,6 +737,9 @@ export interface RocketMinipoolDelegate extends BaseContract {
   getFunction(
     nameOrSignature: "finalise"
   ): TypedContractMethod<[], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "forceExit"
+  ): TypedContractMethod<[], [void], "payable">;
   getFunction(
     nameOrSignature: "getDepositType"
   ): TypedContractMethod<[], [bigint], "view">;
@@ -862,6 +883,13 @@ export interface RocketMinipoolDelegate extends BaseContract {
     EtherWithdrawnEvent.OutputObject
   >;
   getEvent(
+    key: "MinipoolForceExited"
+  ): TypedContractEvent<
+    MinipoolForceExitedEvent.InputTuple,
+    MinipoolForceExitedEvent.OutputTuple,
+    MinipoolForceExitedEvent.OutputObject
+  >;
+  getEvent(
     key: "MinipoolPrestaked"
   ): TypedContractEvent<
     MinipoolPrestakedEvent.InputTuple,
@@ -947,6 +975,17 @@ export interface RocketMinipoolDelegate extends BaseContract {
       EtherWithdrawnEvent.InputTuple,
       EtherWithdrawnEvent.OutputTuple,
       EtherWithdrawnEvent.OutputObject
+    >;
+
+    "MinipoolForceExited(uint256)": TypedContractEvent<
+      MinipoolForceExitedEvent.InputTuple,
+      MinipoolForceExitedEvent.OutputTuple,
+      MinipoolForceExitedEvent.OutputObject
+    >;
+    MinipoolForceExited: TypedContractEvent<
+      MinipoolForceExitedEvent.InputTuple,
+      MinipoolForceExitedEvent.OutputTuple,
+      MinipoolForceExitedEvent.OutputObject
     >;
 
     "MinipoolPrestaked(bytes,bytes,bytes32,uint256,bytes,uint256)": TypedContractEvent<

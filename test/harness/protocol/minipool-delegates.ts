@@ -2,9 +2,9 @@ import { Contract } from "ethers";
 import type { ContractRunner } from "ethers";
 
 import {
-    type RocketMinipoolDelegate as MinipoolDelegateV3,
-    RocketMinipoolDelegate__factory as V131MinipoolDelegateFactory,
-} from "../bindings/v1_3_1";
+    type RocketMinipoolDelegate as MinipoolDelegateV4,
+    RocketMinipoolDelegate__factory as CurrentMinipoolDelegateFactory,
+} from "../bindings/current";
 
 const DELEGATE_VERSION_ABI = [
     "function version() view returns (uint8)",
@@ -13,10 +13,11 @@ const DELEGATE_VERSION_ABI = [
 type DelegateConnector = (
     address: string,
     runner: ContractRunner,
-) => MinipoolDelegateV3;
+) => MinipoolDelegateV4;
 
 const delegateConnectors = new Map<number, DelegateConnector>([
-    [3, (address, runner) => V131MinipoolDelegateFactory.connect(address, runner)],
+    [3, (address, runner) => CurrentMinipoolDelegateFactory.connect(address, runner)],
+    [4, (address, runner) => CurrentMinipoolDelegateFactory.connect(address, runner)],
 ]);
 
 export async function getMinipoolDelegateVersion(
@@ -30,7 +31,7 @@ export async function getMinipoolDelegateVersion(
 export async function connectMinipoolDelegate(
     address: string,
     runner: ContractRunner,
-): Promise<MinipoolDelegateV3> {
+): Promise<MinipoolDelegateV4> {
     const version = await getMinipoolDelegateVersion(address, runner);
     const connect = delegateConnectors.get(version);
     if (!connect) {

@@ -59,15 +59,39 @@ export class RevertingReceiverFixture {
         this.context.trace(`set reverting receiver ${this.name} to ${enabled}`);
     }
 
+    async setCallback(target: string, data: string): Promise<void> {
+        const guardian = await this.context.guardian();
+        await (await RevertOnTransfer__factory.connect(
+            this.address,
+            guardian,
+        ).setCallback(target, data)).wait();
+        this.context.trace(`set callback on reverting receiver ${this.name}`);
+    }
+
+    async callbackSucceeded(): Promise<boolean> {
+        return RevertOnTransfer__factory.connect(
+            this.address,
+            ethers.provider,
+        ).callbackSucceeded();
+    }
+
+    async callbackCount(): Promise<bigint> {
+        return RevertOnTransfer__factory.connect(
+            this.address,
+            ethers.provider,
+        ).callbackCount();
+    }
+
     balance(): Promise<bigint> {
         return ethers.provider.getBalance(this.address);
     }
 
-    async call(target: string, data: string): Promise<void> {
+    async call(target: string, data: string, value = 0n): Promise<void> {
         const guardian = await this.context.guardian();
         await (await RevertOnTransfer__factory.connect(this.address, guardian).call(
             target,
             data,
+            { value },
         )).wait();
         this.context.trace(`called ${target} through reverting receiver ${this.name}`);
     }

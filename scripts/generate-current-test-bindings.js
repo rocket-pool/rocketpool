@@ -53,6 +53,8 @@ const currentArtifactPaths = [
     'artifacts/contracts/contract/network/RocketNetworkBalances.sol/RocketNetworkBalances.json',
     'artifacts/contracts/contract/network/RocketNetworkVoting.sol/RocketNetworkVoting.json',
     'artifacts/contracts/contract/network/RocketNetworkRevenues.sol/RocketNetworkRevenues.json',
+    'artifacts/contracts/contract/network/RocketNetworkExit.sol/RocketNetworkExit.json',
+    'artifacts/contracts/contract/network/RocketNetworkPenalties.sol/RocketNetworkPenalties.json',
     'artifacts/contracts/contract/rewards/RocketClaimDAO.sol/RocketClaimDAO.json',
     'artifacts/contracts/contract/rewards/RocketRewardsPool.sol/RocketRewardsPool.json',
     'artifacts/contracts/contract/rewards/RocketSmoothingPool.sol/RocketSmoothingPool.json',
@@ -62,6 +64,7 @@ const currentArtifactPaths = [
 
 const fixtureArtifactPaths = [
     'artifacts/contracts/contract/helper/RevertOnTransfer.sol/RevertOnTransfer.json',
+    'artifacts/contracts/contract/helper/WithdrawalRequestPredeployMock.sol/WithdrawalRequestPredeployMock.json',
     'artifacts/contracts/contract/helper/RplStakeController.sol/RplStakeController.json',
     'artifacts/contracts/contract/helper/PenaltyTest.sol/PenaltyTest.json',
     'artifacts/contracts/contract/helper/StorageHelper.sol/StorageHelper.json',

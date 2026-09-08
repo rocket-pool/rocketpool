@@ -2,17 +2,19 @@
 pragma solidity 0.8.30;
 
 import {SafeCast} from "@openzeppelin4/contracts/utils/math/SafeCast.sol";
+import {Math} from "@openzeppelin4/contracts/utils/math/Math.sol";
 
 import {RocketDAONodeTrustedInterface} from "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import {RocketDAOProtocolSettingsMinipoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import {RocketDAOProtocolSettingsNetworkInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 import {RocketMinipoolPenaltyInterface} from "../../interface/minipool/RocketMinipoolPenaltyInterface.sol";
+import {RocketMinipoolInterface} from "../../interface/minipool/RocketMinipoolInterface.sol";
 import {RocketNetworkPenaltiesInterface} from "../../interface/network/RocketNetworkPenaltiesInterface.sol";
 import {RocketNetworkSnapshotsTimeInterface} from "../../interface/network/RocketNetworkSnapshotsTimeInterface.sol";
 import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 import {RocketBase} from "../RocketBase.sol";
 
-/// @notice Applies penalties to minipools for MEV theft
+/// @notice Accounts for MEV theft and non-exit penalties on minipools
 contract RocketNetworkPenalties is RocketBase, RocketNetworkPenaltiesInterface {
     // Constants
     uint256 constant internal penaltyMaximumPeriod = 7 days;
@@ -25,7 +27,18 @@ contract RocketNetworkPenalties is RocketBase, RocketNetworkPenaltiesInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 2;
+        version = 3;
+    }
+
+    /// @notice Adds a nominal ETH exit penalty to the minipool's combined penalty rate
+    /// @param _minipool Address of the minipool to penalise
+    /// @param _penaltyAmount Nominal penalty in wei; actual collection depends on the distributable node share and rate cap
+    function applyExitPenalty(address _minipool, uint256 _penaltyAmount) override external onlyLatestContract("rocketNetworkExit", msg.sender) onlyRegisteredMinipool(_minipool) {
+        _initialisePenaltyRates(_minipool);
+        uint256 nodeDepositBalance = RocketMinipoolInterface(_minipool).getNodeDepositBalance();
+        uint256 rateDelta = Math.mulDiv(_penaltyAmount, calcBase, nodeDepositBalance);
+        addUint(keccak256(abi.encodePacked("network.penalties.rate.exit", _minipool)), rateDelta);
+        _publishPenaltyRate(_minipool);
     }
 
     /// @notice Returns the number of votes in favour of the given penalty
@@ -169,10 +182,27 @@ contract RocketNetworkPenalties is RocketBase, RocketNetworkPenaltiesInterface {
         newPenaltyCount = newPenaltyCount - 2;
         // Calculate the new penalty rate
         uint256 penaltyRate = newPenaltyCount * rocketDAOProtocolSettingsNetwork.getPerPenaltyRate();
-        // Set the penalty rate
-        RocketMinipoolPenaltyInterface rocketMinipoolPenalty = RocketMinipoolPenaltyInterface(getContractAddress("rocketMinipoolPenalty"));
-        rocketMinipoolPenalty.setPenaltyRate(_minipool, penaltyRate);
-        // Emit penalty updated event
+        // Reprice only the oDAO contribution, preserving accumulated non-exit penalties
+        _initialisePenaltyRates(_minipool);
+        setUint(keccak256(abi.encodePacked("network.penalties.rate.odao", _minipool)), penaltyRate);
+        _publishPenaltyRate(_minipool);
+    }
+
+    /// @dev Existing pre-v1.5 rates are legacy contributions. Read raw storage so a temporary cap cannot discard them
+    function _initialisePenaltyRates(address _minipool) internal {
+        bytes32 initialisedKey = keccak256(abi.encodePacked("network.penalties.rate.initialised", _minipool));
+        if (getBool(initialisedKey)) return;
+        setUint(keccak256(abi.encodePacked("network.penalties.rate.odao", _minipool)), getUint(keccak256(abi.encodePacked("minipool.penalty.rate", _minipool))));
+        setUint(keccak256(abi.encodePacked("network.penalties.rate.exit", _minipool)), 0);
+        setBool(initialisedKey, true);
+    }
+
+    /// @dev Publish the uncapped sum; the immutable minipool penalty contract applies the effective maximum when read
+    function _publishPenaltyRate(address _minipool) internal {
+        uint256 penaltyRate = getUint(keccak256(abi.encodePacked("network.penalties.rate.odao", _minipool)))
+            + getUint(keccak256(abi.encodePacked("network.penalties.rate.exit", _minipool)));
+        RocketMinipoolPenaltyInterface(getContractAddress("rocketMinipoolPenalty")).setPenaltyRate(_minipool, penaltyRate);
         emit PenaltyUpdated(_minipool, penaltyRate, block.timestamp);
     }
+
 }

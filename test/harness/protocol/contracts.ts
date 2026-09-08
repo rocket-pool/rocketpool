@@ -140,6 +140,8 @@ export interface CurrentContracts {
     rocketNetworkBalances: Current.RocketNetworkBalances;
     rocketNetworkVoting: Current.RocketNetworkVoting;
     rocketNetworkRevenues: Current.RocketNetworkRevenues;
+    rocketNetworkExit: Current.RocketNetworkExit;
+    rocketNetworkPenalties: Current.RocketNetworkPenalties;
     rocketRewardsPool: Current.RocketRewardsPool;
     rocketSmoothingPool: Current.RocketSmoothingPool;
     rocketClaimDAO: Current.RocketClaimDAO;
