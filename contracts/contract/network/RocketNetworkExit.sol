@@ -250,28 +250,58 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
         _forceMegapoolValidators(megapool, validatorIds);
     }
 
-    /// @notice Force exits Megapool validators when its projected debt remains above the RPIP-44 exit deficit
+    /// @notice Permissionlessly resubmits an EL exit for a validator already marked as exiting
+    /// @dev Success means the request was queued, not that consensus accepted the exit. The caller funds the current fee.
+    /// @param _megapoolAddress Address of the Megapool owning the validator
+    /// @param _validatorId Internal ID of the validator within the Megapool
+    function retryMegapoolExit(address _megapoolAddress, uint32 _validatorId) override external payable onlyRegisteredMegapool(_megapoolAddress) {
+        uint256 fee = getExitFee();
+        require(msg.value >= fee, "Insufficient exit fee");
+        RocketMegapoolInterface(_megapoolAddress).retryExit{value: fee}(_validatorId);
+        _refundExcessExitFee(fee);
+    }
+
+    /// @notice Exits Megapool validators at the request of the node or its withdrawal address, or permissionlessly when the deficit permits
+    /// @dev Other callers require the projected deficit before the last requested exit to be at least the RPIP-44 exit deficit
     /// @param _megapoolAddress Address of the Megapool owning the validators
-    /// @param _validatorIds Internal IDs of the validators to force exit
-    function forceMegapoolExitForDeficit(address _megapoolAddress, uint32[] calldata _validatorIds) override external payable onlyRegisteredMegapool(_megapoolAddress) {
+    /// @param _validatorIds Internal IDs of the validators to exit
+    function exitMegapoolValidators(address _megapoolAddress, uint32[] calldata _validatorIds) override external payable onlyRegisteredMegapool(_megapoolAddress) {
         uint256 numValidatorsToExit = _validatorIds.length;
         require(numValidatorsToExit > 0, "No validators supplied");
-
+        // Get contracts
         RocketMegapoolInterface megapool = RocketMegapoolInterface(_megapoolAddress);
-        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-        RocketDAOProtocolSettingsMegapoolInterface rocketDAOProtocolSettingsMegapool = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
-        RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
-
+        // Query validator counts
         uint256 totalExiting = numValidatorsToExit + megapool.getExitingValidatorCount();
         uint256 activeValidatorCount = megapool.getActiveValidatorCount();
+        // Sanity check validator exit count
         require(totalExiting <= activeValidatorCount, "Too many validators to exit");
-
-        uint256 credit = rocketDepositPool.getNodeCreditBalance(megapool.getNodeAddress());
-        (uint256 rewards,,,) = megapool.calculatePendingRewards();
-        uint256 bondReleased = megapool.getNodeBond() - rocketNodeDeposit.getBondRequirement(activeValidatorCount - totalExiting);
-        uint256 projectedExcess = credit + rewards + bondReleased;
-        require(megapool.getDebt() >= rocketDAOProtocolSettingsMegapool.getExitDeficit() + projectedExcess, "Deficit too low");
-
+        // Skip deficit accounting for owners
+        address nodeAddress = megapool.getNodeAddress();
+        if (msg.sender != nodeAddress && msg.sender != rocketStorage.getNodeWithdrawalAddress(nodeAddress)) {
+            RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+            RocketDAOProtocolSettingsMegapoolInterface rocketDAOProtocolSettingsMegapool = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
+            RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
+            // Query credit and rewards
+            uint256 credit = rocketDepositPool.getNodeCreditBalance(nodeAddress);
+            (uint256 rewards,,,) = megapool.calculatePendingRewards();
+            // Account for existing exits and every proposed exit except the last
+            // The last exit is allowed to bring the deficit below the threshold
+            // Include queued bond because the active validator count includes queued validators
+            // Clamp release to zero when underbonded and cap it by exiting principal and available node bond
+            uint256 bondReleasedBeforeLast = _calculateReleasedNodeBond(
+                megapool.getNodeBond() + megapool.getNodeQueuedBond(),
+                megapool.getNodeBond(),
+                rocketNodeDeposit.getBondRequirement(activeValidatorCount - (totalExiting - 1)),
+                totalExiting - 1
+            );
+            uint256 projectedExcess = credit + rewards + bondReleasedBeforeLast;
+            // Pending rewards exclude already-distributed funds available for refund
+            projectedExcess += megapool.getRefundValue();
+            // Include deposited node ETH available for validator deposits (RPIP-44 received funds)
+            projectedExcess += rocketNodeDeposit.getNodeEthBalance(nodeAddress);
+            require(megapool.getDebt() >= rocketDAOProtocolSettingsMegapool.getExitDeficit() + projectedExcess, "Deficit too low");
+        }
+        // Exit validators using the common caller-funded execution path
         _forceMegapoolValidators(megapool, _validatorIds);
     }
 

@@ -114,6 +114,7 @@ export interface RocketMegapoolDelegateInterface extends Interface {
       | "notifyNotExit"
       | "reduceBond"
       | "repayDebt"
+      | "retryExit"
       | "stake"
       | "version"
   ): FunctionFragment;
@@ -128,6 +129,7 @@ export interface RocketMegapoolDelegateInterface extends Interface {
       | "MegapoolValidatorDequeued"
       | "MegapoolValidatorDissolved"
       | "MegapoolValidatorEnqueued"
+      | "MegapoolValidatorExitRetried"
       | "MegapoolValidatorExited"
       | "MegapoolValidatorExiting"
       | "MegapoolValidatorForceExited"
@@ -280,6 +282,10 @@ export interface RocketMegapoolDelegateInterface extends Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "repayDebt", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "retryExit",
+    values: [BigNumberish]
+  ): string;
   encodeFunctionData(functionFragment: "stake", values: [BigNumberish]): string;
   encodeFunctionData(functionFragment: "version", values?: undefined): string;
 
@@ -404,6 +410,7 @@ export interface RocketMegapoolDelegateInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "reduceBond", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "repayDebt", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "retryExit", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "stake", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "version", data: BytesLike): Result;
 }
@@ -500,6 +507,19 @@ export namespace MegapoolValidatorDissolvedEvent {
 }
 
 export namespace MegapoolValidatorEnqueuedEvent {
+  export type InputTuple = [validatorId: BigNumberish, time: BigNumberish];
+  export type OutputTuple = [validatorId: bigint, time: bigint];
+  export interface OutputObject {
+    validatorId: bigint;
+    time: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace MegapoolValidatorExitRetriedEvent {
   export type InputTuple = [validatorId: BigNumberish, time: BigNumberish];
   export type OutputTuple = [validatorId: bigint, time: bigint];
   export interface OutputObject {
@@ -847,6 +867,12 @@ export interface RocketMegapoolDelegate extends BaseContract {
 
   repayDebt: TypedContractMethod<[], [void], "payable">;
 
+  retryExit: TypedContractMethod<
+    [_validatorId: BigNumberish],
+    [void],
+    "payable"
+  >;
+
   stake: TypedContractMethod<
     [_validatorId: BigNumberish],
     [void],
@@ -1038,6 +1064,9 @@ export interface RocketMegapoolDelegate extends BaseContract {
     nameOrSignature: "repayDebt"
   ): TypedContractMethod<[], [void], "payable">;
   getFunction(
+    nameOrSignature: "retryExit"
+  ): TypedContractMethod<[_validatorId: BigNumberish], [void], "payable">;
+  getFunction(
     nameOrSignature: "stake"
   ): TypedContractMethod<[_validatorId: BigNumberish], [void], "nonpayable">;
   getFunction(
@@ -1099,6 +1128,13 @@ export interface RocketMegapoolDelegate extends BaseContract {
     MegapoolValidatorEnqueuedEvent.InputTuple,
     MegapoolValidatorEnqueuedEvent.OutputTuple,
     MegapoolValidatorEnqueuedEvent.OutputObject
+  >;
+  getEvent(
+    key: "MegapoolValidatorExitRetried"
+  ): TypedContractEvent<
+    MegapoolValidatorExitRetriedEvent.InputTuple,
+    MegapoolValidatorExitRetriedEvent.OutputTuple,
+    MegapoolValidatorExitRetriedEvent.OutputObject
   >;
   getEvent(
     key: "MegapoolValidatorExited"
@@ -1244,6 +1280,17 @@ export interface RocketMegapoolDelegate extends BaseContract {
       MegapoolValidatorEnqueuedEvent.InputTuple,
       MegapoolValidatorEnqueuedEvent.OutputTuple,
       MegapoolValidatorEnqueuedEvent.OutputObject
+    >;
+
+    "MegapoolValidatorExitRetried(uint256,uint256)": TypedContractEvent<
+      MegapoolValidatorExitRetriedEvent.InputTuple,
+      MegapoolValidatorExitRetriedEvent.OutputTuple,
+      MegapoolValidatorExitRetriedEvent.OutputObject
+    >;
+    MegapoolValidatorExitRetried: TypedContractEvent<
+      MegapoolValidatorExitRetriedEvent.InputTuple,
+      MegapoolValidatorExitRetriedEvent.OutputTuple,
+      MegapoolValidatorExitRetriedEvent.OutputObject
     >;
 
     "MegapoolValidatorExited(uint32,uint256)": TypedContractEvent<

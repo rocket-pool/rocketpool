@@ -37,15 +37,24 @@ describe("RocketMegapool validator lifecycle", () => {
         await dissolveMegapoolValidatorAndAssert(current, "node", 0n, { caller: "random" });
     });
 
-    it("lets the node notify exit for a dissolved validator", async () => {
+    it("rejects exit notifications for a dissolved validator without changing state", async () => {
         const current = await load().ensure("current");
         await prepareAssigned();
         await current.time.advance(DISSOLVE_PERIOD + 1n);
         await dissolveMegapoolValidatorAndAssert(current, "node", 0n);
-        await (await current.megapools.delegate("node", "node")).getValidatorInfo(0n);
-        await notifyMegapoolExitAndAssert(current, "node", 0n, await currentEpoch(current));
         const megapool = await current.megapools.delegate("node");
-        assert.equal((await megapool.getValidatorInfo(0n)).exiting, true);
+        const before = Array.from(await megapool.getValidatorInfo(0n));
+        const debtBefore = await megapool.getDebt();
+        const epoch = await currentEpoch(current);
+        await expectRevert(
+            () => notifyMegapoolExitAndAssert(current, "node", 0n, epoch),
+            "Validator is dissolved",
+        );
+        assert.deepStrictEqual(Array.from(await megapool.getValidatorInfo(0n)), before);
+        assert.equal(await megapool.getDebt(), debtBefore);
+        assert.equal(await megapool.getExitingValidatorCount(), 0n);
+        assert.equal(await megapool.getLockedValidatorCount(), 0n);
+        assert.equal(await megapool.getActiveValidatorCount(), 0n);
     });
 
     it("stakes a later validator after an earlier validator is dissolved", async () => {

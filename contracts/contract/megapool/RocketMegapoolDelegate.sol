@@ -31,6 +31,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     event MegapoolValidatorExited(uint32 indexed validatorId, uint256 time);
     event MegapoolValidatorExiting(uint256 indexed validatorId, uint256 time);
     event MegapoolValidatorForceExited(uint256 indexed validatorId, uint256 time);
+    event MegapoolValidatorExitRetried(uint256 indexed validatorId, uint256 time);
     event MegapoolValidatorLocked(uint256 indexed validatorId, uint256 time);
     event MegapoolValidatorUnlocked(uint256 indexed validatorId, uint256 time);
     event MegapoolValidatorDissolved(uint256 indexed validatorId, uint256 time);
@@ -642,6 +643,18 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         emit MegapoolValidatorForceExited(_validatorId, block.timestamp);
     }
 
+    /// @notice Resubmits an EL exit without changing the existing exit state or accounting
+    /// @dev Success means the request was queued, not that consensus accepted the exit
+    /// @param _validatorId Internal ID of the validator to retry
+    function retryExit(uint32 _validatorId) override external payable onlyLatestContract("rocketNetworkExit", msg.sender) {
+        require(_validatorId < numValidators, "Validator does not exist");
+        ValidatorInfo memory validator = validators[_validatorId];
+        require(!validator.exited, "Already exited");
+        require(validator.exiting, "Validator is not exiting");
+        _triggerExit(_validatorId, msg.value);
+        emit MegapoolValidatorExitRetried(_validatorId, block.timestamp);
+    }
+
     /**
      * @dev Marks a validator as being exited and updates internal state to match
      * @param _validatorId Id of the validator to mark as exiting
@@ -649,7 +662,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     function _markValidatorExiting(uint32 _validatorId) internal {
         ValidatorInfo memory validator = validators[_validatorId];
         // Check required state
-        require(validator.staked || validator.dissolved, "Not staking or dissolved");
+        require(!validator.dissolved, "Validator is dissolved");
+        require(validator.staked, "Validator is not staking");
         require(!validator.exiting, "Already notified");
         require(!validator.exited, "Already exited");
         // Update validator state to exiting

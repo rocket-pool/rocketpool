@@ -80,8 +80,8 @@ export type SlotProofStructOutput = [slot: bigint, witnesses: string[]] & {
 export interface RocketNetworkExitInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "exitMegapoolValidators"
       | "forceMegapoolExit"
-      | "forceMegapoolExitForDeficit"
       | "forceMinipoolExit"
       | "getExitFee"
       | "getMegapoolCooperativeExitStart"
@@ -99,6 +99,7 @@ export interface RocketNetworkExitInterface extends Interface {
       | "penaliseMinipool"
       | "requestMegapoolExit"
       | "requestMinipoolExit"
+      | "retryMegapoolExit"
       | "settleMinipoolExit"
       | "version"
   ): FunctionFragment;
@@ -114,12 +115,12 @@ export interface RocketNetworkExitInterface extends Interface {
   ): EventFragment;
 
   encodeFunctionData(
-    functionFragment: "forceMegapoolExit",
-    values: [AddressLike, BigNumberish]
+    functionFragment: "exitMegapoolValidators",
+    values: [AddressLike, BigNumberish[]]
   ): string;
   encodeFunctionData(
-    functionFragment: "forceMegapoolExitForDeficit",
-    values: [AddressLike, BigNumberish[]]
+    functionFragment: "forceMegapoolExit",
+    values: [AddressLike, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "forceMinipoolExit",
@@ -190,17 +191,21 @@ export interface RocketNetworkExitInterface extends Interface {
     values: [AddressLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "retryMegapoolExit",
+    values: [AddressLike, BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "settleMinipoolExit",
     values: [AddressLike]
   ): string;
   encodeFunctionData(functionFragment: "version", values?: undefined): string;
 
   decodeFunctionResult(
-    functionFragment: "forceMegapoolExit",
+    functionFragment: "exitMegapoolValidators",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "forceMegapoolExitForDeficit",
+    functionFragment: "forceMegapoolExit",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -266,6 +271,10 @@ export interface RocketNetworkExitInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "requestMinipoolExit",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "retryMegapoolExit",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -435,14 +444,14 @@ export interface RocketNetworkExit extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
-  forceMegapoolExit: TypedContractMethod<
-    [_megapoolAddress: AddressLike, _validatorId: BigNumberish],
+  exitMegapoolValidators: TypedContractMethod<
+    [_megapoolAddress: AddressLike, _validatorIds: BigNumberish[]],
     [void],
     "payable"
   >;
 
-  forceMegapoolExitForDeficit: TypedContractMethod<
-    [_megapoolAddress: AddressLike, _validatorIds: BigNumberish[]],
+  forceMegapoolExit: TypedContractMethod<
+    [_megapoolAddress: AddressLike, _validatorId: BigNumberish],
     [void],
     "payable"
   >;
@@ -542,6 +551,12 @@ export interface RocketNetworkExit extends BaseContract {
     "nonpayable"
   >;
 
+  retryMegapoolExit: TypedContractMethod<
+    [_megapoolAddress: AddressLike, _validatorId: BigNumberish],
+    [void],
+    "payable"
+  >;
+
   settleMinipoolExit: TypedContractMethod<
     [_minipoolAddress: AddressLike],
     [void],
@@ -555,16 +570,16 @@ export interface RocketNetworkExit extends BaseContract {
   ): T;
 
   getFunction(
-    nameOrSignature: "forceMegapoolExit"
+    nameOrSignature: "exitMegapoolValidators"
   ): TypedContractMethod<
-    [_megapoolAddress: AddressLike, _validatorId: BigNumberish],
+    [_megapoolAddress: AddressLike, _validatorIds: BigNumberish[]],
     [void],
     "payable"
   >;
   getFunction(
-    nameOrSignature: "forceMegapoolExitForDeficit"
+    nameOrSignature: "forceMegapoolExit"
   ): TypedContractMethod<
-    [_megapoolAddress: AddressLike, _validatorIds: BigNumberish[]],
+    [_megapoolAddress: AddressLike, _validatorId: BigNumberish],
     [void],
     "payable"
   >;
@@ -652,6 +667,13 @@ export interface RocketNetworkExit extends BaseContract {
   getFunction(
     nameOrSignature: "requestMinipoolExit"
   ): TypedContractMethod<[_minipoolAddress: AddressLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "retryMegapoolExit"
+  ): TypedContractMethod<
+    [_megapoolAddress: AddressLike, _validatorId: BigNumberish],
+    [void],
+    "payable"
+  >;
   getFunction(
     nameOrSignature: "settleMinipoolExit"
   ): TypedContractMethod<[_minipoolAddress: AddressLike], [void], "nonpayable">;
