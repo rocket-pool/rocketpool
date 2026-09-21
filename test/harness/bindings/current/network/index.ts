@@ -3,6 +3,7 @@
 /* eslint-disable */
 export type { RocketNetworkBalances } from "./RocketNetworkBalances";
 export type { RocketNetworkExit } from "./RocketNetworkExit";
+export type { RocketNetworkParticipation } from "./RocketNetworkParticipation";
 export type { RocketNetworkPenalties } from "./RocketNetworkPenalties";
 export type { RocketNetworkPrices } from "./RocketNetworkPrices";
 export type { RocketNetworkRevenues } from "./RocketNetworkRevenues";

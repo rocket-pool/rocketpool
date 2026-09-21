@@ -95,6 +95,7 @@ import {
 } from "../bindings/v1_4";
 import {
     BeaconStateVerifierMock__factory as CurrentBeaconStateVerifierFactory,
+    RocketNetworkParticipation__factory as CurrentNetworkParticipationFactory,
     RocketDAOProtocol__factory as CurrentDAOProtocolFactory,
     RocketDAOProtocolSettingsMegapool__factory as CurrentMegapoolSettingsFactory,
     RocketDAOProtocolSettingsMinipool__factory as CurrentMinipoolSettingsFactory,
@@ -305,6 +306,7 @@ export function connectCurrent(context: ProtocolContext): ProtocolCurrent {
         rocketNetworkVoting: CurrentNetworkVotingFactory.connect(getActiveAddress(state, "rocketNetworkVoting"), signer),
         rocketNetworkRevenues: CurrentNetworkRevenuesFactory.connect(getActiveAddress(state, "rocketNetworkRevenues"), signer),
         rocketNetworkExit: CurrentNetworkExitFactory.connect(getActiveAddress(state, "rocketNetworkExit"), signer),
+        rocketNetworkParticipation: CurrentNetworkParticipationFactory.connect(getActiveAddress(state, "rocketNetworkParticipation"), signer),
         rocketNetworkPenalties: CurrentNetworkPenaltiesFactory.connect(getActiveAddress(state, "rocketNetworkPenalties"), signer),
         rocketRewardsPool: CurrentRewardsPoolFactory.connect(getActiveAddress(state, "rocketRewardsPool"), signer),
         rocketSmoothingPool: CurrentSmoothingPoolFactory.connect(getActiveAddress(state, "rocketSmoothingPool"), signer),

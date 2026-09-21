@@ -53,6 +53,7 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             _setSettingUint("network.performance.proof.buffer", 225);       // 24 hours in epochs (RPIP-73)
             _setSettingUint("network.performance.threshold", 0.94 ether);   // 94% (RPIP-73)
             _setSettingUint("network.performance.challenge.period", 24 hours); // 24 hours (RPIP-73)
+            _setSettingUint("network.performance.challenge.bond", 100 ether); // RPL per list (RPIP-73)
             // Set deploy flag
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -96,9 +97,11 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             } else if (settingKey == keccak256(bytes("network.performance.period"))) {
                 require(_value > 0, "Value must be > 0");
             } else if (settingKey == keccak256(bytes("network.performance.proof.buffer"))) {
-                require(_value > 1, "Value must be > 1");
+                require(_value > 10, "Value must be > 10"); // RPIP-73
             } else if (settingKey == keccak256(bytes("network.performance.threshold"))) {
                 require(_value > 0 && _value <= 1 ether, "Value must be > 0 and <= 100%");
+            } else if (settingKey == keccak256(bytes("network.performance.challenge.bond"))) {
+                require(_value > 20 ether, "Value must be > 20 RPL");
             } else if (settingKey == keccak256(bytes("network.performance.challenge.period"))) {
                 require(_value > 0, "Value must be > 0");
             }
@@ -324,6 +327,11 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
     /// @notice Returns the minimum performance threshold as a fraction of 1 ether
     function getPerformanceThreshold() override external view returns (uint256) {
         return getSettingUint("network.performance.threshold");
+    }
+
+    /// @notice Returns the RPL bond required per performance challenge list
+    function getPerformanceChallengeBond() override external view returns (uint256) {
+        return getSettingUint("network.performance.challenge.bond");
     }
 
     /// @notice Returns how long a performance challenge can be defeated before finalisation

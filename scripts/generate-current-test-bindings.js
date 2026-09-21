@@ -54,6 +54,7 @@ const currentArtifactPaths = [
     'artifacts/contracts/contract/network/RocketNetworkVoting.sol/RocketNetworkVoting.json',
     'artifacts/contracts/contract/network/RocketNetworkRevenues.sol/RocketNetworkRevenues.json',
     'artifacts/contracts/contract/network/RocketNetworkExit.sol/RocketNetworkExit.json',
+    'artifacts/contracts/contract/network/RocketNetworkParticipation.sol/RocketNetworkParticipation.json',
     'artifacts/contracts/contract/network/RocketNetworkPenalties.sol/RocketNetworkPenalties.json',
     'artifacts/contracts/contract/rewards/RocketClaimDAO.sol/RocketClaimDAO.json',
     'artifacts/contracts/contract/rewards/RocketRewardsPool.sol/RocketRewardsPool.json',

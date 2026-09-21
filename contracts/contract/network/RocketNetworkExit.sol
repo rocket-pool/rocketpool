@@ -43,7 +43,11 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
     // Modifiers
 
     modifier onlyMinipoolExitRequester() {
-        require(msg.sender == getContractAddress("rocketNetworkRedemptions"), "Invalid minipool exit requester");
+        require(
+            msg.sender == getContractAddress("rocketNetworkRedemptions") ||
+            msg.sender == getContractAddress("rocketNetworkParticipation"),
+            "Invalid minipool exit requester"
+        );
         _;
     }
 

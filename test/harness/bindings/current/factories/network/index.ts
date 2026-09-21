@@ -3,6 +3,7 @@
 /* eslint-disable */
 export { RocketNetworkBalances__factory } from "./RocketNetworkBalances__factory";
 export { RocketNetworkExit__factory } from "./RocketNetworkExit__factory";
+export { RocketNetworkParticipation__factory } from "./RocketNetworkParticipation__factory";
 export { RocketNetworkPenalties__factory } from "./RocketNetworkPenalties__factory";
 export { RocketNetworkPrices__factory } from "./RocketNetworkPrices__factory";
 export { RocketNetworkRevenues__factory } from "./RocketNetworkRevenues__factory";

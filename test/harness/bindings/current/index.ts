@@ -122,6 +122,8 @@ export type { RocketNetworkRevenues } from "./network/RocketNetworkRevenues";
 export { RocketNetworkRevenues__factory } from "./factories/network/RocketNetworkRevenues__factory";
 export type { RocketNetworkExit } from "./network/RocketNetworkExit";
 export { RocketNetworkExit__factory } from "./factories/network/RocketNetworkExit__factory";
+export type { RocketNetworkParticipation } from "./network/RocketNetworkParticipation";
+export { RocketNetworkParticipation__factory } from "./factories/network/RocketNetworkParticipation__factory";
 export type { RocketNetworkPenalties } from "./network/RocketNetworkPenalties";
 export { RocketNetworkPenalties__factory } from "./factories/network/RocketNetworkPenalties__factory";
 export type { RocketClaimDAO } from "./rewards/RocketClaimDAO";

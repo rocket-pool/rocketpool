@@ -43,6 +43,7 @@ export interface RocketDAOProtocolSettingsNetworkInterface extends Interface {
       | "getNodeShare"
       | "getNodeShareSecurityCouncilAdder"
       | "getPerPenaltyRate"
+      | "getPerformanceChallengeBond"
       | "getPerformanceChallengePeriod"
       | "getPerformanceExitsEnabled"
       | "getPerformancePeriod"
@@ -151,6 +152,10 @@ export interface RocketDAOProtocolSettingsNetworkInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "getPerPenaltyRate",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getPerformanceChallengeBond",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -353,6 +358,10 @@ export interface RocketDAOProtocolSettingsNetworkInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getPerPenaltyRate",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getPerformanceChallengeBond",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -567,6 +576,8 @@ export interface RocketDAOProtocolSettingsNetwork extends BaseContract {
 
   getPerPenaltyRate: TypedContractMethod<[], [bigint], "view">;
 
+  getPerformanceChallengeBond: TypedContractMethod<[], [bigint], "view">;
+
   getPerformanceChallengePeriod: TypedContractMethod<[], [bigint], "view">;
 
   getPerformanceExitsEnabled: TypedContractMethod<[], [boolean], "view">;
@@ -739,6 +750,9 @@ export interface RocketDAOProtocolSettingsNetwork extends BaseContract {
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "getPerPenaltyRate"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "getPerformanceChallengeBond"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "getPerformanceChallengePeriod"

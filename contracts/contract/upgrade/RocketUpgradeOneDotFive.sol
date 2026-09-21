@@ -102,6 +102,7 @@ contract RocketUpgradeOneDotFive is RocketBase {
             setUint(keccak256(abi.encodePacked(settingNameSpace, "network.performance.proof.buffer")), 225);
             setUint(keccak256(abi.encodePacked(settingNameSpace, "network.performance.threshold")), 0.94 ether);
             setUint(keccak256(abi.encodePacked(settingNameSpace, "network.performance.challenge.period")), 24 hours);
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "network.performance.challenge.bond")), 100 ether);
         }
 
         // Security Council allowlist settings

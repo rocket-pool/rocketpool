@@ -40,6 +40,7 @@ interface RocketDAOProtocolSettingsNetworkInterface {
     function getPerformancePeriod() external view returns (uint256);
     function getPerformanceProofBuffer() external view returns (uint256);
     function getPerformanceThreshold() external view returns (uint256);
+    function getPerformanceChallengeBond() external view returns (uint256);
     function getPerformanceChallengePeriod() external view returns (uint256);
     function setNodeShareSecurityCouncilAdder(uint256 _value) external;
     function setNodeCommissionShare(uint256 _value) external;
