@@ -2,7 +2,7 @@ node_modules/
 .vscode
 .idea/
 cache/
-artifacts/
+/artifacts/
 .env
 coverage/
 coverage.json
