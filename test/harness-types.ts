@@ -3,6 +3,7 @@ import type {
     ProtocolCurrent,
     ProtocolV131,
     ProtocolV14,
+    ProtocolV141,
 } from "./harness";
 import type { RocketNodeDeposit as CurrentRocketNodeDeposit } from "./harness/bindings/current";
 import type { RocketNodeDeposit as V14RocketNodeDeposit } from "./harness/bindings/v1_4";
@@ -181,3 +182,15 @@ current.testHelpers;
 // Upgrade targets are constrained by the generated release graph.
 // @ts-expect-error
 rp14.upgradeTo("1.3.1");
+
+// Historical v1.4.1 uses versioned proofs but has no v1.5 network contracts.
+declare const rp141: ProtocolV141;
+const v141: Promise<ProtocolV141> = ctx.ensure("1.4.1");
+const upgraded: Promise<ProtocolV141> = rp14.upgradeTo("1.4.1");
+const next: Promise<ProtocolCurrent> = rp141.upgradeTo("current");
+rp141.contracts.rocketMegapoolManager.stake("0x", 0n, 0n, 1n, "0x");
+// @ts-expect-error v1.5 participation is unavailable before its upgrade.
+rp141.contracts.rocketNetworkParticipation;
+// @ts-expect-error legacy manager proof arguments are not accepted in v1.4.1.
+rp141.contracts.rocketMegapoolManager.stake("0x", 0n, 0n, {}, {});
+void v141; void upgraded; void next;

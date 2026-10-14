@@ -20,31 +20,53 @@ import type {
   TypedContractMethod,
 } from "../common";
 
-export type ParticipationProofStruct = {
-  participationSlot: BigNumberish;
-  validatorIndex: BigNumberish;
-  participationFlagsChunk: BytesLike;
-  witnesses: BytesLike[];
+export type VerifiedFinalBalanceStruct = {
+  validatorPubkeyHash: BytesLike;
+  withdrawalCredentials: BytesLike;
+  amountInGwei: BigNumberish;
+  withdrawalEpoch: BigNumberish;
+  recentEpoch: BigNumberish;
 };
 
-export type ParticipationProofStructOutput = [
-  participationSlot: bigint,
-  validatorIndex: bigint,
-  participationFlagsChunk: string,
-  witnesses: string[]
+export type VerifiedFinalBalanceStructOutput = [
+  validatorPubkeyHash: string,
+  withdrawalCredentials: string,
+  amountInGwei: bigint,
+  withdrawalEpoch: bigint,
+  recentEpoch: bigint
 ] & {
-  participationSlot: bigint;
+  validatorPubkeyHash: string;
+  withdrawalCredentials: string;
+  amountInGwei: bigint;
+  withdrawalEpoch: bigint;
+  recentEpoch: bigint;
+};
+
+export type VerifiedParticipationStruct = {
+  validatorPubkeyHash: BytesLike;
+  validatorIndex: BigNumberish;
+  slot: BigNumberish;
+  participationSlot: BigNumberish;
+  participationFlags: BigNumberish;
+};
+
+export type VerifiedParticipationStructOutput = [
+  validatorPubkeyHash: string,
+  validatorIndex: bigint,
+  slot: bigint,
+  participationSlot: bigint,
+  participationFlags: bigint
+] & {
+  validatorPubkeyHash: string;
   validatorIndex: bigint;
-  participationFlagsChunk: string;
-  witnesses: string[];
-};
-
-export type SlotProofStruct = { slot: BigNumberish; witnesses: BytesLike[] };
-
-export type SlotProofStructOutput = [slot: bigint, witnesses: string[]] & {
   slot: bigint;
-  witnesses: string[];
+  participationSlot: bigint;
+  participationFlags: bigint;
 };
+
+export type VerifiedSlotStruct = { slot: BigNumberish };
+
+export type VerifiedSlotStructOutput = [slot: bigint] & { slot: bigint };
 
 export type ValidatorStruct = {
   pubkey: BytesLike;
@@ -77,69 +99,27 @@ export type ValidatorStructOutput = [
   withdrawableEpoch: bigint;
 };
 
-export type ValidatorProofStruct = {
+export type VerifiedValidatorStruct = {
   validatorIndex: BigNumberish;
   validator: ValidatorStruct;
-  witnesses: BytesLike[];
+  slot: BigNumberish;
 };
 
-export type ValidatorProofStructOutput = [
+export type VerifiedValidatorStructOutput = [
   validatorIndex: bigint,
   validator: ValidatorStructOutput,
-  witnesses: string[]
-] & {
-  validatorIndex: bigint;
-  validator: ValidatorStructOutput;
-  witnesses: string[];
-};
-
-export type WithdrawalStruct = {
-  index: BigNumberish;
-  validatorIndex: BigNumberish;
-  withdrawalCredentials: BytesLike;
-  amountInGwei: BigNumberish;
-};
-
-export type WithdrawalStructOutput = [
-  index: bigint,
-  validatorIndex: bigint,
-  withdrawalCredentials: string,
-  amountInGwei: bigint
-] & {
-  index: bigint;
-  validatorIndex: bigint;
-  withdrawalCredentials: string;
-  amountInGwei: bigint;
-};
-
-export type WithdrawalProofStruct = {
-  withdrawalSlot: BigNumberish;
-  withdrawalNum: BigNumberish;
-  withdrawal: WithdrawalStruct;
-  witnesses: BytesLike[];
-};
-
-export type WithdrawalProofStructOutput = [
-  withdrawalSlot: bigint,
-  withdrawalNum: bigint,
-  withdrawal: WithdrawalStructOutput,
-  witnesses: string[]
-] & {
-  withdrawalSlot: bigint;
-  withdrawalNum: bigint;
-  withdrawal: WithdrawalStructOutput;
-  witnesses: string[];
-};
+  slot: bigint
+] & { validatorIndex: bigint; validator: ValidatorStructOutput; slot: bigint };
 
 export interface BeaconStateVerifierMockInterface extends Interface {
   getFunction(
     nameOrSignature:
       | "setBlockRoot"
       | "setDisabled"
+      | "verifyFinalBalance"
       | "verifyParticipation"
       | "verifySlot"
       | "verifyValidator"
-      | "verifyWithdrawal"
   ): FunctionFragment;
 
   encodeFunctionData(
@@ -151,20 +131,20 @@ export interface BeaconStateVerifierMockInterface extends Interface {
     values: [boolean]
   ): string;
   encodeFunctionData(
+    functionFragment: "verifyFinalBalance",
+    values: [BigNumberish, BigNumberish, BytesLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "verifyParticipation",
-    values: [BigNumberish, BigNumberish, ParticipationProofStruct]
+    values: [BigNumberish, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "verifySlot",
-    values: [BigNumberish, SlotProofStruct]
+    values: [BigNumberish, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "verifyValidator",
-    values: [BigNumberish, BigNumberish, ValidatorProofStruct]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "verifyWithdrawal",
-    values: [BigNumberish, BigNumberish, WithdrawalProofStruct]
+    values: [BigNumberish, BigNumberish, BytesLike]
   ): string;
 
   decodeFunctionResult(
@@ -176,16 +156,16 @@ export interface BeaconStateVerifierMockInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "verifyFinalBalance",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "verifyParticipation",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "verifySlot", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "verifyValidator",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "verifyWithdrawal",
     data: BytesLike
   ): Result;
 }
@@ -241,39 +221,43 @@ export interface BeaconStateVerifierMock extends BaseContract {
 
   setDisabled: TypedContractMethod<[_disabled: boolean], [void], "nonpayable">;
 
+  verifyFinalBalance: TypedContractMethod<
+    [
+      _slotTimestamp: BigNumberish,
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
+    ],
+    [VerifiedFinalBalanceStructOutput],
+    "view"
+  >;
+
   verifyParticipation: TypedContractMethod<
     [
       _slotTimestamp: BigNumberish,
-      _slot: BigNumberish,
-      _proof: ParticipationProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
-    [boolean],
+    [VerifiedParticipationStructOutput],
     "view"
   >;
 
   verifySlot: TypedContractMethod<
-    [_slotTimestamp: BigNumberish, _proof: SlotProofStruct],
-    [boolean],
+    [
+      _slotTimestamp: BigNumberish,
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
+    ],
+    [VerifiedSlotStructOutput],
     "view"
   >;
 
   verifyValidator: TypedContractMethod<
     [
       _slotTimestamp: BigNumberish,
-      _slot: BigNumberish,
-      _proof: ValidatorProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
-    [boolean],
-    "view"
-  >;
-
-  verifyWithdrawal: TypedContractMethod<
-    [
-      _slotTimestamp: BigNumberish,
-      _slot: BigNumberish,
-      _proof: WithdrawalProofStruct
-    ],
-    [boolean],
+    [VerifiedValidatorStructOutput],
     "view"
   >;
 
@@ -292,21 +276,36 @@ export interface BeaconStateVerifierMock extends BaseContract {
     nameOrSignature: "setDisabled"
   ): TypedContractMethod<[_disabled: boolean], [void], "nonpayable">;
   getFunction(
+    nameOrSignature: "verifyFinalBalance"
+  ): TypedContractMethod<
+    [
+      _slotTimestamp: BigNumberish,
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
+    ],
+    [VerifiedFinalBalanceStructOutput],
+    "view"
+  >;
+  getFunction(
     nameOrSignature: "verifyParticipation"
   ): TypedContractMethod<
     [
       _slotTimestamp: BigNumberish,
-      _slot: BigNumberish,
-      _proof: ParticipationProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
-    [boolean],
+    [VerifiedParticipationStructOutput],
     "view"
   >;
   getFunction(
     nameOrSignature: "verifySlot"
   ): TypedContractMethod<
-    [_slotTimestamp: BigNumberish, _proof: SlotProofStruct],
-    [boolean],
+    [
+      _slotTimestamp: BigNumberish,
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
+    ],
+    [VerifiedSlotStructOutput],
     "view"
   >;
   getFunction(
@@ -314,21 +313,10 @@ export interface BeaconStateVerifierMock extends BaseContract {
   ): TypedContractMethod<
     [
       _slotTimestamp: BigNumberish,
-      _slot: BigNumberish,
-      _proof: ValidatorProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
-    [boolean],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "verifyWithdrawal"
-  ): TypedContractMethod<
-    [
-      _slotTimestamp: BigNumberish,
-      _slot: BigNumberish,
-      _proof: WithdrawalProofStruct
-    ],
-    [boolean],
+    [VerifiedValidatorStructOutput],
     "view"
   >;
 

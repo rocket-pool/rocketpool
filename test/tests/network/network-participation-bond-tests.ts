@@ -1,3 +1,4 @@
+import { participationProofArgs, slotProofArgs, validatorProofArgs } from '../../scenarios/megapool/proof-encoding';
 import assert from 'node:assert/strict';
 import { type ContractTransactionReceipt, hexlify, solidityPackedKeccak256 } from 'ethers';
 import { before, describe, expectRevert, it, load, type ProtocolCurrent } from '../../harness';
@@ -82,8 +83,8 @@ async function input(c: ProtocolCurrent) {
 async function submit(c: ProtocolCurrent, mini = false, actor = 'proposer') {
   const p = await input(c);
   const api = await contract(c, actor);
-  return mini ? api.challengeMinipools([c.minipools.get('target').address], p.start, p.words, p.timestamp, p.slot)
-    : api.challengeMegapool(await c.megapools.address('node'), [0n], p.start, p.words, p.timestamp, p.slot);
+  return mini ? api.challengeMinipools(...slotProofArgs([c.minipools.get('target').address], p.start, p.words, p.timestamp, p.slot))
+    : api.challengeMegapool(...slotProofArgs(await c.megapools.address('node'), [0n], p.start, p.words, p.timestamp, p.slot));
 }
 
 function event(c: ProtocolCurrent, receipt: ContractTransactionReceipt, name: string) {
@@ -137,8 +138,8 @@ async function respond(c: ProtocolCurrent, ch: Challenge, actor = 'responder', p
   const timestamp = await c.time.latest();
   const slot = slotProof(await currentSlot(c));
   const api = await contract(c, actor);
-  if (!participation) return ch.mini ? api.respondWithMinipoolValidator(ch.id, c.minipools.get('target').address, timestamp, v, slot)
-    : api.respondWithMegapoolValidator(ch.id, 0n, timestamp, v, slot);
+  if (!participation) return ch.mini ? api.respondWithMinipoolValidator(...validatorProofArgs(ch.id, c.minipools.get('target').address, timestamp, v, slot))
+    : api.respondWithMegapoolValidator(...validatorProofArgs(ch.id, 0n, timestamp, v, slot));
   const bytes = new Uint8Array(32);
   bytes[0] = 2;
   const p = {
@@ -148,8 +149,8 @@ async function respond(c: ProtocolCurrent, ch: Challenge, actor = 'responder', p
     witnesses: [] as string[],
   };
   const tail = [0n, ch.words[0], challengeTree(ch.words).witness(0n), timestamp, v, p, slot] as const;
-  return ch.mini ? api.respondWithMinipoolParticipation(ch.id, c.minipools.get('target').address, ...tail)
-    : api.respondWithMegapoolParticipation(ch.id, 0n, ...tail);
+  return ch.mini ? api.respondWithMinipoolParticipation(...participationProofArgs(ch.id, c.minipools.get('target').address, ...tail))
+    : api.respondWithMegapoolParticipation(...participationProofArgs(ch.id, 0n, ...tail));
 }
 
 async function defeat(c: ProtocolCurrent, ch: Challenge, actor = 'responder', participation = false) {

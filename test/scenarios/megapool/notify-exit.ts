@@ -1,3 +1,4 @@
+import { validatorProofArgs } from './proof-encoding';
 import assert from "assert";
 
 import type { ProtocolCurrent } from "../../harness";
@@ -15,11 +16,11 @@ export async function notifyMegapoolExitAndAssert(
     const slot = await currentSlot(protocol);
     const submitter = await protocol.context.actor("proofSubmitter");
     await (await protocol.contracts.rocketMegapoolManager.connect(submitter).notifyExit(
-        await protocol.megapools.address(node),
+        ...validatorProofArgs(await protocol.megapools.address(node),
         validatorId,
         timestamp,
         await validatorProof(protocol, node, validatorId, { withdrawableEpoch }),
-        slotProof(slot),
+        slotProof(slot)),
     )).wait();
     const info = await megapool.getValidatorInfo(validatorId);
     assert.equal(info.exiting, true);

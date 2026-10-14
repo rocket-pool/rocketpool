@@ -1,3 +1,4 @@
+import { finalBalanceProofArgs, participationProofArgs, slotProofArgs, validatorProofArgs } from '../../scenarios/megapool/proof-encoding';
 import {
   assertParticipationBondLocked,
   participationBondAccounting,
@@ -138,7 +139,7 @@ async function challenge(current: ProtocolCurrent, options: Parameters<typeof su
   const beforeExit = await getExitState(current);
   const beforeBond = await participationBondAccounting(current);
   const previousCount = (await challengeState(current)).count;
-  const tx = await contract.challengeMegapool(...args);
+  const tx = await contract.challengeMegapool(...slotProofArgs(...args));
   const receipt = await tx.wait();
   assert(receipt);
   const event = receipt.logs.map(log => {
@@ -285,14 +286,14 @@ describe('RocketNetworkParticipation', () => {
     await setSetting(current, 'challenge.period', 120n);
     const start = await currentEpoch(current) - 513n - 11n + 1n;
     const contract = await participant(current, 'proposer');
-    await rejects(current, async () => contract.challengeMegapool(...await submission(current, {
+    await rejects(current, async () => contract.challengeMegapool(...slotProofArgs(...await submission(current, {
       start: start - 1n,
       words: bitmap(513, range(52)),
-    })), 'Challenge too recent');
-    await rejects(current, async () => contract.challengeMegapool(...await submission(current, {
+    }))), 'Challenge too recent');
+    await rejects(current, async () => contract.challengeMegapool(...slotProofArgs(...await submission(current, {
       start,
       words: bitmap(513, range(51)),
-    })), 'Participation is above requirement');
+    }))), 'Participation is above requirement');
     const c = await challenge(current, { start, words: bitmap(513, range(52)) });
     await setTime(c.time + 120n);
     await rejects(current, () => contract.finaliseChallenge(c.id), 'Not enough time has passed');
@@ -305,7 +306,7 @@ describe('RocketNetworkParticipation', () => {
     await expectRevert(() => settings.setSettingUint('network.performance.period', 100n));
     await expectRevert(() => settings.setSettingBool('network.performance.exits.enabled', false));
     await setSetting(current, 'exits.enabled', false);
-    await rejects(current, async () => (await participant(current, 'proposer')).challengeMegapool(...await submission(current)), 'Performance exits disabled');
+    await rejects(current, async () => (await participant(current, 'proposer')).challengeMegapool(...slotProofArgs(...await submission(current))), 'Performance exits disabled');
     await setSetting(current, 'exits.enabled', true);
     await challenge(current);
   });
@@ -326,7 +327,7 @@ describe('RocketNetworkParticipation', () => {
       await executeSecurityProposalAndAssert(current, id, { caller: 'securityMember3' });
       assert(await current.time.latest() - quorumTime <= 1n, 'Council execution introduced a timelock');
       assert.equal(await current.contracts.rocketDAOProtocolSettingsNetwork.getPerformanceExitsEnabled(), enabled);
-      if (!enabled) await rejects(current, async () => (await participant(current, 'proposer')).challengeMegapool(...await submission(current)), 'Performance exits disabled');
+      if (!enabled) await rejects(current, async () => (await participant(current, 'proposer')).challengeMegapool(...slotProofArgs(...await submission(current))), 'Performance exits disabled');
     }
     await challenge(current);
   });
@@ -353,15 +354,15 @@ describe('RocketNetworkParticipation', () => {
         const c = await challenge(current);
         const deadline = c.time + await current.contracts.rocketDAOProtocolSettingsNetwork.getPerformanceChallengePeriod();
         await toggleWithoutChangingChallenges(current, false);
-        await rejects(current, async () => (await participant(current, 'proposer')).challengeMegapool(...await submission(current)), 'Performance exits disabled');
+        await rejects(current, async () => (await participant(current, 'proposer')).challengeMegapool(...slotProofArgs(...await submission(current))), 'Performance exits disabled');
         await current.time.advance(deadline - await current.time.latest() - 10n);
         const responder = current.contracts.rocketNetworkParticipation.connect(await current.context.actor('responder'));
         const activation = await activationArgs(current, c);
         const participation = await participationArgs(current, c);
         await setTime(deadline);
         await assertDefeated(current, c.id, () => response === 'activation'
-          ? responder.respondWithMegapoolValidator(...activation)
-          : responder.respondWithMegapoolParticipation(...participation));
+          ? responder.respondWithMegapoolValidator(...validatorProofArgs(...activation))
+          : responder.respondWithMegapoolParticipation(...participationProofArgs(...participation)));
         assert.equal(await current.contracts.rocketDAOProtocolSettingsNetwork.getPerformanceExitsEnabled(), false);
       });
 
@@ -378,8 +379,8 @@ describe('RocketNetworkParticipation', () => {
         const participation = await participationArgs(current, c);
         await setTime(deadline + 1n);
         await rejects(current, () => response === 'activation'
-          ? responder.respondWithMegapoolValidator(...activation)
-          : responder.respondWithMegapoolParticipation(...participation), 'Challenge period has passed');
+          ? responder.respondWithMegapoolValidator(...validatorProofArgs(...activation))
+          : responder.respondWithMegapoolParticipation(...participationProofArgs(...participation)), 'Challenge period has passed');
       });
     }
 
@@ -410,7 +411,7 @@ describe('RocketNetworkParticipation', () => {
       const defeated = await challenge(current, { validatorId: 1n });
       const responder = current.contracts.rocketNetworkParticipation.connect(await current.context.actor('responder'));
       const args = await activationArgs(current, defeated);
-      await assertDefeated(current, defeated.id, () => responder.respondWithMegapoolValidator(...args));
+      await assertDefeated(current, defeated.id, () => responder.respondWithMegapoolValidator(...validatorProofArgs(...args)));
       await toggleWithoutChangingChallenges(current, false);
       await current.time.advance(3600n);
       await toggleWithoutChangingChallenges(current, true);
@@ -451,7 +452,7 @@ describe('RocketNetworkParticipation', () => {
       const reason = state === 'requested' ? 'Exit has already been requested' : state === 'exiting' ? 'Already exiting'
         : state === 'finalised' ? 'Already exited' : state === 'unregistered' ? 'Invalid megapool'
           : state === 'nonexistent' ? 'Validator does not exist' : 'Validator not staked';
-      await rejects(current, async () => (await participant(current, 'proposer')).challengeMegapool(...await submission(current, options)), reason);
+      await rejects(current, async () => (await participant(current, 'proposer')).challengeMegapool(...slotProofArgs(...await submission(current, options))), reason);
     });
   }
 
@@ -460,10 +461,10 @@ describe('RocketNetworkParticipation', () => {
     const epoch = await currentEpoch(current);
     const contract = await participant(current, 'proposer');
     for (const start of [epoch, epoch + 1n]) {
-      await rejects(current, async () => contract.challengeMegapool(...await submission(current, { start })), 'Challenge starts in future');
+      await rejects(current, async () => contract.challengeMegapool(...slotProofArgs(...await submission(current, { start }))), 'Challenge starts in future');
     }
     const oldest = epoch - 44032n - 225n;
-    await rejects(current, async () => contract.challengeMegapool(...await submission(current, { start: oldest })), 'Challenge too recent');
+    await rejects(current, async () => contract.challengeMegapool(...slotProofArgs(...await submission(current, { start: oldest }))), 'Challenge too recent');
     await challenge(current, { start: oldest + 1n });
   });
 
@@ -474,16 +475,16 @@ describe('RocketNetworkParticipation', () => {
       const proof = slotProof(await currentSlot(current));
       await setTime(timestamp + age);
       if (age === 3600n) await challenge(current, { timestamp, proof });
-      else await rejects(current, async () => (await participant(current, 'proposer')).challengeMegapool(...await submission(current, {
+      else await rejects(current, async () => (await participant(current, 'proposer')).challengeMegapool(...slotProofArgs(...await submission(current, {
         timestamp,
         proof,
-      })), 'Slot proof too old');
+      }))), 'Slot proof too old');
     });
   }
 
   it('rejects 2641 missed epochs and accepts 2642 at the default threshold', async () => {
     const current = await load().ensure('current');
-    await rejects(current, async () => (await participant(current, 'proposer')).challengeMegapool(...await submission(current, { words: bitmap(PERIOD, range(2641)) })), 'Participation is above requirement');
+    await rejects(current, async () => (await participant(current, 'proposer')).challengeMegapool(...slotProofArgs(...await submission(current, { words: bitmap(PERIOD, range(2641)) }))), 'Participation is above requirement');
     await challenge(current);
   });
 
@@ -501,10 +502,10 @@ describe('RocketNetworkParticipation', () => {
         start = await currentEpoch(current) - 32n;
         words[0] |= 1n << 32n;
       }
-      await rejects(current, async () => (await participant(current, 'proposer')).challengeMegapool(...await submission(current, {
+      await rejects(current, async () => (await participant(current, 'proposer')).challengeMegapool(...slotProofArgs(...await submission(current, {
         start,
         words,
-      })), 'Invalid participation bitmap');
+      }))), 'Invalid participation bitmap');
     });
   }
 
@@ -514,7 +515,7 @@ describe('RocketNetworkParticipation', () => {
       const c = await challenge(current);
       const args = await participationArgs(current, c, offset);
       const responder = current.contracts.rocketNetworkParticipation.connect(await current.context.actor('responder'));
-      await assertDefeated(current, c.id, () => responder.respondWithMegapoolParticipation(...args));
+      await assertDefeated(current, c.id, () => responder.respondWithMegapoolParticipation(...participationProofArgs(...args)));
     });
   }
 
@@ -547,7 +548,7 @@ describe('RocketNetworkParticipation', () => {
         source: 'Invalid participation',
         head: 'Invalid participation',
       };
-      await rejects(current, async () => (await participant(current)).respondWithMegapoolParticipation(...args), reasons[invalid]);
+      await rejects(current, async () => (await participant(current)).respondWithMegapoolParticipation(...participationProofArgs(...args)), reasons[invalid]);
     });
   }
 
@@ -558,9 +559,9 @@ describe('RocketNetworkParticipation', () => {
     const args = [...await participationArgs(current, c)] as [...Awaited<ReturnType<typeof participationArgs>>];
     assert.equal(args[4].length, 0);
     args[4].push(ZeroHash);
-    await rejects(current, async () => (await participant(current)).respondWithMegapoolParticipation(...args), 'Invalid witness length');
+    await rejects(current, async () => (await participant(current)).respondWithMegapoolParticipation(...participationProofArgs(...args)), 'Invalid witness length');
     args[4].pop();
-    await assertDefeated(current, c.id, async () => (await participant(current)).respondWithMegapoolParticipation(...args));
+    await assertDefeated(current, c.id, async () => (await participant(current)).respondWithMegapoolParticipation(...participationProofArgs(...args)));
   });
 
   it('defeats a challenge permissionlessly with late activation', async () => {
@@ -568,7 +569,7 @@ describe('RocketNetworkParticipation', () => {
     const c = await challenge(current);
     const args = await activationArgs(current, c);
     const responder = current.contracts.rocketNetworkParticipation.connect(await current.context.actor('responder'));
-    await assertDefeated(current, c.id, () => responder.respondWithMegapoolValidator(...args));
+    await assertDefeated(current, c.id, () => responder.respondWithMegapoolValidator(...validatorProofArgs(...args)));
   });
 
   for (const invalid of ['equal', 'earlier', 'pubkey', 'stale'] as const) {
@@ -578,7 +579,7 @@ describe('RocketNetworkParticipation', () => {
       const args = [...await activationArgs(current, c, invalid === 'equal' ? c.start : invalid === 'earlier' ? c.start - 1n : c.start + 1n)] as [...Awaited<ReturnType<typeof activationArgs>>];
       if (invalid === 'pubkey') args[3].validator.pubkey = (await validatorProof(current, 'node', 1n)).validator.pubkey;
       if (invalid === 'stale') await setTime(args[2] + 3601n);
-      await rejects(current, async () => (await participant(current)).respondWithMegapoolValidator(...args),
+      await rejects(current, async () => (await participant(current)).respondWithMegapoolValidator(...validatorProofArgs(...args)),
         invalid === 'pubkey' ? 'Incorrect validator' : invalid === 'stale' ? 'Slot proof too old' : 'Validator was staking during challenge period');
     });
   }
@@ -596,7 +597,7 @@ describe('RocketNetworkParticipation', () => {
         }, activation === 'equal' ? c.start : c.start - 1n);
         args[3].validator.withdrawableEpoch = c.start + period - (withdrawal === 'before' ? 1n : 0n);
         args[3].validator.exitEpoch = args[3].validator.withdrawableEpoch - 256n;
-        await rejects(current, async () => (await participant(current)).respondWithMegapoolValidator(...args),
+        await rejects(current, async () => (await participant(current)).respondWithMegapoolValidator(...validatorProofArgs(...args)),
           'Validator was staking during challenge period');
         await finalise(current, c);
         const state = await getExitState(current);
@@ -618,7 +619,7 @@ describe('RocketNetworkParticipation', () => {
         const activation = await activationArgs(current, c);
         const participation = await participationArgs(current, c);
         await setTime(deadline + (late ? 1n : 0n));
-        const action = () => response === 'activation' ? contract.respondWithMegapoolValidator(...activation) : contract.respondWithMegapoolParticipation(...participation);
+        const action = () => response === 'activation' ? contract.respondWithMegapoolValidator(...validatorProofArgs(...activation)) : contract.respondWithMegapoolParticipation(...participationProofArgs(...participation));
         if (late) await rejects(current, action, 'Challenge period has passed');
         else await assertDefeated(current, c.id, action);
       });
@@ -631,8 +632,8 @@ describe('RocketNetworkParticipation', () => {
     const a = await activationArgs(current, c);
     const p = await participationArgs(current, c);
     const contract = await participant(current);
-    await rejects(current, () => contract.respondWithMegapoolValidator(...a), 'Invalid challenge');
-    await rejects(current, () => contract.respondWithMegapoolParticipation(...p), 'Invalid challenge');
+    await rejects(current, () => contract.respondWithMegapoolValidator(...validatorProofArgs(...a)), 'Invalid challenge');
+    await rejects(current, () => contract.respondWithMegapoolParticipation(...participationProofArgs(...p)), 'Invalid challenge');
     await rejects(current, () => contract.finaliseChallenge(c.id), 'Invalid challenge');
   });
 
@@ -661,7 +662,7 @@ describe('RocketNetworkParticipation', () => {
     const first = await challenge(current);
     const second = await challenge(current, { validatorId: 1n });
     const args = await activationArgs(current, first);
-    await assertDefeated(current, first.id, async () => (await participant(current)).respondWithMegapoolValidator(...args));
+    await assertDefeated(current, first.id, async () => (await participant(current)).respondWithMegapoolValidator(...validatorProofArgs(...args)));
     assert.equal(await current.contracts.rocketStorage.getBool(key('responded', second.id)), false);
     await finalise(current, second);
     assert.equal((await getExitState(current)).requested, 28n * ETH);
@@ -720,7 +721,7 @@ describe('RocketNetworkParticipation', () => {
     const slot = slotProof(await currentSlot(current));
     const manager = current.contracts.rocketMegapoolManager.connect(await current.context.actor('node'));
     // Resubmit the final-balance proof without funding another withdrawal.
-    await rejects(current, () => manager.notifyFinalBalance(address, 0n, timestamp, withdrawn, validator, slot), 'Already exited');
+    await rejects(current, () => manager.notifyFinalBalance(...finalBalanceProofArgs(address, 0n, timestamp, withdrawn, validator, slot)), 'Already exited');
     await rejects(current, async () => (await participant(current)).finaliseChallenge(c.id), 'Challenge already finalised');
   });
 
@@ -794,7 +795,7 @@ describe('RocketNetworkParticipation', () => {
       it(`rejects a list with ${label} atomically`, async () => {
         const current = await load().ensure('current');
         await rejects(current, async () => (await participant(current, 'proposer')).challengeMegapool(
-          ...await submission(current, { validatorIds: [...ids] })), reason);
+          ...slotProofArgs(...await submission(current, { validatorIds: [...ids] }))), reason);
       });
     }
 
@@ -805,7 +806,7 @@ describe('RocketNetworkParticipation', () => {
         const ids = [0n, 2n];
         ids.splice(position, 0, 1n);
         await rejects(current, async () => (await participant(current, 'proposer')).challengeMegapool(
-          ...await submission(current, { validatorIds: ids })), 'Exit has already been requested');
+          ...slotProofArgs(...await submission(current, { validatorIds: ids }))), 'Exit has already been requested');
       });
     }
 
@@ -819,10 +820,10 @@ describe('RocketNetworkParticipation', () => {
           const a = await activationArgs(current, selected);
           const responder = current.contracts.rocketNetworkParticipation.connect(await current.context.actor('responder'));
           await assertDefeated(current, c.id, () => response === 'participation'
-            ? responder.respondWithMegapoolParticipation(...p) : responder.respondWithMegapoolValidator(...a));
+            ? responder.respondWithMegapoolParticipation(...participationProofArgs(...p)) : responder.respondWithMegapoolValidator(...validatorProofArgs(...a)));
           // Both response paths are closed, not just the path which defeated the list.
-          await rejects(current, () => responder.respondWithMegapoolParticipation(...p), 'Challenge was defeated');
-          await rejects(current, () => responder.respondWithMegapoolValidator(...a), 'Challenge was defeated');
+          await rejects(current, () => responder.respondWithMegapoolParticipation(...participationProofArgs(...p)), 'Challenge was defeated');
+          await rejects(current, () => responder.respondWithMegapoolValidator(...validatorProofArgs(...a)), 'Challenge was defeated');
         });
       }
       for (const mismatch of ['unlisted', 'another member'] as const) {
@@ -843,7 +844,7 @@ describe('RocketNetworkParticipation', () => {
           }
           const responder = current.contracts.rocketNetworkParticipation.connect(await current.context.actor('responder'));
           await rejects(current, () => response === 'participation'
-              ? responder.respondWithMegapoolParticipation(...p) : responder.respondWithMegapoolValidator(...a),
+              ? responder.respondWithMegapoolParticipation(...participationProofArgs(...p)) : responder.respondWithMegapoolValidator(...validatorProofArgs(...a)),
             mismatch === 'unlisted' ? 'Validator not in challenge' : 'Incorrect validator');
         });
       }
@@ -856,8 +857,8 @@ describe('RocketNetworkParticipation', () => {
       const contract = await participant(current);
       const p = await participationArgs(current, c);
       const a = await activationArgs(current, c);
-      await rejects(current, () => contract.respondWithMegapoolParticipation(...p), 'Challenge already finalised');
-      await rejects(current, () => contract.respondWithMegapoolValidator(...a), 'Challenge already finalised');
+      await rejects(current, () => contract.respondWithMegapoolParticipation(...participationProofArgs(...p)), 'Challenge already finalised');
+      await rejects(current, () => contract.respondWithMegapoolValidator(...validatorProofArgs(...a)), 'Challenge already finalised');
       await rejects(current, () => contract.finaliseChallenge(c.id), 'Challenge already finalised');
     });
 
@@ -909,7 +910,7 @@ describe('RocketNetworkParticipation', () => {
       await setSetting(current, 'exits.enabled', false);
       assert.deepEqual(await challengeState(current), before);
       const a = await activationArgs(current, { ...first, validatorId: 2n });
-      await assertDefeated(current, first.id, async () => (await participant(current)).respondWithMegapoolValidator(...a));
+      await assertDefeated(current, first.id, async () => (await participant(current)).respondWithMegapoolValidator(...validatorProofArgs(...a)));
       const defeated = await challengeState(current);
       await setSetting(current, 'exits.enabled', true);
       assert.deepEqual(await challengeState(current), defeated);
@@ -1025,8 +1026,8 @@ describe('RocketNetworkParticipation', () => {
             participationEpoch: epoch,
           });
           const responder = current.contracts.rocketNetworkParticipation.connect(await current.context.actor('responder'));
-          await assertDefeated(current, target.id, () => responder.respondWithMegapoolParticipation(target.id, 1n, BigInt(offset), words[Math.floor(offset / 256)],
-            challengeTree(words).witness(BigInt(Math.floor(offset / 256))), proofs.timestamp, proofs.validatorProof, proofs.participationProof, proofs.slotProof));
+          await assertDefeated(current, target.id, () => responder.respondWithMegapoolParticipation(...participationProofArgs(target.id, 1n, BigInt(offset), words[Math.floor(offset / 256)],
+            challengeTree(words).witness(BigInt(Math.floor(offset / 256))), proofs.timestamp, proofs.validatorProof, proofs.participationProof, proofs.slotProof)));
         });
       }
     }
@@ -1040,7 +1041,7 @@ describe('RocketNetworkParticipation', () => {
         activationEpoch: c.start + 1n,
       });
       const responder = current.contracts.rocketNetworkParticipation.connect(await current.context.actor('responder'));
-      await assertDefeated(current, c.id, () => responder.respondWithMegapoolValidator(c.id, 1n, proofs.timestamp, proofs.validatorProof, proofs.slotProof));
+      await assertDefeated(current, c.id, () => responder.respondWithMegapoolValidator(...validatorProofArgs(c.id, 1n, proofs.timestamp, proofs.validatorProof, proofs.slotProof)));
     });
 
     for (const corrupt of ['slot', 'validator', 'chunk', 'participation-witness'] as const) {
@@ -1062,8 +1063,8 @@ describe('RocketNetworkParticipation', () => {
           chunk: 'Invalid participation proof',
           'participation-witness': 'Invalid participation proof',
         };
-        await rejects(current, async () => (await participant(current)).respondWithMegapoolParticipation(c.id, c.validatorId, 0n, c.words[0], challengeTree(c.words).witness(0n),
-          proofs.timestamp, proofs.validatorProof, proofs.participationProof, proofs.slotProof), reasons[corrupt]);
+        await rejects(current, async () => (await participant(current)).respondWithMegapoolParticipation(...participationProofArgs(c.id, c.validatorId, 0n, c.words[0], challengeTree(c.words).witness(0n),
+          proofs.timestamp, proofs.validatorProof, proofs.participationProof, proofs.slotProof)), reasons[corrupt]);
       });
     }
 
@@ -1077,10 +1078,10 @@ describe('RocketNetworkParticipation', () => {
           flags: 0,
           neighbourFlags: 2,
         });
-        assert.equal(await current.contracts.beaconStateVerifier.verifyParticipation(
-          proofs.timestamp, proofs.slotProof.slot, proofs.participationProof), true);
-        await rejects(current, async () => (await participant(current)).respondWithMegapoolParticipation(c.id, c.validatorId, 0n, c.words[0], challengeTree(c.words).witness(0n),
-          proofs.timestamp, proofs.validatorProof, proofs.participationProof, proofs.slotProof), 'Invalid participation');
+        assert.equal((await current.contracts.beaconStateVerifier.verifyParticipation(
+          ...participationProofArgs(proofs.timestamp, proofs.validatorProof, proofs.participationProof, proofs.slotProof))).participationFlags, 0n);
+        await rejects(current, async () => (await participant(current)).respondWithMegapoolParticipation(...participationProofArgs(c.id, c.validatorId, 0n, c.words[0], challengeTree(c.words).witness(0n),
+          proofs.timestamp, proofs.validatorProof, proofs.participationProof, proofs.slotProof)), 'Invalid participation');
       });
     }
   });

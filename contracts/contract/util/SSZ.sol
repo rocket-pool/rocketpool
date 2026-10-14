@@ -37,6 +37,24 @@ library SSZ {
         return Path((uint256(_index) << 8) | uint256(_log2Length));
     }
 
+    /// @dev Constructs a path into a progressive tree with a mix-in node
+    function intoProgressive(uint248 _index) internal pure returns (Path memory) {
+        // Traverse into the progressive tree, skipping groups of 1, 4, 16, ... leaves
+        Path memory path = from(0, 1);
+        uint248 groupSize = 1;
+        uint8 groupDepth = 0;
+        while (_index >= groupSize) {
+            _index -= groupSize;
+            path = concat(path, from(1, 1));
+            groupSize *= 4;
+            groupDepth += 2;
+        }
+        // Enter the selected group and locate the leaf within its balanced subtree
+        path = concat(path, from(0, 1));
+        path = concat(path, from(_index, groupDepth));
+        return path;
+    }
+
     /// @dev Concatenates two Paths
     function concat(Path memory _left, Path memory _right) internal pure returns (Path memory) {
         uint8 lenA = uint8(_left._data);
@@ -119,5 +137,4 @@ library SSZ {
         return value;
     }
 }
-
 

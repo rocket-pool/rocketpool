@@ -1,3 +1,4 @@
+import { validatorProofArgs } from './proof-encoding';
 import assert from "assert";
 
 import type { ProtocolCurrent } from "../../harness";
@@ -15,11 +16,11 @@ export async function dissolveMegapoolValidatorAndAssert(
         const timestamp = await protocol.time.latest();
         const slot = await currentSlot(protocol);
         await (await protocol.contracts.rocketMegapoolManager.connect(signer).dissolve(
-            await protocol.megapools.address(node),
+            ...validatorProofArgs(await protocol.megapools.address(node),
             validatorId,
             timestamp,
             await validatorProof(protocol, node, validatorId, options.proofOverrides),
-            slotProof(slot),
+            slotProof(slot)),
         )).wait();
     } else {
         await (await (await protocol.megapools.delegate(node, caller)).dissolveValidator(validatorId)).wait();

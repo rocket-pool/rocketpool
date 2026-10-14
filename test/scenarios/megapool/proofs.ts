@@ -1,16 +1,16 @@
-import type { ProtocolCurrent } from "../../harness";
+import type { ProtocolCurrent, ProtocolV141 } from "../../harness";
 
 export const FAR_FUTURE_EPOCH = 2n ** 64n - 1n;
 export const SECONDS_PER_SLOT = 12n;
 export const SLOTS_PER_EPOCH = 32n;
 export const BEACON_GENESIS_TIME = 1_606_824_023n;
 
-export async function currentSlot(protocol: ProtocolCurrent): Promise<bigint> {
+export async function currentSlot(protocol: ProtocolCurrent | ProtocolV141): Promise<bigint> {
     const timestamp = await protocol.time.latest();
     return (timestamp - BEACON_GENESIS_TIME) / SECONDS_PER_SLOT;
 }
 
-export async function currentEpoch(protocol: ProtocolCurrent): Promise<bigint> {
+export async function currentEpoch(protocol: ProtocolCurrent | ProtocolV141): Promise<bigint> {
     return (await currentSlot(protocol)) / SLOTS_PER_EPOCH;
 }
 
@@ -19,7 +19,7 @@ export function slotProof(slot: bigint) {
 }
 
 export async function validatorProof(
-    protocol: ProtocolCurrent,
+    protocol: ProtocolCurrent | ProtocolV141,
     node: string,
     validatorId: bigint,
     overrides: Partial<{
@@ -53,7 +53,7 @@ export async function validatorProof(
 }
 
 export async function withdrawalProof(
-    protocol: ProtocolCurrent,
+    protocol: ProtocolCurrent | ProtocolV141,
     node: string,
     amount: bigint,
     withdrawalSlot: bigint,

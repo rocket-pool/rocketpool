@@ -65,6 +65,11 @@ const contractNames = [
 ];
 
 const releaseConfig = {
+    '1.4.1': {
+        commit: '2698cb1dcf4c3dc6ac2af63327878e142f0bee23',
+        compilers: ['0.8.30'],
+        contracts: ['BeaconStateVerifier', 'RocketMegapoolManager', 'RocketUpgradeOneDotFourDotOne'],
+    },
     '1.3.1': {
         commit: '8d4d5c0f1b810f97ca42cd1ceece0e7c81eb81ee',
         compilers: ['0.7.6', '0.8.18'],
@@ -143,7 +148,7 @@ const manifest = {
     schemaVersion: 1,
     release,
     source: {
-        tag: `v${release}`,
+        ...(release === "1.4.1" ? { ref: "v1.4.1-dev" } : { tag: `v${release}` }),
         commit: config.commit,
     },
     compilers: config.compilers,
@@ -175,6 +180,7 @@ for (const contractName of config.contracts) {
     };
 }
 
+if (release !== "1.4.1") {
 const depositAbi = JSON.parse(fs.readFileSync(path.resolve(checkout, 'contracts/contract/casper/compiled/Deposit.abi'), 'utf8'));
 const depositBytecode = `0x${fs.readFileSync(path.resolve(checkout, 'contracts/contract/casper/compiled/Deposit.bin'), 'utf8').trim().replace(/^0x/, '')}`;
 const depositArtifact = {
@@ -193,6 +199,8 @@ manifest.artifacts.DepositContract = {
     integrity: stableHash(depositContents),
     sourceName: depositArtifact.sourceName,
 };
+
+}
 
 const unsignedManifest = `${JSON.stringify(manifest, null, 2)}\n`;
 manifest.integrity = stableHash(unsignedManifest);

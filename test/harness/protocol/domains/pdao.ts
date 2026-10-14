@@ -1,4 +1,4 @@
-import type { CurrentContracts, ProtocolContracts, V14Contracts } from "../contracts";
+import type { CurrentContracts, ProtocolContracts, V14Contracts, V141Contracts } from "../contracts";
 import type { ActiveProtocolView } from "../view";
 import { GuardedFacade } from "../view";
 import { PDAOSecurityActions, PDAOSecurityActionsV14 } from "./pdao-security";
@@ -413,7 +413,7 @@ export class PDAONetworkSettingsActions<C extends ProtocolContracts> extends Gua
 
 }
 
-type PDAOUpgradeContracts = V14Contracts | CurrentContracts;
+type PDAOUpgradeContracts = V14Contracts | V141Contracts | CurrentContracts;
 
 export class PDAOMegapoolSettingsActions<C extends PDAOUpgradeContracts> extends GuardedFacade {
     private get contracts(): C {

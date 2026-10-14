@@ -1,9 +1,9 @@
 import { RocketNodeDistributorDelegate__factory as V14NodeDistributorDelegateFactory } from "../../bindings/v1_4";
 import { ethers } from "../../../../test-old/_utils/hardhat-runtime";
-import type { CurrentContracts, V14Contracts } from "../contracts";
+import type { CurrentContracts, V14Contracts, V141Contracts } from "../contracts";
 import { GuardedFacade } from "../view";
 
-export class NodeDistributorActions<C extends V14Contracts | CurrentContracts> extends GuardedFacade {
+export class NodeDistributorActions<C extends V14Contracts | V141Contracts | CurrentContracts> extends GuardedFacade {
     private get contracts(): C {
         return this.view.contracts as C;
     }

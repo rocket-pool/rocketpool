@@ -1,3 +1,4 @@
+import { participationProofArgs, slotProofArgs, validatorProofArgs } from '../../scenarios/megapool/proof-encoding';
 import { prepareParticipationBonds, participationBondAccounting, assertParticipationBondLocked } from "../../scenarios/network/participation-bonds";
 import assert from "node:assert/strict";
 import { AbiCoder, hexlify, solidityPackedKeccak256, ZeroHash, type ContractTransactionReceipt, type ContractTransactionResponse } from "ethers";
@@ -130,7 +131,7 @@ async function challenge(c: ProtocolCurrent, names = ["pool0", "pool1", "pool2"]
     const before = await exitState(c);
     const beforeBond = await participationBondAccounting(c);
     const previous = await c.contracts.rocketStorage.getUint(key("count"));
-    const receipt = await (await (await participant(c, "proposer")).challengeMinipools(...input)).wait();
+    const receipt = await (await (await participant(c, "proposer")).challengeMinipools(...slotProofArgs(...input))).wait();
     assert(receipt);
     const id = previous + 1n;
     const time = BigInt((await ethers.provider.getBlock(receipt.blockNumber))!.timestamp);
@@ -213,7 +214,7 @@ async function penalise(c: ProtocolCurrent, name: string) {
     const timer = await e.getMinipoolCooperativeExitStart(address(c, name));
     const wait = await c.contracts.rocketDAOProtocolSettingsNetwork.getCooperativeExitPhase();
     await c.time.advance(timer + wait + 1n - await c.time.latest());
-    await (await e.connect(await c.context.actor("finaliser")).penaliseMinipool(address(c, name), await c.time.latest(), validator(c, name), slotProof(await currentSlot(c)))).wait();
+    await (await e.connect(await c.context.actor("finaliser")).penaliseMinipool(...validatorProofArgs(address(c, name), await c.time.latest(), validator(c, name), slotProof(await currentSlot(c))))).wait();
 }
 
 describe("RocketNetworkParticipation minipools", () => {
@@ -243,7 +244,7 @@ describe("RocketNetworkParticipation minipools", () => {
             } else if (invalid === "requested") { await request(c, "pool1"); reason = "Minipool already requested to exit"; }
             else { await distribute(c, "pool1", invalid === "distributed"); reason = invalid === "distributed" ? "User capital already distributed" : "Minipool is finalised"; }
             args[3] = await c.time.latest(); args[4] = slotProof(await currentSlot(c));
-            await rejects(c, async () => (await participant(c, "proposer")).challengeMinipools(...args), reason);
+            await rejects(c, async () => (await participant(c, "proposer")).challengeMinipools(...slotProofArgs(...args)), reason);
         });
     }
 
@@ -251,7 +252,7 @@ describe("RocketNetworkParticipation minipools", () => {
         const c = await load().ensure("current");
         const args = [...await submission(c)] as [...Awaited<ReturnType<typeof submission>>];
         args[0][position] = await c.nodes.address("responder");
-        await rejects(c, async () => (await participant(c, "proposer")).challengeMinipools(...args), "Invalid minipool");
+        await rejects(c, async () => (await participant(c, "proposer")).challengeMinipools(...slotProofArgs(...args)), "Invalid minipool");
     });
 
     for (const invalid of ["threshold", "short", "long", "padding", "future", "old", "stale"] as const) it(`rejects ${invalid} challenge data`, async () => {
@@ -265,7 +266,7 @@ describe("RocketNetworkParticipation minipools", () => {
         if (invalid === "future") { args[1] = await currentEpoch(c); reason = "Challenge starts in future"; }
         if (invalid === "old") { args[1] -= 225n; reason = "Challenge too recent"; }
         if (invalid === "stale") { await setTime(args[3] + 3601n); reason = "Slot proof too old"; }
-        await rejects(c, async () => (await participant(c, "proposer")).challengeMinipools(...args), reason);
+        await rejects(c, async () => (await participant(c, "proposer")).challengeMinipools(...slotProofArgs(...args)), reason);
     });
 
     it("accepts the oldest permitted start and a slot proof exactly one hour old", async () => {
@@ -279,23 +280,23 @@ describe("RocketNetworkParticipation minipools", () => {
     for (const activation of [false, true]) for (const name of ["pool0", "pool1", "pool2"]) it(`defeats the list with ${activation ? "activation" : "participation"} for ${name}`, async () => {
         const c = await load().ensure("current"); const ch = await challenge(c);
         const r = await response(c, ch, name, activation);
-        await defeat(c, ch, () => activation ? r.target.respondWithMinipoolValidator(...r.a) : r.target.respondWithMinipoolParticipation(...r.p));
-        await rejects(c, () => r.target.respondWithMinipoolValidator(...r.a), "Challenge was defeated");
-        await rejects(c, () => r.target.respondWithMinipoolParticipation(...r.p), "Challenge was defeated");
+        await defeat(c, ch, () => activation ? r.target.respondWithMinipoolValidator(...validatorProofArgs(...r.a)) : r.target.respondWithMinipoolParticipation(...participationProofArgs(...r.p)));
+        await rejects(c, () => r.target.respondWithMinipoolValidator(...validatorProofArgs(...r.a)), "Challenge was defeated");
+        await rejects(c, () => r.target.respondWithMinipoolParticipation(...participationProofArgs(...r.p)), "Challenge was defeated");
     });
 
     for (const activation of [false, true]) it(`rejects unlisted and mismatched members on ${activation ? "activation" : "participation"} responses`, async () => {
         const c = await load().ensure("current"); const ch = await challenge(c);
         const other = await response(c, ch, "other", activation);
-        await rejects(c, () => activation ? other.target.respondWithMinipoolValidator(...other.a) : other.target.respondWithMinipoolParticipation(...other.p), "Validator not in challenge");
+        await rejects(c, () => activation ? other.target.respondWithMinipoolValidator(...validatorProofArgs(...other.a)) : other.target.respondWithMinipoolParticipation(...participationProofArgs(...other.p)), "Validator not in challenge");
         const r = await response(c, ch, "pool1", activation); r.v.validator.pubkey = c.minipools.get("pool2").pubkey;
-        await rejects(c, () => activation ? r.target.respondWithMinipoolValidator(...r.a) : r.target.respondWithMinipoolParticipation(...r.p), "Incorrect validator");
+        await rejects(c, () => activation ? r.target.respondWithMinipoolValidator(...validatorProofArgs(...r.a)) : r.target.respondWithMinipoolParticipation(...participationProofArgs(...r.p)), "Incorrect validator");
     });
 
     for (const earlier of [false, true]) it(`rejects ${earlier ? "earlier" : "equal"} activation despite withdrawal eligibility`, async () => {
         const c = await load().ensure("current"); const ch = await challenge(c); const r = await response(c, ch, "pool1", true);
         r.v.validator.activationEpoch = ch.start - (earlier ? 1n : 0n); r.v.validator.withdrawableEpoch = ch.start + BigInt(PERIOD);
-        await rejects(c, () => r.target.respondWithMinipoolValidator(...r.a), "Validator was staking during challenge period");
+        await rejects(c, () => r.target.respondWithMinipoolValidator(...validatorProofArgs(...r.a)), "Validator was staking during challenge period");
     });
 
     for (const invalid of ["unchallenged", "leaf", "witness", "short-witness", "long-witness", "index", "epoch", "offset", "source", "head"] as const) it(`rejects a participation response with invalid ${invalid}`, async () => {
@@ -310,12 +311,12 @@ describe("RocketNetworkParticipation minipools", () => {
         if (invalid === "epoch") { args[7] = { ...args[7], participationSlot: args[7].participationSlot + 32n }; reason = "Invalid slot"; }
         if (invalid === "offset") { args[2] = BigInt(PERIOD); reason = "Epoch too high"; }
         if (invalid === "source" || invalid === "head") { const chunk = new Uint8Array(32); chunk[31] = invalid === "source" ? 1 : 4; args[7] = { ...args[7], participationFlagsChunk: hexlify(chunk) }; }
-        await rejects(c, () => r.target.respondWithMinipoolParticipation(...args), reason);
+        await rejects(c, () => r.target.respondWithMinipoolParticipation(...participationProofArgs(...args)), reason);
     });
 
     for (const offset of [255, 256]) it(`accepts a target proof at bitmap offset ${offset}`, async () => {
         const c = await load().ensure("current"); const ch = await challenge(c); const r = await response(c, ch, "pool1", false, offset);
-        await defeat(c, ch, () => r.target.respondWithMinipoolParticipation(...r.p));
+        await defeat(c, ch, () => r.target.respondWithMinipoolParticipation(...participationProofArgs(...r.p)));
     });
 
     for (const activation of [false, true]) for (const late of [false, true]) it(`${late ? "rejects" : "accepts"} ${activation ? "activation" : "participation"} ${late ? "after" : "at"} the deadline while disabled`, async () => {
@@ -323,14 +324,14 @@ describe("RocketNetworkParticipation minipools", () => {
         await settings(c, "exits.enabled", false);
         await c.time.advance(ch.time + 86400n - await c.time.latest() - 10n);
         const r = await response(c, ch, "pool1", activation); await setTime(ch.time + 86400n + (late ? 1n : 0n));
-        const action = () => activation ? r.target.respondWithMinipoolValidator(...r.a) : r.target.respondWithMinipoolParticipation(...r.p);
+        const action = () => activation ? r.target.respondWithMinipoolValidator(...validatorProofArgs(...r.a)) : r.target.respondWithMinipoolParticipation(...participationProofArgs(...r.p));
         if (late) await rejects(c, action, "Challenge period has passed"); else await defeat(c, ch, action);
     });
 
     it("blocks only new submissions when disabled and preserves timing across re-enable", async () => {
         const c = await load().ensure("current"); const ch = await challenge(c);
         await settings(c, "exits.enabled", false); const args = await submission(c);
-        await rejects(c, async () => (await participant(c, "proposer")).challengeMinipools(...args), "Performance exits disabled");
+        await rejects(c, async () => (await participant(c, "proposer")).challengeMinipools(...slotProofArgs(...args)), "Performance exits disabled");
         await setTime(ch.time + 86400n);
         await rejects(c, async () => (await participant(c)).finaliseChallenge(ch.id), "Not enough time has passed");
         await finalise(c, ch);
@@ -338,8 +339,8 @@ describe("RocketNetworkParticipation minipools", () => {
         assert.equal(await c.contracts.rocketStorage.getUint(key("time", ch.id)), ch.time);
         await rejects(c, async () => (await participant(c)).finaliseChallenge(ch.id), "Challenge already finalised");
         const r = await response(c, ch, "pool1", true);
-        await rejects(c, () => r.target.respondWithMinipoolValidator(...r.a), "Challenge already finalised");
-        await rejects(c, () => r.target.respondWithMinipoolParticipation(...r.p), "Challenge already finalised");
+        await rejects(c, () => r.target.respondWithMinipoolValidator(...validatorProofArgs(...r.a)), "Challenge already finalised");
+        await rejects(c, () => r.target.respondWithMinipoolParticipation(...participationProofArgs(...r.p)), "Challenge already finalised");
     });
 
     for (const completed of ["requested", "finalised", "distributed"] as const) it(`skips ${completed} members without changing their accounting`, async () => {
@@ -359,7 +360,7 @@ describe("RocketNetworkParticipation minipools", () => {
 
     it("keeps overlapping challenges independent when one is defeated", async () => {
         const c = await load().ensure("current"); const a = await challenge(c); const b = await challenge(c);
-        const r = await response(c, a, "pool1", true); await defeat(c, a, () => r.target.respondWithMinipoolValidator(...r.a));
+        const r = await response(c, a, "pool1", true); await defeat(c, a, () => r.target.respondWithMinipoolValidator(...validatorProofArgs(...r.a)));
         await finalise(c, b);
     });
 
@@ -417,7 +418,7 @@ describe("RocketNetworkParticipation minipools", () => {
         const c = await load().ensure("current"); const contract = await participant(c);
         const ch = { ...await challenge(c), id: 999n }; const r = await response(c, ch, "pool1", true);
         for (const action of [() => contract.getChallengeType(999n), () => contract.getChallengeMinipools(999n), () => contract.getChallengeValidatorIds(999n),
-            () => contract.finaliseChallenge(999n), () => contract.respondWithMinipoolValidator(...r.a), () => contract.respondWithMinipoolParticipation(...r.p)]) {
+            () => contract.finaliseChallenge(999n), () => contract.respondWithMinipoolValidator(...validatorProofArgs(...r.a)), () => contract.respondWithMinipoolParticipation(...participationProofArgs(...r.p))]) {
             await rejects(c, action, "Invalid challenge");
         }
         await rejects(c, async () => c.contracts.rocketNetworkExit.connect(await c.context.actor("proposer")).requestMinipoolExit(address(c, "pool0")), "Invalid minipool exit requester");
@@ -428,17 +429,17 @@ describe("RocketNetworkParticipation minipools", () => {
         const a = await challenge(c); await c.depositPool.fund("depositor", 28n * ETH); await c.megapools.deposit("node");
         await stakeMegapoolValidatorAndAssert(c, "node", 0n);
         const contract = await participant(c); const input = await submission(c);
-        await (await (await participant(c, "proposer")).challengeMegapool(await c.megapools.address("node"), [0n], input[1], input[2], input[3], input[4])).wait();
+        await (await (await participant(c, "proposer")).challengeMegapool(...slotProofArgs(await c.megapools.address("node"), [0n], input[1], input[2], input[3], input[4]))).wait();
         const megaId = a.id + 1n; assert.equal(await contract.getChallengeType(megaId), 1n);
         const b = await challenge(c); assert.equal(b.id, megaId + 1n);
         const r = await response(c, a, "pool1", true);
         await rejects(c, () => contract.getChallengeValidatorIds(a.id), "Incorrect challenge type");
         await rejects(c, () => contract.getChallengeMinipools(megaId), "Incorrect challenge type");
-        await rejects(c, () => contract.respondWithMegapoolValidator(a.id, 0n, r.timestamp, r.v, r.slot), "Incorrect challenge type");
-        await rejects(c, () => contract.respondWithMegapoolParticipation(a.id, 0n, ...r.p.slice(2) as [bigint, bigint, string[], bigint, typeof r.v, typeof r.p[7], typeof r.slot]), "Incorrect challenge type");
-        await rejects(c, () => contract.respondWithMinipoolValidator(megaId, ...r.a.slice(1) as [string, bigint, typeof r.v, typeof r.slot]), "Incorrect challenge type");
-        await rejects(c, () => contract.respondWithMinipoolParticipation(megaId, ...r.p.slice(1) as [string, bigint, bigint, string[], bigint, typeof r.v, typeof r.p[7], typeof r.slot]), "Incorrect challenge type");
-        await defeat(c, a, () => r.target.respondWithMinipoolValidator(...r.a));
+        await rejects(c, () => contract.respondWithMegapoolValidator(...validatorProofArgs(a.id, 0n, r.timestamp, r.v, r.slot)), "Incorrect challenge type");
+        await rejects(c, () => contract.respondWithMegapoolParticipation(...participationProofArgs(a.id, 0n, ...r.p.slice(2) as [bigint, bigint, string[], bigint, typeof r.v, typeof r.p[7], typeof r.slot])), "Incorrect challenge type");
+        await rejects(c, () => contract.respondWithMinipoolValidator(...validatorProofArgs(megaId, ...r.a.slice(1) as [string, bigint, typeof r.v, typeof r.slot])), "Incorrect challenge type");
+        await rejects(c, () => contract.respondWithMinipoolParticipation(...participationProofArgs(megaId, ...r.p.slice(1) as [string, bigint, bigint, string[], bigint, typeof r.v, typeof r.p[7], typeof r.slot])), "Incorrect challenge type");
+        await defeat(c, a, () => r.target.respondWithMinipoolValidator(...validatorProofArgs(...r.a)));
         await finalise(c, b); await (await contract.finaliseChallenge(megaId)).wait();
         assert.equal(await c.contracts.rocketNetworkExit.getRequestedEth(), 84n * ETH);
     });
@@ -458,14 +459,14 @@ describe("RocketNetworkParticipation minipools", () => {
             const c = await load().ensure("current"); const { ch, epoch } = await verified(c, historical);
             const proof = await beaconProofs(c, { validator: validator(c, "pool1", 0n, index), validatorIndex: index, participationEpoch: epoch });
             const offset = epoch - ch.start; const leaf = offset / 256n; const contract = await participant(c, "responder");
-            await defeat(c, ch, () => contract.respondWithMinipoolParticipation(ch.id, address(c, "pool1"), offset, ch.words[Number(leaf)], challengeTree(ch.words).witness(leaf), proof.timestamp, proof.validatorProof, proof.participationProof, proof.slotProof));
+            await defeat(c, ch, () => contract.respondWithMinipoolParticipation(...participationProofArgs(ch.id, address(c, "pool1"), offset, ch.words[Number(leaf)], challengeTree(ch.words).witness(leaf), proof.timestamp, proof.validatorProof, proof.participationProof, proof.slotProof)));
         });
 
         it("verifies late activation for a non-first member", async () => {
             const c = await load().ensure("current"); const { ch, epoch } = await verified(c);
             const proof = await beaconProofs(c, { validator: validator(c, "pool1", ch.start + 1n), participationEpoch: epoch });
             const contract = await participant(c, "responder");
-            await defeat(c, ch, () => contract.respondWithMinipoolValidator(ch.id, address(c, "pool1"), proof.timestamp, proof.validatorProof, proof.slotProof));
+            await defeat(c, ch, () => contract.respondWithMinipoolValidator(...validatorProofArgs(ch.id, address(c, "pool1"), proof.timestamp, proof.validatorProof, proof.slotProof)));
         });
 
         for (const corrupt of ["slot", "validator", "chunk", "witness"] as const) it(`rejects tampered ${corrupt} proof`, async () => {
@@ -475,14 +476,14 @@ describe("RocketNetworkParticipation minipools", () => {
             if (corrupt === "validator") proof.validatorProof.witnesses[0] = ethers.toBeHex(BigInt(proof.validatorProof.witnesses[0]) ^ 1n, 32);
             if (corrupt === "witness") proof.participationProof.witnesses[0] = ethers.toBeHex(BigInt(proof.participationProof.witnesses[0]) ^ 1n, 32);
             if (corrupt === "chunk") { const bytes = ethers.getBytes(proof.participationProof.participationFlagsChunk); bytes[0] ^= 1; proof.participationProof.participationFlagsChunk = hexlify(bytes); }
-            await rejects(c, async () => (await participant(c)).respondWithMinipoolParticipation(ch.id, address(c, "pool1"), 0n, ch.words[0], challengeTree(ch.words).witness(0n), proof.timestamp, proof.validatorProof, proof.participationProof, proof.slotProof),
+            await rejects(c, async () => (await participant(c)).respondWithMinipoolParticipation(...participationProofArgs(ch.id, address(c, "pool1"), 0n, ch.words[0], challengeTree(ch.words).witness(0n), proof.timestamp, proof.validatorProof, proof.participationProof, proof.slotProof)),
                 corrupt === "slot" ? "Invalid slot proof" : corrupt === "validator" ? "Invalid validator proof" : "Invalid participation proof");
         });
 
         for (const index of [31n, 32n]) it(`rejects a neighbouring validator's target flag at index ${index}`, async () => {
             const c = await load().ensure("current"); const { ch, epoch } = await verified(c);
             const proof = await beaconProofs(c, { validator: validator(c, "pool1"), validatorIndex: index, participationEpoch: epoch, flags: 1, neighbourFlags: 2 });
-            await rejects(c, async () => (await participant(c)).respondWithMinipoolParticipation(ch.id, address(c, "pool1"), 0n, ch.words[0], challengeTree(ch.words).witness(0n), proof.timestamp, proof.validatorProof, proof.participationProof, proof.slotProof), "Invalid participation");
+            await rejects(c, async () => (await participant(c)).respondWithMinipoolParticipation(...participationProofArgs(ch.id, address(c, "pool1"), 0n, ch.words[0], challengeTree(ch.words).witness(0n), proof.timestamp, proof.validatorProof, proof.participationProof, proof.slotProof)), "Invalid participation");
         });
     });
 });
@@ -492,7 +493,7 @@ describe("RocketNetworkParticipation maximum minipool list", () => {
     it("requests all 32 exits within twelve million gas", async () => {
         const c = await load().ensure("current"); const names = range(32).map(i => `pool${i}`); const args = await submission(c, names);
         const before = await participationBondAccounting(c);
-        const receipt = await (await (await participant(c, "proposer")).challengeMinipools(...args)).wait(); assert(receipt);
+        const receipt = await (await (await participant(c, "proposer")).challengeMinipools(...slotProofArgs(...args))).wait(); assert(receipt);
         const id = await c.contracts.rocketStorage.getUint(key("count"));
         await assertParticipationBondLocked(c, id, before);
         const time = BigInt((await ethers.provider.getBlock(receipt.blockNumber))!.timestamp); await setTime(time + 86401n);

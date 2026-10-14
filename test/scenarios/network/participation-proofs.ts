@@ -1,7 +1,9 @@
+import { BlockRootsMock__factory } from "../../harness/bindings/fixtures";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { getBytes, hexlify, toBeHex, ZeroHash } from "ethers";
-import type { ProtocolCurrent } from "../../harness";
+import { GLOAS_TEST_SLOT } from "../../harness/deployment";
+import type { ProtocolCurrent, ProtocolV141 } from "../../harness";
 import { BEACON_GENESIS_TIME, currentSlot, FAR_FUTURE_EPOCH, validatorProof } from "../megapool/proofs";
 
 // Independent test-side SHA-256 trees. No calls to the Solidity Merkle helpers.
@@ -40,6 +42,28 @@ function vector(depth: number, leaves: Map<bigint, string>) {
     };
 }
 
+/** Independent progressive SSZ tree: groups of 1, 4, 16, ... leaves and a mix-in. */
+function progressive(leaves: Map<bigint, string>, mixin: string) {
+    function group(offset: bigint, depth: number): { root: string; witness(index: bigint): string[] } {
+        const size = 1n << BigInt(depth);
+        const selected = new Map([...leaves].filter(([i]) => i >= offset && i < offset + size).map(([i, value]) => [i - offset, value]));
+        const subtree = vector(depth, selected);
+        const more = [...leaves.keys()].some(i => i >= offset + size);
+        const next = more ? group(offset + size, depth + 2) : null;
+        const right = next?.root ?? ZeroHash;
+        return {
+            root: hashPair(subtree.root, right),
+            witness(index: bigint): string[] {
+                return index < offset + size
+                    ? [...subtree.witness(index - offset), right]
+                    : [...next!.witness(index), subtree.root];
+            },
+        };
+    }
+    const data = group(0n, 0);
+    return { root: hashPair(data.root, mixin), witness: (index: bigint) => [...data.witness(index), mixin] };
+}
+
 export function bitmap(period: number, offsets: number[]): bigint[] {
     const words = Array<bigint>(Math.ceil(period / 256)).fill(0n);
     for (const offset of offsets) {
@@ -54,21 +78,25 @@ export function challengeTree(words: bigint[]) {
 }
 
 /**
- * Synthetic post-Electra Beacon States anchored through the existing test root oracle.
+ * Synthetic Electra/Fulu/Gloas Beacon States anchored through the existing test root oracle.
  * These test proof verification, not consensus validity of the synthetic state.
  * All three proofs share one header; historical participation uses an older state.
  */
-export async function beaconProofs(current: ProtocolCurrent, options: {
+export async function beaconProofs(current: ProtocolCurrent | ProtocolV141, options: {
     validatorId?: bigint;
     validator?: Awaited<ReturnType<typeof validatorProof>>;
     validatorIndex?: bigint;
     activationEpoch?: bigint;
     participationEpoch: bigint;
+    anchorSlot?: bigint;
+    gloasSlot?: bigint;
     flags?: number;
     neighbourFlags?: number;
 }) {
     const index = options.validatorIndex ?? 31n;
-    const slot = await currentSlot(current);
+    const slot = options.anchorSlot ?? await currentSlot(current);
+    const gloasSlot = options.gloasSlot ?? GLOAS_TEST_SLOT;
+    const isGloas = slot >= gloasSlot;
     const timestamp = await current.time.latest();
     const participationSlot = (options.participationEpoch + 1n) * 32n;
     assert(slot > participationSlot, "Participation state must precede the anchor state");
@@ -86,22 +114,23 @@ export async function beaconProofs(current: ProtocolCurrent, options: {
         [3n, littleEndian(v.slashed ? 1n : 0n)], [4n, littleEndian(v.activationEligibilityEpoch)],
         [5n, littleEndian(v.activationEpoch)], [6n, littleEndian(v.exitEpoch)], [7n, littleEndian(v.withdrawableEpoch)],
     ])).root;
-    const validators = vector(40, new Map([[index, validatorRoot]]));
     // Include the full packed chunk so neighbouring flag bytes are within the list.
     const validatorLength = littleEndian((index / 32n + 1n) * 32n);
+    const validators = isGloas ? progressive(new Map([[index, validatorRoot]]), validatorLength) : vector(40, new Map([[index, validatorRoot]]));
     const flags = new Uint8Array(32);
     flags[Number(index % 32n)] = options.flags ?? 2;
     flags[Number((index % 32n + 1n) % 32n)] = options.neighbourFlags ?? 0;
     const chunk = hexlify(flags);
-    const participation = vector(35, new Map([[index / 32n, chunk]]));
+    const pastGloas = participationSlot >= gloasSlot;
+    const participation = pastGloas ? progressive(new Map([[index / 32n, chunk]]), validatorLength) : vector(35, new Map([[index / 32n, chunk]]));
     const stateFields = (stateSlot: bigint) => new Map<bigint, string>([
         [0n, littleEndian(BEACON_GENESIS_TIME)],
         [1n, "0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95"],
-        [2n, littleEndian(stateSlot)], [11n, hashPair(validators.root, validatorLength)],
+        [2n, littleEndian(stateSlot)], [11n, isGloas ? validators.root : hashPair(validators.root, validatorLength)],
     ]);
     const pastFields = stateFields(participationSlot);
-    pastFields.set(15n, hashPair(participation.root, validatorLength));
-    const pastState = vector(6, pastFields);
+    pastFields.set(15n, pastGloas ? participation.root : hashPair(participation.root, validatorLength));
+    const pastState = pastGloas ? progressive(pastFields, littleEndian((1n << 46n) - 1n)) : vector(6, pastFields);
     const roots = vector(13, new Map([[participationSlot % 8192n, pastState.root]]));
     const anchorFields = stateFields(slot);
     let historyWitness: string[];
@@ -121,17 +150,20 @@ export async function beaconProofs(current: ProtocolCurrent, options: {
         historyField = 6n;
         historyWitness = roots.witness(participationSlot % 8192n);
     }
-    const state = vector(6, anchorFields);
+    const state = isGloas ? progressive(anchorFields, littleEndian((1n << 46n) - 1n)) : vector(6, anchorFields);
     const header = vector(3, new Map([[0n, littleEndian(slot)], [3n, state.root]]));
-    validator.witnesses = [...validators.witness(index), validatorLength, ...state.witness(11n), ...header.witness(3n)];
-    await (await current.contracts.beaconStateVerifier.connect(await current.context.actor("finaliser")).setBlockRoot(timestamp, header.root)).wait();
+    validator.witnesses = [...validators.witness(index), ...(isGloas ? [] : [validatorLength]), ...state.witness(11n), ...header.witness(3n)];
+    const signer = await current.context.actor("finaliser");
+    const oracle = current.release === "current" ? current.contracts.beaconStateVerifier.connect(signer)
+        : BlockRootsMock__factory.connect(current.context.deployment.active.get("beaconRootsOracle")!.address, signer);
+    await (await oracle.setBlockRoot(timestamp, header.root)).wait();
     return {
         timestamp,
         slotProof: { slot, witnesses: [...state.witness(2n), ...header.witness(3n)] },
         validatorProof: validator,
         participationProof: {
             participationSlot, validatorIndex: index, participationFlagsChunk: chunk,
-            witnesses: [...participation.witness(index / 32n), validatorLength, ...pastState.witness(15n),
+            witnesses: [...participation.witness(index / 32n), ...(pastGloas ? [] : [validatorLength]), ...pastState.witness(15n),
                 ...historyWitness, ...state.witness(historyField), ...header.witness(3n)],
         },
     };

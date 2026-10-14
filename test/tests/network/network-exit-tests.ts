@@ -1,3 +1,5 @@
+import { beaconProofs } from "../../scenarios/network/participation-proofs";
+import { validatorProofArgs } from '../../scenarios/megapool/proof-encoding';
 import assert from "node:assert/strict";
 import { parseEther, type ContractTransactionReceipt } from "ethers";
 
@@ -75,10 +77,10 @@ async function penaliseLegacyMinipool(
     const minipool = current.minipools.get(minipoolName);
     const caller = await current.context.actor("random");
     const transaction = await current.contracts.rocketNetworkExit.connect(caller).penaliseMinipool(
-        minipool.address,
+        ...validatorProofArgs(minipool.address,
         slotTimestamp,
         legacyValidatorProof(options.pubkey ?? minipool.pubkey, options.exitEpoch),
-        slotProof(0n),
+        slotProof(0n)),
     );
     const receipt = await transaction.wait();
     assert(receipt, "Minipool penalty transaction was not mined");
@@ -1500,7 +1502,7 @@ describe("RocketNetworkExit minipool triggered exits", () => {
         await current.time.advance(await current.contracts.rocketDAOProtocolSettingsNetwork.getCooperativeExitPhase());
 
         await (await networkExit.connect(random).penaliseMinipool(
-            minipool.address,
+            ...validatorProofArgs(minipool.address,
             await current.time.latest(),
             {
                 validatorIndex: 0n,
@@ -1516,7 +1518,7 @@ describe("RocketNetworkExit minipool triggered exits", () => {
                 },
                 witnesses: [],
             },
-            slotProof(0n),
+            slotProof(0n)),
             { value: fee },
         )).wait();
 
@@ -1621,6 +1623,21 @@ describe("RocketNetworkExit legacy minipool penalties", () => {
         await current.context.fixtures.minipoolPenaltyController.deploy("legacyPenaltySeeder");
     });
 
+    it("penalises a legacy minipool with an authenticated versioned validator bundle", async () => {
+        const current = await load().ensure("current");
+        const pool = current.minipools.get("pool16");
+        await requestMinipoolExit(current, pool.address);
+        await current.time.advance(await current.contracts.rocketDAOProtocolSettingsNetwork.getCooperativeExitPhase());
+        const proofs = await beaconProofs(current, {
+            validator: legacyValidatorProof(pool.pubkey),
+            participationEpoch: await currentEpoch(current) - 2n,
+        });
+        const exit = current.contracts.rocketNetworkExit.connect(await current.context.actor("random"));
+        await (await exit.penaliseMinipool(...validatorProofArgs(pool.address, proofs.timestamp, proofs.validatorProof, proofs.slotProof))).wait();
+        assert.equal(await current.minipools.penaltyRate("pool16"), parseEther("0.00625"));
+        assert.equal(await exit.getRequestedEth(), 0n);
+    });
+
     it("converts the first fixed penalty for 16 ETH and 8 ETH bonds and reconciles accounting", async () => {
         const current = await load().ensure("current");
         const networkExit = current.contracts.rocketNetworkExit;
@@ -1710,10 +1727,10 @@ describe("RocketNetworkExit legacy minipool penalties", () => {
         const fourthRequestTimestamp = await current.time.latest();
         await expectRevert(
             () => networkExit.connect(random).penaliseMinipool(
-                minipool.address,
+                ...validatorProofArgs(minipool.address,
                 fourthRequestTimestamp,
                 legacyValidatorProof(minipool.pubkey),
-                slotProof(0n),
+                slotProof(0n)),
                 { value: 1n },
             ),
             "Unexpected exit fee",
@@ -1854,10 +1871,10 @@ describe("RocketNetworkExit legacy minipool penalties", () => {
 
         await expectRevert(
             () => networkExit.connect(random).penaliseMinipool(
-                randomAddress,
+                ...validatorProofArgs(randomAddress,
                 initialTimestamp,
                 legacyValidatorProof(minipool.pubkey),
-                slotProof(0n),
+                slotProof(0n)),
             ),
             "Invalid minipool",
         );
@@ -1933,10 +1950,10 @@ describe("RocketNetworkExit legacy minipool penalties", () => {
         const phase = await current.contracts.rocketDAOProtocolSettingsNetwork.getCooperativeExitPhase();
         await setNextBlockTimestamp(requestTime + phase);
         await (await networkExit.connect(random).penaliseMinipool(
-            minipool.address,
+            ...validatorProofArgs(minipool.address,
             requestTime + phase,
             legacyValidatorProof("0x"),
-            slotProof(0n),
+            slotProof(0n)),
             { value: fee },
         )).wait();
 

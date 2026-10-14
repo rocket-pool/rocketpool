@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "release": "1.4.1",
+  "source": {
+    "ref": "v1.4.1-dev",
+    "commit": "2698cb1dcf4c3dc6ac2af63327878e142f0bee23"
+  },
+  "compilers": [
+    "0.8.30"
+  ],
+  "artifacts": {
+    "BeaconStateVerifier": {
+      "file": "artifacts/BeaconStateVerifier.json",
+      "integrity": "sha256:2e52ac3de26a9aa234b86d27856d1b616db1f0011d9322a8a12bd9b3d479bc74",
+      "sourceName": "contracts/contract/util/BeaconStateVerifier.sol"
+    },
+    "RocketMegapoolManager": {
+      "file": "artifacts/RocketMegapoolManager.json",
+      "integrity": "sha256:f8359ce69236d98824bd1de3a08a969707b9a4b003ea7f716067189429714021",
+      "sourceName": "contracts/contract/megapool/RocketMegapoolManager.sol"
+    },
+    "RocketUpgradeOneDotFourDotOne": {
+      "file": "artifacts/RocketUpgradeOneDotFourDotOne.json",
+      "integrity": "sha256:282f5b794222ef94b41f42e7907bb69893b702020f67b141421dafeb71687c3b",
+      "sourceName": "contracts/contract/upgrade/RocketUpgradeOneDotFourDotOne.sol"
+    }
+  },
+  "integrity": "sha256:d296afac078642c9232136187dc4fc437b489acb9837e6a5649cdfe66c928dac"
+}

@@ -1,3 +1,4 @@
+import { validatorProofArgs } from '../../scenarios/megapool/proof-encoding';
 import assert from "assert";
 
 import { before, describe, expectRevert, it, load } from "../../harness";
@@ -19,6 +20,17 @@ describe("RocketMegapool validator lifecycle", () => {
     before(async () => {
         const current = await prepareMegapoolProtocol();
         await current.pdao.settings.megapools.setUint("megapool.time.before.dissolve", DISSOLVE_PERIOD);
+    });
+
+    it("exposes only the canonical versioned manager proof selectors", async () => {
+        const current = await load().ensure("current");
+        const fragments = current.contracts.rocketMegapoolManager.interface.fragments;
+        for (const name of ["stake", "dissolve", "notifyExit", "notifyNotExit", "notifyFinalBalance"]) {
+            const functions = fragments.filter(fragment => fragment.type === "function" && "name" in fragment && fragment.name === name);
+            assert.equal(functions.length, 1);
+            assert.deepEqual(functions[0].inputs.map(input => input.type), ["address", "uint32", "uint64", "uint256", "bytes"]);
+            assert.equal(fragments.some(fragment => "name" in fragment && fragment.name === `${name}V2`), false);
+        }
     });
 
     it("rejects dissolving a validator before the dissolve period", async () => {
@@ -73,12 +85,12 @@ describe("RocketMegapool validator lifecycle", () => {
         const slot = await currentSlot(current);
         await expectRevert(
             async () => current.contracts.rocketMegapoolManager.connect(await current.context.actor("proofSubmitter")).notifyExit(
-                await current.megapools.address("node"), 0n, timestamp,
+                ...validatorProofArgs(await current.megapools.address("node"), 0n, timestamp,
                 await validatorProof(current, "node", 0n, {
                     withdrawalCredentials: `0x${"11".repeat(32)}`,
                     withdrawableEpoch: await currentEpoch(current),
                 }),
-                slotProof(slot),
+                slotProof(slot)),
             ),
             "Invalid withdrawal credentials",
         );
@@ -101,8 +113,8 @@ describe("RocketMegapool validator lifecycle", () => {
             const timestamp = await current.time.latest();
             const slot = await currentSlot(current);
             return current.contracts.rocketMegapoolManager.connect(signer).dissolve(
-                await current.megapools.address("node"), 0n, timestamp,
-                await validatorProof(current, "node", 0n), slotProof(slot),
+                ...validatorProofArgs(await current.megapools.address("node"), 0n, timestamp,
+                await validatorProof(current, "node", 0n), slotProof(slot)),
             );
         }, "Validator is compliant");
     });
@@ -165,8 +177,8 @@ describe("RocketMegapool validator lifecycle", () => {
             const timestamp = await current.time.latest();
             const slot = await currentSlot(current);
             await expectRevert(async () => current.contracts.rocketMegapoolManager.connect(await current.context.actor("proofSubmitter")).stake(
-                await current.megapools.address("node"), 0n, timestamp,
-                await validatorProof(current, "node", 0n, overrides), slotProof(slot),
+                ...validatorProofArgs(await current.megapools.address("node"), 0n, timestamp,
+                await validatorProof(current, "node", 0n, overrides), slotProof(slot)),
             ));
         });
     }
@@ -185,8 +197,8 @@ describe("RocketMegapool validator lifecycle", () => {
         const timestamp = await current.time.latest();
         const slot = await currentSlot(current);
         await expectRevert(async () => current.contracts.rocketMegapoolManager.connect(await current.context.actor("proofSubmitter")).stake(
-            await current.megapools.address("node"), 0n, timestamp,
-            await validatorProof(current, "node", 0n), slotProof(slot),
+            ...validatorProofArgs(await current.megapools.address("node"), 0n, timestamp,
+            await validatorProof(current, "node", 0n), slotProof(slot)),
         ), "Validator must be pre-staked");
     });
 });

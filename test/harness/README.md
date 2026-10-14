@@ -7,7 +7,8 @@ parent’s baseline and can refine it without leaking state to siblings.
 
 The harness deploys v1.3.1 once per test run. Each root suite receives an
 isolated snapshot and context cloned from that shared historical baseline, then
-applies any requested upgrades independently.
+applies any requested upgrades independently. Current deployments follow
+`1.3.1 → 1.4 → 1.4.1 → current` (v1.5).
 
 ```ts
 import { before, describe, it, load } from "./harness";
@@ -184,6 +185,39 @@ The command compiles the working tree, validates the maintained artifact
 lists, and replaces only `test/harness/bindings/current` and
 `test/harness/bindings/fixtures`.
 
+## v1.4.1 verifier release
+
+`ensure("1.4.1")` and `upgradeTo("1.4.1")` return `ProtocolV141`. Its manager
+and verifier use the exact versioned v1.4.1 ABI. Unchanged contracts retain v1.4
+bindings. Advancing from v1.4 to current executes both upgrade contracts; no
+implicit transition is allowed after a scope has selected a release.
+
+The v1.4.1 bundle contains only `BeaconStateVerifier`, `RocketMegapoolManager`
+and `RocketUpgradeOneDotFourDotOne`, compiled from
+`2698cb1dcf4c3dc6ac2af63327878e142f0bee23` (`v1.4.1-dev`, not a release tag).
+Rebuild from a clean archive/checkout of that commit with its own locked dependencies:
+
+```sh
+node scripts/build-test-release-bundle.js 1.4.1 /path/to/compiled/v1.4.1 test/harness/releases/v1.4.1
+npx typechain --target ethers-v6 --out-dir test/harness/bindings/v1_4_1 \
+  'test/harness/releases/v1.4.1/artifacts/*.json'
+```
+
+Historical v1.4.1 uses the actual verifier and a separately deployed
+`BlockRootsMock` oracle, journaled as `beaconRootsOracle`. Current integration
+fixtures wrap the actual current verifier in `BeaconStateVerifierMock`, with
+an explicit seven-fork schedule. `GLOAS_TEST_SLOT` is synthetic and must not be
+used for production deployment. Isolated pre-Gloas vectors use a schedule with
+Gloas disabled even when their slot number exceeds this synthetic boundary.
+
+Proof encoders are shared by the isolated JavaScript suite and typed scenarios.
+Validator V1 and final-balance V1/V2 retain the v1.4.1 wire format. Slot V1 encodes
+`(SlotProof)`; participation V1 encodes `(ValidatorProof, ParticipationProof,
+SlotProof)`. `proof-encoding.ts` encodes scenario facts at the call boundary.
+Its final-balance convenience helper supplies synthetic zero-balance/freshness
+facts for verification-disabled scenarios; verification-enabled lifecycle tests
+construct authenticated bundles with independent test-side SHA-256 trees.
+
 ## Legacy migration coverage
 
 The retired JavaScript files remain in `test-old/` for comparison while the
@@ -222,3 +256,6 @@ unit tests; it does not mean the legacy source has been removed.
 | `test-old/util/verifier-tests.js` | `test-unit/util/verifier-tests.js` | Ported as an isolated JavaScript unit suite |
 | v1.4 `test-upgrade` suite | `test/tests/upgrade/v1-4/` | Ported from the historical branch |
 | v1.5 upgrade settings/version checks | `test/tests/upgrade/v1-5/settings-tests.ts` | Ported |
+| v1.4.1 verifier additions | `test-unit/util/verifier-tests.js` | All 26 source cases, retained v1.5 participation vector, plus 24 fork/history/packed-byte cases |
+| v1.4.1 manager selectors and proof callers | `test/tests/megapool/` and `test/tests/network/` | Versioned payloads and ABI regression checks |
+| v1.4.1 → v1.5 verifier/manager lifecycle | `test/tests/upgrade/v1-5/verifier-tests.ts` | Real proofs, historical state and exit accounting |

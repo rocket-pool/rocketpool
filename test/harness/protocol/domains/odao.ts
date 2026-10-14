@@ -1,4 +1,4 @@
-import type { CurrentContracts, ProtocolContracts, V14Contracts } from "../contracts";
+import type { CurrentContracts, ProtocolContracts, V14Contracts, V141Contracts } from "../contracts";
 import type { ActiveProtocolView } from "../view";
 import { GuardedFacade } from "../view";
 
@@ -460,7 +460,7 @@ export class ODAOBootstrapActions<C extends ProtocolContracts> extends GuardedFa
                 address,
             )).wait();
         } else {
-            const upgrade = (this.contracts as V14Contracts | CurrentContracts)
+            const upgrade = (this.contracts as V14Contracts | V141Contracts | CurrentContracts)
                 .rocketDAONodeTrustedUpgrade;
             await (await upgrade.connect(signer).bootstrapUpgrade(type, name, abi, address)).wait();
         }
@@ -483,7 +483,7 @@ export class ODAOActions<C extends ProtocolContracts> {
     }
 }
 
-type ODAOUpgradeContracts = V14Contracts | CurrentContracts;
+type ODAOUpgradeContracts = V14Contracts | V141Contracts | CurrentContracts;
 
 export interface ODAOUpgradeDetails {
     state: bigint;

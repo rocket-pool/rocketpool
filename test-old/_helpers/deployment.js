@@ -11,7 +11,7 @@ export async function deployRocketPool() {
     const deployer = new RocketPoolDeployer(signer, { logging: false });
 
     deployer.contractPlan['beaconStateVerifier'] = {
-        constructorArgs: () => deployer.defaultConstructorArgs(),
+        constructorArgs: () => [...deployer.defaultConstructorArgs(), [74240n * 32n, 144896n * 32n, 194048n * 32n, 269568n * 32n, 364032n * 32n, 411392n * 32n, 14000000n]],
         artifact: artifacts.require('BeaconStateVerifierMock'),
     }
 

@@ -2,6 +2,7 @@ import type {
     CurrentContracts,
     ProtocolContracts,
     V14Contracts,
+    V141Contracts,
 } from "../contracts";
 import { GuardedFacade } from "../view";
 
@@ -53,7 +54,7 @@ export class DepositPoolActions<C extends ProtocolContracts> extends GuardedFaca
 
 }
 
-type AssignableDepositPoolContracts = V14Contracts | CurrentContracts;
+type AssignableDepositPoolContracts = V14Contracts | V141Contracts | CurrentContracts;
 
 export class DepositPoolActionsV14<C extends AssignableDepositPoolContracts>
     extends DepositPoolActions<C> {

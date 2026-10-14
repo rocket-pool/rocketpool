@@ -4,13 +4,37 @@ pragma solidity 0.8.30;
 import {RocketBase} from "../RocketBase.sol";
 import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 import {SSZ} from "./SSZ.sol";
-import {BeaconStateVerifierInterface, ValidatorProof, Validator, WithdrawalProof, SlotProof, Withdrawal, ParticipationProof} from "../../interface/util/BeaconStateVerifierInterface.sol";
+import {
+    BeaconStateVerifierInterface,
+    ValidatorProof,
+    Validator,
+    WithdrawalProof,
+    SlotProof,
+    Withdrawal,
+    ValidatorProofBundleV1,
+    FinalBalanceProofBundleV1,
+    FinalBalanceProofBundleV2,
+    NextWithdrawalIndexProof,
+    ValidatorBalanceProof,
+    VerifiedValidator,
+    VerifiedFinalBalance,
+    ParticipationProof,
+    SlotProofBundleV1,
+    ParticipationProofBundleV1,
+    VerifiedSlot,
+    VerifiedParticipation
+} from "../../interface/util/BeaconStateVerifierInterface.sol";
 
 contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
+    // Constants
+    uint256 internal constant validatorProofVersion1 = 1;
+    uint256 internal constant finalBalanceProofVersion1 = 1;
+    uint256 internal constant finalBalanceProofVersion2 = 2;
+    uint64 internal constant slotsPerEpoch = 32;
+
     // Immutables
     uint256 internal immutable slotsPerHistoricalRoot;
     uint256 internal immutable historicalSummaryOffset;
-
     uint64 internal immutable slotPhase0;
     uint64 internal immutable slotAltair;
     uint64 internal immutable slotBellatrix;
@@ -18,10 +42,9 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
     uint64 internal immutable slotDeneb;
     uint64 internal immutable slotElectra;
     uint64 internal immutable slotFulu;
+    uint64 internal immutable slotGloas;
 
     address internal immutable beaconRoots;                         // 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02
-
-    bytes32 internal immutable genesisWitness;
 
     // Enums
     enum Fork {
@@ -31,12 +54,13 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         CAPELLA,
         DENEB,
         ELECTRA,
-        FULU
+        FULU,
+        GLOAS
     }
 
     // Construct
-    constructor(RocketStorageInterface _rocketStorageAddress, uint256 _slotsPerHistoricalRoot, uint64[6] memory _forkSlots, address _beaconRoots, uint256 _genesisTime, bytes32 _genesisValidatorRoot) RocketBase(_rocketStorageAddress) {
-        version = 2;
+    constructor(RocketStorageInterface _rocketStorageAddress, uint256 _slotsPerHistoricalRoot, uint64[7] memory _forkSlots, address _beaconRoots) RocketBase(_rocketStorageAddress) {
+        version = 3;
         slotsPerHistoricalRoot = _slotsPerHistoricalRoot;
         beaconRoots = _beaconRoots;
         // Set fork slots
@@ -47,22 +71,71 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         slotDeneb = _forkSlots[3];
         slotElectra = _forkSlots[4];
         slotFulu = _forkSlots[5];
+        slotGloas = _forkSlots[6];
         // Historical summaries started being appended from Capella onwards, depending on the chain we might need an offset
         historicalSummaryOffset = slotCapella / slotsPerHistoricalRoot;
-        // Compute the genesis_time/genesis_validator_root witness to protect slot proofs from changes to beacon state container
-        genesisWitness = SSZ.efficientSha256(SSZ.toLittleEndian(_genesisTime), _genesisValidatorRoot);
     }
 
-    /// @notice Verifies a proof about a validator on the beacon chain
-    /// @param _slotTimestamp Timestamp of the slot containing the parent block hash of the slot used for proofs
-    /// @param _slot Slot number that the proof was generated for
-    /// @param _proof Proof of the validator
-    function verifyValidator(uint64 _slotTimestamp, uint64 _slot, ValidatorProof calldata _proof) override external view returns(bool) {
+    /// @notice Verifies a versioned validator proof bundle and returns its fork-independent facts
+    /// @param _slotTimestamp Timestamp of the slot containing the parent block hash used for proofs
+    /// @param _proofVersion Encoding version of `_proofData`
+    /// @param _proofData For version 1, `abi.encode(ValidatorProofBundleV1)`
+    function verifyValidator(uint64 _slotTimestamp, uint256 _proofVersion, bytes calldata _proofData) override external view returns (VerifiedValidator memory result) {
+        require(_proofVersion == validatorProofVersion1, "Unsupported proof version");
+        ValidatorProofBundleV1 memory proof = abi.decode(_proofData, (ValidatorProofBundleV1));
+        require(_verifyValidator(_slotTimestamp, proof.slotProof.slot, proof.validatorProof), "Invalid validator proof");
+        require(_verifySlot(_slotTimestamp, proof.slotProof), "Invalid slot proof");
+        result.validatorIndex = proof.validatorProof.validatorIndex;
+        result.validator = proof.validatorProof.validator;
+        result.slot = proof.slotProof.slot;
+    }
+
+    /// @notice Verifies abi.encode(SlotProofBundleV1) and returns the authenticated slot
+    function verifySlot(uint64 _slotTimestamp, uint256 _proofVersion, bytes calldata _proofData) override external view returns (VerifiedSlot memory result) {
+        require(_proofVersion == 1, "Unsupported proof version");
+        SlotProofBundleV1 memory proof = abi.decode(_proofData, (SlotProofBundleV1));
+        require(_verifySlot(_slotTimestamp, proof.slotProof), "Invalid slot proof");
+        result.slot = proof.slotProof.slot;
+    }
+
+    /// @notice Verifies abi.encode(ParticipationProofBundleV1) against one anchor and returns the validator's flags
+    function verifyParticipation(uint64 _slotTimestamp, uint256 _proofVersion, bytes calldata _proofData) override external view returns (VerifiedParticipation memory result) {
+        require(_proofVersion == 1, "Unsupported proof version");
+        ParticipationProofBundleV1 memory proof = abi.decode(_proofData, (ParticipationProofBundleV1));
+        require(proof.validatorProof.validatorIndex == proof.participationProof.validatorIndex, "Incorrect validator index");
+        require(_verifyValidator(_slotTimestamp, proof.slotProof.slot, proof.validatorProof), "Invalid validator proof");
+        require(_verifyParticipation(_slotTimestamp, proof.slotProof.slot, proof.participationProof), "Invalid participation proof");
+        require(_verifySlot(_slotTimestamp, proof.slotProof), "Invalid slot proof");
+        result.validatorPubkeyHash = keccak256(proof.validatorProof.validator.pubkey);
+        result.validatorIndex = proof.validatorProof.validatorIndex;
+        result.slot = proof.slotProof.slot;
+        result.participationSlot = proof.participationProof.participationSlot;
+        result.participationFlags = uint8(proof.participationProof.participationFlagsChunk[result.validatorIndex % 32]);
+    }
+
+    /// @dev Verifies packed participation flags in a past state, selecting each path by its own state's fork
+    function _verifyParticipation(uint64 _slotTimestamp, uint64 _slot, ParticipationProof memory _proof) internal view returns (bool) {
+        require(_slot >= slotElectra && _proof.participationSlot >= slotElectra, "Invalid proof");
+        SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
+        path = SSZ.concat(path, _pathBeaconStateToPastRoot(_slot, _proof.participationSlot, true));
+        if (_slotToFork(_proof.participationSlot) == Fork.GLOAS) {
+            path = SSZ.concat(path, SSZ.intoProgressive(15));
+            path = SSZ.concat(path, SSZ.intoProgressive(_proof.validatorIndex / 32));
+        } else {
+            path = SSZ.concat(path, SSZ.from(15, 6));
+            path = SSZ.concat(path, SSZ.intoList(_proof.validatorIndex / 32, 35));
+        }
+        require(SSZ.length(path) == _proof.witnesses.length, "Invalid witness length");
+        return SSZ.restoreMerkleRoot(_proof.participationFlagsChunk, SSZ.toIndex(path), _proof.witnesses) == _getParentBlockRoot(_slotTimestamp);
+    }
+
+    /// @dev Verifies a validator proof against the beacon block root selected by `_slotTimestamp`
+    function _verifyValidator(uint64 _slotTimestamp, uint64 _slot, ValidatorProof memory _proof) internal view returns(bool) {
         // Only support post-electra state proofs
         require(_slot >= slotElectra, "Invalid proof");
         // Construct gindex
         SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
-        path = SSZ.concat(path, _pathBeaconStateToValidator(_proof.validatorIndex));
+        path = SSZ.concat(path, _pathBeaconStateToValidator(_slot, _proof.validatorIndex));
         // Restore the block root for the supplied slot
         require(SSZ.length(path) == _proof.witnesses.length, "Invalid witness length");
         bytes32 computedRoot = SSZ.restoreMerkleRoot(_merkleiseValidator(_proof.validator), SSZ.toIndex(path), _proof.witnesses);
@@ -71,18 +144,92 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         return computedRoot == root;
     }
 
-    /// @notice Verifies a proof about the existence of a withdrawal on the beacon chain
-    /// @param _slotTimestamp Timestamp of the slot containing the parent block hash of the slot used for proofs
-    /// @param _slot Slot number that the proof was generated for
-    /// @param _proof Proof of the withdrawal
-    function verifyWithdrawal(uint64 _slotTimestamp, uint64 _slot, WithdrawalProof calldata _proof) override external view returns(bool) {
+    /// @notice Verifies a versioned final balance proof bundle and returns its fork-independent facts
+    /// @param _slotTimestamp Timestamp of the slot containing the parent block hash used for proofs
+    /// @param _proofVersion Encoding version of `_proofData`
+    /// @param _proofData Version 1 is `abi.encode(FinalBalanceProofBundleV1)`; version 2 is `abi.encode(FinalBalanceProofBundleV2)`
+    function verifyFinalBalance(uint64 _slotTimestamp, uint256 _proofVersion, bytes calldata _proofData) override external view returns (VerifiedFinalBalance memory result) {
+        WithdrawalProof memory withdrawalProof;
+        ValidatorProof memory validatorProof;
+        SlotProof memory slotProof;
+        ValidatorBalanceProof memory validatorBalanceProof;
+        // Decode versioned proof payload
+        if (_proofVersion == finalBalanceProofVersion1) {
+            FinalBalanceProofBundleV1 memory proof = abi.decode(_proofData, (FinalBalanceProofBundleV1));
+            require(proof.withdrawalProof.withdrawalSlot < slotGloas, "Unsupported proof version");
+            withdrawalProof = proof.withdrawalProof;
+            validatorProof = proof.validatorProof;
+            slotProof = proof.slotProof;
+        } else if (_proofVersion == finalBalanceProofVersion2) {
+            FinalBalanceProofBundleV2 memory proof = abi.decode(_proofData, (FinalBalanceProofBundleV2));
+            require(proof.withdrawalProof.withdrawalSlot >= slotGloas, "Unsupported proof version");
+            require(
+                _verifyNextWithdrawalIndex(
+                    _slotTimestamp,
+                    proof.slotProof.slot,
+                    proof.withdrawalProof.withdrawalSlot,
+                    proof.previousNextWithdrawalIndexProof
+                ),
+                "Invalid next withdrawal index proof"
+            );
+            require(
+                proof.withdrawalProof.withdrawal.index ==
+                    proof.previousNextWithdrawalIndexProof.nextWithdrawalIndex + uint64(proof.withdrawalProof.withdrawalNum),
+                "Stale withdrawal proof"
+            );
+            withdrawalProof = proof.withdrawalProof;
+            validatorProof = proof.validatorProof;
+            slotProof = proof.slotProof;
+            validatorBalanceProof = proof.validatorBalanceProof;
+        } else {
+            revert("Unsupported proof version");
+        }
+        // Verify matching validator index
+        require(withdrawalProof.withdrawal.validatorIndex == validatorProof.validatorIndex, "Withdrawal validator not matching");
+        // Verify proof state
+        if (_proofVersion == finalBalanceProofVersion2) {
+            require(
+                _verifyValidatorBalance(
+                    _slotTimestamp,
+                    slotProof.slot,
+                    withdrawalProof.withdrawalSlot,
+                    validatorProof.validatorIndex,
+                    validatorBalanceProof
+                ),
+                "Invalid validator balance proof"
+            );
+            require(
+                _isZeroValidatorBalance(validatorBalanceProof.balanceChunk, validatorProof.validatorIndex),
+                "Validator balance not zero"
+            );
+        }
+        require(_verifyValidator(_slotTimestamp, slotProof.slot, validatorProof), "Invalid validator proof");
+        require(_verifyWithdrawal(_slotTimestamp, slotProof.slot, withdrawalProof), "Invalid withdrawal proof");
+        require(_verifySlot(_slotTimestamp, slotProof), "Invalid slot proof");
+        uint64 withdrawalEpoch = withdrawalProof.withdrawalSlot / slotsPerEpoch;
+        require(withdrawalEpoch >= validatorProof.validator.withdrawableEpoch, "Not full withdrawal");
+        // Construct result
+        result.validatorPubkeyHash = keccak256(validatorProof.validator.pubkey);
+        result.withdrawalCredentials = validatorProof.validator.withdrawalCredentials;
+        result.amountInGwei = withdrawalProof.withdrawal.amountInGwei;
+        result.withdrawalEpoch = withdrawalEpoch;
+        result.recentEpoch = slotProof.slot / slotsPerEpoch;
+    }
+
+    /// @dev Verifies a withdrawal proof against the beacon block root selected by `_slotTimestamp`
+    function _verifyWithdrawal(uint64 _slotTimestamp, uint64 _slot, WithdrawalProof memory _proof) internal view returns(bool) {
         // Only support post-electra state proofs
         require(_slot >= slotElectra, "Invalid proof");
         require(_proof.withdrawalSlot >= slotElectra, "Invalid proof");
         // Construct gindex
         SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
-        path = SSZ.concat(path, _pathBeaconStateToPastBlockRoot(_slot, _proof.withdrawalSlot));
-        path = SSZ.concat(path, _pathBlockToWithdrawal(_proof.withdrawalNum));
+        if (_slotToFork(_proof.withdrawalSlot) == Fork.GLOAS) {
+            path = SSZ.concat(path, _pathBeaconStateToPastRoot(_slot, _proof.withdrawalSlot, true));
+            path = SSZ.concat(path, _pathBeaconStateToExpectedWithdrawal(_proof.withdrawalNum));
+        } else {
+            path = SSZ.concat(path, _pathBeaconStateToPastRoot(_slot, _proof.withdrawalSlot, false));
+            path = SSZ.concat(path, _pathBlockToWithdrawal(_proof.withdrawalNum));
+        }
         // Merkleise the withdrawal struct
         bytes32 leaf = _merkleiseWithdrawal(_proof.withdrawal);
         // Restore the block root for the supplied slot
@@ -93,46 +240,15 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         return computedRoot == root;
     }
 
-    /// @notice Verifies a proof about the participation state of a validator
-    /// @param _slotTimestamp Timestamp of the slot containing the parent block hash of the slot used for proofs
-    /// @param _slot Slot number that the proof was generated for
-    /// @param _proof Proof of the participation flags
-    function verifyParticipation(uint64 _slotTimestamp, uint64 _slot, ParticipationProof calldata _proof) override external view returns(bool) {
-        // Participation per validator was added in Altair fork
-        require(_slot >= slotAltair, "Invalid proof");
-        // Construct gindex
-        SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
-        path = SSZ.concat(path, _pathBeaconStateToPastStateRoot(_slot, _proof.participationSlot));
-        path = SSZ.concat(path, _pathBeaconStateToPreviousEpochParticipation(_proof.validatorIndex));
-        // Restore the block root for the supplied slot
-        require(SSZ.length(path) == _proof.witnesses.length, "Invalid witness length");
-        bytes32 computedRoot = SSZ.restoreMerkleRoot(_proof.participationFlagsChunk, SSZ.toIndex(path), _proof.witnesses);
-        // Retrieve and compare the root with what we determined it should be from the given proof
-        bytes32 root = _getParentBlockRoot(_slotTimestamp);
-        return computedRoot == root;
-    }
-
-    /// @notice Verifies a proof about the slot
-    /// @param _slotTimestamp Timestamp of the slot containing the parent block hash of the slot used for proofs
-    /// @param _proof Proof of the slot value
-    function verifySlot(uint64 _slotTimestamp, SlotProof calldata _proof) override external view returns(bool) {
+    /// @dev Verifies a slot proof against the beacon block root selected by `_slotTimestamp`
+    function _verifySlot(uint64 _slotTimestamp, SlotProof memory _proof) internal view returns(bool) {
         // Only support post-electra state proofs
         require(_proof.slot >= slotElectra, "Invalid proof");
-        /**
-          * genesisWitness represents the merkleised root of genesis_time ++ genesis_validators_root
-          * By checking it against a known-value for the chain we are on, we are protecting from a future hard fork
-          * which modifies the gindex of `slot` which would allow someone to prove an invalid `slot` value.
-          *
-          *         genesisWitness (witness[1])                          ...
-          *           /                    \                        /            \
-          *     genesis_time       genesis_validators_root        slot      fork (witness[0])          ...
-          */
-        require(_proof.witnesses[1] == genesisWitness, "Invalid genesis witness");
         // Retrieve the parent block hash
         bytes32 root = _getParentBlockRoot(_slotTimestamp);
         // Construct gindex
         SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
-        path = SSZ.concat(path, _pathBeaconStateToSlot());
+        path = SSZ.concat(path, _pathBeaconStateToSlot(_proof.slot));
         // Merkleise the slot number
         bytes32 leaf = SSZ.toLittleEndian(uint256(_proof.slot));
         // Restore the block root for the supplied slot
@@ -140,6 +256,53 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         bytes32 computedRoot = SSZ.restoreMerkleRoot(leaf, SSZ.toIndex(path), _proof.witnesses);
         // Retrieve and compare the root with what we determined it should be from the given proof
         return computedRoot == root;
+    }
+
+    /// @dev Verifies next_withdrawal_index in the state immediately preceding `_withdrawalSlot`
+    function _verifyNextWithdrawalIndex(
+        uint64 _slotTimestamp,
+        uint64 _slot,
+        uint64 _withdrawalSlot,
+        NextWithdrawalIndexProof memory _proof
+    ) internal view returns (bool) {
+        require(_withdrawalSlot > 0, "Invalid proof");
+        uint64 previousSlot = _withdrawalSlot - 1;
+        SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
+        path = SSZ.concat(path, _pathBeaconStateToPastRoot(_slot, previousSlot, true));
+        path = SSZ.concat(path, _pathBeaconStateToNextWithdrawalIndex(previousSlot));
+        require(SSZ.length(path) == _proof.witnesses.length, "Invalid witness length");
+        bytes32 computedRoot = SSZ.restoreMerkleRoot(
+            SSZ.toLittleEndian(uint256(_proof.nextWithdrawalIndex)),
+            SSZ.toIndex(path),
+            _proof.witnesses
+        );
+        return computedRoot == _getParentBlockRoot(_slotTimestamp);
+    }
+
+    /// @dev Verifies the packed balances chunk in the post-state of `_withdrawalSlot`
+    function _verifyValidatorBalance(
+        uint64 _slotTimestamp,
+        uint64 _slot,
+        uint64 _withdrawalSlot,
+        uint40 _validatorIndex,
+        ValidatorBalanceProof memory _proof
+    ) internal view returns (bool) {
+        SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
+        path = SSZ.concat(path, _pathBeaconStateToPastRoot(_slot, _withdrawalSlot, true));
+        path = SSZ.concat(path, _pathBeaconStateToBalanceChunk(_validatorIndex));
+        require(SSZ.length(path) == _proof.witnesses.length, "Invalid witness length");
+        bytes32 computedRoot = SSZ.restoreMerkleRoot(
+            _proof.balanceChunk,
+            SSZ.toIndex(path),
+            _proof.witnesses
+        );
+        return computedRoot == _getParentBlockRoot(_slotTimestamp);
+    }
+
+    /// @dev Returns whether the validator's uint64 lane in a packed SSZ chunk is zero
+    function _isZeroValidatorBalance(bytes32 _balanceChunk, uint40 _validatorIndex) internal pure returns (bool) {
+        uint256 shift = (3 - uint256(_validatorIndex % 4)) * 64;
+        return uint64(uint256(_balanceChunk) >> shift) == 0;
     }
 
     /// @dev Gets the parent block root for a given slot
@@ -160,14 +323,14 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
     }
 
     /// @dev Returns the SSZ merkle root of a given withdrawal container
-    function _merkleiseWithdrawal(Withdrawal calldata _withdrawal) internal view returns (bytes32) {
+    function _merkleiseWithdrawal(Withdrawal memory _withdrawal) internal view returns (bytes32) {
         bytes32 left = SSZ.efficientSha256(SSZ.toLittleEndian(_withdrawal.index), SSZ.toLittleEndian(_withdrawal.validatorIndex));
         bytes32 right = SSZ.efficientSha256(_withdrawal.withdrawalCredentials, SSZ.toLittleEndian(_withdrawal.amountInGwei));
         return SSZ.efficientSha256(left, right);
     }
 
     /// @dev Returns the SSZ merkle root of a given validator
-    function _merkleiseValidator(Validator calldata _validator) internal view returns (bytes32) {
+    function _merkleiseValidator(Validator memory _validator) internal view returns (bytes32) {
         bytes32 a = SSZ.efficientSha256(SSZ.merkleisePubkey(_validator.pubkey), _validator.withdrawalCredentials);
         bytes32 b = SSZ.efficientSha256(SSZ.toLittleEndian(_validator.effectiveBalance), SSZ.toLittleEndian(_validator.slashed ? 1 : 0));
         bytes32 c = SSZ.efficientSha256(SSZ.toLittleEndian(uint256(_validator.activationEligibilityEpoch)), SSZ.toLittleEndian(uint256(_validator.activationEpoch)));
@@ -179,6 +342,7 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
 
     /// @dev Returns the fork at a given slot
     function _slotToFork(uint64 _slot) internal view returns (Fork) {
+        if (_slot >= slotGloas) return Fork.GLOAS;
         if (_slot >= slotFulu) return Fork.FULU;
         if (_slot >= slotElectra) return Fork.ELECTRA;
         if (_slot >= slotDeneb) return Fork.DENEB;
@@ -195,56 +359,72 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
     }
 
     /// @dev Returns a partial gindex from a BeaconState -> validators[n]
-    function _pathBeaconStateToValidator(uint40 _validatorIndex) internal view returns (SSZ.Path memory) {
-        SSZ.Path memory path = SSZ.from(11, 6); // 0b001011 (BeaconState -> validators)
-        path = SSZ.concat(path, SSZ.intoList(_validatorIndex, 40)); // validators -> validators[n]
-        return path;
-    }
-
-    /// @dev Returns a partial gindex from a BeaconState -> previous_epoch_participation[n / 32]
-    function _pathBeaconStateToPreviousEpochParticipation(uint40 _validatorIndex) internal view returns (SSZ.Path memory) {
-        SSZ.Path memory path = SSZ.from(15, 6); // 0b001111 (BeaconState -> previous_epoch_participation)
-        path = SSZ.concat(path, SSZ.intoList(_validatorIndex / 32, 35)); // previous_epoch_participation -> packed chunk containing n
-        return path;
+    function _pathBeaconStateToValidator(uint64 _slot, uint40 _validatorIndex) internal view returns (SSZ.Path memory) {
+        SSZ.Path memory path;
+        if (_slotToFork(_slot) == Fork.GLOAS) {
+            path = SSZ.intoProgressive(11); // BeaconState -> validators
+            path = SSZ.concat(path, SSZ.intoProgressive(_validatorIndex)); // validators -> validators[n]
+            return path;
+        } else {
+            path = SSZ.from(11, 6); // 0b001011 (BeaconState -> validators)
+            path = SSZ.concat(path, SSZ.intoList(_validatorIndex, 40)); // validators -> validators[n]
+            return path;
+        }
     }
 
     /// @dev Returns a partial gindex from a BeaconState -> slot
-    function _pathBeaconStateToSlot() internal view returns (SSZ.Path memory) {
-        SSZ.Path memory path = SSZ.from(2, 6); // 0b000010 (BeaconState -> slot)
+    function _pathBeaconStateToSlot(uint64 _slot) internal view returns (SSZ.Path memory) {
+        if (_slotToFork(_slot) == Fork.GLOAS) {
+            return SSZ.intoProgressive(2); // BeaconState -> slot
+        } else {
+            SSZ.Path memory path = SSZ.from(2, 6); // 0b000010 (BeaconState -> slot)
+            return path;
+        }
+    }
+
+    /// @dev Returns a partial gindex from a BeaconState -> next_withdrawal_index
+    function _pathBeaconStateToNextWithdrawalIndex(uint64 _slot) internal view returns (SSZ.Path memory) {
+        if (_slotToFork(_slot) == Fork.GLOAS) {
+            return SSZ.intoProgressive(25); // BeaconState -> next_withdrawal_index
+        } else {
+            return SSZ.from(25, 6); // BeaconState -> next_withdrawal_index
+        }
+    }
+
+    /// @dev Returns a partial gindex from a Gloas BeaconState -> balances[validatorIndex / 4]
+    function _pathBeaconStateToBalanceChunk(uint40 _validatorIndex) internal view returns (SSZ.Path memory) {
+        SSZ.Path memory path = SSZ.intoProgressive(12); // BeaconState -> balances
+        path = SSZ.concat(path, SSZ.intoProgressive(uint248(_validatorIndex) / 4)); // balances -> packed balance chunk
         return path;
     }
 
-    /// @dev Returns a partial gindex from BeaconState -> block_roots[n] (via historical_summaries if required)
-    function _pathBeaconStateToPastBlockRoot(uint64 _slot, uint64 _pastSlot) internal view returns (SSZ.Path memory) {
+    /// @dev Returns a partial gindex from BeaconState -> block_roots[n] or state_roots[n] (via historical_summaries if required)
+    /// @param _stateRoot If true, path is to state_roots[n], otherwise to block_roots[n]
+    function _pathBeaconStateToPastRoot(uint64 _slot, uint64 _pastSlot, bool _stateRoot) internal view returns (SSZ.Path memory) {
         bool isHistorical = _isHistoricalProof(_slot, _pastSlot);
+        bool isGloas = _slotToFork(_slot) == Fork.GLOAS;
         SSZ.Path memory path;
         if (isHistorical) {
-            path = SSZ.concat(path, SSZ.from(27, 6)); // 0b001011 (BeaconState -> historical_summaries)
+            uint248 historicalSummaryField = _stateRoot ? 1 : 0;
+            path = SSZ.concat(path, isGloas ? SSZ.intoProgressive(27) : SSZ.from(27, 6)); // BeaconState -> historical_summaries
             path = SSZ.concat(path, SSZ.intoList(uint248(uint256(_pastSlot) / slotsPerHistoricalRoot - historicalSummaryOffset), 24)); // historical_summaries -> historical_summaries[n]
-            path = SSZ.concat(path, SSZ.from(0, 1)); // 0b0 (HistoricalSummary -> block_summary_root)
+            path = SSZ.concat(path, SSZ.from(historicalSummaryField, 1)); // HistoricalSummary -> block_summary_root/state_summary_root
         } else {
-            path = SSZ.concat(path, SSZ.from(5, 6)); // 0b000101 (BeaconState -> block_roots)
+            uint248 beaconStateField = _stateRoot ? 6 : 5;
+            path = SSZ.concat(path, isGloas ? SSZ.intoProgressive(beaconStateField) : SSZ.from(beaconStateField, 6)); // BeaconState -> block_roots/state_roots
         }
-        path = SSZ.concat(path, SSZ.intoVector(uint248(_pastSlot % slotsPerHistoricalRoot), 13)); // block_roots -> block_roots[n]
+        path = SSZ.concat(path, SSZ.intoVector(uint248(_pastSlot % slotsPerHistoricalRoot), 13)); // block_roots/state_roots -> block_roots[n]/state_roots[n]
         return path;
     }
 
-    /// @dev Returns a partial gindex from BeaconState -> state_roots[n] (via historical_summaries if required)
-    function _pathBeaconStateToPastStateRoot(uint64 _slot, uint64 _pastSlot) internal view returns (SSZ.Path memory) {
-        bool isHistorical = _isHistoricalProof(_slot, _pastSlot);
-        SSZ.Path memory path;
-        if (isHistorical) {
-            path = SSZ.concat(path, SSZ.from(27, 6)); // 0b001011 (BeaconState -> historical_summaries)
-            path = SSZ.concat(path, SSZ.intoList(uint248(uint256(_pastSlot) / slotsPerHistoricalRoot - historicalSummaryOffset), 24)); // historical_summaries -> historical_summaries[n]
-            path = SSZ.concat(path, SSZ.from(1, 1)); // 0b1 (HistoricalSummary -> state_summary_root)
-        } else {
-            path = SSZ.concat(path, SSZ.from(6, 6)); // 0b000110 (BeaconState -> state_roots)
-        }
-        path = SSZ.concat(path, SSZ.intoVector(uint248(_pastSlot % slotsPerHistoricalRoot), 13)); // state_roots -> state_roots[n]
+    /// @dev Returns a partial gindex from a Gloas BeaconState -> payload_expected_withdrawals[n]
+    function _pathBeaconStateToExpectedWithdrawal(uint16 _withdrawalNum) internal view returns (SSZ.Path memory) {
+        SSZ.Path memory path = SSZ.intoProgressive(44); // BeaconState -> payload_expected_withdrawals
+        path = SSZ.concat(path, SSZ.intoProgressive(_withdrawalNum)); // payload_expected_withdrawals -> payload_expected_withdrawals[n]
         return path;
     }
 
-    /// @dev Returns a partial gindex from BeaconBlockHeader -> withdrwals[n]
+    /// @dev Returns a partial gindex from BeaconBlockHeader -> withdrawals[n]
     function _pathBlockToWithdrawal(uint16 _withdrawalNum) internal view returns (SSZ.Path memory) {
         SSZ.Path memory path = SSZ.from(4, 3); // 0b100 (BeaconBlockHeader -> body_root)
         path = SSZ.concat(path, SSZ.from(9, 4)); // 0b1001 (BeaconBlockBody -> execution_payload)

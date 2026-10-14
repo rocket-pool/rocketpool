@@ -3,6 +3,7 @@ import type {
     ProtocolContracts,
     V131Contracts,
     V14Contracts,
+    V141Contracts,
 } from "../contracts";
 import { ethers } from "../../../../test-old/_utils/hardhat-runtime";
 import { GuardedFacade } from "../view";
@@ -230,7 +231,7 @@ export class NodeActions131 extends NodeActionsBase<V131Contracts> {
     }
 }
 
-export class NodeActionsV14<C extends V14Contracts | CurrentContracts> extends NodeActionsBase<C> {
+export class NodeActionsV14<C extends V14Contracts | V141Contracts | CurrentContracts> extends NodeActionsBase<C> {
     private get rewardContracts(): C {
         return this.view.contracts as C;
     }

@@ -1,3 +1,4 @@
+import * as V141 from "../bindings/v1_4_1";
 import {
     RocketDAOProtocol__factory as V131DAOProtocolFactory,
     RocketDAOProtocolSettingsMinipool__factory as V131MinipoolSettingsFactory,
@@ -150,7 +151,7 @@ import type { ProtocolContext } from "../context";
 import { getActiveAddress } from "../deployment";
 import { ethers } from "../../../test-old/_utils/hardhat-runtime";
 import type { CurrentContracts, V14Contracts } from "./contracts";
-import { ProtocolCurrent, ProtocolV131, ProtocolV14 } from "./releases";
+import { ProtocolCurrent, ProtocolV131, ProtocolV14, ProtocolV141 } from "./releases";
 
 export function connectV131(context: ProtocolContext): ProtocolV131 {
     const signer = ethers.provider;
@@ -327,4 +328,15 @@ export function connectCurrent(context: ProtocolContext): ProtocolCurrent {
         rocketDAOProtocolSettingsInflation: V14ProtocolInflationSettingsFactory.connect(getActiveAddress(state, "rocketDAOProtocolSettingsInflation"), signer),
     };
     return new ProtocolCurrent(context, contracts);
+}
+
+export function connectV141(context: ProtocolContext): ProtocolV141 {
+    const historical = connectV14(context).contracts;
+    const state = context.deployment;
+    return new ProtocolV141(context, {
+        ...historical,
+        rocketMegapoolManager: V141.RocketMegapoolManager__factory.connect(getActiveAddress(state, "rocketMegapoolManager"), ethers.provider),
+        beaconStateVerifier: V141.BeaconStateVerifier__factory.connect(getActiveAddress(state, "beaconStateVerifier"), ethers.provider),
+        rocketUpgradeOneDotFourDotOne: V141.RocketUpgradeOneDotFourDotOne__factory.connect(getActiveAddress(state, "rocketUpgradeOneDotFourDotOne"), ethers.provider),
+    });
 }

@@ -42,8 +42,9 @@ export type {
     TreasuryPaymentDetails,
     V131Contracts,
     V14Contracts,
+    V141Contracts,
 } from "./protocol";
-export { ProtocolCurrent, ProtocolV131, ProtocolV14 } from "./protocol";
+export { ProtocolCurrent, ProtocolV131, ProtocolV14, ProtocolV141 } from "./protocol";
 export type { Release } from "./releases/catalog";
 export { validateRelease } from "./releases/catalog";
 export { PDAO_VOTE } from "./protocol";

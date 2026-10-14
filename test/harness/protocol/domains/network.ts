@@ -2,6 +2,7 @@ import type {
     CurrentContracts,
     ProtocolContracts,
     V14Contracts,
+    V141Contracts,
 } from "../contracts";
 import type { ActiveProtocolView } from "../view";
 import { GuardedFacade } from "../view";
@@ -118,7 +119,7 @@ export class NetworkActions<C extends ProtocolContracts> {
     }
 }
 
-type VotingContracts = V14Contracts | CurrentContracts;
+type VotingContracts = V14Contracts | V141Contracts | CurrentContracts;
 
 export class NetworkVotingActions<C extends VotingContracts> extends GuardedFacade {
     private get contracts(): C {

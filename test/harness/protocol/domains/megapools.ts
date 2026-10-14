@@ -5,7 +5,7 @@ import { ethers } from "../../../../test-old/_utils/hardhat-runtime";
 import { RocketMegapoolDelegate__factory as CurrentMegapoolDelegateFactory } from "../../bindings/current";
 import { RocketMegapoolProxy__factory as CurrentMegapoolProxyFactory } from "../../bindings/current";
 import { RocketMegapoolDelegate__factory as V14MegapoolDelegateFactory } from "../../bindings/v1_4";
-import type { CurrentContracts, V14Contracts } from "../contracts";
+import type { CurrentContracts, V14Contracts, V141Contracts } from "../contracts";
 import { GuardedFacade } from "../view";
 
 const lodestarTypes = lodestarMainnet.types;
@@ -32,7 +32,7 @@ function root(key: string, credentials: string, validatorSignature: string): str
     }));
 }
 
-type MegapoolContracts = V14Contracts | CurrentContracts;
+type MegapoolContracts = V14Contracts | V141Contracts | CurrentContracts;
 
 export class MegapoolActions<C extends MegapoolContracts> extends GuardedFacade {
     private get contracts(): C {

@@ -7,6 +7,7 @@ describe("version-aware protocol harness", () => {
     before(async () => {
         validateRelease("1.3.1");
         validateRelease("1.4");
+        validateRelease("1.4.1");
 
         const rp131 = await load().ensure("1.3.1");
         await rp131.nodes.register("alice");

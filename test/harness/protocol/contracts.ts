@@ -1,3 +1,4 @@
+import type * as V141 from "../bindings/v1_4_1";
 import type * as Current from "../bindings/current";
 import type * as V131 from "../bindings/v1_3_1";
 import type * as V14 from "../bindings/v1_4";
@@ -99,6 +100,12 @@ export interface V14Contracts {
     rocketDAOProtocolVerifier: V14.RocketDAOProtocolVerifier;
 }
 
+export interface V141Contracts extends Omit<V14Contracts, "rocketMegapoolManager"> {
+    rocketMegapoolManager: V141.RocketMegapoolManager;
+    beaconStateVerifier: V141.BeaconStateVerifier;
+    rocketUpgradeOneDotFourDotOne: V141.RocketUpgradeOneDotFourDotOne;
+}
+
 export interface CurrentContracts {
     beaconStateVerifier: Current.BeaconStateVerifierMock;
     rocketStorage: Current.RocketStorage;
@@ -159,4 +166,4 @@ export interface CurrentContracts {
     rocketDAOProtocolSettingsInflation: V14.RocketDAOProtocolSettingsInflation;
 }
 
-export type ProtocolContracts = V131Contracts | V14Contracts | CurrentContracts;
+export type ProtocolContracts = V131Contracts | V14Contracts | V141Contracts | CurrentContracts;

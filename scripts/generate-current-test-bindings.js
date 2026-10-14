@@ -64,6 +64,8 @@ const currentArtifactPaths = [
 ];
 
 const fixtureArtifactPaths = [
+    "artifacts/contracts/contract/helper/BlockRootsMock.sol/BlockRootsMock.json",
+    "artifacts/contracts/contract/helper/BeaconStateVerifierHarness.sol/BeaconStateVerifierHarness.json",
     'artifacts/contracts/contract/helper/RevertOnTransfer.sol/RevertOnTransfer.json',
     'artifacts/contracts/contract/helper/WithdrawalRequestPredeployMock.sol/WithdrawalRequestPredeployMock.json',
     'artifacts/contracts/contract/helper/RplStakeController.sol/RplStakeController.json',

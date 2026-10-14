@@ -7,6 +7,7 @@ export type {
     CurrentContracts,
     V131Contracts,
     V14Contracts,
+    V141Contracts,
 } from "./protocol/contracts";
 export {
     connectCurrent,
@@ -40,5 +41,6 @@ export {
     ProtocolCurrent,
     ProtocolV131,
     ProtocolV14,
+    ProtocolV141,
 } from "./protocol/releases";
 export { ActiveProtocolView } from "./protocol/view";

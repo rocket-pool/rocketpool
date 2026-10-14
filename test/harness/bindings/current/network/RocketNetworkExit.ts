@@ -23,60 +23,6 @@ import type {
   TypedContractMethod,
 } from "../common";
 
-export type ValidatorStruct = {
-  pubkey: BytesLike;
-  withdrawalCredentials: BytesLike;
-  effectiveBalance: BigNumberish;
-  slashed: boolean;
-  activationEligibilityEpoch: BigNumberish;
-  activationEpoch: BigNumberish;
-  exitEpoch: BigNumberish;
-  withdrawableEpoch: BigNumberish;
-};
-
-export type ValidatorStructOutput = [
-  pubkey: string,
-  withdrawalCredentials: string,
-  effectiveBalance: bigint,
-  slashed: boolean,
-  activationEligibilityEpoch: bigint,
-  activationEpoch: bigint,
-  exitEpoch: bigint,
-  withdrawableEpoch: bigint
-] & {
-  pubkey: string;
-  withdrawalCredentials: string;
-  effectiveBalance: bigint;
-  slashed: boolean;
-  activationEligibilityEpoch: bigint;
-  activationEpoch: bigint;
-  exitEpoch: bigint;
-  withdrawableEpoch: bigint;
-};
-
-export type ValidatorProofStruct = {
-  validatorIndex: BigNumberish;
-  validator: ValidatorStruct;
-  witnesses: BytesLike[];
-};
-
-export type ValidatorProofStructOutput = [
-  validatorIndex: bigint,
-  validator: ValidatorStructOutput,
-  witnesses: string[]
-] & {
-  validatorIndex: bigint;
-  validator: ValidatorStructOutput;
-  witnesses: string[];
-};
-
-export type SlotProofStruct = { slot: BigNumberish; witnesses: BytesLike[] };
-
-export type SlotProofStructOutput = [slot: bigint, witnesses: string[]] & {
-  slot: bigint;
-  witnesses: string[];
-};
-
 export interface RocketNetworkExitInterface extends Interface {
   getFunction(
     nameOrSignature:
@@ -180,7 +126,7 @@ export interface RocketNetworkExitInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "penaliseMinipool",
-    values: [AddressLike, BigNumberish, ValidatorProofStruct, SlotProofStruct]
+    values: [AddressLike, BigNumberish, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "requestMegapoolExit",
@@ -532,8 +478,8 @@ export interface RocketNetworkExit extends BaseContract {
     [
       _minipoolAddress: AddressLike,
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "payable"
@@ -651,8 +597,8 @@ export interface RocketNetworkExit extends BaseContract {
     [
       _minipoolAddress: AddressLike,
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "payable"

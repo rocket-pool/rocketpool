@@ -1,4 +1,4 @@
-import type { CurrentContracts, V131Contracts, V14Contracts } from "./contracts";
+import type { CurrentContracts, V131Contracts, V14Contracts, V141Contracts } from "./contracts";
 import { DepositPoolActions, DepositPoolActionsV14 } from "./domains/deposit-pool";
 import { NodeDistributorActions } from "./domains/distributors";
 import { MinipoolActions131, MinipoolActionsBase } from "./domains/minipools";
@@ -26,11 +26,12 @@ export class ProtocolV131 extends ActiveProtocolView<"1.3.1", V131Contracts> {
     readonly time = new TimeActions<V131Contracts>(this);
 
     upgradeTo(target: "1.4"): Promise<ProtocolV14>;
+    upgradeTo(target: "1.4.1"): Promise<ProtocolV141>;
     upgradeTo(target: "current"): Promise<ProtocolCurrent>;
-    upgradeTo(target: "1.4" | "current"): Promise<ProtocolV14 | ProtocolCurrent> {
+    upgradeTo(target: "1.4" | "1.4.1" | "current"): Promise<ProtocolV14 | ProtocolV141 | ProtocolCurrent> {
         return target === "1.4"
             ? this.context.upgradeFrom(this, "1.4")
-            : this.context.upgradeFrom(this, "current");
+            : target === "1.4.1" ? this.context.upgradeFrom(this, "1.4.1") : this.context.upgradeFrom(this, "current");
     }
 }
 
@@ -48,6 +49,28 @@ export class ProtocolV14 extends ActiveProtocolView<"1.4", V14Contracts> {
     readonly auctions = new AuctionActions<V14Contracts>(this);
     readonly rewards = new RewardActions<V14Contracts>(this);
     readonly time = new TimeActions<V14Contracts>(this);
+
+    upgradeTo(target: "1.4.1"): Promise<ProtocolV141>;
+    upgradeTo(target: "current"): Promise<ProtocolCurrent>;
+    upgradeTo(target: "1.4.1" | "current"): Promise<ProtocolV141 | ProtocolCurrent> {
+        return target === "1.4.1" ? this.context.upgradeFrom(this, target) : this.context.upgradeFrom(this, target);
+    }
+}
+
+export class ProtocolV141 extends ActiveProtocolView<"1.4.1", V141Contracts> {
+    readonly release = "1.4.1" as const;
+    readonly pdao = new PDAOActionsV14<V141Contracts>(this);
+    readonly odao = new ODAOActionsV14<V141Contracts>(this);
+    readonly network = new NetworkActionsV14<V141Contracts>(this);
+    readonly nodes = new NodeActionsV14<V141Contracts>(this);
+    readonly distributors = new NodeDistributorActions<V141Contracts>(this);
+    readonly depositPool = new DepositPoolActionsV14<V141Contracts>(this);
+    readonly minipools = new MinipoolActionsBase<V141Contracts>(this);
+    readonly megapools = new MegapoolActions<V141Contracts>(this);
+    readonly tokens = new TokenActions<V141Contracts>(this);
+    readonly auctions = new AuctionActions<V141Contracts>(this);
+    readonly rewards = new RewardActions<V141Contracts>(this);
+    readonly time = new TimeActions<V141Contracts>(this);
 
     upgradeTo(target: "current"): Promise<ProtocolCurrent> {
         return this.context.upgradeFrom(this, target);
@@ -73,6 +96,7 @@ export class ProtocolCurrent extends ActiveProtocolView<"current", CurrentContra
 export interface ProtocolByRelease {
     "1.3.1": ProtocolV131;
     "1.4": ProtocolV14;
+    "1.4.1": ProtocolV141;
     current: ProtocolCurrent;
 }
 

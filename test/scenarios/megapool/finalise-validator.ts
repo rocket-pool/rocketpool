@@ -1,3 +1,4 @@
+import { finalBalanceProofArgs } from './proof-encoding';
 import assert from "assert";
 
 import type { ProtocolCurrent } from "../../harness";
@@ -31,7 +32,7 @@ export async function finaliseMegapoolValidatorAndAssert(
     const timestamp = await protocol.time.latest();
     const caller = await protocol.context.actor(options.caller ?? node);
     await (await protocol.contracts.rocketMegapoolManager.connect(caller).notifyFinalBalance(
-        await protocol.megapools.address(node),
+        ...finalBalanceProofArgs(await protocol.megapools.address(node),
         validatorId,
         timestamp,
         await withdrawalProof(
@@ -44,7 +45,7 @@ export async function finaliseMegapoolValidatorAndAssert(
         await validatorProof(protocol, node, validatorId, {
             withdrawableEpoch: options.withdrawableEpoch ?? epoch,
         }),
-        slotProof(slot),
+        slotProof(slot)),
     )).wait();
     const info = await megapool.getValidatorInfo(validatorId);
     assert.equal(info.exiting, false);

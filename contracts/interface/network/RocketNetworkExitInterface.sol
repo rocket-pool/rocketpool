@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >0.5.0 <0.9.0;
 
-import {ValidatorProof, SlotProof} from "../util/BeaconStateVerifierInterface.sol";
 
 interface RocketNetworkExitInterface {
     enum ExitType {
@@ -26,7 +25,7 @@ interface RocketNetworkExitInterface {
     function forceMegapoolExit(address _megapoolAddress, uint32 _validatorId) external payable;
     function retryMegapoolExit(address _megapoolAddress, uint32 _validatorId) external payable;
     function exitMegapoolValidators(address _megapoolAddress, uint32[] calldata _validatorIds) external payable;
-    function penaliseMinipool(address _minipoolAddress, uint64 _slotTimestamp, ValidatorProof calldata _validatorProof, SlotProof calldata _slotProof) external payable;
+    function penaliseMinipool(address _minipoolAddress, uint64 _slotTimestamp, uint256 _proofVersion, bytes calldata _proofData) external payable;
     function requestMegapoolExit(address _megapoolAddress, uint32 _validatorId) external;
     function notifyMegapoolExit(address _megapoolAddress, uint32 _validatorId) external;
     function notifyMegapoolFinalBalance(address _megapoolAddress, uint32 _validatorId) external;

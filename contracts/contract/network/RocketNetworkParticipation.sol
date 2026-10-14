@@ -7,7 +7,7 @@ import {RocketDAOProtocolSettingsNetworkInterface} from "../../interface/dao/pro
 import {RocketMegapoolDelegateInterface} from "../../interface/megapool/RocketMegapoolDelegateInterface.sol";
 import {RocketNetworkExitInterface} from "../../interface/network/RocketNetworkExitInterface.sol";
 import {RocketNetworkParticipationInterface} from "../../interface/network/RocketNetworkParticipationInterface.sol";
-import {SlotProof, BeaconStateVerifierInterface, ValidatorProof, ParticipationProof} from "../../interface/util/BeaconStateVerifierInterface.sol";
+import {BeaconStateVerifierInterface, VerifiedValidator, VerifiedParticipation} from "../../interface/util/BeaconStateVerifierInterface.sol";
 import {RocketBase} from "../RocketBase.sol";
 import {RocketMinipoolInterface} from "../../interface/minipool/RocketMinipoolInterface.sol";
 import {RocketMinipoolManagerInterface} from "../../interface/minipool/RocketMinipoolManagerInterface.sol";
@@ -85,14 +85,16 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
     /// @param _startEpoch The first epoch of the range of epochs where participation dropped below the requirement
     /// @param _participation A bitmap of each epoch from _startEpoch encoding the epochs that the validator did not meet requirements
     /// @param _slotTimestamp Timestamp of the slot the slot proof was generated against
-    /// @param _slotProof Proof of a recent slot number
+    /// @param _proofVersion Encoding version understood by the beacon verifier
+    /// @param _proofData ABI-encoded proof bundle for the requested verification
     function challengeMegapool(
         address _megapoolAddress,
         uint32[] calldata _validatorIds,
         uint64 _startEpoch,
         uint256[] calldata _participation,
         uint64 _slotTimestamp,
-        SlotProof calldata _slotProof
+        uint256 _proofVersion,
+        bytes calldata _proofData
     ) external onlyLatestSelf onlyRegisteredNode(msg.sender) onlyRegisteredMegapool(_megapoolAddress) {
         // Check global enable state
         require(_getPerformanceExitsEnabled(), "Performance exits disabled");
@@ -100,7 +102,11 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
         require(_slotTimestamp + slotRecencyThreshold >= block.timestamp, "Slot proof too old");
         // Validate challenge
         _validateChallengeValidators(_megapoolAddress, _validatorIds);
-        (uint256 period, bytes32 root) = _validateChallengeEpochs(_startEpoch, _participation, _slotTimestamp, _slotProof);
+        (uint256 period, bytes32 root) = _validateChallengeEpochs(_startEpoch, _participation, _slotTimestamp, _proofVersion, _proofData);
+        _createMegapoolChallenge(_megapoolAddress, _validatorIds, _startEpoch, _participation, period, root);
+    }
+
+    function _createMegapoolChallenge(address _megapoolAddress, uint32[] calldata _validatorIds, uint64 _startEpoch, uint256[] calldata _participation, uint256 period, bytes32 root) internal {
         // Store challenge
         uint256 challengeId = _storeChallenge(ChallengeType.Megapool, _startEpoch, period, root);
         setAddress(keccak256(abi.encodePacked("participation.challenge.address", challengeId)), _megapoolAddress);
@@ -115,13 +121,15 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
     /// @param _startEpoch The first epoch of the range of epochs where participation dropped below the requirement
     /// @param _participation A bitmap of each epoch from _startEpoch encoding the epochs that the validator did not meet requirements
     /// @param _slotTimestamp Timestamp of the slot the slot proof was generated against
-    /// @param _slotProof Proof of a recent slot number
+    /// @param _proofVersion Encoding version understood by the beacon verifier
+    /// @param _proofData ABI-encoded proof bundle for the requested verification
     function challengeMinipools(
         address[] calldata _minipoolAddresses,
         uint64 _startEpoch,
         uint256[] calldata _participation,
         uint64 _slotTimestamp,
-        SlotProof calldata _slotProof
+        uint256 _proofVersion,
+        bytes calldata _proofData
     ) override external onlyLatestSelf onlyRegisteredNode(msg.sender) {
         // Check global enable state
         require(_getPerformanceExitsEnabled(), "Performance exits disabled");
@@ -129,7 +137,11 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
         require(_slotTimestamp + slotRecencyThreshold >= block.timestamp, "Slot proof too old");
         // Validate challenge
         address nodeAddress = _validateChallengeMinipools(_minipoolAddresses);
-        (uint256 period, bytes32 root) = _validateChallengeEpochs(_startEpoch, _participation, _slotTimestamp, _slotProof);
+        (uint256 period, bytes32 root) = _validateChallengeEpochs(_startEpoch, _participation, _slotTimestamp, _proofVersion, _proofData);
+        _createMinipoolChallenge(nodeAddress, _minipoolAddresses, _startEpoch, _participation, period, root);
+    }
+
+    function _createMinipoolChallenge(address nodeAddress, address[] calldata _minipoolAddresses, uint64 _startEpoch, uint256[] calldata _participation, uint256 period, bytes32 root) internal {
         // Store challenge
         uint256 challengeId = _storeChallenge(ChallengeType.Minipool, _startEpoch, period, root);
         setAddress(keccak256(abi.encodePacked("participation.challenge.node", challengeId)), nodeAddress);
@@ -142,36 +154,36 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
     /// @param _challengeId ID of the challenge
     /// @param _validatorId Internal ID of the listed validator the proof concerns
     /// @param _slotTimestamp Slot which the beacon state proof was generated against
-    /// @param _validatorProof Proof about the state of the validator on the beacon chain
-    /// @param _slotProof Proof of the slot number the participation proof was generated against
+    /// @param _proofVersion Encoding version understood by the beacon verifier
+    /// @param _proofData ABI-encoded proof bundle for the requested verification
     function respondWithMegapoolValidator(
         uint256 _challengeId,
         uint32 _validatorId,
         uint64 _slotTimestamp,
-        ValidatorProof calldata _validatorProof,
-        SlotProof calldata _slotProof
+        uint256 _proofVersion,
+        bytes calldata _proofData
     ) override external onlyLatestSelf onlyRegisteredNode(msg.sender) {
         _requireAliveChallenge(_challengeId);
         bytes32 pubkeyHash = keccak256(_getChallengeValidatorPubkey(_challengeId, _validatorId));
-        _respondWithValidator(_challengeId, pubkeyHash, _slotTimestamp, _validatorProof, _slotProof);
+        _respondWithValidator(_challengeId, pubkeyHash, _slotTimestamp, _proofVersion, _proofData);
     }
 
     /// @notice Defeats a minipool list using proof for one listed member
     /// @param _challengeId ID of the challenge
     /// @param _minipoolAddress Address of the Minipool the challenge was made against
     /// @param _slotTimestamp Slot which the beacon state proof was generated against
-    /// @param _validatorProof Proof about the state of the validator on the beacon chain
-    /// @param _slotProof Proof of the slot number the participation proof was generated against
+    /// @param _proofVersion Encoding version understood by the beacon verifier
+    /// @param _proofData ABI-encoded proof bundle for the requested verification
     function respondWithMinipoolValidator(
         uint256 _challengeId,
         address _minipoolAddress,
         uint64 _slotTimestamp,
-        ValidatorProof calldata _validatorProof,
-        SlotProof calldata _slotProof
+        uint256 _proofVersion,
+        bytes calldata _proofData
     ) override external onlyLatestSelf onlyRegisteredNode(msg.sender) {
         _requireAliveChallenge(_challengeId);
         bytes32 pubkeyHash = keccak256(_getChallengeMinipoolPubkey(_challengeId, _minipoolAddress));
-        _respondWithValidator(_challengeId, pubkeyHash, _slotTimestamp, _validatorProof, _slotProof);
+        _respondWithValidator(_challengeId, pubkeyHash, _slotTimestamp, _proofVersion, _proofData);
     }
 
     /// @notice Allows a registered node other than the proposer to defeat the entire challenge with a timely target vote by one listed validator
@@ -181,9 +193,8 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
     /// @param _challengeLeaf The leaf node containing the offset from the challenge merkle tree
     /// @param _challengeWitness Proof that the challenge leaf is contained in the challenge merkle tree
     /// @param _slotTimestamp Slot which the beacon state proof was generated against
-    /// @param _validatorProof Beacon state proof of the validator
-    /// @param _participationProof Beacon state proof of the fraud
-    /// @param _slotProof Proof of the slot number the participation proof was generated against
+    /// @param _proofVersion Encoding version understood by the beacon verifier
+    /// @param _proofData ABI-encoded proof bundle for the requested verification
     function respondWithMegapoolParticipation(
         uint256 _challengeId,
         uint32 _validatorId,
@@ -191,13 +202,12 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
         uint256 _challengeLeaf,
         bytes32[] calldata _challengeWitness,
         uint64 _slotTimestamp,
-        ValidatorProof calldata _validatorProof,
-        ParticipationProof calldata _participationProof,
-        SlotProof calldata _slotProof
+        uint256 _proofVersion,
+        bytes calldata _proofData
     ) override external onlyLatestSelf onlyRegisteredNode(msg.sender) {
         _requireAliveChallenge(_challengeId);
         bytes32 pubkeyHash = keccak256(_getChallengeValidatorPubkey(_challengeId, _validatorId));
-        _respondWithParticipation(_challengeId, pubkeyHash, _offset, _challengeLeaf, _challengeWitness, _slotTimestamp, _validatorProof, _participationProof, _slotProof);
+        _respondWithParticipation(_challengeId, pubkeyHash, _offset, _challengeLeaf, _challengeWitness, _slotTimestamp, _proofVersion, _proofData);
     }
 
     /// @notice Allows a registered node other than the proposer to defeat the entire challenge with a timely target vote by one listed validator
@@ -207,9 +217,8 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
     /// @param _challengeLeaf The leaf node containing the offset from the challenge merkle tree
     /// @param _challengeWitness Proof that the challenge leaf is contained in the challenge merkle tree
     /// @param _slotTimestamp Slot which the beacon state proof was generated against
-    /// @param _validatorProof Beacon state proof of the validator
-    /// @param _participationProof Beacon state proof of the fraud
-    /// @param _slotProof Proof of the slot number the participation proof was generated against
+    /// @param _proofVersion Encoding version understood by the beacon verifier
+    /// @param _proofData ABI-encoded proof bundle for the requested verification
     function respondWithMinipoolParticipation(
         uint256 _challengeId,
         address _minipoolAddress,
@@ -217,13 +226,12 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
         uint256 _challengeLeaf,
         bytes32[] calldata _challengeWitness,
         uint64 _slotTimestamp,
-        ValidatorProof calldata _validatorProof,
-        ParticipationProof calldata _participationProof,
-        SlotProof calldata _slotProof
+        uint256 _proofVersion,
+        bytes calldata _proofData
     ) override external onlyLatestSelf onlyRegisteredNode(msg.sender) {
         _requireAliveChallenge(_challengeId);
         bytes32 pubkeyHash = keccak256(_getChallengeMinipoolPubkey(_challengeId, _minipoolAddress));
-        _respondWithParticipation(_challengeId, pubkeyHash, _offset, _challengeLeaf, _challengeWitness, _slotTimestamp, _validatorProof, _participationProof, _slotProof);
+        _respondWithParticipation(_challengeId, pubkeyHash, _offset, _challengeLeaf, _challengeWitness, _slotTimestamp, _proofVersion, _proofData);
     }
 
     /// @notice Unlocks an undefeated challenge's bond after its response deadline, independently of exit finalisation
@@ -301,24 +309,16 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
         uint256 _challengeId,
         bytes32 _pubkeyHash,
         uint64 _slotTimestamp,
-        ValidatorProof calldata _validatorProof,
-        SlotProof calldata _slotProof
+        uint256 _proofVersion,
+        bytes calldata _proofData
     ) internal {
         // Check proof recency requirement
         require(_slotTimestamp + slotRecencyThreshold >= block.timestamp, "Slot proof too old");
         // Get challenge details
         uint256 startEpoch = getUint(keccak256(abi.encodePacked("participation.challenge.start", _challengeId)));
-        // Only activation after the start epoch invalidates the challenge on this response path
-        require(
-            _validatorProof.validator.activationEpoch > startEpoch,
-            "Validator was staking during challenge period"
-        );
-        // Verify proof was for the challenged validator
-        require(keccak256(_validatorProof.validator.pubkey) == _pubkeyHash, "Incorrect validator");
-        // Verify validator state via beacon state proof
-        BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
-        require(beaconStateVerifier.verifyValidator(_slotTimestamp, _slotProof.slot, _validatorProof), "Invalid validator proof");
-        require(beaconStateVerifier.verifySlot(_slotTimestamp, _slotProof), "Invalid slot proof");
+        VerifiedValidator memory verified = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier")).verifyValidator(_slotTimestamp, _proofVersion, _proofData);
+        require(verified.validator.activationEpoch > startEpoch, "Validator was staking during challenge period");
+        require(keccak256(verified.validator.pubkey) == _pubkeyHash, "Incorrect validator");
         // Defeat the challenge
         _defeatChallenge(_challengeId);
     }
@@ -330,10 +330,16 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
         uint256 _challengeLeaf,
         bytes32[] calldata _challengeWitness,
         uint64 _slotTimestamp,
-        ValidatorProof calldata _validatorProof,
-        ParticipationProof calldata _participationProof,
-        SlotProof calldata _slotProof
+        uint256 _proofVersion,
+        bytes calldata _proofData
     ) internal {
+        VerifiedParticipation memory verified = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier")).verifyParticipation(_slotTimestamp, _proofVersion, _proofData);
+        require(verified.validatorPubkeyHash == _pubkeyHash, "Incorrect validator");
+        _validateParticipationResponse(_challengeId, _offset, _challengeLeaf, _challengeWitness, verified);
+        _defeatChallenge(_challengeId);
+    }
+
+    function _validateParticipationResponse(uint256 _challengeId, uint64 _offset, uint256 _challengeLeaf, bytes32[] calldata _challengeWitness, VerifiedParticipation memory verified) internal view {
         // Get challenge data
         bytes32 root = getBytes32(keccak256(abi.encodePacked("participation.challenge.root", _challengeId)));
         uint256 startEpoch = getUint(keccak256(abi.encodePacked("participation.challenge.start", _challengeId)));
@@ -341,7 +347,7 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
         // Response must be for an epoch within the challenge window
         require(_offset < period, "Epoch too high");
         // Participation flags must show that participation did actually occur at the challenged epoch
-        require(_validateParticipationFlags(_getParticipationFlags(_participationProof)), "Invalid participation");
+        require(_validateParticipationFlags(verified.participationFlags), "Invalid participation");
         // Response must be to an epoch that was actually marked as missed
         {
             uint256 participationBit = _offset % 256;
@@ -358,12 +364,8 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
         }
         // Calculate the expected slot for the proof (must be the 1st slot of the epoch following the challenged epoch)
         uint256 challengedEpoch = startEpoch + _offset;
-        uint256 proofEpoch = _participationProof.participationSlot / slotsPerEpoch;
+        uint256 proofEpoch = verified.participationSlot / slotsPerEpoch;
         require(proofEpoch == challengedEpoch + 1, "Invalid slot");
-        // Verify via beacon state proof that participation did actually occur
-        _verifyParticipationResponseProofs(_pubkeyHash, _slotTimestamp, _validatorProof, _participationProof, _slotProof);
-        // Defeat the challenge
-        _defeatChallenge(_challengeId);
     }
 
     function _finaliseMegapoolChallenge(uint256 _challengeId) internal {
@@ -408,22 +410,6 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
         }
         // Emit event
         emit MinipoolChallengeFinalised(_challengeId, requestedCount, minipools.length - requestedCount);
-    }
-
-    /// @dev Verifies all the relevant proofs for a participation response
-    function _verifyParticipationResponseProofs(
-        bytes32 _pubkeyHash,
-        uint64 _slotTimestamp,
-        ValidatorProof calldata _validatorProof,
-        ParticipationProof calldata _participationProof,
-        SlotProof calldata _slotProof
-    ) internal view {
-        require(_validatorProof.validatorIndex == _participationProof.validatorIndex, "Incorrect validator index");
-        require(keccak256(_validatorProof.validator.pubkey) == _pubkeyHash, "Incorrect validator");
-        BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
-        require(beaconStateVerifier.verifyValidator(_slotTimestamp, _slotProof.slot, _validatorProof), "Invalid validator proof");
-        require(beaconStateVerifier.verifyParticipation(_slotTimestamp, _slotProof.slot, _participationProof), "Invalid participation proof");
-        require(beaconStateVerifier.verifySlot(_slotTimestamp, _slotProof), "Invalid slot proof");
     }
 
     /// @dev Writes challenge data to storage and returns challenge ID
@@ -479,13 +465,14 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
         uint64 _startEpoch,
         uint256[] calldata _participation,
         uint64 _slotTimestamp,
-        SlotProof calldata _slotProof
+        uint256 _proofVersion,
+        bytes calldata _proofData
     ) internal view returns (uint256 period, bytes32 root) {
         // Verify the slot proof
         BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
-        require(beaconStateVerifier.verifySlot(_slotTimestamp, _slotProof), "Invalid slot proof");
+        uint64 verifiedSlot = beaconStateVerifier.verifySlot(_slotTimestamp, _proofVersion, _proofData).slot;
         // Validate start epoch
-        uint256 currentEpoch = _slotProof.slot / slotsPerEpoch;
+        uint256 currentEpoch = verifiedSlot / slotsPerEpoch;
         require(_startEpoch < currentEpoch, "Challenge starts in future");
         period = _getPerformancePeriod();
         require(_startEpoch + period + _getProofBuffer() > currentEpoch, "Challenge too recent");
@@ -648,10 +635,7 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
         return _participationFlags & timelyTargetFlag != 0;
     }
 
-    /// @dev Extracts the target validator's participation flags from a proof
-    function _getParticipationFlags(ParticipationProof calldata _proof) internal pure returns (uint8) {
-        return uint8(_proof.participationFlagsChunk[_proof.validatorIndex % 32]);
-    }
+
 
     /// @dev Marks the given challenge as defeated
     function _defeatChallenge(uint256 _challengeId) internal {

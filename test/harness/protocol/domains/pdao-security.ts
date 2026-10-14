@@ -2,6 +2,7 @@ import type {
     CurrentContracts,
     ProtocolContracts,
     V14Contracts,
+    V141Contracts,
 } from "../contracts";
 import type { ActiveProtocolView } from "../view";
 import { GuardedFacade } from "../view";
@@ -117,7 +118,7 @@ export class PDAOSecurityProposalActions<C extends ProtocolContracts> extends Gu
     }
 }
 
-type SecurityUpgradeContracts = V14Contracts | CurrentContracts;
+type SecurityUpgradeContracts = V14Contracts | V141Contracts | CurrentContracts;
 
 export class PDAOSecurityUpgradeActions<C extends SecurityUpgradeContracts> extends GuardedFacade {
     private get contracts(): C {

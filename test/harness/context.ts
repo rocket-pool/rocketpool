@@ -4,6 +4,7 @@ import {
     connectCurrent,
     connectV131,
     connectV14,
+    connectV141,
 } from "./protocol/connections";
 import type { MinipoolEntity } from "./protocol/domains/minipools";
 import type {
@@ -11,6 +12,7 @@ import type {
     ProtocolCurrent,
     ProtocolV131,
     ProtocolV14,
+    ProtocolV141,
 } from "./protocol/releases";
 import type { ActiveProtocolView } from "./protocol/view";
 import {
@@ -18,6 +20,7 @@ import {
     deployV131,
     upgradeToCurrent,
     upgradeToV14,
+    upgradeToV141,
 } from "./deployment";
 import {
     FixtureKind,
@@ -192,10 +195,15 @@ export class ProtocolContext {
         if (this.release !== "1.3.1") {
             throw new Error(`Initial release selection requires a v1.3.1 baseline, got ${this.release}`);
         }
-        if (release === "1.4" || release === "current") {
+        if (release === "1.4" || release === "1.4.1" || release === "current") {
             await upgradeToV14(this.deployment);
             this._epoch++;
             this.trace("upgraded to 1.4");
+        }
+        if (release === "1.4.1" || release === "current") {
+            await upgradeToV141(this.deployment);
+            this._epoch++;
+            this.trace("upgraded to 1.4.1");
         }
         if (release === "current") {
             await upgradeToCurrent(this.deployment);
@@ -204,6 +212,8 @@ export class ProtocolContext {
         }
     }
 
+    async upgradeFrom(view: ProtocolV131 | ProtocolV14, target: "1.4.1"): Promise<ProtocolV141>;
+    async upgradeFrom(view: ProtocolV141, target: "current"): Promise<ProtocolCurrent>;
     async upgradeFrom(
         view: ProtocolV131,
         target: "1.4",
@@ -218,15 +228,20 @@ export class ProtocolContext {
     ): Promise<ProtocolCurrent>;
     async upgradeFrom(
         view: ActiveProtocolView<any, any>,
-        target: "1.4" | "current",
-    ): Promise<ProtocolV14 | ProtocolCurrent> {
+        target: "1.4" | "1.4.1" | "current",
+    ): Promise<ProtocolV14 | ProtocolV141 | ProtocolCurrent> {
         view.assertActive();
-        if (this.release === "1.3.1" && (target === "1.4" || target === "current")) {
+        if (this.release === "1.3.1" && (target === "1.4" || target === "1.4.1" || target === "current")) {
             await upgradeToV14(this.deployment);
             this._epoch++;
             this.trace("upgraded to 1.4");
         }
-        if (target === "current" && this.release === "1.4") {
+        if ((target === "1.4.1" || target === "current") && this.release === "1.4") {
+            await upgradeToV141(this.deployment);
+            this._epoch++;
+            this.trace("upgraded to 1.4.1");
+        }
+        if (target === "current" && this.release === "1.4.1") {
             await upgradeToCurrent(this.deployment);
             this._epoch++;
             this.trace("upgraded to current");
@@ -243,6 +258,8 @@ export class ProtocolContext {
                 return connectV131(this) as ProtocolByRelease[V];
             case "1.4":
                 return connectV14(this) as ProtocolByRelease[V];
+            case "1.4.1":
+                return connectV141(this) as ProtocolByRelease[V];
             case "current":
                 return connectCurrent(this) as ProtocolByRelease[V];
         }

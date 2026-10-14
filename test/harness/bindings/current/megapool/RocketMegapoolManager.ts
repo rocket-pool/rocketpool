@@ -21,98 +21,6 @@ import type {
   TypedContractMethod,
 } from "../common";
 
-export type ValidatorStruct = {
-  pubkey: BytesLike;
-  withdrawalCredentials: BytesLike;
-  effectiveBalance: BigNumberish;
-  slashed: boolean;
-  activationEligibilityEpoch: BigNumberish;
-  activationEpoch: BigNumberish;
-  exitEpoch: BigNumberish;
-  withdrawableEpoch: BigNumberish;
-};
-
-export type ValidatorStructOutput = [
-  pubkey: string,
-  withdrawalCredentials: string,
-  effectiveBalance: bigint,
-  slashed: boolean,
-  activationEligibilityEpoch: bigint,
-  activationEpoch: bigint,
-  exitEpoch: bigint,
-  withdrawableEpoch: bigint
-] & {
-  pubkey: string;
-  withdrawalCredentials: string;
-  effectiveBalance: bigint;
-  slashed: boolean;
-  activationEligibilityEpoch: bigint;
-  activationEpoch: bigint;
-  exitEpoch: bigint;
-  withdrawableEpoch: bigint;
-};
-
-export type ValidatorProofStruct = {
-  validatorIndex: BigNumberish;
-  validator: ValidatorStruct;
-  witnesses: BytesLike[];
-};
-
-export type ValidatorProofStructOutput = [
-  validatorIndex: bigint,
-  validator: ValidatorStructOutput,
-  witnesses: string[]
-] & {
-  validatorIndex: bigint;
-  validator: ValidatorStructOutput;
-  witnesses: string[];
-};
-
-export type SlotProofStruct = { slot: BigNumberish; witnesses: BytesLike[] };
-
-export type SlotProofStructOutput = [slot: bigint, witnesses: string[]] & {
-  slot: bigint;
-  witnesses: string[];
-};
-
-export type WithdrawalStruct = {
-  index: BigNumberish;
-  validatorIndex: BigNumberish;
-  withdrawalCredentials: BytesLike;
-  amountInGwei: BigNumberish;
-};
-
-export type WithdrawalStructOutput = [
-  index: bigint,
-  validatorIndex: bigint,
-  withdrawalCredentials: string,
-  amountInGwei: bigint
-] & {
-  index: bigint;
-  validatorIndex: bigint;
-  withdrawalCredentials: string;
-  amountInGwei: bigint;
-};
-
-export type WithdrawalProofStruct = {
-  withdrawalSlot: BigNumberish;
-  withdrawalNum: BigNumberish;
-  withdrawal: WithdrawalStruct;
-  witnesses: BytesLike[];
-};
-
-export type WithdrawalProofStructOutput = [
-  withdrawalSlot: bigint,
-  withdrawalNum: bigint,
-  withdrawal: WithdrawalStructOutput,
-  witnesses: string[]
-] & {
-  withdrawalSlot: bigint;
-  withdrawalNum: bigint;
-  withdrawal: WithdrawalStructOutput;
-  witnesses: string[];
-};
-
 export declare namespace RocketMegapoolManagerInterface {
   export type ExitChallengeStruct = {
     megapool: AddressLike;
@@ -202,13 +110,7 @@ export interface RocketMegapoolManagerInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "dissolve",
-    values: [
-      AddressLike,
-      BigNumberish,
-      BigNumberish,
-      ValidatorProofStruct,
-      SlotProofStruct
-    ]
+    values: [AddressLike, BigNumberish, BigNumberish, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "getLastChallenger",
@@ -224,44 +126,19 @@ export interface RocketMegapoolManagerInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "notifyExit",
-    values: [
-      AddressLike,
-      BigNumberish,
-      BigNumberish,
-      ValidatorProofStruct,
-      SlotProofStruct
-    ]
+    values: [AddressLike, BigNumberish, BigNumberish, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "notifyFinalBalance",
-    values: [
-      AddressLike,
-      BigNumberish,
-      BigNumberish,
-      WithdrawalProofStruct,
-      ValidatorProofStruct,
-      SlotProofStruct
-    ]
+    values: [AddressLike, BigNumberish, BigNumberish, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "notifyNotExit",
-    values: [
-      AddressLike,
-      BigNumberish,
-      BigNumberish,
-      ValidatorProofStruct,
-      SlotProofStruct
-    ]
+    values: [AddressLike, BigNumberish, BigNumberish, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "stake",
-    values: [
-      AddressLike,
-      BigNumberish,
-      BigNumberish,
-      ValidatorProofStruct,
-      SlotProofStruct
-    ]
+    values: [AddressLike, BigNumberish, BigNumberish, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(functionFragment: "version", values?: undefined): string;
 
@@ -363,8 +240,8 @@ export interface RocketMegapoolManager extends BaseContract {
       _megapool: AddressLike,
       _validatorId: BigNumberish,
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -397,8 +274,8 @@ export interface RocketMegapoolManager extends BaseContract {
       _megapool: AddressLike,
       _validatorId: BigNumberish,
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -409,9 +286,8 @@ export interface RocketMegapoolManager extends BaseContract {
       _megapool: AddressLike,
       _validatorId: BigNumberish,
       _slotTimestamp: BigNumberish,
-      _withdrawalProof: WithdrawalProofStruct,
-      _validatorProof: ValidatorProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -422,8 +298,8 @@ export interface RocketMegapoolManager extends BaseContract {
       _megapool: AddressLike,
       _validatorId: BigNumberish,
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -434,8 +310,8 @@ export interface RocketMegapoolManager extends BaseContract {
       _megapool: AddressLike,
       _validatorId: BigNumberish,
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -472,8 +348,8 @@ export interface RocketMegapoolManager extends BaseContract {
       _megapool: AddressLike,
       _validatorId: BigNumberish,
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -510,8 +386,8 @@ export interface RocketMegapoolManager extends BaseContract {
       _megapool: AddressLike,
       _validatorId: BigNumberish,
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -523,9 +399,8 @@ export interface RocketMegapoolManager extends BaseContract {
       _megapool: AddressLike,
       _validatorId: BigNumberish,
       _slotTimestamp: BigNumberish,
-      _withdrawalProof: WithdrawalProofStruct,
-      _validatorProof: ValidatorProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -537,8 +412,8 @@ export interface RocketMegapoolManager extends BaseContract {
       _megapool: AddressLike,
       _validatorId: BigNumberish,
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -550,8 +425,8 @@ export interface RocketMegapoolManager extends BaseContract {
       _megapool: AddressLike,
       _validatorId: BigNumberish,
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"

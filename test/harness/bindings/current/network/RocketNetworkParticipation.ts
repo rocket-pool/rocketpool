@@ -23,79 +23,6 @@ import type {
   TypedContractMethod,
 } from "../common";
 
-export type SlotProofStruct = { slot: BigNumberish; witnesses: BytesLike[] };
-
-export type SlotProofStructOutput = [slot: bigint, witnesses: string[]] & {
-  slot: bigint;
-  witnesses: string[];
-};
-
-export type ValidatorStruct = {
-  pubkey: BytesLike;
-  withdrawalCredentials: BytesLike;
-  effectiveBalance: BigNumberish;
-  slashed: boolean;
-  activationEligibilityEpoch: BigNumberish;
-  activationEpoch: BigNumberish;
-  exitEpoch: BigNumberish;
-  withdrawableEpoch: BigNumberish;
-};
-
-export type ValidatorStructOutput = [
-  pubkey: string,
-  withdrawalCredentials: string,
-  effectiveBalance: bigint,
-  slashed: boolean,
-  activationEligibilityEpoch: bigint,
-  activationEpoch: bigint,
-  exitEpoch: bigint,
-  withdrawableEpoch: bigint
-] & {
-  pubkey: string;
-  withdrawalCredentials: string;
-  effectiveBalance: bigint;
-  slashed: boolean;
-  activationEligibilityEpoch: bigint;
-  activationEpoch: bigint;
-  exitEpoch: bigint;
-  withdrawableEpoch: bigint;
-};
-
-export type ValidatorProofStruct = {
-  validatorIndex: BigNumberish;
-  validator: ValidatorStruct;
-  witnesses: BytesLike[];
-};
-
-export type ValidatorProofStructOutput = [
-  validatorIndex: bigint,
-  validator: ValidatorStructOutput,
-  witnesses: string[]
-] & {
-  validatorIndex: bigint;
-  validator: ValidatorStructOutput;
-  witnesses: string[];
-};
-
-export type ParticipationProofStruct = {
-  participationSlot: BigNumberish;
-  validatorIndex: BigNumberish;
-  participationFlagsChunk: BytesLike;
-  witnesses: BytesLike[];
-};
-
-export type ParticipationProofStructOutput = [
-  participationSlot: bigint,
-  validatorIndex: bigint,
-  participationFlagsChunk: string,
-  witnesses: string[]
-] & {
-  participationSlot: bigint;
-  validatorIndex: bigint;
-  participationFlagsChunk: string;
-  witnesses: string[];
-};
-
 export interface RocketNetworkParticipationInterface extends Interface {
   getFunction(
     nameOrSignature:
@@ -136,7 +63,8 @@ export interface RocketNetworkParticipationInterface extends Interface {
       BigNumberish,
       BigNumberish[],
       BigNumberish,
-      SlotProofStruct
+      BigNumberish,
+      BytesLike
     ]
   ): string;
   encodeFunctionData(
@@ -146,7 +74,8 @@ export interface RocketNetworkParticipationInterface extends Interface {
       BigNumberish,
       BigNumberish[],
       BigNumberish,
-      SlotProofStruct
+      BigNumberish,
+      BytesLike
     ]
   ): string;
   encodeFunctionData(
@@ -186,20 +115,13 @@ export interface RocketNetworkParticipationInterface extends Interface {
       BigNumberish,
       BytesLike[],
       BigNumberish,
-      ValidatorProofStruct,
-      ParticipationProofStruct,
-      SlotProofStruct
+      BigNumberish,
+      BytesLike
     ]
   ): string;
   encodeFunctionData(
     functionFragment: "respondWithMegapoolValidator",
-    values: [
-      BigNumberish,
-      BigNumberish,
-      BigNumberish,
-      ValidatorProofStruct,
-      SlotProofStruct
-    ]
+    values: [BigNumberish, BigNumberish, BigNumberish, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "respondWithMinipoolParticipation",
@@ -210,20 +132,13 @@ export interface RocketNetworkParticipationInterface extends Interface {
       BigNumberish,
       BytesLike[],
       BigNumberish,
-      ValidatorProofStruct,
-      ParticipationProofStruct,
-      SlotProofStruct
+      BigNumberish,
+      BytesLike
     ]
   ): string;
   encodeFunctionData(
     functionFragment: "respondWithMinipoolValidator",
-    values: [
-      BigNumberish,
-      AddressLike,
-      BigNumberish,
-      ValidatorProofStruct,
-      SlotProofStruct
-    ]
+    values: [BigNumberish, AddressLike, BigNumberish, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(functionFragment: "version", values?: undefined): string;
 
@@ -543,7 +458,8 @@ export interface RocketNetworkParticipation extends BaseContract {
       _startEpoch: BigNumberish,
       _participation: BigNumberish[],
       _slotTimestamp: BigNumberish,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -555,7 +471,8 @@ export interface RocketNetworkParticipation extends BaseContract {
       _startEpoch: BigNumberish,
       _participation: BigNumberish[],
       _slotTimestamp: BigNumberish,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -619,9 +536,8 @@ export interface RocketNetworkParticipation extends BaseContract {
       _challengeLeaf: BigNumberish,
       _challengeWitness: BytesLike[],
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _participationProof: ParticipationProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -632,8 +548,8 @@ export interface RocketNetworkParticipation extends BaseContract {
       _challengeId: BigNumberish,
       _validatorId: BigNumberish,
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -647,9 +563,8 @@ export interface RocketNetworkParticipation extends BaseContract {
       _challengeLeaf: BigNumberish,
       _challengeWitness: BytesLike[],
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _participationProof: ParticipationProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -660,8 +575,8 @@ export interface RocketNetworkParticipation extends BaseContract {
       _challengeId: BigNumberish,
       _minipoolAddress: AddressLike,
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -682,7 +597,8 @@ export interface RocketNetworkParticipation extends BaseContract {
       _startEpoch: BigNumberish,
       _participation: BigNumberish[],
       _slotTimestamp: BigNumberish,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -695,7 +611,8 @@ export interface RocketNetworkParticipation extends BaseContract {
       _startEpoch: BigNumberish,
       _participation: BigNumberish[],
       _slotTimestamp: BigNumberish,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -743,9 +660,8 @@ export interface RocketNetworkParticipation extends BaseContract {
       _challengeLeaf: BigNumberish,
       _challengeWitness: BytesLike[],
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _participationProof: ParticipationProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -757,8 +673,8 @@ export interface RocketNetworkParticipation extends BaseContract {
       _challengeId: BigNumberish,
       _validatorId: BigNumberish,
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -773,9 +689,8 @@ export interface RocketNetworkParticipation extends BaseContract {
       _challengeLeaf: BigNumberish,
       _challengeWitness: BytesLike[],
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _participationProof: ParticipationProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"
@@ -787,8 +702,8 @@ export interface RocketNetworkParticipation extends BaseContract {
       _challengeId: BigNumberish,
       _minipoolAddress: AddressLike,
       _slotTimestamp: BigNumberish,
-      _validatorProof: ValidatorProofStruct,
-      _slotProof: SlotProofStruct
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
     ],
     [void],
     "nonpayable"

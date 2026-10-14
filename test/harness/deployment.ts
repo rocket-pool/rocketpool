@@ -11,6 +11,7 @@ const MAINNET_BEACON_ROOTS = "0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02";
 const MAINNET_GENESIS_TIME = 1606824023n;
 const MAINNET_GENESIS_ROOT = "0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95";
 const WITHDRAWAL_REQUEST_PREDEPLOY = "0x00000961Ef480Eb55e80D19ad83579A64c007002";
+export const GLOAS_TEST_SLOT = 14_000_000n;
 const FORK_SLOTS = [
     74240n * 32n,
     144896n * 32n,
@@ -18,6 +19,8 @@ const FORK_SLOTS = [
     269568n * 32n,
     364032n * 32n,
 ];
+
+export const CURRENT_FORK_SLOTS = [...FORK_SLOTS, 411392n * 32n, GLOAS_TEST_SLOT];
 
 export interface DeploymentJournalEntry {
     release: string;
@@ -27,7 +30,7 @@ export interface DeploymentJournalEntry {
 
 export interface DeploymentState {
     rocketStorageAddress: string;
-    activeRelease: "1.3.1" | "1.4" | "current";
+    activeRelease: "1.3.1" | "1.4" | "1.4.1" | "current";
     active: Map<string, DeploymentJournalEntry>;
     history: Map<string, DeploymentJournalEntry[]>;
 }
@@ -322,6 +325,32 @@ export async function upgradeToV14(state: DeploymentState): Promise<void> {
     await assertProtocolVersion(state, "1.4");
 }
 
+export async function upgradeToV141(state: DeploymentState): Promise<void> {
+    if (state.activeRelease !== "1.4") throw new Error(`Cannot apply the 1.4.1 upgrade to ${state.activeRelease}`);
+    const [guardian] = await ethers.getSigners();
+    // The historical verifier is real; only its EIP-4788 root oracle is controlled by tests.
+    const oracleArtifact = await currentArtifact("BlockRootsMock");
+    const oracle = await deployArtifact(guardian, oracleArtifact, []);
+    const verifierArtifact = getReleaseArtifact("1.4.1", "BeaconStateVerifier");
+    const verifier = await deployArtifact(guardian, verifierArtifact, [state.rocketStorageAddress, 8192n, CURRENT_FORK_SLOTS, await oracle.getAddress()]);
+    const managerArtifact = getReleaseArtifact("1.4.1", "RocketMegapoolManager");
+    const manager = await deployArtifact(guardian, managerArtifact, [state.rocketStorageAddress]);
+    const upgradeArtifact = getReleaseArtifact("1.4.1", "RocketUpgradeOneDotFourDotOne");
+    const upgrade = await deployArtifact(guardian, upgradeArtifact, [
+        state.rocketStorageAddress, await verifier.getAddress(), compressAbi(verifierArtifact.abi),
+        await manager.getAddress(), compressAbi(managerArtifact.abi),
+    ]);
+    const trustedUpgrade = new Contract(getActiveAddress(state, "rocketDAONodeTrustedUpgrade"), getReleaseArtifact("1.4", "RocketDAONodeTrustedUpgrade").abi, guardian);
+    await wait(trustedUpgrade.bootstrapUpgrade("addContract", "rocketUpgradeOneDotFourDotOne", compressAbi(upgradeArtifact.abi), await upgrade.getAddress()));
+    await wait(upgrade.execute());
+    record(state, "beaconStateVerifier", "1.4.1", "BeaconStateVerifier", await verifier.getAddress());
+    record(state, "rocketMegapoolManager", "1.4.1", "RocketMegapoolManager", await manager.getAddress());
+    record(state, "rocketUpgradeOneDotFourDotOne", "1.4.1", "RocketUpgradeOneDotFourDotOne", await upgrade.getAddress());
+    record(state, "beaconRootsOracle", "fixture", "BlockRootsMock", await oracle.getAddress());
+    state.activeRelease = "1.4.1";
+    await assertProtocolVersion(state, "1.4.1");
+}
+
 async function currentArtifact(contractName: string): Promise<ReleaseArtifact> {
     const hreArtifact = await getHardhatRuntime().artifacts.readArtifact(contractName);
     return {
@@ -349,7 +378,7 @@ const currentUpgradeContracts = {
 } as const;
 
 export async function upgradeToCurrent(state: DeploymentState): Promise<void> {
-    if (state.activeRelease !== "1.4") {
+    if (state.activeRelease !== "1.4.1") {
         throw new Error(`Cannot apply the current upgrade to ${state.activeRelease}`);
     }
     const [guardian] = await ethers.getSigners();
@@ -358,7 +387,9 @@ export async function upgradeToCurrent(state: DeploymentState): Promise<void> {
     for (const [logicalName, artifactName] of Object.entries(currentUpgradeContracts)) {
         const artifact = await currentArtifact(artifactName);
         let args: readonly unknown[] = [state.rocketStorageAddress];
-        if (logicalName === "rocketMinipoolDelegate") {
+        if (logicalName === "beaconStateVerifier") {
+            args = [state.rocketStorageAddress, CURRENT_FORK_SLOTS];
+        } else if (logicalName === "rocketMinipoolDelegate") {
             args = [];
         } else if (logicalName === "rocketMegapoolDelegate" || logicalName === "rocketNetworkExit") {
             args = [state.rocketStorageAddress, WITHDRAWAL_REQUEST_PREDEPLOY];

@@ -2,7 +2,7 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 
-export type HistoricalRelease = "1.3.1" | "1.4";
+export type HistoricalRelease = "1.3.1" | "1.4" | "1.4.1";
 export type Release = HistoricalRelease | "current";
 
 export interface ReleaseArtifact {
@@ -25,7 +25,8 @@ interface ReleaseManifest {
     schemaVersion: number;
     release: HistoricalRelease;
     source: {
-        tag: string;
+        tag?: string;
+        ref?: string;
         commit: string;
     };
     compilers: string[];

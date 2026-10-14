@@ -1,10 +1,10 @@
 import { AbiCoder } from "ethers";
 
-import type { CurrentContracts, V14Contracts } from "../contracts";
+import type { CurrentContracts, V14Contracts, V141Contracts } from "../contracts";
 import type { ActiveProtocolView } from "../view";
 import { GuardedFacade } from "../view";
 
-export type PDAOGovernanceContracts = V14Contracts | CurrentContracts;
+export type PDAOGovernanceContracts = V14Contracts | V141Contracts | CurrentContracts;
 
 export interface PDAOTreeNode {
     hash: string;

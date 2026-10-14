@@ -1,7 +1,7 @@
 import type { ContractTransactionReceipt } from "ethers";
 
 import { ethers } from "../../../../test-old/_utils/hardhat-runtime";
-import type { CurrentContracts, V14Contracts } from "../contracts";
+import type { CurrentContracts, V14Contracts, V141Contracts } from "../contracts";
 import { GuardedFacade } from "../view";
 
 export interface RewardSubmission {
@@ -27,7 +27,7 @@ export interface RewardClaim {
     merkleProof: string[];
 }
 
-type RewardContracts = V14Contracts | CurrentContracts;
+type RewardContracts = V14Contracts | V141Contracts | CurrentContracts;
 
 export class RewardActions<C extends RewardContracts> extends GuardedFacade {
     private get contracts(): C {

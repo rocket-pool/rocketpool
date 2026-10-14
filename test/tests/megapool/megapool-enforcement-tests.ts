@@ -1,3 +1,4 @@
+import { validatorProofArgs } from '../../scenarios/megapool/proof-encoding';
 import assert from "assert";
 
 import { before, describe, expectRevert, it, load } from "../../harness";
@@ -137,11 +138,11 @@ describe("RocketMegapool exit challenges", () => {
         const slot = await currentSlot(current);
         await expectRevert(
             async () => current.contracts.rocketMegapoolManager.connect(await current.context.actor("proofSubmitter")).notifyNotExit(
-                await current.megapools.address("node"),
+                ...validatorProofArgs(await current.megapools.address("node"),
                 1n,
                 timestamp,
                 await validatorProof(current, "node", 1n),
-                slotProof(slot),
+                slotProof(slot)),
             ),
             "Validator not locked",
         );
@@ -152,11 +153,11 @@ describe("RocketMegapool exit challenges", () => {
         const timestamp = await current.time.latest();
         const slot = await currentSlot(current);
         await (await current.contracts.rocketMegapoolManager.connect(await current.context.actor("proofSubmitter")).notifyNotExit(
-            await current.megapools.address("node"),
+            ...validatorProofArgs(await current.megapools.address("node"),
             0n,
             timestamp,
             await validatorProof(current, "node", 0n),
-            slotProof(slot),
+            slotProof(slot)),
         )).wait();
         assert.equal((await (await current.megapools.delegate("node")).getValidatorInfo(0n)).locked, false);
         await current.megapools.distribute("node");

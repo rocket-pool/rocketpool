@@ -7,7 +7,7 @@ import {RocketDAOProtocolSettingsMegapoolInterface} from "../../interface/dao/pr
 import {RocketDepositPoolInterface} from "../../interface/deposit/RocketDepositPoolInterface.sol";
 import {RocketNodeDepositInterface} from "../../interface/node/RocketNodeDepositInterface.sol";
 import {MinipoolStatus} from "../../types/MinipoolStatus.sol";
-import {ValidatorProof, SlotProof, BeaconStateVerifierInterface} from "../../interface/util/BeaconStateVerifierInterface.sol";
+import {BeaconStateVerifierInterface, VerifiedValidator} from "../../interface/util/BeaconStateVerifierInterface.sol";
 import {RocketBase} from "../RocketBase.sol";
 import {RocketMegapoolStorageLayout} from "../megapool/RocketMegapoolStorageLayout.sol";
 import {RocketMegapoolInterface} from "../../interface/megapool/RocketMegapoolInterface.sol";
@@ -186,9 +186,9 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
     /// @notice Penalises a Minipool if they have failed to cooperatively exit (or falls back to force exit if it supports EL triggered exits)
     /// @param _minipoolAddress The address of the Minipool
     /// @param _slotTimestamp Timestamp of the slot for which the validator proof was generated against
-    /// @param _validatorProof Proof of the beacon state of the validator
-    /// @param _slotProof A slot proof for the slot which the validator proof was generated against
-    function penaliseMinipool(address _minipoolAddress, uint64 _slotTimestamp, ValidatorProof calldata _validatorProof, SlotProof calldata _slotProof) override external payable onlyRegisteredMinipool(_minipoolAddress) {
+    /// @param _proofVersion Encoding version understood by the beacon verifier
+    /// @param _proofData ABI-encoded proof bundle for the requested verification
+    function penaliseMinipool(address _minipoolAddress, uint64 _slotTimestamp, uint256 _proofVersion, bytes calldata _proofData) override external payable onlyRegisteredMinipool(_minipoolAddress) {
         // Require a recent proof
         require(_slotTimestamp + slotRecencyThreshold >= block.timestamp, "Slot proof too old");
         // Check if the Minipool supports force exits
@@ -208,11 +208,10 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
         bytes memory pubkey = minipoolManager.getMinipoolPubkey(_minipoolAddress);
         // Verify the proofs
         BeaconStateVerifierInterface beaconStateVerifier = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier"));
-        require(beaconStateVerifier.verifyValidator(_slotTimestamp, _slotProof.slot, _validatorProof), "Invalid validator proof");
-        require(beaconStateVerifier.verifySlot(_slotTimestamp, _slotProof), "Invalid slot proof");
+        VerifiedValidator memory verified = beaconStateVerifier.verifyValidator(_slotTimestamp, _proofVersion, _proofData);
         // Validate the proof
-        require(_validatorProof.validator.exitEpoch == farFutureEpoch);
-        require(keccak256(_validatorProof.validator.pubkey) == keccak256(pubkey), "Incorrect validator");
+        require(verified.validator.exitEpoch == farFutureEpoch);
+        require(keccak256(verified.validator.pubkey) == keccak256(pubkey), "Incorrect validator");
         // Apply penalty to the Minipool
         _applyMinipoolPenalty(_minipoolAddress);
         // Decrease requested ETH
