@@ -521,6 +521,12 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         return value;
     }
 
+    /// @notice Alias of `getNodeETHBorrowed`
+    /// @dev Provided for backwards compatibility
+    function getNodeETHMatched(address _nodeAddress) public view returns (uint256) {
+        return getNodeETHBorrowed(_nodeAddress);
+    }
+
     /// @notice Returns a node's total borrowed ETH amount (minipool + megapool)
     /// @param _nodeAddress The address of the node operator to query
     function getNodeETHBorrowed(address _nodeAddress) public view returns (uint256) {

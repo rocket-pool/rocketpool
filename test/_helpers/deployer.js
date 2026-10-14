@@ -25,7 +25,7 @@ function formatConstructorArgs(args) {
 }
 
 const defaultOpts = {
-    protocolVersion: '1.4',
+    protocolVersion: '1.4.1',
     initialRevenueSplit: ['0.05'.ether, '0.09'.ether, '0'.ether],
     depositAddress: null,
     fixedSupplyTokenAddress: null,

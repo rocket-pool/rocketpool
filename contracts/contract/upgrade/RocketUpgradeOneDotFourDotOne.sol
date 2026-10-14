@@ -14,6 +14,8 @@ contract RocketUpgradeOneDotFourDotOne is RocketBase {
     string public beaconStateVerifierAbi;
     address public rocketMegapoolManagerAddress;
     string public rocketMegapoolManagerAbi;
+    address public rocketNodeStakingAddress;
+    string public rocketNodeStakingAbi;
 
     // Construct
     constructor(
@@ -21,7 +23,9 @@ contract RocketUpgradeOneDotFourDotOne is RocketBase {
         address _beaconStateVerifierAddress,
         string memory _beaconStateVerifierAbi,
         address _rocketMegapoolManagerAddress,
-        string memory _rocketMegapoolManagerAbi
+        string memory _rocketMegapoolManagerAbi,
+        address _rocketNodeStakingAddress,
+        string memory _rocketNodeStakingAbi
     ) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
@@ -29,6 +33,8 @@ contract RocketUpgradeOneDotFourDotOne is RocketBase {
         beaconStateVerifierAbi = _beaconStateVerifierAbi;
         rocketMegapoolManagerAddress = _rocketMegapoolManagerAddress;
         rocketMegapoolManagerAbi = _rocketMegapoolManagerAbi;
+        rocketNodeStakingAddress = _rocketNodeStakingAddress;
+        rocketNodeStakingAbi = _rocketNodeStakingAbi;
     }
 
     /// @notice Returns the address of the RocketStorage contract
@@ -44,6 +50,7 @@ contract RocketUpgradeOneDotFourDotOne is RocketBase {
         // Upgrade contracts
         _upgradeContract("beaconStateVerifier", beaconStateVerifierAddress, beaconStateVerifierAbi);
         _upgradeContract("rocketMegapoolManager", rocketMegapoolManagerAddress, rocketMegapoolManagerAbi);
+        _upgradeContract("rocketNodeStaking", rocketNodeStakingAddress, rocketNodeStakingAbi);
 
         // Set a protocol version value in storage for convenience with bindings
         setString(keccak256(abi.encodePacked("protocol.version")), "1.4.1");
