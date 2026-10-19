@@ -9,6 +9,16 @@ interface RocketNetworkExitInterface {
         Voluntary
     }
 
+    enum MinipoolExitRequestStatus {
+        Eligible,
+        Unregistered,
+        NotStaking,
+        Finalised,
+        UserDistributed,
+        AlreadyRequested,
+        Backoff
+    }
+
     function getRequestedEth() external view returns (uint256);
     function getVoluntaryEth() external view returns (uint256);
     function getExitFee() external view returns (uint256);
@@ -17,6 +27,10 @@ interface RocketNetworkExitInterface {
     function getMinipoolLastExit(address _minipoolAddress) external view returns (uint256);
     function getMinipoolExitRequestCount(address _minipoolAddress) external view returns (uint256);
     function getMinipoolExpectedUserCapital(address _minipoolAddress) external view returns (uint256);
+    function getMinipoolPerformanceExitRequired(address _minipoolAddress) external view returns (bool);
+    function markMinipoolPerformanceExitRequired(address _minipoolAddress) external;
+    function getMinipoolExitRequestStatus(address _minipoolAddress) external view returns (MinipoolExitRequestStatus status, uint256 retryAt);
+    function tryRequestMarkedMinipoolExit(address _minipoolAddress) external returns (bool);
     function getMegapoolExitType(address _megapoolAddress, uint32 _validatorId) external view returns (ExitType);
     function getMegapoolExpectedUserCapital(address _megapoolAddress, uint32 _validatorId) external view returns (uint256);
     function getMegapoolOutstandingExitCount(address _megapoolAddress) external view returns (uint256);

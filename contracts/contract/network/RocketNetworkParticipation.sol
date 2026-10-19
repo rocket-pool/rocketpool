@@ -243,12 +243,17 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
         require(!getBool(keccak256(abi.encodePacked("participation.challenge.responded", _challengeId))), "Challenge was defeated");
         require(!settled, "Bond already settled");
         require(block.timestamp > deadline, "Challenge period has not passed");
+        _releaseChallengeBond(_challengeId, proposer, bond);
+    }
+
+    /// @dev Caller validates entitlement and that the bond has not already been settled
+    function _releaseChallengeBond(uint256 _challengeId, address _proposer, uint256 _bond) internal {
         // Store bond settled flag
         setBool(keccak256(abi.encodePacked("participation.challenge.bondSettled", _challengeId)), true);
         // Unlock bond
-        _getNodeStaking().unlockRPL(proposer, bond);
+        _getNodeStaking().unlockRPL(_proposer, _bond);
         // Emit event
-        emit ChallengeBondReleased(_challengeId, proposer, bond);
+        emit ChallengeBondReleased(_challengeId, _proposer, _bond);
     }
 
     /// @notice Claims a defeated challenge's recoverable bond as staked RPL
@@ -276,7 +281,7 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
         emit ChallengeBondSettled(_challengeId, proposer, responder, bond, recovered, reward, burn);
     }
 
-    /// @notice Requests exits for an undefeated list, skipping validators already handled
+    /// @notice Finalises an undefeated list, records exit obligations and releases any unsettled bond
     /// @param _challengeId ID of the successful challenge
     function finaliseChallenge(uint256 _challengeId) override external onlyLatestSelf {
         // Validate input
@@ -291,6 +296,8 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
         } else {
             _finaliseMegapoolChallenge(_challengeId);
         }
+        (address proposer,, uint256 bond,, bool settled) = getChallengeBondDetails(_challengeId);
+        if (!settled) _releaseChallengeBond(_challengeId, proposer, bond);
     }
 
     // Internals
@@ -397,16 +404,14 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
     function _finaliseMinipoolChallenge(uint256 _challengeId) internal {
         address[] memory minipools = getChallengeMinipools(_challengeId);
         RocketNetworkExitInterface networkExit = RocketNetworkExitInterface(getContractAddress("rocketNetworkExit"));
-        uint256 requestedCount;
+        uint256 requestedCount = 0;
         for (uint256 i = 0; i < minipools.length; ++i) {
-            RocketMinipoolInterface minipool = RocketMinipoolInterface(minipools[i]);
-            if (networkExit.getMinipoolCooperativeExitStart(minipools[i]) != 0 ||
-            minipool.getFinalised() || minipool.getUserDistributed()) {
-                continue;
+            // Mark the minipool as performance exit required
+            networkExit.markMinipoolPerformanceExitRequired(minipools[i]);
+            // Attempt to request the exit immediately
+            if (networkExit.tryRequestMarkedMinipoolExit(minipools[i])) {
+                ++requestedCount;
             }
-            // RocketNetworkExit retains responsibility for status validation, retry backoff and accounting
-            networkExit.requestMinipoolExit(minipools[i]);
-            ++requestedCount;
         }
         // Emit event
         emit MinipoolChallengeFinalised(_challengeId, requestedCount, minipools.length - requestedCount);
@@ -446,6 +451,7 @@ contract RocketNetworkParticipation is RocketBase, RocketNetworkParticipationInt
             require(minipool.getStatus() == MinipoolStatus.Staking, "Minipool is not staking");
             require(!minipool.getFinalised(), "Minipool is finalised");
             require(!minipool.getUserDistributed(), "User capital already distributed");
+            require(!networkExit.getMinipoolPerformanceExitRequired(_minipools[i]), "Performance exit already required");
             require(networkExit.getMinipoolCooperativeExitStart(_minipools[i]) == 0, "Minipool already requested to exit");
         }
     }

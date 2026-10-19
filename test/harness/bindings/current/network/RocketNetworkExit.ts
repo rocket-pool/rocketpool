@@ -36,10 +36,13 @@ export interface RocketNetworkExitInterface extends Interface {
       | "getMegapoolOutstandingExitCount"
       | "getMinipoolCooperativeExitStart"
       | "getMinipoolExitRequestCount"
+      | "getMinipoolExitRequestStatus"
       | "getMinipoolExpectedUserCapital"
       | "getMinipoolLastExit"
+      | "getMinipoolPerformanceExitRequired"
       | "getRequestedEth"
       | "getVoluntaryEth"
+      | "markMinipoolPerformanceExitRequired"
       | "notifyMegapoolExit"
       | "notifyMegapoolFinalBalance"
       | "penaliseMinipool"
@@ -47,6 +50,7 @@ export interface RocketNetworkExitInterface extends Interface {
       | "requestMinipoolExit"
       | "retryMegapoolExit"
       | "settleMinipoolExit"
+      | "tryRequestMarkedMinipoolExit"
       | "version"
   ): FunctionFragment;
 
@@ -56,8 +60,10 @@ export interface RocketNetworkExitInterface extends Interface {
       | "MegapoolExitRequested"
       | "MegapoolVoluntaryExitRecorded"
       | "MinipoolExitReconciled"
+      | "MinipoolExitRequestSkipped"
       | "MinipoolExitRequested"
       | "MinipoolPenalised"
+      | "MinipoolPerformanceExitRequired"
   ): EventFragment;
 
   encodeFunctionData(
@@ -101,11 +107,19 @@ export interface RocketNetworkExitInterface extends Interface {
     values: [AddressLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "getMinipoolExitRequestStatus",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getMinipoolExpectedUserCapital",
     values: [AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "getMinipoolLastExit",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getMinipoolPerformanceExitRequired",
     values: [AddressLike]
   ): string;
   encodeFunctionData(
@@ -115,6 +129,10 @@ export interface RocketNetworkExitInterface extends Interface {
   encodeFunctionData(
     functionFragment: "getVoluntaryEth",
     values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "markMinipoolPerformanceExitRequired",
+    values: [AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "notifyMegapoolExit",
@@ -142,6 +160,10 @@ export interface RocketNetworkExitInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "settleMinipoolExit",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "tryRequestMarkedMinipoolExit",
     values: [AddressLike]
   ): string;
   encodeFunctionData(functionFragment: "version", values?: undefined): string;
@@ -184,6 +206,10 @@ export interface RocketNetworkExitInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "getMinipoolExitRequestStatus",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getMinipoolExpectedUserCapital",
     data: BytesLike
   ): Result;
@@ -192,11 +218,19 @@ export interface RocketNetworkExitInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "getMinipoolPerformanceExitRequired",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getRequestedEth",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
     functionFragment: "getVoluntaryEth",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "markMinipoolPerformanceExitRequired",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -225,6 +259,10 @@ export interface RocketNetworkExitInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "settleMinipoolExit",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "tryRequestMarkedMinipoolExit",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "version", data: BytesLike): Result;
@@ -318,6 +356,28 @@ export namespace MinipoolExitReconciledEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace MinipoolExitRequestSkippedEvent {
+  export type InputTuple = [
+    minipoolAddress: AddressLike,
+    status: BigNumberish,
+    retryAt: BigNumberish
+  ];
+  export type OutputTuple = [
+    minipoolAddress: string,
+    status: bigint,
+    retryAt: bigint
+  ];
+  export interface OutputObject {
+    minipoolAddress: string;
+    status: bigint;
+    retryAt: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export namespace MinipoolExitRequestedEvent {
   export type InputTuple = [minipoolAddress: AddressLike, pubkey: BytesLike];
   export type OutputTuple = [minipoolAddress: string, pubkey: string];
@@ -340,6 +400,18 @@ export namespace MinipoolPenalisedEvent {
   export interface OutputObject {
     minipoolAddress: string;
     _amount: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace MinipoolPerformanceExitRequiredEvent {
+  export type InputTuple = [minipoolAddress: AddressLike];
+  export type OutputTuple = [minipoolAddress: string];
+  export interface OutputObject {
+    minipoolAddress: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -446,6 +518,12 @@ export interface RocketNetworkExit extends BaseContract {
     "view"
   >;
 
+  getMinipoolExitRequestStatus: TypedContractMethod<
+    [_minipoolAddress: AddressLike],
+    [[bigint, bigint] & { status: bigint; retryAt: bigint }],
+    "view"
+  >;
+
   getMinipoolExpectedUserCapital: TypedContractMethod<
     [_minipoolAddress: AddressLike],
     [bigint],
@@ -458,9 +536,21 @@ export interface RocketNetworkExit extends BaseContract {
     "view"
   >;
 
+  getMinipoolPerformanceExitRequired: TypedContractMethod<
+    [_minipoolAddress: AddressLike],
+    [boolean],
+    "view"
+  >;
+
   getRequestedEth: TypedContractMethod<[], [bigint], "view">;
 
   getVoluntaryEth: TypedContractMethod<[], [bigint], "view">;
+
+  markMinipoolPerformanceExitRequired: TypedContractMethod<
+    [_minipoolAddress: AddressLike],
+    [void],
+    "nonpayable"
+  >;
 
   notifyMegapoolExit: TypedContractMethod<
     [_megapoolAddress: AddressLike, _validatorId: BigNumberish],
@@ -506,6 +596,12 @@ export interface RocketNetworkExit extends BaseContract {
   settleMinipoolExit: TypedContractMethod<
     [_minipoolAddress: AddressLike],
     [void],
+    "nonpayable"
+  >;
+
+  tryRequestMarkedMinipoolExit: TypedContractMethod<
+    [_minipoolAddress: AddressLike],
+    [boolean],
     "nonpayable"
   >;
 
@@ -566,17 +662,30 @@ export interface RocketNetworkExit extends BaseContract {
     nameOrSignature: "getMinipoolExitRequestCount"
   ): TypedContractMethod<[_minipoolAddress: AddressLike], [bigint], "view">;
   getFunction(
+    nameOrSignature: "getMinipoolExitRequestStatus"
+  ): TypedContractMethod<
+    [_minipoolAddress: AddressLike],
+    [[bigint, bigint] & { status: bigint; retryAt: bigint }],
+    "view"
+  >;
+  getFunction(
     nameOrSignature: "getMinipoolExpectedUserCapital"
   ): TypedContractMethod<[_minipoolAddress: AddressLike], [bigint], "view">;
   getFunction(
     nameOrSignature: "getMinipoolLastExit"
   ): TypedContractMethod<[_minipoolAddress: AddressLike], [bigint], "view">;
   getFunction(
+    nameOrSignature: "getMinipoolPerformanceExitRequired"
+  ): TypedContractMethod<[_minipoolAddress: AddressLike], [boolean], "view">;
+  getFunction(
     nameOrSignature: "getRequestedEth"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "getVoluntaryEth"
   ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "markMinipoolPerformanceExitRequired"
+  ): TypedContractMethod<[_minipoolAddress: AddressLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "notifyMegapoolExit"
   ): TypedContractMethod<
@@ -624,6 +733,13 @@ export interface RocketNetworkExit extends BaseContract {
     nameOrSignature: "settleMinipoolExit"
   ): TypedContractMethod<[_minipoolAddress: AddressLike], [void], "nonpayable">;
   getFunction(
+    nameOrSignature: "tryRequestMarkedMinipoolExit"
+  ): TypedContractMethod<
+    [_minipoolAddress: AddressLike],
+    [boolean],
+    "nonpayable"
+  >;
+  getFunction(
     nameOrSignature: "version"
   ): TypedContractMethod<[], [bigint], "view">;
 
@@ -656,6 +772,13 @@ export interface RocketNetworkExit extends BaseContract {
     MinipoolExitReconciledEvent.OutputObject
   >;
   getEvent(
+    key: "MinipoolExitRequestSkipped"
+  ): TypedContractEvent<
+    MinipoolExitRequestSkippedEvent.InputTuple,
+    MinipoolExitRequestSkippedEvent.OutputTuple,
+    MinipoolExitRequestSkippedEvent.OutputObject
+  >;
+  getEvent(
     key: "MinipoolExitRequested"
   ): TypedContractEvent<
     MinipoolExitRequestedEvent.InputTuple,
@@ -668,6 +791,13 @@ export interface RocketNetworkExit extends BaseContract {
     MinipoolPenalisedEvent.InputTuple,
     MinipoolPenalisedEvent.OutputTuple,
     MinipoolPenalisedEvent.OutputObject
+  >;
+  getEvent(
+    key: "MinipoolPerformanceExitRequired"
+  ): TypedContractEvent<
+    MinipoolPerformanceExitRequiredEvent.InputTuple,
+    MinipoolPerformanceExitRequiredEvent.OutputTuple,
+    MinipoolPerformanceExitRequiredEvent.OutputObject
   >;
 
   filters: {
@@ -715,6 +845,17 @@ export interface RocketNetworkExit extends BaseContract {
       MinipoolExitReconciledEvent.OutputObject
     >;
 
+    "MinipoolExitRequestSkipped(address,uint8,uint256)": TypedContractEvent<
+      MinipoolExitRequestSkippedEvent.InputTuple,
+      MinipoolExitRequestSkippedEvent.OutputTuple,
+      MinipoolExitRequestSkippedEvent.OutputObject
+    >;
+    MinipoolExitRequestSkipped: TypedContractEvent<
+      MinipoolExitRequestSkippedEvent.InputTuple,
+      MinipoolExitRequestSkippedEvent.OutputTuple,
+      MinipoolExitRequestSkippedEvent.OutputObject
+    >;
+
     "MinipoolExitRequested(address,bytes)": TypedContractEvent<
       MinipoolExitRequestedEvent.InputTuple,
       MinipoolExitRequestedEvent.OutputTuple,
@@ -735,6 +876,17 @@ export interface RocketNetworkExit extends BaseContract {
       MinipoolPenalisedEvent.InputTuple,
       MinipoolPenalisedEvent.OutputTuple,
       MinipoolPenalisedEvent.OutputObject
+    >;
+
+    "MinipoolPerformanceExitRequired(address)": TypedContractEvent<
+      MinipoolPerformanceExitRequiredEvent.InputTuple,
+      MinipoolPerformanceExitRequiredEvent.OutputTuple,
+      MinipoolPerformanceExitRequiredEvent.OutputObject
+    >;
+    MinipoolPerformanceExitRequired: TypedContractEvent<
+      MinipoolPerformanceExitRequiredEvent.InputTuple,
+      MinipoolPerformanceExitRequiredEvent.OutputTuple,
+      MinipoolPerformanceExitRequiredEvent.OutputObject
     >;
   };
 }

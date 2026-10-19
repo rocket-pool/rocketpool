@@ -2,9 +2,9 @@ import { participationProofArgs, slotProofArgs, validatorProofArgs } from '../..
 import { prepareParticipationBonds, participationBondAccounting, assertParticipationBondLocked } from "../../scenarios/network/participation-bonds";
 import assert from "node:assert/strict";
 import { AbiCoder, hexlify, solidityPackedKeccak256, ZeroHash, type ContractTransactionReceipt, type ContractTransactionResponse } from "ethers";
-import { asNetworkContract, before, describe, expectRevert, it, load, type ProtocolCurrent } from "../../harness";
+import { asNetworkContract, withImpersonatedSigner, before, describe, expectRevert, it, load, type ProtocolCurrent } from "../../harness";
 import { RocketMinipoolDelegate__factory } from "../../harness/bindings/current";
-import { WithdrawalRequestPredeployMock__factory } from "../../harness/bindings/fixtures";
+import { StorageHelper__factory, WithdrawalRequestPredeployMock__factory } from "../../harness/bindings/fixtures";
 import { currentEpoch, currentSlot, FAR_FUTURE_EPOCH, slotProof } from "../../scenarios/megapool/proofs";
 import { stakeMegapoolValidatorAndAssert } from "../../scenarios/megapool/stake-validator";
 import { distributeMinipoolBalanceAndAssert } from "../../scenarios/minipool/distribute-balance";
@@ -14,6 +14,7 @@ import { ethers, network } from "../../../test-old/_utils/hardhat-runtime";
 const ETH = 10n ** 18n;
 const PERIOD = 44032;
 const PREDEPLOY = "0x00000961Ef480Eb55e80D19ad83579A64c007002";
+const Status = { Eligible: 0n, Unregistered: 1n, NotStaking: 2n, Finalised: 3n, UserDistributed: 4n, AlreadyRequested: 5n, Backoff: 6n };
 const range = (n: number, start = 0) => Array.from({ length: n }, (_, i) => i + start);
 const key = (field: string, id?: bigint) => id === undefined
     ? solidityPackedKeccak256(["string"], [`participation.challenge.${field}`])
@@ -78,6 +79,7 @@ async function exitState(c: ProtocolCurrent, names = ["pool0", "pool1", "pool2",
     const members = await Promise.all(names.map(async name => {
         const p = await pool(c, name);
         return { address: address(c, name), status: await p.getStatus(), finalised: await p.getFinalised(),
+            marked: await e.getMinipoolPerformanceExitRequired(address(c, name)),
             distributed: await p.getUserDistributed(), node: await p.getNodeAddress(), user: await p.getUserDepositBalance(),
             bond: await p.getNodeDepositBalance(), refund: await p.getNodeRefundBalance(),
             expected: await e.getMinipoolExpectedUserCapital(address(c, name)), timer: await e.getMinipoolCooperativeExitStart(address(c, name)),
@@ -176,14 +178,27 @@ async function defeat(c: ProtocolCurrent, ch: Challenge, action: () => Promise<C
 
 async function finalise(c: ProtocolCurrent, ch: Challenge, requested = ch.names) {
     const before = await exitState(c);
+    const beforeBond = await participationBondAccounting(c);
+    const bond = await c.contracts.rocketNetworkParticipation.getChallengeBondDetails(ch.id);
     if (await c.time.latest() <= ch.time + 86400n) await setTime(ch.time + 86401n);
     const receipt = await (await (await participant(c, "finaliser")).finaliseChallenge(ch.id)).wait(); assert(receipt);
     assert.deepEqual(Array.from(events(c, receipt, "MinipoolChallengeFinalised")[0].args), [ch.id, BigInt(requested.length), BigInt(ch.names.length - requested.length)]);
     assert.deepEqual(events(c, receipt, "MinipoolExitRequested").map(e => e.args[0]), requested.map(n => address(c, n)));
+    assert.deepEqual(events(c, receipt, "MinipoolPerformanceExitRequired").map(e => e.args[0]),
+        ch.addresses.filter(a => !before.members.find(m => m.address === a)!.marked));
+    assert.equal(events(c, receipt, "MinipoolExitRequestSkipped").length, ch.names.length - requested.length);
+    assert.equal(events(c, receipt, "ChallengeBondReleased").length, bond.settled ? 0 : 1);
+    if (!bond.settled) beforeBond.proposer.locked -= bond.bondAmount;
+    assert.deepEqual(await participationBondAccounting(c), beforeBond);
+    assert.equal((await c.contracts.rocketNetworkParticipation.getChallengeBondDetails(ch.id)).settled, true);
     const after = await exitState(c);
     const t = BigInt((await ethers.provider.getBlock(receipt.blockNumber))!.timestamp);
     let capital = 0n;
     for (const [i, member] of after.members.entries()) {
+        if (ch.addresses.includes(member.address)) {
+            assert.equal(member.marked, true);
+            before.members[i].marked = true;
+        }
         if (requested.some(n => address(c, n) === member.address)) {
             assert.equal(member.timer, t); assert.equal(member.last, t); assert.equal(member.count, before.members[i].count + 1n);
             assert.equal(member.expected, member.user); capital += member.user;
@@ -197,10 +212,54 @@ async function finalise(c: ProtocolCurrent, ch: Challenge, requested = ch.names)
     return receipt;
 }
 
+async function attempt(c: ProtocolCurrent, name: string, status: bigint, retryAt = 0n) {
+    const e = c.contracts.rocketNetworkExit.connect(await c.context.actor("finaliser"));
+    const a = address(c, name);
+    const before = await exitState(c);
+    assert.deepEqual(Array.from(await e.getMinipoolExitRequestStatus(a)), [status, retryAt]);
+    assert.equal(await e.tryRequestMarkedMinipoolExit.staticCall(a), status === Status.Eligible);
+    const receipt = await (await e.tryRequestMarkedMinipoolExit(a)).wait(); assert(receipt);
+    if (status !== Status.Eligible) {
+        assert.deepEqual(events(c, receipt, "MinipoolExitRequestSkipped")[0].args.toArray(), [a, status, retryAt]);
+        assert.deepEqual(await exitState(c), before);
+    } else {
+        const after = await exitState(c);
+        const index = before.members.findIndex(m => m.address === a);
+        const time = BigInt((await ethers.provider.getBlock(receipt.blockNumber))!.timestamp);
+        before.members[index].count++;
+        before.members[index].last = time;
+        before.members[index].timer = time;
+        before.members[index].expected = before.members[index].user;
+        before.requested += before.members[index].user;
+        assert.deepEqual(after, before);
+        assert.equal(events(c, receipt, "MinipoolExitRequested").length, 1);
+    }
+    assert.equal(events(c, receipt, "MinipoolPerformanceExitRequired").length, 0);
+    return receipt;
+}
+
 async function request(c: ProtocolCurrent, name: string) {
     await asNetworkContract(c, "rocketNetworkRedemptions", async signer => {
         await (await c.contracts.rocketNetworkExit.connect(signer).requestMinipoolExit(address(c, name))).wait();
     });
+}
+
+async function mark(c: ProtocolCurrent, name: string) {
+    const participation = await c.contracts.rocketNetworkParticipation.getAddress();
+    const balance = await ethers.provider.getBalance(participation);
+    try {
+        return await asNetworkContract(c, "rocketNetworkParticipation", async signer => {
+            return (await c.contracts.rocketNetworkExit.connect(signer).markMinipoolPerformanceExitRequired(address(c, name))).wait();
+        });
+    } finally {
+        // Impersonation funds the contract to pay gas; do not include that fixture artefact in accounting snapshots.
+        await network.provider.send("hardhat_setBalance", [participation, ethers.toQuantity(balance)]);
+    }
+}
+
+async function storageHelper(c: ProtocolCurrent) {
+    const fixture = await c.context.fixtures.storage.deploy("performance-exit-state");
+    return StorageHelper__factory.connect(fixture.address, await c.context.guardian());
 }
 
 async function distribute(c: ProtocolCurrent, name: string, userOnly = false) {
@@ -213,7 +272,7 @@ async function penalise(c: ProtocolCurrent, name: string) {
     const e = c.contracts.rocketNetworkExit;
     const timer = await e.getMinipoolCooperativeExitStart(address(c, name));
     const wait = await c.contracts.rocketDAOProtocolSettingsNetwork.getCooperativeExitPhase();
-    await c.time.advance(timer + wait + 1n - await c.time.latest());
+    if (await c.time.latest() <= timer + wait) await c.time.advance(timer + wait + 1n - await c.time.latest());
     await (await e.connect(await c.context.actor("finaliser")).penaliseMinipool(...validatorProofArgs(address(c, name), await c.time.latest(), validator(c, name), slotProof(await currentSlot(c))))).wait();
 }
 
@@ -364,23 +423,134 @@ describe("RocketNetworkParticipation minipools", () => {
         await finalise(c, b);
     });
 
-    it("rolls back earlier requests during a later member's backoff and succeeds at the exact boundary", async () => {
+    it("does not clear established marks when a later overlapping challenge is defeated", async () => {
+        const c = await load().ensure("current"); const a = await challenge(c);
+        await c.time.advance(100n);
+        const b = await challenge(c);
+        await finalise(c, a);
+        const r = await response(c, b, "pool1", true);
+        await defeat(c, b, () => r.target.respondWithMinipoolValidator(...validatorProofArgs(...r.a)));
+        for (const name of a.names) assert.equal(await c.contracts.rocketNetworkExit.getMinipoolPerformanceExitRequired(address(c, name)), true);
+    });
+
+    it("finalises an entirely deferred batch without accounting for its marked capital", async () => {
+        const c = await load().ensure("current");
+        await request(c, "pool1"); await request(c, "pool2");
+        await penalise(c, "pool1"); await penalise(c, "pool2");
+        const ch = await challenge(c, ["pool1", "pool2"]);
+        const receipt = await finalise(c, ch, []);
+        assert(events(c, receipt, "MinipoolExitRequestSkipped").every(e => e.args[1] === Status.Backoff));
+        assert.equal(await c.contracts.rocketNetworkExit.getRequestedEth(), 0n);
+    });
+
+    it("marks and skips a previously validated member that is now unregistered", async () => {
+        const c = await load().ensure("current"); const ch = await challenge(c);
+        const helper = await storageHelper(c);
+        await helper.setBool(solidityPackedKeccak256(["string", "address"], ["minipool.exists", address(c, "pool1")]), false);
+        const receipt = await finalise(c, ch, ["pool0", "pool2"]);
+        assert.deepEqual(events(c, receipt, "MinipoolExitRequestSkipped")[0].args.toArray(), [address(c, "pool1"), Status.Unregistered, 0n]);
+        await attempt(c, "pool1", Status.Unregistered);
+    });
+
+    it("restricts marking to active Participation, keeps it idempotent and rejects unmarked permissionless requests", async () => {
+        const c = await load().ensure("current");
+        const e = c.contracts.rocketNetworkExit.connect(await c.context.actor("finaliser"));
+        await rejects(c, () => e.tryRequestMarkedMinipoolExit(address(c, "pool1")), "Performance exit not required");
+        await rejects(c, () => e.markMinipoolPerformanceExitRequired(address(c, "pool1")), "Invalid or outdated contract");
+        await asNetworkContract(c, "rocketNetworkRedemptions", async signer => {
+            await expectRevert(() => e.connect(signer).markMinipoolPerformanceExitRequired(address(c, "pool1")), "Invalid or outdated contract");
+        });
+        const before = await exitState(c);
+        const receipt = await mark(c, "pool1"); assert(receipt);
+        assert.equal(events(c, receipt, "MinipoolPerformanceExitRequired").length, 1);
+        before.members[1].marked = true;
+        assert.deepEqual(await exitState(c), before);
+        const repeated = await mark(c, "pool1"); assert(repeated);
+        assert.equal(events(c, repeated, "MinipoolPerformanceExitRequired").length, 0);
+        assert.deepEqual(await exitState(c), before);
+        await attempt(c, "pool1", Status.Eligible);
+        await attempt(c, "pool1", Status.AlreadyRequested);
+        const helper = await storageHelper(c);
+        await helper.setAddress(solidityPackedKeccak256(["string", "string"], ["contract.address", "rocketNetworkParticipation"]), await c.nodes.address("responder"));
+        await withImpersonatedSigner(await c.contracts.rocketNetworkParticipation.getAddress(), async old => {
+            await expectRevert(() => e.connect(old).markMinipoolPerformanceExitRequired(address(c, "pool2")), "Invalid or outdated contract");
+        });
+    });
+
+    it("reports terminal and non-staking states before active requests or backoff", async () => {
+        const c = await load().ensure("current"); const e = c.contracts.rocketNetworkExit;
+        assert.deepEqual(Array.from(await e.getMinipoolExitRequestStatus(ethers.ZeroAddress)), [Status.Unregistered, 0n]);
+        await mark(c, "prelaunch"); await attempt(c, "prelaunch", Status.NotStaking);
+        await mark(c, "pool1"); await request(c, "pool1"); await distribute(c, "pool1", true);
+        await attempt(c, "pool1", Status.UserDistributed);
+        await mark(c, "pool2"); await request(c, "pool2"); await distribute(c, "pool2");
+        await attempt(c, "pool2", Status.Finalised);
+    });
+
+    it("uses live cooldown settings across liquidity requests, marked retries and delegate changes", async () => {
+        const c = await load().ensure("current"); const e = c.contracts.rocketNetworkExit;
+        await request(c, "pool1");
+        assert.equal(await e.getMinipoolPerformanceExitRequired(address(c, "pool1")), false);
+        await penalise(c, "pool1");
+        await finalise(c, await challenge(c, ["pool1"]), []);
+        const last = await e.getMinipoolLastExit(address(c, "pool1"));
+        const original = await c.contracts.rocketDAOProtocolSettingsNetwork.getDidNotExitBase();
+        await c.pdao.bootstrap.setSetting({ contract: "rocketDAOProtocolSettingsNetwork", path: "network.did.not.exit.base", value: { type: "uint", value: original * 2n } });
+        await attempt(c, "pool1", Status.Backoff, last + original * 2n);
+        await c.minipools.delegateUpgrade("pool1");
+        await attempt(c, "pool1", Status.Backoff, last + original * 2n);
+        await c.minipools.delegateRollback("pool1");
+        await c.time.advance(last + original - await c.time.latest());
+        await c.pdao.bootstrap.setSetting({ contract: "rocketDAOProtocolSettingsNetwork", path: "network.did.not.exit.base", value: { type: "uint", value: original } });
+        await attempt(c, "pool1", Status.Eligible);
+        await penalise(c, "pool1");
+        const second = await e.getMinipoolLastExit(address(c, "pool1"));
+        await c.pdao.bootstrap.setSetting({ contract: "rocketDAOProtocolSettingsNetwork", path: "network.did.not.exit.backoff", value: { type: "uint", value: 2n * ETH } });
+        await attempt(c, "pool1", Status.Backoff, second + original * 2n);
+        await expectRevert(() => request(c, "pool1"), "Not enough time has passed");
+        await c.time.advance(second + original * 2n - await c.time.latest());
+        await request(c, "pool1");
+        assert.equal(await e.getMinipoolExitRequestCount(address(c, "pool1")), 3n);
+        await attempt(c, "pool1", Status.AlreadyRequested);
+    });
+
+    it("rolls back every mark and request if later request accounting unexpectedly fails", async () => {
+        const c = await load().ensure("current"); const ch = await challenge(c);
+        const helper = await storageHelper(c);
+        const totalKey = solidityPackedKeccak256(["string"], ["exit.requested.eth"]);
+        // The first 16 ETH request fits; the later 24 ETH request overflows.
+        await helper.setUint(totalKey, ethers.MaxUint256 - 16n * ETH);
+        await setTime(ch.time + 86401n);
+        const before = { exits: await exitState(c), challenges: await challengeState(c), bonds: await participationBondAccounting(c) };
+        await expectRevert(async () => (await participant(c)).finaliseChallenge(ch.id, { gasLimit: 12_000_000n }));
+        assert.deepEqual({ exits: await exitState(c), challenges: await challengeState(c), bonds: await participationBondAccounting(c) }, before);
+        await helper.setUint(totalKey, 0n);
+        await finalise(c, ch);
+    });
+
+    it("marks mixed eligible, backoff and completed members, releases the bond and permits a boundary retry", async () => {
         const c = await load().ensure("current"); const e = c.contracts.rocketNetworkExit;
         await request(c, "pool1"); const last = await e.getMinipoolLastExit(address(c, "pool1"));
         await penalise(c, "pool1");
         assert.equal(await e.getRequestedEth(), 0n);
         const ch = await challenge(c); // Submission remains possible during backoff.
+        await distribute(c, "pool2");
         const retryAt = last + await c.contracts.rocketDAOProtocolSettingsNetwork.getDidNotExitBase();
         assert(retryAt > ch.time + 86401n);
-        await setTime(ch.time + 86401n);
-        await (await (await participant(c, "finaliser")).releaseChallengeBond(ch.id)).wait();
+        const receipt = await finalise(c, ch, ["pool0"]);
+        assert.deepEqual(events(c, receipt, "MinipoolExitRequestSkipped").map(e => e.args.toArray()), [
+            [address(c, "pool1"), Status.Backoff, retryAt], [address(c, "pool2"), Status.Finalised, 0n],
+        ]);
         assert.equal(await c.contracts.rocketNodeStaking.getNodeLockedRPL(await c.nodes.address("proposer")), 0n);
+        await settings(c, "exits.enabled", false);
         await setTime(retryAt - 1n);
-        const from = await ethers.provider.getBlockNumber();
-        await rejects(c, async () => (await participant(c, "finaliser")).finaliseChallenge(ch.id, { gasLimit: 12_000_000n }), "Not enough time has passed");
-        assert.equal((await e.queryFilter(e.filters.MinipoolExitRequested(), from + 1)).length, 0);
-        assert.equal((await c.contracts.rocketNetworkParticipation.queryFilter(c.contracts.rocketNetworkParticipation.filters.MinipoolChallengeFinalised(), from + 1)).length, 0);
-        await setTime(retryAt); await finalise(c, ch);
+        await attempt(c, "pool1", Status.Backoff, retryAt);
+        await setTime(retryAt);
+        const retry = await (await e.connect(await c.context.actor("finaliser")).tryRequestMarkedMinipoolExit(address(c, "pool1"))).wait(); assert(retry);
+        assert.equal(events(c, retry, "MinipoolExitRequested").length, 1);
+        assert.deepEqual(Array.from(await e.getMinipoolExitRequestStatus(address(c, "pool1"))), [Status.AlreadyRequested, 0n]);
+        assert.equal(await e.getMinipoolLastExit(address(c, "pool1")), retryAt);
+        assert.equal(await e.getRequestedEth(), 40n * ETH);
         assert.equal(await e.getMinipoolExitRequestCount(address(c, "pool1")), 2n);
     });
 
@@ -397,21 +567,34 @@ describe("RocketNetworkParticipation minipools", () => {
         assert.equal(await e.getRequestedEth(), 0n); assert.equal(await e.getMinipoolExpectedUserCapital(address(c, "pool0")), 0n);
         assert.equal(await e.getMinipoolCooperativeExitStart(address(c, "pool0")), 0n);
         await rejects(c, () => e.settleMinipoolExit(address(c, "pool0")), "Minipool exit is not requested");
+        assert.equal(await e.getMinipoolPerformanceExitRequired(address(c, "pool0")), true);
+        await attempt(c, "pool0", Status.Finalised);
     });
 
-    it("requires a new challenge after a legacy penalty and preserves repeat-request backoff", async () => {
+    it("retries a permanent obligation after repeated legacy penalties without new evidence", async () => {
         const c = await load().ensure("current"); const ch = await challenge(c, ["pool1"]); await finalise(c, ch);
-        const e = c.contracts.rocketNetworkExit; const last = await e.getMinipoolLastExit(address(c, "pool1"));
-        await penalise(c, "pool1");
-        assert.equal(await e.getRequestedEth(), 0n); assert.equal(await e.getMinipoolExpectedUserCapital(address(c, "pool1")), 0n);
-        assert.equal(await e.getMinipoolCooperativeExitStart(address(c, "pool1")), 0n); assert((await c.minipools.penaltyRate("pool1")) > 0n);
-        assert.equal(await (await mock(c)).requestCount(), 0n);
+        const e = c.contracts.rocketNetworkExit;
+        let totalRate = 0n;
+        for (const [i, nominal] of [ETH / 10n, 15n * ETH / 100n, 225n * ETH / 1000n].entries()) {
+            const last = await e.getMinipoolLastExit(address(c, "pool1"));
+            await penalise(c, "pool1");
+            totalRate += nominal / 8n;
+            assert.equal(await c.minipools.penaltyRate("pool1"), totalRate);
+            assert.equal(await e.getRequestedEth(), 0n);
+            assert.equal(await e.getMinipoolExpectedUserCapital(address(c, "pool1")), 0n);
+            assert.equal(await e.getMinipoolCooperativeExitStart(address(c, "pool1")), 0n);
+            assert.equal(await e.getMinipoolPerformanceExitRequired(address(c, "pool1")), true);
+            const args = await submission(c, ["pool1"]);
+            await rejects(c, async () => (await participant(c, "proposer")).challengeMinipools(...slotProofArgs(...args)), "Performance exit already required");
+            const retryAt = last + await c.contracts.rocketDAOProtocolSettingsNetwork.getDidNotExitBase() * 3n ** BigInt(i) / 2n ** BigInt(i);
+            await attempt(c, "pool1", Status.Backoff, retryAt);
+            await c.time.advance(retryAt - await c.time.latest());
+            await attempt(c, "pool1", Status.Eligible);
+            assert.equal(await e.getMinipoolExitRequestCount(address(c, "pool1")), BigInt(i + 2));
+            await attempt(c, "pool1", Status.AlreadyRequested);
+        }
         await rejects(c, async () => (await participant(c)).finaliseChallenge(ch.id), "Challenge already finalised");
-        const next = await challenge(c, ["pool1"]);
-        const retryAt = last + await c.contracts.rocketDAOProtocolSettingsNetwork.getDidNotExitBase();
-        await c.time.advance(retryAt - await c.time.latest() - 1n);
-        await setTime(retryAt); await finalise(c, next);
-        assert.equal(await e.getRequestedEth(), 24n * ETH); assert.equal(await e.getMinipoolExitRequestCount(address(c, "pool1")), 2n);
+        assert.equal(await (await mock(c)).requestCount(), 0n);
     });
 
     it("rejects nonexistent challenges and direct unauthorized exit requests", async () => {
@@ -501,9 +684,12 @@ describe("RocketNetworkParticipation maximum minipool list", () => {
         assert(result.gasUsed < 12_000_000n); console.log(`        32-minipool finalization gas: ${result.gasUsed}`);
         assert.deepEqual(Array.from(events(c, result, "MinipoolChallengeFinalised")[0].args), [id, 32n, 0n]);
         assert.deepEqual(events(c, result, "MinipoolExitRequested").map(e => e.args[0]), args[0]);
+        assert.deepEqual(events(c, result, "MinipoolPerformanceExitRequired").map(e => e.args[0]), args[0]);
+        assert.equal(events(c, result, "ChallengeBondReleased").length, 1);
+        assert.deepEqual(await participationBondAccounting(c), before);
         const t = BigInt((await ethers.provider.getBlock(result.blockNumber))!.timestamp);
         const state = await exitState(c, names);
         assert.equal(state.requested, 520n * ETH); assert.equal(state.requests, 0n);
-        for (const member of state.members) { assert.equal(member.timer, t); assert.equal(member.count, 1n); assert.equal(member.expected, member.user); }
+        for (const member of state.members) { assert.equal(member.marked, true); assert.equal(member.timer, t); assert.equal(member.count, 1n); assert.equal(member.expected, member.user); }
     });
 });

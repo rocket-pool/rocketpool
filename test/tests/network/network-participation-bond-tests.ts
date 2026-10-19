@@ -59,6 +59,7 @@ async function getState(c: ProtocolCurrent) {
     supply: await c.contracts.rocketTokenRPL.totalSupply(),
     wallets: await Promise.all(['proposer', 'responder', 'responder2', 'megaProposer'].map(n => c.tokens.rplBalance(n))),
     exit: [await e.getRequestedEth(), await e.getVoluntaryEth(), await e.getMinipoolCooperativeExitStart(mini), await e.getMinipoolExpectedUserCapital(mini),
+      await e.getMinipoolPerformanceExitRequired(mini),
       await e.getMinipoolExitRequestCount(mini), await e.getMinipoolLastExit(mini), await e.getMegapoolCooperativeExitStart(mega, 0n),
       await e.getMegapoolExpectedUserCapital(mega, 0n), await e.getMegapoolExitType(mega, 0n), await e.getMegapoolOutstandingExitCount(mega)],
     validators: [Array.from(await pool.getValidatorInfo(0n)), await miniContract.getStatus(), await miniContract.getFinalised(), await miniContract.getUserDistributed(),
@@ -354,7 +355,12 @@ describe('RocketNetworkParticipation bonds', () => {
       await release(c, ch);
       await rejects(c, () => respond(c, ch), 'Challenge period has passed');
       await setSetting(c, 'exits.enabled', false);
-      await (await (await contract(c, 'outsider')).finaliseChallenge(ch.id)).wait();
+      const before = await rplStakingSnapshot(c, ch.actor);
+      const receipt = await (await (await contract(c, 'outsider')).finaliseChallenge(ch.id)).wait(); assert(receipt);
+      assert.equal(receipt.logs.filter(log => {
+        try { return c.contracts.rocketNetworkParticipation.interface.parseLog(log)?.name === 'ChallengeBondReleased'; } catch { return false; }
+      }).length, 0);
+      assert.deepEqual(await rplStakingSnapshot(c, ch.actor), before);
       assert.equal((await c.contracts.rocketNetworkParticipation.getChallengeBondDetails(newer.id)).settled, false);
       await rejects(c, async () => (await contract(c)).releaseChallengeBond(ch.id), 'Bond already settled');
     });
@@ -369,16 +375,40 @@ describe('RocketNetworkParticipation bonds', () => {
       await defeat(c, ch);
     });
 
-    it(`releases after ${kind} finalization and after an all-skipped overlapping list`, async () => {
+    it(`automatically releases on ${kind} finalization and on an all-skipped overlapping list`, async () => {
       const c = await load().ensure('current');
       const a = await challenge(c, mini);
       const b = await challenge(c, mini);
       await setTime(b.deadline + 1n);
-      await (await (await contract(c, 'outsider')).finaliseChallenge(a.id)).wait();
-      await (await (await contract(c, 'outsider')).finaliseChallenge(b.id)).wait();
-      await setSetting(c, 'exits.enabled', false);
-      await release(c, a);
-      await release(c, b);
+      for (const ch of [a, b]) {
+        const before = await rplStakingSnapshot(c, ch.actor);
+        const receipt = await (await (await contract(c, 'outsider')).finaliseChallenge(ch.id)).wait(); assert(receipt);
+        assert.deepEqual(event(c, receipt, 'ChallengeBondReleased'), [ch.id, await c.nodes.address(ch.actor), ch.bond]);
+        assert.deepEqual(event(c, receipt, mini ? 'MinipoolChallengeFinalised' : 'MegapoolChallengeFinalised'),
+          [ch.id, ch === a ? 1n : 0n, ch === a ? 0n : 1n]);
+        before.locked -= ch.bond;
+        assert.deepEqual(await rplStakingSnapshot(c, ch.actor), before);
+        assert.equal((await c.contracts.rocketNetworkParticipation.getChallengeBondDetails(ch.id)).settled, true);
+        await rejects(c, async () => (await contract(c)).releaseChallengeBond(ch.id), 'Bond already settled');
+        await rejects(c, async () => (await contract(c)).finaliseChallenge(ch.id), 'Challenge already finalised');
+      }
+    });
+
+    it(`rolls back ${kind} finalisation and exits when automatic bond unlocking fails`, async () => {
+      const c = await load().ensure('current');
+      const ch = await challenge(c, mini);
+      const fixture = await c.context.fixtures.storage.deploy('finalisation-unlock-fault');
+      const helper = StorageHelper__factory.connect(fixture.address, await c.context.guardian());
+      const lockKey = solidityPackedKeccak256(['string', 'address'], ['rpl.locked.node.amount', await c.nodes.address(ch.actor)]);
+      await helper.setUint(lockKey, 0n);
+      await setTime(ch.deadline + 1n);
+      const block = await ethers.provider.getBlockNumber();
+      await rejects(c, async () => (await contract(c, 'outsider')).finaliseChallenge(ch.id, { gasLimit: 12_000_000n }), 'Not enough locked RPL');
+      assert.equal((await c.contracts.rocketNetworkParticipation.queryFilter(c.contracts.rocketNetworkParticipation.filters.ChallengeBondReleased(), block + 1)).length, 0);
+      assert.equal((await c.contracts.rocketNetworkExit.queryFilter(c.contracts.rocketNetworkExit.filters.MinipoolPerformanceExitRequired(), block + 1)).length, 0);
+      await helper.setUint(lockKey, ch.bond);
+      await (await (await contract(c, 'outsider')).finaliseChallenge(ch.id)).wait();
+      assert.equal((await c.contracts.rocketNetworkParticipation.getChallengeBondDetails(ch.id)).settled, true);
     });
   }
 

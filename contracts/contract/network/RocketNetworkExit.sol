@@ -1,22 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.30;
 
-import {Math} from "@openzeppelin4/contracts/utils/math/Math.sol";
-
+import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 import {RocketDAOProtocolSettingsMegapoolInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMegapoolInterface.sol";
+import {RocketDAOProtocolSettingsNetworkInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 import {RocketDepositPoolInterface} from "../../interface/deposit/RocketDepositPoolInterface.sol";
-import {RocketNodeDepositInterface} from "../../interface/node/RocketNodeDepositInterface.sol";
-import {MinipoolStatus} from "../../types/MinipoolStatus.sol";
-import {BeaconStateVerifierInterface, VerifiedValidator} from "../../interface/util/BeaconStateVerifierInterface.sol";
-import {RocketBase} from "../RocketBase.sol";
-import {RocketMegapoolStorageLayout} from "../megapool/RocketMegapoolStorageLayout.sol";
 import {RocketMegapoolInterface} from "../../interface/megapool/RocketMegapoolInterface.sol";
 import {RocketMinipoolInterface} from "../../interface/minipool/RocketMinipoolInterface.sol";
 import {RocketMinipoolManagerInterface} from "../../interface/minipool/RocketMinipoolManagerInterface.sol";
-import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 import {RocketNetworkExitInterface} from "../../interface/network/RocketNetworkExitInterface.sol";
 import {RocketNetworkPenaltiesInterface} from "../../interface/network/RocketNetworkPenaltiesInterface.sol";
-import {RocketDAOProtocolSettingsNetworkInterface} from "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
+import {RocketNodeDepositInterface} from "../../interface/node/RocketNodeDepositInterface.sol";
+import {BeaconStateVerifierInterface, VerifiedValidator} from "../../interface/util/BeaconStateVerifierInterface.sol";
+import {MinipoolStatus} from "../../types/MinipoolStatus.sol";
+import {RocketBase} from "../RocketBase.sol";
+import {RocketMegapoolStorageLayout} from "../megapool/RocketMegapoolStorageLayout.sol";
+import {Math} from "@openzeppelin4/contracts/utils/math/Math.sol";
 
 /// @notice Handles cooperative and forced exits of Minipool and Megapool validators
 contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
@@ -25,6 +24,8 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
 
     event MegapoolExitRequested(address indexed megapoolAddress, uint256 indexed _validatorId, bytes pubkey);
     event MinipoolExitRequested(address indexed minipoolAddress, bytes pubkey);
+    event MinipoolPerformanceExitRequired(address indexed minipoolAddress);
+    event MinipoolExitRequestSkipped(address indexed minipoolAddress, MinipoolExitRequestStatus status, uint256 retryAt);
     event MinipoolPenalised(address indexed minipoolAddress, uint256 _amount);
     event MegapoolVoluntaryExitRecorded(address indexed megapoolAddress, uint256 indexed validatorId, uint256 expectedUserCapital);
     event MegapoolExitReconciled(address indexed megapoolAddress, uint256 indexed validatorId, ExitType exitType, uint256 expectedUserCapital);
@@ -42,20 +43,12 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
 
     // Modifiers
 
-    modifier onlyMinipoolExitRequester() {
+    /// @dev Requires the caller be either redemptions or participation contract
+    modifier onlyExitRequester() {
         require(
             msg.sender == getContractAddress("rocketNetworkRedemptions") ||
             msg.sender == getContractAddress("rocketNetworkParticipation"),
-            "Invalid minipool exit requester"
-        );
-        _;
-    }
-
-    modifier onlyMegapoolExitRequester() {
-        require(
-            msg.sender == getContractAddress("rocketNetworkRedemptions") ||
-            msg.sender == getContractAddress("rocketNetworkParticipation"),
-            "Invalid megapool exit requester"
+            "Invalid exit requester"
         );
         _;
     }
@@ -135,32 +128,82 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
         return getUint(megapoolOutstandingExitCountKey(_megapoolAddress));
     }
 
-    /// @notice Requests a specific Minipool to exit cooperatively
-    /// @param _minipoolAddress The address of the Minipool
-    function requestMinipoolExit(address _minipoolAddress) override external onlyMinipoolExitRequester onlyRegisteredMinipool(_minipoolAddress) {
-        // Check this Minipool is clear to exit
-        require(getMinipoolCooperativeExitStart(_minipoolAddress) == 0, "Minipool already requested to exit");
+    /// @notice Returns whether a successful performance challenge permanently requires this Minipool to exit
+    function getMinipoolPerformanceExitRequired(address _minipoolAddress) override public view returns (bool) {
+        return getBool(keccak256(abi.encodePacked("exit.performance.minipool.required", _minipoolAddress)));
+    }
+
+    /// @notice Records a persistent obligation, without accounting for capital until an exit is requested
+    /// @dev Previously validated challenge members may have completed or become unregistered since submission
+    function markMinipoolPerformanceExitRequired(address _minipoolAddress) override external onlyLatestContract("rocketNetworkParticipation", msg.sender) {
+        bytes32 key = keccak256(abi.encodePacked("exit.performance.minipool.required", _minipoolAddress));
+        if (!getBool(key)) {
+            setBool(key, true);
+            emit MinipoolPerformanceExitRequired(_minipoolAddress);
+        }
+        // No-op if already requested
+    }
+
+    /// @notice Returns current eligibility using live backoff settings
+    /// @dev retryAt is nonzero only while blocked by backoff. Terminal states take precedence over requests and backoff.
+    /// @param _minipoolAddress Address of the minipool to query
+    function getMinipoolExitRequestStatus(address _minipoolAddress) override public view returns (MinipoolExitRequestStatus status, uint256 retryAt) {
+        // Check if minipool exists
+        if (!getBool(keccak256(abi.encodePacked("minipool.exists", _minipoolAddress)))) {
+            return (MinipoolExitRequestStatus.Unregistered, 0);
+        }
+        // Query minipool and return derived request status
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
+        if (minipool.getFinalised()) {
+            return (MinipoolExitRequestStatus.Finalised, 0);
+        }
+        if (minipool.getUserDistributed()) {
+            return (MinipoolExitRequestStatus.UserDistributed, 0);
+        }
+        if (minipool.getStatus() != MinipoolStatus.Staking) {
+            return (MinipoolExitRequestStatus.NotStaking, 0);
+        }
+        if (getMinipoolCooperativeExitStart(_minipoolAddress) != 0) {
+            return (MinipoolExitRequestStatus.AlreadyRequested, 0);
+        }
+        // Check if elligible or not given the backoff settings
         uint256 requestCount = getMinipoolExitRequestCount(_minipoolAddress);
         if (requestCount > 0) {
-            uint256 delay = _applyBackoff(_getDidNotExitBase(), requestCount - 1);
-            require(block.timestamp >= getMinipoolLastExit(_minipoolAddress) + delay, "Not enough time has passed");
+            uint256 boundary = getMinipoolLastExit(_minipoolAddress) + _applyBackoff(_getDidNotExitBase(), requestCount - 1);
+            if (block.timestamp < boundary) {
+                // Minipool is in backoff period
+                return (MinipoolExitRequestStatus.Backoff, boundary);
+            }
         }
-        // Get contracts
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
-        RocketMinipoolManagerInterface minipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        require(minipool.getStatus() == MinipoolStatus.Staking, "Minipool is not staking");
-        require(!minipool.getFinalised(), "Minipool is finalised");
-        require(!minipool.getUserDistributed(), "User capital already distributed");
-        // Start the cooperative exit timer and set last exit attempt
-        _startMinipoolCooperativeExit(_minipoolAddress);
-        _setMinipoolLastExit(_minipoolAddress);
-        _setMinipoolExitRequestCount(_minipoolAddress, requestCount + 1);
-        // Increment requested ETH value
-        uint256 expectedUserCapital = minipool.getUserDepositBalance();
-        _increaseRequestedEth(expectedUserCapital, minipoolExpectedUserCapitalKey(_minipoolAddress));
-        // Emit events
-        bytes memory pubkey = minipoolManager.getMinipoolPubkey(_minipoolAddress);
-        emit MinipoolExitRequested(_minipoolAddress, pubkey);
+        // Lastly, minipool is elligible to be requested to exit
+        return (MinipoolExitRequestStatus.Eligible, 0);
+    }
+
+    /// @notice Permissionlessly requests an established obligation when eligible
+    /// @param _minipoolAddress Address of the minipool to attempt to exit
+    /// @return Returns true if the minipool was requested to exit, false if not elligible now
+    function tryRequestMarkedMinipoolExit(address _minipoolAddress) override external returns (bool) {
+        require(getMinipoolPerformanceExitRequired(_minipoolAddress), "Performance exit not required");
+        (MinipoolExitRequestStatus status, uint256 retryAt) = getMinipoolExitRequestStatus(_minipoolAddress);
+        if (status != MinipoolExitRequestStatus.Eligible) {
+            emit MinipoolExitRequestSkipped(_minipoolAddress, status, retryAt);
+            return false;
+        }
+        _requestMinipoolExit(_minipoolAddress);
+        return true;
+    }
+
+    /// @notice Requests a specific Minipool to exit cooperatively
+    /// @param _minipoolAddress The address of the Minipool
+    function requestMinipoolExit(address _minipoolAddress) override external onlyExitRequester {
+        (MinipoolExitRequestStatus status,) = getMinipoolExitRequestStatus(_minipoolAddress);
+        require(status != MinipoolExitRequestStatus.Unregistered, "Invalid minipool");
+        require(status != MinipoolExitRequestStatus.NotStaking, "Minipool is not staking");
+        require(status != MinipoolExitRequestStatus.Finalised, "Minipool is finalised");
+        require(status != MinipoolExitRequestStatus.UserDistributed, "User capital already distributed");
+        require(status != MinipoolExitRequestStatus.AlreadyRequested, "Minipool already requested to exit");
+        require(status != MinipoolExitRequestStatus.Backoff, "Not enough time has passed");
+        _requestMinipoolExit(_minipoolAddress);
     }
 
     /// @notice Forces a Minipool to exit if they have failed to exit cooperatively and their delegate supports an EL triggered exits
@@ -223,7 +266,7 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
     /// @dev Requests that a Megapool validator be exited
     /// @param _megapoolAddress Address of the Megapool which owns the validator
     /// @param _validatorId Internal ID of the validator for the given Megapool
-    function requestMegapoolExit(address _megapoolAddress, uint32 _validatorId) override external onlyMegapoolExitRequester onlyRegisteredMegapool(_megapoolAddress) {
+    function requestMegapoolExit(address _megapoolAddress, uint32 _validatorId) override external onlyExitRequester onlyRegisteredMegapool(_megapoolAddress) {
         RocketMegapoolInterface megapool = RocketMegapoolInterface(_megapoolAddress);
         (RocketMegapoolStorageLayout.ValidatorInfo memory validator, bytes memory pubkey) = megapool.getValidatorInfoAndPubkey(_validatorId);
         require(validator.staked, "Validator is not staking");
@@ -394,6 +437,23 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
 
     function _clearMegapoolCooperativeExit(address _megapoolAddress, uint32 _validatorId) internal {
         deleteUint(keccak256(abi.encodePacked("exit.request.megapool.time", _megapoolAddress, _validatorId)));
+    }
+
+    /// @dev Called only after eligibility has been checked; external failures must revert, not become skips
+    function _requestMinipoolExit(address _minipoolAddress) internal {
+        // Get contracts
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
+        RocketMinipoolManagerInterface minipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        // Start the cooperative exit timer and set last exit attempt
+        _startMinipoolCooperativeExit(_minipoolAddress);
+        _setMinipoolLastExit(_minipoolAddress);
+        _setMinipoolExitRequestCount(_minipoolAddress, getMinipoolExitRequestCount(_minipoolAddress) + 1);
+        // Increment requested ETH value
+        uint256 expectedUserCapital = minipool.getUserDepositBalance();
+        _increaseRequestedEth(expectedUserCapital, minipoolExpectedUserCapitalKey(_minipoolAddress));
+        // Emit events
+        bytes memory pubkey = minipoolManager.getMinipoolPubkey(_minipoolAddress);
+        emit MinipoolExitRequested(_minipoolAddress, pubkey);
     }
 
     function _recordMegapoolExit(address _megapoolAddress, uint32 _validatorId, ExitType _exitType, uint256 _expectedUserCapital) internal {
