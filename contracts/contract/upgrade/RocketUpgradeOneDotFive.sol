@@ -21,8 +21,8 @@ contract RocketUpgradeOneDotFive is RocketBase {
 
     // Upgrade ABIs
     bool public locked = false;
-    address[10] public addresses;
-    string[11] public abis;
+    address[11] public addresses;
+    string[12] public abis;
 
     // Construct
     constructor(
@@ -35,8 +35,8 @@ contract RocketUpgradeOneDotFive is RocketBase {
 
     // @notice Sets the addresses and ABIs of the upgrade
     function set(
-        address[10] memory _addresses,
-        string[11] memory _abis
+        address[11] memory _addresses,
+        string[12] memory _abis
     ) external {
         require(msg.sender == deployer, "Only deployer can set");
         require(!locked, "Already set");
@@ -65,9 +65,10 @@ contract RocketUpgradeOneDotFive is RocketBase {
         _upgradeContract("rocketDAOProtocolSettingsNetwork", addresses[5],  abis[5]);
         _upgradeContract("beaconStateVerifier", addresses[6],  abis[6]);
         _addContract("rocketNetworkParticipation", addresses[7],  abis[7]);
+        _addContract("bytes32SetStorage", addresses[10], abis[10]);
         _addContract("rocketNetworkExit", addresses[8],  abis[8]);
         _upgradeContract("rocketNetworkPenalties", addresses[9], abis[9]);
-        _upgradeABI("rocketMinipool", abis[10]);
+        _upgradeABI("rocketMinipool", abis[11]);
 
         // Execute delegate upgrade via factory
         address rocketMegapoolDelegateAddress = addresses[0];

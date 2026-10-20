@@ -146,6 +146,7 @@ import {
     RocketAuctionManager__factory as CurrentAuctionManagerFactory,
     RocketDAOProtocolSettingsAuction__factory as CurrentAuctionSettingsFactory,
     RocketUpgradeOneDotFive__factory,
+    Bytes32SetStorage__factory,
 } from "../bindings/current";
 import type { ProtocolContext } from "../context";
 import { getActiveAddress } from "../deployment";
@@ -307,6 +308,7 @@ export function connectCurrent(context: ProtocolContext): ProtocolCurrent {
         rocketNetworkVoting: CurrentNetworkVotingFactory.connect(getActiveAddress(state, "rocketNetworkVoting"), signer),
         rocketNetworkRevenues: CurrentNetworkRevenuesFactory.connect(getActiveAddress(state, "rocketNetworkRevenues"), signer),
         rocketNetworkExit: CurrentNetworkExitFactory.connect(getActiveAddress(state, "rocketNetworkExit"), signer),
+        bytes32SetStorage: Bytes32SetStorage__factory.connect(getActiveAddress(state, "bytes32SetStorage"), signer),
         rocketNetworkParticipation: CurrentNetworkParticipationFactory.connect(getActiveAddress(state, "rocketNetworkParticipation"), signer),
         rocketNetworkPenalties: CurrentNetworkPenaltiesFactory.connect(getActiveAddress(state, "rocketNetworkPenalties"), signer),
         rocketRewardsPool: CurrentRewardsPoolFactory.connect(getActiveAddress(state, "rocketRewardsPool"), signer),

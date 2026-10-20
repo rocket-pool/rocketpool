@@ -12,5 +12,6 @@ export * as node from "./node";
 export * as rewards from "./rewards";
 export * as token from "./token";
 export * as upgrade from "./upgrade";
+export * as util from "./util";
 export { RocketStorage__factory } from "./RocketStorage__factory";
 export { RocketVault__factory } from "./RocketVault__factory";

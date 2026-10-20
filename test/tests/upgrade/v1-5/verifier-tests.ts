@@ -60,6 +60,16 @@ describe("v1.4.1 verifier upgrade to v1.5", () => {
             assert.equal(new Interface(abi).formatJson(), current.contracts[name].interface.formatJson());
             assert.notEqual(await current.contracts[name].getAddress(), await load().historical.get("1.4.1", name).getAddress());
         }
+        const helperAddress = await current.contracts.bytes32SetStorage.getAddress();
+        assert.equal(await current.contracts.rocketStorage.getFunction("getAddress")(id("contract.addressbytes32SetStorage")), helperAddress);
+        assert.equal(await current.contracts.rocketStorage.getBool(solidityPackedKeccak256(["string", "address"], ["contract.exists", helperAddress])), true);
+        const upgrade = current.contracts.rocketUpgradeOneDotFive;
+        assert.equal(await upgrade.addresses(10), helperAddress);
+        const helperAbi = await current.contracts.rocketStorage.getString(id("contract.abibytes32SetStorage"));
+        assert.equal(await upgrade.abis(10), helperAbi);
+        assert.equal(new Interface(JSON.parse(pako.inflate(Buffer.from(helperAbi, "base64"), { to: "string" }))).formatJson(), current.contracts.bytes32SetStorage.interface.formatJson());
+        assert.equal(await upgrade.abis(11), await current.contracts.rocketStorage.getString(id("contract.abirocketMinipool")));
+        assert.equal(await current.contracts.rocketNetworkExit.getRequestedExitCount(), 0n);
         assert.equal(await current.contracts.rocketNetworkExit.getRequestedEth(), 0n);
         assert.equal(await current.contracts.rocketNetworkExit.getVoluntaryEth(), 0n);
     });
@@ -72,6 +82,7 @@ describe("v1.4.1 verifier upgrade to v1.5", () => {
         await asNetworkContract(current, "rocketNetworkRedemptions", async signer => {
             await (await networkExit.connect(signer).requestMegapoolExit(address, 1n)).wait();
         });
+        assert.deepEqual(Array.from(await networkExit.getRequestedExitAt(0)), [address, 1n, true]);
         const epoch = await currentEpoch(current) + 114n;
         await notify(current, 1n, epoch);
         await notify(current, 2n, epoch);

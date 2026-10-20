@@ -23,6 +23,20 @@ import type {
   TypedContractMethod,
 } from "../common";
 
+export declare namespace RocketNetworkExitInterface {
+  export type RequestedExitStruct = {
+    pool: AddressLike;
+    validatorId: BigNumberish;
+    isMegapool: boolean;
+  };
+
+  export type RequestedExitStructOutput = [
+    pool: string,
+    validatorId: bigint,
+    isMegapool: boolean
+  ] & { pool: string; validatorId: bigint; isMegapool: boolean };
+}
+
 export interface RocketNetworkExitInterface extends Interface {
   getFunction(
     nameOrSignature:
@@ -41,6 +55,9 @@ export interface RocketNetworkExitInterface extends Interface {
       | "getMinipoolLastExit"
       | "getMinipoolPerformanceExitRequired"
       | "getRequestedEth"
+      | "getRequestedExitAt"
+      | "getRequestedExitCount"
+      | "getRequestedExits"
       | "getVoluntaryEth"
       | "markMinipoolPerformanceExitRequired"
       | "notifyMegapoolExit"
@@ -125,6 +142,18 @@ export interface RocketNetworkExitInterface extends Interface {
   encodeFunctionData(
     functionFragment: "getRequestedEth",
     values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getRequestedExitAt",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getRequestedExitCount",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getRequestedExits",
+    values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "getVoluntaryEth",
@@ -223,6 +252,18 @@ export interface RocketNetworkExitInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getRequestedEth",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getRequestedExitAt",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getRequestedExitCount",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getRequestedExits",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -544,6 +585,20 @@ export interface RocketNetworkExit extends BaseContract {
 
   getRequestedEth: TypedContractMethod<[], [bigint], "view">;
 
+  getRequestedExitAt: TypedContractMethod<
+    [_index: BigNumberish],
+    [RocketNetworkExitInterface.RequestedExitStructOutput],
+    "view"
+  >;
+
+  getRequestedExitCount: TypedContractMethod<[], [bigint], "view">;
+
+  getRequestedExits: TypedContractMethod<
+    [_offset: BigNumberish, _limit: BigNumberish],
+    [RocketNetworkExitInterface.RequestedExitStructOutput[]],
+    "view"
+  >;
+
   getVoluntaryEth: TypedContractMethod<[], [bigint], "view">;
 
   markMinipoolPerformanceExitRequired: TypedContractMethod<
@@ -680,6 +735,23 @@ export interface RocketNetworkExit extends BaseContract {
   getFunction(
     nameOrSignature: "getRequestedEth"
   ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "getRequestedExitAt"
+  ): TypedContractMethod<
+    [_index: BigNumberish],
+    [RocketNetworkExitInterface.RequestedExitStructOutput],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "getRequestedExitCount"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "getRequestedExits"
+  ): TypedContractMethod<
+    [_offset: BigNumberish, _limit: BigNumberish],
+    [RocketNetworkExitInterface.RequestedExitStructOutput[]],
+    "view"
+  >;
   getFunction(
     nameOrSignature: "getVoluntaryEth"
   ): TypedContractMethod<[], [bigint], "view">;

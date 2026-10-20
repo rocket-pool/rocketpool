@@ -12,6 +12,7 @@ import {RocketNetworkExitInterface} from "../../interface/network/RocketNetworkE
 import {RocketNetworkPenaltiesInterface} from "../../interface/network/RocketNetworkPenaltiesInterface.sol";
 import {RocketNodeDepositInterface} from "../../interface/node/RocketNodeDepositInterface.sol";
 import {BeaconStateVerifierInterface, VerifiedValidator} from "../../interface/util/BeaconStateVerifierInterface.sol";
+import {Bytes32SetStorageInterface} from "../../interface/util/Bytes32SetStorageInterface.sol";
 import {MinipoolStatus} from "../../types/MinipoolStatus.sol";
 import {RocketBase} from "../RocketBase.sol";
 import {RocketMegapoolStorageLayout} from "../megapool/RocketMegapoolStorageLayout.sol";
@@ -36,6 +37,7 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
     uint256 constant internal farFutureEpoch = 2 ** 64 - 1;
     uint256 constant internal slotRecencyThreshold = 1 hours;
     uint256 constant internal validatorDeposit = 32 ether;
+    bytes32 constant internal requestedExitSetKey = keccak256("exit.requested.index");
 
     // Immutables
 
@@ -68,6 +70,30 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
     /// @notice Returns the amount of ETH expected to exit
     function getRequestedEth() override public view returns (uint256) {
         return getUint(keccak256(bytes("exit.requested.eth")));
+    }
+
+    /// @notice Number of requested exits awaiting reconciliation, excluding voluntary exits
+    function getRequestedExitCount() override public view returns (uint256) {
+        return _getBytes32SetStorage().getCount(requestedExitSetKey);
+    }
+
+    /// @notice Returns a requested exit by position, reverts if the position is out of bounds
+    function getRequestedExitAt(uint256 _index) override public view returns (RequestedExit memory) {
+        return _decodeRequestedExit(_getBytes32SetStorage().getItem(requestedExitSetKey, _index));
+    }
+
+    /// @notice Returns up to _limit outstanding requests starting at _offset
+    function getRequestedExits(uint256 _offset, uint256 _limit) override external view returns (RequestedExit[] memory entries) {
+        Bytes32SetStorageInterface bytes32SetStorage = _getBytes32SetStorage();
+        uint256 count = bytes32SetStorage.getCount(requestedExitSetKey);
+        if (_offset >= count || _limit == 0) {
+            return new RequestedExit[](0);
+        }
+        uint256 length = Math.min(_limit, count - _offset);
+        entries = new RequestedExit[](length);
+        for (uint256 i = 0; i < length; ++i) {
+            entries[i] = _decodeRequestedExit(bytes32SetStorage.getItem(requestedExitSetKey, _offset + i));
+        }
     }
 
     /// @notice Returns the amount of ETH expected from voluntarily exiting Megapool validators
@@ -415,6 +441,7 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
     }
 
     function _startMinipoolCooperativeExit(address _minipoolAddress) internal {
+        _getBytes32SetStorage().addItem(requestedExitSetKey, _encodeRequestedExit(_minipoolAddress, 0, false));
         setUint(keccak256(abi.encodePacked("exit.request.minipool.time", _minipoolAddress)), block.timestamp);
     }
 
@@ -427,15 +454,18 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
     }
 
     function _clearMinipoolCooperativeExit(address _minipoolAddress) internal {
+        _getBytes32SetStorage().removeItem(requestedExitSetKey, _encodeRequestedExit(_minipoolAddress, 0, false));
         deleteUint(keccak256(abi.encodePacked("exit.request.minipool.time", _minipoolAddress)));
         deleteBool(minipoolForceExitSubmittedKey(_minipoolAddress));
     }
 
     function _startMegapoolCooperativeExit(address _megapoolAddress, uint32 _validatorId) internal {
+        _getBytes32SetStorage().addItem(requestedExitSetKey, _encodeRequestedExit(_megapoolAddress, _validatorId, true));
         setUint(keccak256(abi.encodePacked("exit.request.megapool.time", _megapoolAddress, _validatorId)), block.timestamp);
     }
 
     function _clearMegapoolCooperativeExit(address _megapoolAddress, uint32 _validatorId) internal {
+        _getBytes32SetStorage().removeItem(requestedExitSetKey, _encodeRequestedExit(_megapoolAddress, _validatorId, true));
         deleteUint(keccak256(abi.encodePacked("exit.request.megapool.time", _megapoolAddress, _validatorId)));
     }
 
@@ -531,11 +561,9 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
         uint256 fee = getExitFee();
         uint256 requiredFee = fee * _validatorIds.length;
         require(msg.value >= requiredFee, "Insufficient exit fee");
-
         for (uint256 i = 0; i < _validatorIds.length; ++i) {
             _megapool.forceExit{value: fee}(_validatorIds[i]);
         }
-
         _refundExcessExitFee(requiredFee);
     }
 
@@ -588,6 +616,31 @@ contract RocketNetworkExit is RocketBase, RocketNetworkExitInterface {
             }
         }
         return Math.mulDiv(_base, result, calcBase);
+    }
+
+    function _getBytes32SetStorage() internal view returns (Bytes32SetStorageInterface) {
+        return Bytes32SetStorageInterface(getContractAddress("bytes32SetStorage"));
+    }
+
+    /// @dev Encodes an exit request into a single 32 byte word
+    function _encodeRequestedExit(address _pool, uint32 _validatorId, bool _isMegapool) internal pure returns (bytes32) {
+        //   0..159: minipool/megapool address
+        // 160..191: validator ID (0 for minipools)
+        // 192..199: kind (1=megapool, 0=minipool)
+        return
+            bytes32(uint256(uint160(_pool)) |
+            (uint256(_isMegapool ? _validatorId : 0) << 160) |
+            (uint256(_isMegapool ? 1 : 0) << 192));
+    }
+
+    /// @dev Decodes an exit request from a 32 byte word
+    function _decodeRequestedExit(bytes32 _value) internal pure returns (RequestedExit memory) {
+        uint256 value = uint256(_value);
+        return RequestedExit(
+            address(uint160(value)),
+            uint32(value >> 160),
+            uint8(value >> 192) == 1
+        );
     }
 
     // Key builders

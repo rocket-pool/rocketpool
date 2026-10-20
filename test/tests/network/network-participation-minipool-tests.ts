@@ -1,3 +1,4 @@
+import { assertRequestedExitIndex, getRequestedExitIdentities } from "../../scenarios/network/requested-exits";
 import { participationProofArgs, slotProofArgs, validatorProofArgs } from '../../scenarios/megapool/proof-encoding';
 import { prepareParticipationBonds, participationBondAccounting, assertParticipationBondLocked } from "../../scenarios/network/participation-bonds";
 import assert from "node:assert/strict";
@@ -88,7 +89,7 @@ async function exitState(c: ProtocolCurrent, names = ["pool0", "pool1", "pool2",
     }));
     const addresses = [await e.getAddress(), await c.contracts.rocketNetworkParticipation.getAddress(),
         await c.contracts.rocketTokenRETH.getAddress(), await c.contracts.rocketDepositPool.getAddress(), PREDEPLOY];
-    return { members, requested: await e.getRequestedEth(), voluntary: await e.getVoluntaryEth(),
+    return { members, requestedExits: await getRequestedExitIdentities(c), requested: await e.getRequestedEth(), voluntary: await e.getVoluntaryEth(),
         balances: await Promise.all(addresses.map(a => ethers.provider.getBalance(a))), requests: await (await mock(c)).requestCount() };
 }
 
@@ -192,6 +193,7 @@ async function finalise(c: ProtocolCurrent, ch: Challenge, requested = ch.names)
     assert.deepEqual(await participationBondAccounting(c), beforeBond);
     assert.equal((await c.contracts.rocketNetworkParticipation.getChallengeBondDetails(ch.id)).settled, true);
     const after = await exitState(c);
+    await assertRequestedExitIndex(c);
     const t = BigInt((await ethers.provider.getBlock(receipt.blockNumber))!.timestamp);
     let capital = 0n;
     for (const [i, member] of after.members.entries()) {
@@ -231,10 +233,12 @@ async function attempt(c: ProtocolCurrent, name: string, status: bigint, retryAt
         before.members[index].timer = time;
         before.members[index].expected = before.members[index].user;
         before.requested += before.members[index].user;
+        before.requestedExits.push([a, 0n, false]);
         assert.deepEqual(after, before);
         assert.equal(events(c, receipt, "MinipoolExitRequested").length, 1);
     }
     assert.equal(events(c, receipt, "MinipoolPerformanceExitRequired").length, 0);
+    await assertRequestedExitIndex(c);
     return receipt;
 }
 
@@ -604,7 +608,7 @@ describe("RocketNetworkParticipation minipools", () => {
             () => contract.finaliseChallenge(999n), () => contract.respondWithMinipoolValidator(...validatorProofArgs(...r.a)), () => contract.respondWithMinipoolParticipation(...participationProofArgs(...r.p))]) {
             await rejects(c, action, "Invalid challenge");
         }
-        await rejects(c, async () => c.contracts.rocketNetworkExit.connect(await c.context.actor("proposer")).requestMinipoolExit(address(c, "pool0")), "Invalid minipool exit requester");
+        await rejects(c, async () => c.contracts.rocketNetworkExit.connect(await c.context.actor("proposer")).requestMinipoolExit(address(c, "pool0")), "Invalid exit requester");
     });
 
     it("interleaves megapool and minipool challenges without cross-type responses or shared terminal state", async () => {

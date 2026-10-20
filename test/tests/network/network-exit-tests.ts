@@ -1,3 +1,4 @@
+import { assertRequestedExitIndex } from "../../scenarios/network/requested-exits";
 import { beaconProofs } from "../../scenarios/network/participation-proofs";
 import { validatorProofArgs } from '../../scenarios/megapool/proof-encoding';
 import assert from "node:assert/strict";
@@ -120,6 +121,7 @@ async function legacyPenaltyState(current: ProtocolCurrent, minipoolName: string
     const networkExit = current.contracts.rocketNetworkExit;
     return {
         penaltyRate: await current.minipools.penaltyRate(minipoolName),
+        requestedExits: await assertRequestedExitIndex(current),
         requestedEth: await networkExit.getRequestedEth(),
         expectedUserCapital: await networkExit.getMinipoolExpectedUserCapital(minipoolAddress),
         cooperativeExitStart: await networkExit.getMinipoolCooperativeExitStart(minipoolAddress),
@@ -165,6 +167,9 @@ async function requestMegapoolExit(current: ProtocolCurrent, validatorId: bigint
             validatorId,
         )).wait();
     });
+    const entries = await assertRequestedExitIndex(current);
+    const address = await current.megapools.address("node");
+    assert(entries.some(([pool, id, mega]) => mega && pool === address && id === validatorId));
 }
 
 async function requestMinipoolExit(current: ProtocolCurrent, minipoolAddress: string): Promise<void> {
@@ -173,6 +178,8 @@ async function requestMinipoolExit(current: ProtocolCurrent, minipoolAddress: st
             minipoolAddress,
         )).wait();
     });
+    const entries = await assertRequestedExitIndex(current);
+    assert(entries.some(([pool, id, mega]) => !mega && pool === minipoolAddress && id === 0n));
 }
 
 async function prepareStakingMegapool(current: ProtocolCurrent, count: number): Promise<void> {
@@ -196,7 +203,7 @@ describe("RocketNetworkExit megapool accounting", () => {
 
         await expectRevert(
             () => current.contracts.rocketNetworkExit.connect(random).requestMegapoolExit(megapoolAddress, 0n),
-            "Invalid megapool exit requester",
+            "Invalid exit requester",
         );
         await requestMegapoolExit(current, 0n);
         await expectRevert(
@@ -232,6 +239,7 @@ describe("RocketNetworkExit megapool accounting", () => {
         assert.equal(await networkExit.getMegapoolExpectedUserCapital(megapoolAddress, 0n), 28n * ETHER);
         assert.equal(await networkExit.getMegapoolExitType(megapoolAddress, 1n), 2n);
         assert.equal(await networkExit.getMegapoolExpectedUserCapital(megapoolAddress, 1n), 30n * ETHER);
+        await assertRequestedExitIndex(current);
         assert.equal(await networkExit.getRequestedEth(), 28n * ETHER);
         assert.equal(await networkExit.getVoluntaryEth(), 30n * ETHER);
         assert.equal(await networkExit.getMegapoolOutstandingExitCount(megapoolAddress), 2n);
@@ -239,10 +247,12 @@ describe("RocketNetworkExit megapool accounting", () => {
         // Cooperative notification preserves the existing requested classification
         await notifyMegapoolExitAndAssert(current, "node", 0n, await currentEpoch(current) + EXIT_WAIT);
         assert.equal(await networkExit.getMegapoolExitType(megapoolAddress, 0n), 1n);
+        await assertRequestedExitIndex(current);
         assert.equal(await networkExit.getRequestedEth(), 28n * ETHER);
 
         await current.time.advance(EXIT_WAIT * EPOCH_SECONDS);
         await finaliseMegapoolValidatorAndAssert(current, "node", 0n, 32n * ETHER);
+        await assertRequestedExitIndex(current);
         assert.equal(await networkExit.getRequestedEth(), 0n);
         assert.equal(await networkExit.getVoluntaryEth(), 30n * ETHER);
         assert.equal(await networkExit.getMegapoolExitType(megapoolAddress, 0n), 0n);
@@ -368,6 +378,7 @@ describe("RocketNetworkExit megapool triggered exits", () => {
         assert.equal(await receiver.balance(), refund);
         assert.equal(await ethers.provider.getBalance(networkExitAddress), 0n);
         assert.equal(await ethers.provider.getBalance(megapoolAddress), megapoolBalanceBefore);
+        await assertRequestedExitIndex(current);
         assert.equal(await networkExit.getRequestedEth(), 28n * ETHER);
         assert.equal(await networkExit.getMegapoolExitType(megapoolAddress, 0n), 1n);
         assert.notEqual(await networkExit.getMegapoolCooperativeExitStart(megapoolAddress, 0n), 0n);
@@ -376,10 +387,12 @@ describe("RocketNetworkExit megapool triggered exits", () => {
             () => networkExit.connect(random).forceMegapoolExit(megapoolAddress, 0n, { value: fee }),
             "Already notified",
         );
+        await assertRequestedExitIndex(current);
         assert.equal(await networkExit.getRequestedEth(), 28n * ETHER);
 
         await current.time.advance(EXIT_WAIT * EPOCH_SECONDS);
         await finaliseMegapoolValidatorAndAssert(current, "node", 0n, 32n * ETHER);
+        await assertRequestedExitIndex(current);
         assert.equal(await networkExit.getRequestedEth(), 0n);
         assert.equal(await networkExit.getMegapoolExitType(megapoolAddress, 0n), 0n);
     });
@@ -414,6 +427,7 @@ describe("RocketNetworkExit megapool triggered exits", () => {
         );
         assert.equal((await megapool.getValidatorInfo(0n)).exiting, false);
         assert.equal(await predeploy.requestCount(), 0n);
+        await assertRequestedExitIndex(current);
         assert.equal(await networkExit.getRequestedEth(), 28n * ETHER);
     });
 
@@ -840,6 +854,7 @@ describe("RocketNetworkExit bounded bond release", () => {
             rewards: await megapool.getPendingRewards(),
             active: await megapool.getActiveValidatorCount(),
             locked: await megapool.getLockedValidatorCount(),
+            requestedExits: await assertRequestedExitIndex(current),
             requestedEth: await networkExit.getRequestedEth(),
             voluntaryEth: await networkExit.getVoluntaryEth(),
             outstanding: await networkExit.getMegapoolOutstandingExitCount(megapoolAddress),
@@ -1099,6 +1114,7 @@ describe("RocketNetworkExit dissolved validators", () => {
             bond: await megapool.getNodeBond(),
             userCapital: await megapool.getUserCapital(),
             refund: await megapool.getRefundValue(),
+            requestedExits: await assertRequestedExitIndex(current),
             requestedEth: await networkExit.getRequestedEth(),
             voluntaryEth: await networkExit.getVoluntaryEth(),
             outstanding: await networkExit.getMegapoolOutstandingExitCount(megapoolAddress),
@@ -1199,6 +1215,7 @@ describe("RocketNetworkExit megapool exit retries", () => {
             refund: await megapool.getRefundValue(),
             bond: await megapool.getNodeBond(),
             userCapital: await megapool.getUserCapital(),
+            requestedExits: await assertRequestedExitIndex(current),
             requestedEth: await networkExit.getRequestedEth(),
             voluntaryEth: await networkExit.getVoluntaryEth(),
             exitType: await networkExit.getMegapoolExitType(megapoolAddress, 0n),
@@ -1269,6 +1286,7 @@ describe("RocketNetworkExit megapool exit retries", () => {
             await current.time.advance(EXIT_WAIT * EPOCH_SECONDS);
             await finaliseMegapoolValidatorAndAssert(current, "node", 0n, 32n * ETHER);
             assert.equal(await megapool.getExitingValidatorCount(), 0n);
+            await assertRequestedExitIndex(current);
             assert.equal(await networkExit.getRequestedEth(), 0n);
             assert.equal(await networkExit.getVoluntaryEth(), 0n);
             assert.equal(await networkExit.getMegapoolOutstandingExitCount(megapoolAddress), 0n);
@@ -1438,6 +1456,7 @@ describe("RocketNetworkExit minipool triggered exits", () => {
         assert.equal(await ethers.provider.getBalance(networkExitAddress), 0n);
         assert.equal(await ethers.provider.getBalance(minipool.address), minipoolBalanceBefore);
         assert.equal(await networkExit.getMinipoolCooperativeExitStart(minipool.address), requestTime);
+        await assertRequestedExitIndex(current);
         assert.equal(await networkExit.getRequestedEth(), requestedEth);
         assert.equal(await networkExit.getMinipoolExpectedUserCapital(minipool.address), 16n * ETHER);
         await expectRevert(
@@ -1547,6 +1566,7 @@ describe("RocketNetworkExit minipool triggered exits", () => {
             "Minipool is finalised",
         );
         assert.equal(await predeploy.requestCount(), 0n);
+        await assertRequestedExitIndex(current);
         assert.equal(await networkExit.getRequestedEth(), 16n * ETHER);
     });
 });
@@ -1572,7 +1592,7 @@ describe("RocketNetworkExit minipool accounting", () => {
 
         await expectRevert(
             () => networkExit.connect(random).requestMinipoolExit(minipoolAddress),
-            "Invalid minipool exit requester",
+            "Invalid exit requester",
         );
         await asNetworkContract(current, "rocketNetworkRedemptions", async signer => {
             await (await networkExit.connect(signer).requestMinipoolExit(minipoolAddress)).wait();
@@ -1580,6 +1600,7 @@ describe("RocketNetworkExit minipool accounting", () => {
 
         assert.equal(await networkExit.getMinipoolExitRequestCount(minipoolAddress), 1n);
         assert.equal(await networkExit.getMinipoolExpectedUserCapital(minipoolAddress), 16n * ETHER);
+        await assertRequestedExitIndex(current);
         assert.equal(await networkExit.getRequestedEth(), 16n * ETHER);
         await expectRevert(
             () => networkExit.connect(random).settleMinipoolExit(minipoolAddress),
@@ -1591,9 +1612,11 @@ describe("RocketNetworkExit minipool accounting", () => {
             expectedUser: 16n * ETHER,
             expectedNode: 16n * ETHER,
         });
+        await assertRequestedExitIndex(current);
         assert.equal(await networkExit.getRequestedEth(), 16n * ETHER);
 
         await (await networkExit.connect(random).settleMinipoolExit(minipoolAddress)).wait();
+        await assertRequestedExitIndex(current);
         assert.equal(await networkExit.getRequestedEth(), 0n);
         assert.equal(await networkExit.getMinipoolExpectedUserCapital(minipoolAddress), 0n);
         assert.equal(await networkExit.getMinipoolCooperativeExitStart(minipoolAddress), 0n);
@@ -1656,6 +1679,7 @@ describe("RocketNetworkExit legacy minipool penalties", () => {
             assert.equal(await current.minipools.penaltyRate(name), expectedRate);
             assert.deepEqual(await legacyPenaltyState(current, name), {
                 penaltyRate: expectedRate,
+                requestedExits: [],
                 requestedEth: 0n,
                 expectedUserCapital: 0n,
                 cooperativeExitStart: 0n,
@@ -1712,6 +1736,7 @@ describe("RocketNetworkExit legacy minipool penalties", () => {
             assert.equal(minipoolPenaltyAmount(networkExit, receipt), nominalPenalty);
             assert.equal(await current.minipools.penaltyRate("pool16"), cumulativeRate);
             assert.equal(await networkExit.getMinipoolExitRequestCount(minipool.address), cycle + 1n);
+            await assertRequestedExitIndex(current);
             assert.equal(await networkExit.getRequestedEth(), 0n);
             assert.equal(await networkExit.getMinipoolCooperativeExitStart(minipool.address), 0n);
         }
@@ -1931,6 +1956,7 @@ describe("RocketNetworkExit legacy minipool penalties", () => {
 
         await penaliseLegacyMinipool(current, "pool16", semanticProofTimestamp);
         assert.equal(await current.minipools.penaltyRate("pool16"), parseEther("0.00625"));
+        await assertRequestedExitIndex(current);
         assert.equal(await networkExit.getRequestedEth(), 0n);
     });
 
@@ -1959,6 +1985,7 @@ describe("RocketNetworkExit legacy minipool penalties", () => {
 
         assert.equal(await predeploy.lastCaller(), minipool.address);
         assert.equal(await current.minipools.penaltyRate("pool16"), 0n);
+        await assertRequestedExitIndex(current);
         assert.equal(await networkExit.getRequestedEth(), 16n * ETHER);
         assert.equal(await networkExit.getMinipoolCooperativeExitStart(minipool.address), requestTime);
     });
@@ -1976,6 +2003,7 @@ describe("RocketNetworkExit legacy minipool penalties", () => {
         await penaliseAfterCooperativePhase(current, "pool16");
 
         assert.equal(await current.minipools.penaltyRate("pool16"), parseEther("0.00625"));
+        await assertRequestedExitIndex(current);
         assert.equal(await networkExit.getRequestedEth(), 0n);
         assert.equal(await networkExit.getMinipoolCooperativeExitStart(minipool.address), 0n);
     });

@@ -148,6 +148,7 @@ export interface CurrentContracts {
     rocketNetworkVoting: Current.RocketNetworkVoting;
     rocketNetworkRevenues: Current.RocketNetworkRevenues;
     rocketNetworkExit: Current.RocketNetworkExit;
+    bytes32SetStorage: Current.Bytes32SetStorage;
     rocketNetworkParticipation: Current.RocketNetworkParticipation;
     rocketNetworkPenalties: Current.RocketNetworkPenalties;
     rocketRewardsPool: Current.RocketRewardsPool;

@@ -117,6 +117,7 @@ const contractNameMap = {
     rocketDAOSecurityUpgrade: 'RocketDAOSecurityUpgrade',
     addressQueueStorage: 'AddressQueueStorage',
     addressSetStorage: 'AddressSetStorage',
+    bytes32SetStorage: 'Bytes32SetStorage',
     beaconStateVerifier: 'BeaconStateVerifier',
     linkedListStorage: 'LinkedListStorage',
 };

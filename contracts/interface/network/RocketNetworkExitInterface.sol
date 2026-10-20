@@ -1,8 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >0.5.0 <0.9.0;
+pragma abicoder v2;
 
 
 interface RocketNetworkExitInterface {
+    struct RequestedExit {
+        address pool;
+        uint32 validatorId;
+        bool isMegapool;
+    }
+
     enum ExitType {
         None,
         Requested,
@@ -20,6 +27,9 @@ interface RocketNetworkExitInterface {
     }
 
     function getRequestedEth() external view returns (uint256);
+    function getRequestedExitCount() external view returns (uint256);
+    function getRequestedExitAt(uint256 _index) external view returns (RequestedExit memory);
+    function getRequestedExits(uint256 _offset, uint256 _limit) external view returns (RequestedExit[] memory);
     function getVoluntaryEth() external view returns (uint256);
     function getExitFee() external view returns (uint256);
     function getMinipoolCooperativeExitStart(address _minipoolAddress) external view returns (uint256);

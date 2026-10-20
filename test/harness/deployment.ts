@@ -375,6 +375,7 @@ const currentUpgradeContracts = {
     rocketNetworkParticipation: "RocketNetworkParticipation",
     rocketNetworkExit: "RocketNetworkExit",
     rocketNetworkPenalties: "RocketNetworkPenalties",
+    bytes32SetStorage: "Bytes32SetStorage",
 } as const;
 
 export async function upgradeToCurrent(state: DeploymentState): Promise<void> {

@@ -5,6 +5,7 @@ const path = require('path');
 const { runTypeChain } = require('typechain');
 
 const currentArtifactPaths = [
+    'artifacts/contracts/contract/util/Bytes32SetStorage.sol/Bytes32SetStorage.json',
     'artifacts/contracts/contract/RocketStorage.sol/RocketStorage.json',
     'artifacts/contracts/contract/RocketVault.sol/RocketVault.json',
     'artifacts/contracts/contract/auction/RocketAuctionManager.sol/RocketAuctionManager.json',

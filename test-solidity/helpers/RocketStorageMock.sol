@@ -48,6 +48,10 @@ contract RocketStorageMock {
         return bytes32s[_key];
     }
 
+    function deleteBytes32(bytes32 _key) external {
+        delete bytes32s[_key];
+    }
+
     function setBytes32(bytes32 _key, bytes32 _value) external {
         bytes32s[_key] = _value;
     }
