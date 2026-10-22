@@ -181,10 +181,6 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
         nextWithdrawalIndex: withdrawalProof.withdrawal.index - withdrawalProof.withdrawalNum,
         witnesses: [],
     };
-    const validatorBalanceProof = {
-        balanceChunk: ethers.ZeroHash,
-        witnesses: [],
-    };
     await rocketMegapoolManager.connect(megapool.runner).notifyFinalBalance(
         megapool.target,
         validatorId,
@@ -195,7 +191,6 @@ export async function notifyFinalBalanceValidator(megapool, validatorId, finalBa
             validatorProof,
             slotProof,
             previousNextWithdrawalIndexProof,
-            validatorBalanceProof,
         ),
     );
     const data2 = await getData();

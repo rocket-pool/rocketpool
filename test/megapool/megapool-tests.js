@@ -2050,10 +2050,6 @@ export default function() {
                         nextWithdrawalIndex: withdrawalProof.withdrawal.index - withdrawalProof.withdrawalNum,
                         witnesses: [],
                     };
-                    const validatorBalanceProof = {
-                        balanceChunk: ethers.ZeroHash,
-                        witnesses: [],
-                    };
 
                     // Mock exiting validator by sending final balance to megapool
                     await owner.sendTransaction({
@@ -2073,7 +2069,6 @@ export default function() {
                                 validatorProof,
                                 slotProof,
                                 previousNextWithdrawalIndexProof,
-                                validatorBalanceProof,
                             ),
                         ),
                         'Was able to notify final balance with mismatching validators',

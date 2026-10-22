@@ -56,19 +56,12 @@ pragma solidity >0.5.0 <0.9.0;
         bytes32[] witnesses;
     }
 
-    /// Proof of the packed BeaconState.balances chunk containing a validator balance
-    struct ValidatorBalanceProof {
-        bytes32 balanceChunk;
-        bytes32[] witnesses;
-    }
-
     /// Canonical payload for final balance proof version 2 (post-Gloas)
     struct FinalBalanceProofBundleV2 {
         WithdrawalProof withdrawalProof;
         ValidatorProof validatorProof;
         SlotProof slotProof;
         NextWithdrawalIndexProof previousNextWithdrawalIndexProof;
-        ValidatorBalanceProof validatorBalanceProof;
     }
 
     /// Fork-independent result returned by a successfully verified validator proof bundle

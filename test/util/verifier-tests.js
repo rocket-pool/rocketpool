@@ -519,189 +519,6 @@ export default function() {
             assert.equal(await verifier.verifyValidatorProof(slotTimestamp, slot, proof), true);
         });
 
-        it(printTitle('BeaconStateVerifier', 'Can verify validator balance with real post-Gloas state proof'), async () => {
-            const beaconRoots = await BeaconStateVerifier.deployed();
-            const rocketStorage = await artifacts.require('RocketStorage').deployed();
-            const verifier = await artifacts.require('BeaconStateVerifierHarness').clone(
-                rocketStorage.target,
-                8192n,
-                [0n, 0n, 0n, 0n, 0n, 0n, 80000n],
-                beaconRoots.target,
-            );
-
-            const slot = 313311n;
-            const balanceSlot = 313310n;
-            const slotTimestamp = slot * 12n;
-            const validatorIndex = 49n;
-            const blockRoot = '0x36d3092e8bc10fa1294a0462992ca1440d10ccf261c3d9dd3e2b8ed26c3bd3b8';
-            await beaconRoots.setBlockRoot(slotTimestamp, blockRoot);
-
-            // Proof generated from real beacon state data on glamsterdam-devnet-7
-            const proof = {
-                balanceChunk: '0xef124452f0000000ac6d0558f0000000cea4635bf000000050489659f0000000',
-                witnesses: [
-                    '0xeb56f753f0000000de6fab58f00000004168365ff0000000c441c869f0000000',
-                    '0xd65f415f9b7dd1657c5aa3e4a543a604a4e113d5f24a2afeee008a400ca368e7',
-                    '0x7dc7397fa901396efa3760afaceeba28281c568ebf170efc955473ef28ebbe7c',
-                    '0x07880735040e2ac2a8abab18e3492f7a790e4b61821d6a14969368f50ae6c69b',
-                    '0x197e92b72ea52373b23f81c71dd8a0787be682996bda26fb6dde53a05b2e09dd',
-                    '0xcb1646df72c5df69d08125a3dcc2cc289b0dc723f879ecb0345bda8b6630e6c1',
-                    '0x000050d6dc0100000000000000000000d8e450d6dc010000aa677f4ef0000000',
-                    '0x4eaf070000000000000000000000000000000000000000000000000000000000',
-                    '0x386c121d11b62af2671572f49dc6217c887c1e288a9eb29a233f0a3588d14b36',
-                    '0x831cc415b9a3c2f9bf516582abf2830f9527209cf3218a134c323282c7d8ce6a',
-                    '0xa8683c393f9820925081ee90893003ea8023c99117487faeb0dc1fc341ed7c12',
-                    '0xd5bcda6faf58ad26aa7126b8d484435aa9c6f73f57c7f7aa05c7f272166e0e4a',
-                    '0x7a609eef109996fd051989b13372c320bc48feecf9f489cf326b4cc7479b58fc',
-                    '0xe2eded9fe5654eba7c0fb9f8e3ef91135ba91f6a22ae8e42175720c85f9cbfc3',
-                    '0xc024566a00000000000000000000000000000000000000000000000000000000',
-                    '0xffffffffff3f0000000000000000000000000000000000000000000000000000',
-                    '0x4c7c73bf2bd0b1419ba37b84df109869272621e88e458e63c3344ab4b9957387',
-                    '0xec0613b85e2af9902fa85a8ab723262e77f3d35a8d39c4b29cecc691d6507afb',
-                    '0xa5ecadb652a7b63fc6988868cb4d8448f44cfc893ef2c8386eefe2cd687b1a8d',
-                    '0xf14f4caf0530cb46f810a6fa4db3fed7a4c814a8598d66144fc4cfd63b60a2d0',
-                    '0xda54850c334bdb2a2d6dcc63f1732c4eccbebf0307e16291b4459438bd0a1544',
-                    '0x3baeb8124f18ac63a65cf08ec22ac6130a657c2437d460d2d64792f6ec79f963',
-                    '0x84cd1276fa8ab9161bd09eaae9160f6c02a60395e60efbec6d32b53c763b29a0',
-                    '0xc69f8e08932e668e3a1893beb258bb2c9664c45a3232754ad91fc8ee72cd92f1',
-                    '0x9e00a958a07259d085a1353e47e5a72ac1b59914d7add3ea2f9aa0a8cedf67da',
-                    '0xddffa5716bf5e1c798ee4bebf7b419259e94823729052f6378f698b471226c75',
-                    '0x121c0e8fedff3043f6c5e96577310286e488258bd67932787f7aee65c041c000',
-                    '0xe1370dfbe8c5cb73536f0ed8466e8d3d7f088123c9e936fe4e5311f1803120e1',
-                    '0x315a292bcd969c9a06cb81d50f73a38b16607d63219dbbd8d6014c498c96e916',
-                    '0x4b726e233451bd18fc73bf2c7be86b26afefbe39a5a84215832c07500dbad986',
-                    '0xfa4f2a42c3db80ea739a203e82076243c3130998ce30e00491bc457077912cae',
-                    '0x6592e7a291cb32b4cac2471d3f90143de4f2fd7c58fbf0fedacb575b27d1c4a6',
-                    '0x4050dc470dbe60edece0203793b84ea19bc1f11bbaca2903e835ec462d224c3d',
-                    '0xe420eb24060044036eb7832913e60f823d49697106cb10dc8639dac610747fb2',
-                    '0x00b068b1f2e5f6a90116aad75740ba8e98647434297425989ba565b81881ac04',
-                    '0xc024566a00000000000000000000000000000000000000000000000000000000',
-                    '0xffffffffff3f0000000000000000000000000000000000000000000000000000',
-                    '0xb2f812271e9e9fb65dfb180abc303257fb399e6f7abd7d34bcaae366638eafe0',
-                    '0x1bcc86e680437567fc58d387d364b86e1e5df33648d7c000cfbb5d0b11e81bcb',
-                    '0x2e51e71f56dcc4976c11d43e9b8adb3acb89ac39b0769d6b6bbf6672eb70ec21',
-                ],
-            };
-
-            assert.equal(
-                await verifier.verifyValidatorBalance(slotTimestamp, slot, balanceSlot, validatorIndex, proof),
-                true,
-            );
-            assert.equal(
-                await verifier.verifyValidatorBalance(slotTimestamp, slot, balanceSlot, validatorIndex, {
-                    ...proof,
-                    balanceChunk: '0xee124452f0000000ac6d0558f0000000cea4635bf000000050489659f0000000',
-                }),
-                false,
-            );
-        });
-
-        it(printTitle('BeaconStateVerifier', 'Can verify historical validator balance with real post-Gloas state proof'), async () => {
-            const beaconRoots = await BeaconStateVerifier.deployed();
-            const rocketStorage = await artifacts.require('RocketStorage').deployed();
-            const verifier = await artifacts.require('BeaconStateVerifierHarness').clone(
-                rocketStorage.target,
-                8192n,
-                [0n, 0n, 0n, 0n, 0n, 0n, 80000n],
-                beaconRoots.target,
-            );
-
-            const slot = 313311n;
-            const balanceSlot = 303310n;
-            const slotTimestamp = slot * 12n;
-            const validatorIndex = 49n;
-            const blockRoot = '0x36d3092e8bc10fa1294a0462992ca1440d10ccf261c3d9dd3e2b8ed26c3bd3b8';
-            await beaconRoots.setBlockRoot(slotTimestamp, blockRoot);
-
-            // Historical proof generated from real beacon state data on glamsterdam-devnet-7
-            const proof = {
-                balanceChunk: '0x97011344f000000075e8ca4af0000000f07bdc50f0000000e205284df0000000',
-                witnesses: [
-                    '0xb3c10147f00000008b6ee34cf00000000facbb54f00000004c83e35af0000000',
-                    '0xdcaa015682f998e2d5fa6cdd92c19007986794de7e04a66d5c9b4ff2c9d2231b',
-                    '0x33b8eb441fd81018c7c1e5d33cfbf2cf22cf5249e589a8300a9cc0fe42696847',
-                    '0xe53e5442d6ec5f9f7b7a266fd2a10234a9e86e4ccefb9bc6229b3a0f123d916a',
-                    '0x775844349dd8d43ab594b3ee19c1e6813733cfbbfba69400da251d86b188d910',
-                    '0x0f83cc8e8742e807487f676ca1ab73e74d6eea3eb6c7db98b789a62f369bbf71',
-                    '0x6c205ed6dc01000000000000000000001d8363d6dc010000d585fe41f0000000',
-                    '0x4eaf070000000000000000000000000000000000000000000000000000000000',
-                    '0xc2f71386993c8a7eed10eb2716fa7d2865c3deaee27cfeffaef851f5c565471a',
-                    '0x588069512ef2d1f6197811b7e730454148793800ec4372db40f79bd3f636d616',
-                    '0x536e7026706494434135d31506f9d096364abb5c21808d217a82be502c6c9fe8',
-                    '0x8bff96a684b64f4de872ff5e5bc0e326b45ba04f24b392f8937b5cd5a70b425f',
-                    '0x5819362a6e60d8bd522068f29a0acfa18f91dfa8e4240476933301960b6139a8',
-                    '0xa5d221ca9b9c7dfe0817099bb3fb9bd5e3b78ea3fe40af10af7c5cab42a8f4e3',
-                    '0xc024566a00000000000000000000000000000000000000000000000000000000',
-                    '0xffffffffff3f0000000000000000000000000000000000000000000000000000',
-                    '0xc12d2089d06a72c5e84ea02ad40e16861046fb0034e2c916fdf7141cd2c1cde9',
-                    '0x717f76067a5dc21217873d502962e9757ff485bcbfe521ee36cc14dccf2231c6',
-                    '0x45ff1a1d079edf2f0a4570fdbcdb57dc9d57eac80f408b005f643cbaa91cde82',
-                    '0x36fb560a2106219bff9cff53687a51cbdbb667286ed2b77f0a2786a0aeaab7db',
-                    '0x231e88b8a95b16121b25ecd3a48de0d4bbdbbeab6c086ffa6fff741fd0bd2d28',
-                    '0x84c52e8bd94b1e2b5326d71500368cd71f78ef9cc1b4c49ce82426eb49c0201a',
-                    '0x63a4229406afcdf1653a12d46a452ba3b3b8a773137033f4c5c9dde0d35c3009',
-                    '0xf1083fb2333e46dbe58e7fbd3cd376e2d88de52a41dd8a5739510e701ec8cabe',
-                    '0x714fa0f628bae915eb4e7d501441fe9e26d0636809d38f36e68bc853fe5c97e1',
-                    '0x24ccee59776b4f8306fb153bd6cdaed5dcc200f4cef88237d88a15ac0820dfc5',
-                    '0x11f5f791b22f1c01e103bf8c216e6b3fdac1cd1d41789178cf2bd347d3567c07',
-                    '0xe1370dfbe8c5cb73536f0ed8466e8d3d7f088123c9e936fe4e5311f1803120e1',
-                    '0x315a292bcd969c9a06cb81d50f73a38b16607d63219dbbd8d6014c498c96e916',
-                    '0x727efcad6777221483b1606b82a1343a41a185c5ff3793426e7d68e2c5c88135',
-                    '0x18df258c3d054fe2981007e500f053f4c6d9a36fd11cea2495a69df3c82a9415',
-                    '0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b',
-                    '0x2728533d29a33dca9e6b63943f4f9d7358a837fb3b9fe767db0e897baf13c47d',
-                    '0xc78009fdf07fc56a11f122370658a353aaa542ed63e44c4bc15ff4cd105ab33c',
-                    '0x536d98837f2dd165a55d5eeae91485954472d56f246df256bf3cae19352a123c',
-                    '0x5e3d28abbba6710fc37ed88793527bae6915b08c8aedc1981faf415b31af77ee',
-                    '0xd88ddfeed400a8755596b21942c1497e114c302e6118290f91e6772976041fa1',
-                    '0x87eb0ddba57e35f6d286673802a4af5975e22506c7cf4c64bb6be5ee11527f2c',
-                    '0x26846476fd5fc54a5d43385167c95144f2643f533cc85bb9d16b782f8d7db193',
-                    '0x506d86582d252405b840018792cad2bf1259f1ef5aa5f887e13cb2f0094f51e1',
-                    '0xffff0ad7e659772f9534c195c815efc4014ef1e1daed4404c06385d11192e92b',
-                    '0x6cf04127db05441cd833107a52be852868890e4317e6a02ab47683aa75964220',
-                    '0xb7d05f875f140027ef5118a2247bbb84ce8f2f0f1123623085daf7960c329f5f',
-                    '0xdf6af5f5bbdb6be9ef8aa618e4bf8073960867171e29676f8b284dea6a08a85e',
-                    '0xb58d900f5e182e3c50ef74969ea16c7726c549757cc23523c369587da7293784',
-                    '0xd49a7502ffcfb0340b1d7885688500ca308161a7f96b62df9d083b71fcc8f2bb',
-                    '0x8fe6b1689256c0d385f42f5bbe2027a22c1996e110ba97c171d3e5948de92beb',
-                    '0x8d0d63c39ebade8509e0ae3c9c3876fb5fa112be18f905ecacfecb92057603ab',
-                    '0x95eec8b2e541cad4e91de38385f2e046619f54496c2382cb6cacd5b98c26f5a4',
-                    '0xf893e908917775b62bff23294dbbe3a1cd8e6cc1c35b4801887b646a6f81f17f',
-                    '0xcddba7b592e3133393c16194fac7431abf2f5485ed711db282183c819e08ebaa',
-                    '0x8a8d7fe3af8caa085a7639a832001457dfb9128a8061142ad0335629ff23ff9c',
-                    '0xfeb3c337d7a51a6fbf00b9e34c52e1c9195c969bd4e7a0bfd51d5c5bed9c1167',
-                    '0xe71f0aa83cc32edfbefa9f4d3e0174ca85182eec9f3a09f6a6c0df6377a510d7',
-                    '0x2600000000000000000000000000000000000000000000000000000000000000',
-                    '0x0000000000000000000000000000000000000000000000000000000000000000',
-                    '0x40a6466913b4792a731aa0c7ee373a4aa8accbe1fa9f714ca0f29316a8219528',
-                    '0x83bacc1cdaa6a6d4c8935e5f993c65e9dcd84e87e5e2e9b0fa667860646ab77e',
-                    '0xba772a825d24675ec95268e5353c10cc72fdc1b49fd2dbb780de72033f362672',
-                    '0x3dfe8762f00602ee0d5a9314118e0fd355a8faccf94acf34e60d39d4b7a371b2',
-                    '0x9efde052aa15429fae05bad4d0b1d7c64da64d03d7a1854a588c2cb8430c0d30',
-                    '0x0000000000000000000000000000000000000000000000000000000000000000',
-                    '0x3049b83a35d021acb1ff145b4551f07d297c16bc9f743674e5375cebdeb10866',
-                    '0x00b068b1f2e5f6a90116aad75740ba8e98647434297425989ba565b81881ac04',
-                    '0xc024566a00000000000000000000000000000000000000000000000000000000',
-                    '0xffffffffff3f0000000000000000000000000000000000000000000000000000',
-                    '0xb2f812271e9e9fb65dfb180abc303257fb399e6f7abd7d34bcaae366638eafe0',
-                    '0x1bcc86e680437567fc58d387d364b86e1e5df33648d7c000cfbb5d0b11e81bcb',
-                    '0x2e51e71f56dcc4976c11d43e9b8adb3acb89ac39b0769d6b6bbf6672eb70ec21',
-                ],
-            };
-
-            assert.equal(
-                await verifier.verifyValidatorBalance(slotTimestamp, slot, balanceSlot, validatorIndex, proof),
-                true,
-            );
-            assert.equal(
-                await verifier.verifyValidatorBalance(slotTimestamp, slot, balanceSlot, validatorIndex, {
-                    ...proof,
-                    balanceChunk: '0x96011344f000000075e8ca4af0000000f07bdc50f0000000e205284df0000000',
-                }),
-                false,
-            );
-        });
-
         it(printTitle('BeaconStateVerifier', 'Can verify next withdrawal index with real post-Gloas state proof'), async () => {
             const beaconRoots = await BeaconStateVerifier.deployed();
             const rocketStorage = await artifacts.require('RocketStorage').deployed();
@@ -1662,60 +1479,6 @@ export default function() {
                         "0x80f87c603827d53ce704240032af39e73eac2d7bd9070b24b8bb251ee7f18a6c"
                     ]
                 },
-                "validatorBalanceProof": {
-                    "balanceChunk": "0x4cf6fc6ef0000000000000000000000001971052f0000000d1885a64f0000000",
-                    "witnesses": [
-                        "0x973ea85af0000000a09e4363f0000000bb17354ef0000000ec302475f0000000",
-                        "0x797d6b0cfd9dd90c26f59dc094e6895e864cf608bdddfe248d209f9370ea8b15",
-                        "0x506c56a94f47d02b0ae37b3f11092fc099f41c483f033a854de0e2ac40e0245a",
-                        "0xabedb1d396780b42ce4c6a00c3294f830c81878ec7ddc12f75419f6b6a877dc8",
-                        "0x7043de93318924259f69a88f830fa1d8be3df5e4117cb27e9ccf90a08bcb77ba",
-                        "0xf8555011c87f73fd765dc5926f0d52ea7eb168ece6d3569144917a4bb5d31fd5",
-                        "0x484289b568fd579c43be96de5036c7346fc0a9326fcad1ff1dd8d72359ab6982",
-                        "0x64fdbc570f50812747a070981eb1b99abc1c02e9e6da34ce52f95abb7ef60335",
-                        "0xed0ad2b3c6422678a6be9720cbf5f5ce583ddbb847ec0df36de9d6c04a0c19cb",
-                        "0x8cc6f2a89006df1efb533f8f89d9e90a199b3e77140762d8724de3bd591028ba",
-                        "0x97f8d31ce36ec0034edbe0ba9ce9525159d5a7b4e252b91bf9d8c0afda1aa11c",
-                        "0x8fdb3dac722069655a1d968a019eda31d647812cba65c6f4a66e57c8d4f58546",
-                        "0xee39baa358164f88e63e87a0672d0568bf7f245593f961bdec1214af16c74b2e",
-                        "0x3c541ba254dea232178147cf8188d1aed2ed39cffbc187c0a0725ad9f0a4ecb2",
-                        "0x1742dbcd41228d0566d59698cef432a761096679f303fc4210e905065deaa32b",
-                        "0x000050d6dc01000000000000000000009b1c50d6dc01000041fe904ef0000000",
-                        "0x4eaf070000000000000000000000000000000000000000000000000000000000",
-                        "0x9518d4f026d37e206fecb5a4cb78e3d0ac89fd6dcae92fb5f5d3412b6e36da6a",
-                        "0xe106302aa6523be5346c3f416efbc1e085281f954b56714fa4b6b5aba6efe149",
-                        "0x11f17fa1c5a2e6722b775a94874e5e41308347386c6351ad307a3955d057c147",
-                        "0x9895c396472ef3670186b6903d81056e6e6418db885d7f6a48ffc8b55eb2bae1",
-                        "0xf4d8dbac54e45ef8af9cf9f5d3d71fee9d3e33abc9f5cca9a565bc72d8a2372d",
-                        "0xb03684545db7a72d7252c193565517118c10db52bf5ce5ad2a821d42dee6048c",
-                        "0xc024566a00000000000000000000000000000000000000000000000000000000",
-                        "0xffffffffff3f0000000000000000000000000000000000000000000000000000",
-                        "0x40ab81a1b19660cb8fb8f6d363698a76128262d97cf6dbf9f7ab5a3ee0ea5a0f",
-                        "0x3b6ba248a2c59cd93a8bb562d32eca83d553b7012849b48cb21e4f1f229bfb4d",
-                        "0xfb39f33ae1cf937e032b09739551fbad9a93a29516296c32eefec8274133de82",
-                        "0x0b5a91ef1aaaf65f67de4044dc38def386bab613a6d51d5e7064cffa21e8137c",
-                        "0xc458c36bfb4dbbbe7ad67701f3d1c876ef282bc1a4d7091354e48fd45bdd1fb7",
-                        "0x32ff092b0d808ec09a35d5cb20ad8249bc8558b07ca5582e193ae827d86c13a4",
-                        "0xb386a2a51e2c71bd466d8bfb0aeba65886b4d30fb27933e0cf0c854d43e462e5",
-                        "0x734b87e44cd202789fb03d1aef3ea111cef4db1b4bfcd248ae0731e0293156e5",
-                        "0xde324852910c90aa74d089627db0fef08abe6837dec03c56c0e3e4ebeac5fe72",
-                        "0xf0bdd1d56291d3c4a7a517a14f50613364d524023b32aef37cec4ee3367bc3b3",
-                        "0x48e3541728efa28608bdc27cb716c643007a25a40a97ae0dac6c96e69c526be2",
-                        "0xa8c051225cc5f1d06ea1c409887ff499008a167f67395fa483929a54e5f371a2",
-                        "0x315a292bcd969c9a06cb81d50f73a38b16607d63219dbbd8d6014c498c96e916",
-                        "0x54e0b27600e9ecaab0d58258c45c14943f24d039f8be63ec417bb5685f7cf889",
-                        "0xfa4f2a42c3db80ea739a203e82076243c3130998ce30e00491bc457077912cae",
-                        "0xe286ed7fb9a2aa5b32c73c0e556978883493b6b07f7b57645ac1c7fe841de15a",
-                        "0xf0df3bc2d4d97350c072c644ff8ac19d30b633d5751731af97ffe3936ff5d829",
-                        "0x26e84fbd54bff93166cce02c295e4dccea40e177bef49f7a678e7acf0e35f462",
-                        "0x75698fcc96a639969574bd523e4c1bb2bd01a16cb1d6216e2ce9502486027e28",
-                        "0xc024566a00000000000000000000000000000000000000000000000000000000",
-                        "0xffffffffff3f0000000000000000000000000000000000000000000000000000",
-                        "0x0e5a697ebfbc3c091854754d85adb4c7cb8459eea5f84c689e989e2d87c79647",
-                        "0x3b63ee23f8970db7b1185e6ec95070031f6381bd91759d5e58f20904dd164945",
-                        "0x80f87c603827d53ce704240032af39e73eac2d7bd9070b24b8bb251ee7f18a6c"
-                    ]
-                }
             };
             const validatorProofData = encodeValidatorProofV1(
                 proofBundle.validatorProof,
@@ -1739,7 +1502,6 @@ export default function() {
                 proofBundle.validatorProof,
                 proofBundle.slotProof,
                 proofBundle.previousNextWithdrawalIndexProof,
-                proofBundle.validatorBalanceProof,
             );
 
             const verified = await verifier.verifyFinalBalance(slotTimestamp, 2, proofData);
@@ -1972,93 +1734,12 @@ export default function() {
                         "0x80f87c603827d53ce704240032af39e73eac2d7bd9070b24b8bb251ee7f18a6c"
                     ]
                 },
-                "validatorBalanceProof": {
-                    "balanceChunk": "0x1afd1056f00000008ba65061f000000021702771f00000000000000000000000",
-                    "witnesses": [
-                        "0x2d16a262f000000073343e65f00000009ca09d78f000000086fc3978f0000000",
-                        "0xe4680a0fb66d465243bb200082351074ff88d2eff103fff2a57721c34eb32e5c",
-                        "0xecfebdccb7521a88fc1199b6d738136983b3162dcc752ea710086ce3af9f770e",
-                        "0x1cb0a214b3f236638a0d2aa7d01ee4692be4f3ab55897c241076ec8fd7f79a4f",
-                        "0xaec7689d41a056f8b2f6593b28bdbca965052e5bef4daa2af26f4eb96f0b7723",
-                        "0x12f8987500e29f48521d6eb0d49adaf9a84125f7f6038f13eec5c4ec0e325087",
-                        "0x4492f7e1a0253992506c6aa61511527cf0e253f9755b42cf2b175bfb980072d9",
-                        "0x20293382de1fc9752c89ba9ac27d44e1c19ca3e73a964d21fcb2ab0ffb36d7b1",
-                        "0x84293e84e9e3c4d4db6d414b3015a6c7e5b5e8ab8cef75c2f15f3458910c2d6f",
-                        "0x9ec51e98ada520455216a4a022d993495d45ad2dc5ca8de7c2cecc2549cec3f1",
-                        "0xe5b67acb8dbedcc7d69667df7a5e3e0c2953e75e60feeeaa5e32210e862851c7",
-                        "0xd554282ca737f83298a701f84480efbb7bf0ae55df149463b68fe062399129c9",
-                        "0x000050d6dc0100000000000000000000c31c50d6dc010000d585fe41f0000000",
-                        "0x4eaf070000000000000000000000000000000000000000000000000000000000",
-                        "0xc2f71386993c8a7eed10eb2716fa7d2865c3deaee27cfeffaef851f5c565471a",
-                        "0x4e5a68f75e9e4f55c1a069739ff540457ac19de7a4dd3eed19d23b1f4c4c0659",
-                        "0x48eaa56825c034bcacb6e2b56c439c1f2e34742b8c10fad145d25df0a3979b2d",
-                        "0xee6a3494a6960ea9f36bc1f7c30d1d8a93f9cf7f61efd7038e7742bfc5f4969d",
-                        "0xcfd906c4c673f9f05fa40a1f65cc14551b47eede5c0f759156dcb16d5595e015",
-                        "0x8ecb24f8b922efce255d0f380e3f12e6c78c33734048c70fb1328efacc5f29fd",
-                        "0xc024566a00000000000000000000000000000000000000000000000000000000",
-                        "0xffffffffff3f0000000000000000000000000000000000000000000000000000",
-                        "0xdd99115ce0ea771432dd3f2d6a78c68a72a4503adcacf0073cbefd7d43c05330",
-                        "0x717f76067a5dc21217873d502962e9757ff485bcbfe521ee36cc14dccf2231c6",
-                        "0x45ff1a1d079edf2f0a4570fdbcdb57dc9d57eac80f408b005f643cbaa91cde82",
-                        "0x36fb560a2106219bff9cff53687a51cbdbb667286ed2b77f0a2786a0aeaab7db",
-                        "0x231e88b8a95b16121b25ecd3a48de0d4bbdbbeab6c086ffa6fff741fd0bd2d28",
-                        "0x84c52e8bd94b1e2b5326d71500368cd71f78ef9cc1b4c49ce82426eb49c0201a",
-                        "0x63a4229406afcdf1653a12d46a452ba3b3b8a773137033f4c5c9dde0d35c3009",
-                        "0xf1083fb2333e46dbe58e7fbd3cd376e2d88de52a41dd8a5739510e701ec8cabe",
-                        "0x714fa0f628bae915eb4e7d501441fe9e26d0636809d38f36e68bc853fe5c97e1",
-                        "0x24ccee59776b4f8306fb153bd6cdaed5dcc200f4cef88237d88a15ac0820dfc5",
-                        "0x11f5f791b22f1c01e103bf8c216e6b3fdac1cd1d41789178cf2bd347d3567c07",
-                        "0xe1370dfbe8c5cb73536f0ed8466e8d3d7f088123c9e936fe4e5311f1803120e1",
-                        "0x315a292bcd969c9a06cb81d50f73a38b16607d63219dbbd8d6014c498c96e916",
-                        "0x727efcad6777221483b1606b82a1343a41a185c5ff3793426e7d68e2c5c88135",
-                        "0x18df258c3d054fe2981007e500f053f4c6d9a36fd11cea2495a69df3c82a9415",
-                        "0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
-                        "0x2728533d29a33dca9e6b63943f4f9d7358a837fb3b9fe767db0e897baf13c47d",
-                        "0xc78009fdf07fc56a11f122370658a353aaa542ed63e44c4bc15ff4cd105ab33c",
-                        "0x536d98837f2dd165a55d5eeae91485954472d56f246df256bf3cae19352a123c",
-                        "0x5e3d28abbba6710fc37ed88793527bae6915b08c8aedc1981faf415b31af77ee",
-                        "0xd88ddfeed400a8755596b21942c1497e114c302e6118290f91e6772976041fa1",
-                        "0x87eb0ddba57e35f6d286673802a4af5975e22506c7cf4c64bb6be5ee11527f2c",
-                        "0x26846476fd5fc54a5d43385167c95144f2643f533cc85bb9d16b782f8d7db193",
-                        "0x506d86582d252405b840018792cad2bf1259f1ef5aa5f887e13cb2f0094f51e1",
-                        "0xffff0ad7e659772f9534c195c815efc4014ef1e1daed4404c06385d11192e92b",
-                        "0x6cf04127db05441cd833107a52be852868890e4317e6a02ab47683aa75964220",
-                        "0xb7d05f875f140027ef5118a2247bbb84ce8f2f0f1123623085daf7960c329f5f",
-                        "0xdf6af5f5bbdb6be9ef8aa618e4bf8073960867171e29676f8b284dea6a08a85e",
-                        "0xb58d900f5e182e3c50ef74969ea16c7726c549757cc23523c369587da7293784",
-                        "0xd49a7502ffcfb0340b1d7885688500ca308161a7f96b62df9d083b71fcc8f2bb",
-                        "0x8fe6b1689256c0d385f42f5bbe2027a22c1996e110ba97c171d3e5948de92beb",
-                        "0x8d0d63c39ebade8509e0ae3c9c3876fb5fa112be18f905ecacfecb92057603ab",
-                        "0x95eec8b2e541cad4e91de38385f2e046619f54496c2382cb6cacd5b98c26f5a4",
-                        "0xf893e908917775b62bff23294dbbe3a1cd8e6cc1c35b4801887b646a6f81f17f",
-                        "0xcddba7b592e3133393c16194fac7431abf2f5485ed711db282183c819e08ebaa",
-                        "0x8a8d7fe3af8caa085a7639a832001457dfb9128a8061142ad0335629ff23ff9c",
-                        "0xfeb3c337d7a51a6fbf00b9e34c52e1c9195c969bd4e7a0bfd51d5c5bed9c1167",
-                        "0xe71f0aa83cc32edfbefa9f4d3e0174ca85182eec9f3a09f6a6c0df6377a510d7",
-                        "0x2600000000000000000000000000000000000000000000000000000000000000",
-                        "0x0000000000000000000000000000000000000000000000000000000000000000",
-                        "0x2a4918cae204e346edce5e5217b8f599b8828a318f977fe1ce391f6b61561d6f",
-                        "0xbb96fc581ca82f7bb41d3c063efe9bcf7433ff920717c737e8c040fd226de5e4",
-                        "0xba772a825d24675ec95268e5353c10cc72fdc1b49fd2dbb780de72033f362672",
-                        "0xbd4d202e6c042537e14dd66795af13b197c506911140787ad5e0f04d89a3051a",
-                        "0x9efde052aa15429fae05bad4d0b1d7c64da64d03d7a1854a588c2cb8430c0d30",
-                        "0x0000000000000000000000000000000000000000000000000000000000000000",
-                        "0x223c750bc1316859fef9208c0eba8602f047a597b625c84732ca945969f07c44",
-                        "0x75698fcc96a639969574bd523e4c1bb2bd01a16cb1d6216e2ce9502486027e28",
-                        "0xc024566a00000000000000000000000000000000000000000000000000000000",
-                        "0xffffffffff3f0000000000000000000000000000000000000000000000000000",
-                        "0x0e5a697ebfbc3c091854754d85adb4c7cb8459eea5f84c689e989e2d87c79647",
-                        "0x3b63ee23f8970db7b1185e6ec95070031f6381bd91759d5e58f20904dd164945",
-                        "0x80f87c603827d53ce704240032af39e73eac2d7bd9070b24b8bb251ee7f18a6c"
-                    ]
-                }
             };
             const proofData = encodeFinalBalanceProofV2(
                 proofBundle.withdrawalProof,
                 proofBundle.validatorProof,
                 proofBundle.slotProof,
                 proofBundle.previousNextWithdrawalIndexProof,
-                proofBundle.validatorBalanceProof,
             );
 
             const verified = await verifier.verifyFinalBalance(slotTimestamp, 2, proofData);
@@ -2263,64 +1944,12 @@ export default function() {
                         "0x77f0fbb078bc82830ce8a5d65867105c0518b1aafcac0a21d1085c768e96edf4"
                     ]
                 },
-                "validatorBalanceProof": {
-                    "balanceChunk": "0x1afd1056f00000008ba65061f000000021702771f00000000000000000000000",
-                    "witnesses": [
-                        "0x2d16a262f000000073343e65f00000009ca09d78f000000086fc3978f0000000",
-                        "0xe4680a0fb66d465243bb200082351074ff88d2eff103fff2a57721c34eb32e5c",
-                        "0xecfebdccb7521a88fc1199b6d738136983b3162dcc752ea710086ce3af9f770e",
-                        "0x1cb0a214b3f236638a0d2aa7d01ee4692be4f3ab55897c241076ec8fd7f79a4f",
-                        "0xaec7689d41a056f8b2f6593b28bdbca965052e5bef4daa2af26f4eb96f0b7723",
-                        "0x12f8987500e29f48521d6eb0d49adaf9a84125f7f6038f13eec5c4ec0e325087",
-                        "0x4492f7e1a0253992506c6aa61511527cf0e253f9755b42cf2b175bfb980072d9",
-                        "0x20293382de1fc9752c89ba9ac27d44e1c19ca3e73a964d21fcb2ab0ffb36d7b1",
-                        "0x84293e84e9e3c4d4db6d414b3015a6c7e5b5e8ab8cef75c2f15f3458910c2d6f",
-                        "0x9ec51e98ada520455216a4a022d993495d45ad2dc5ca8de7c2cecc2549cec3f1",
-                        "0xe5b67acb8dbedcc7d69667df7a5e3e0c2953e75e60feeeaa5e32210e862851c7",
-                        "0xd554282ca737f83298a701f84480efbb7bf0ae55df149463b68fe062399129c9",
-                        "0x000050d6dc0100000000000000000000c31c50d6dc010000d585fe41f0000000",
-                        "0x4eaf070000000000000000000000000000000000000000000000000000000000",
-                        "0xc2f71386993c8a7eed10eb2716fa7d2865c3deaee27cfeffaef851f5c565471a",
-                        "0x4e5a68f75e9e4f55c1a069739ff540457ac19de7a4dd3eed19d23b1f4c4c0659",
-                        "0x48eaa56825c034bcacb6e2b56c439c1f2e34742b8c10fad145d25df0a3979b2d",
-                        "0xee6a3494a6960ea9f36bc1f7c30d1d8a93f9cf7f61efd7038e7742bfc5f4969d",
-                        "0xcfd906c4c673f9f05fa40a1f65cc14551b47eede5c0f759156dcb16d5595e015",
-                        "0x8ecb24f8b922efce255d0f380e3f12e6c78c33734048c70fb1328efacc5f29fd",
-                        "0xc024566a00000000000000000000000000000000000000000000000000000000",
-                        "0xffffffffff3f0000000000000000000000000000000000000000000000000000",
-                        "0x09ee07fac83444b2dc39abb8b48d673be3ae1a93f8c18270a18cd7da26f43eb5",
-                        "0x6f988b58eb88c9e4e4732624164c7c37a7df5b4e525a6009938ebeaa2a710182",
-                        "0x33e965a7cc2275502a1ba16a57380a058ca9761fd077ee0def945a37f44bb463",
-                        "0x3d7bf97c3f9440dbba6d7903a64cce33c363788609fcc66cd6d2f62eeb06e2dc",
-                        "0x231e88b8a95b16121b25ecd3a48de0d4bbdbbeab6c086ffa6fff741fd0bd2d28",
-                        "0x84c52e8bd94b1e2b5326d71500368cd71f78ef9cc1b4c49ce82426eb49c0201a",
-                        "0x2b967e0255001ae9e255d2561271891cf294cbbf0575973268ce7cb8a28d4d46",
-                        "0xf802e4b35cab9b5b9a50478b897ddd6ffb77f95eda124a5b8844266f7560adb7",
-                        "0x714fa0f628bae915eb4e7d501441fe9e26d0636809d38f36e68bc853fe5c97e1",
-                        "0x24ccee59776b4f8306fb153bd6cdaed5dcc200f4cef88237d88a15ac0820dfc5",
-                        "0x11f5f791b22f1c01e103bf8c216e6b3fdac1cd1d41789178cf2bd347d3567c07",
-                        "0xe1370dfbe8c5cb73536f0ed8466e8d3d7f088123c9e936fe4e5311f1803120e1",
-                        "0x315a292bcd969c9a06cb81d50f73a38b16607d63219dbbd8d6014c498c96e916",
-                        "0x89821feae3b55f8808420996c5b11fe4e8893cadc3cdcd85fd5b81b4f3961b29",
-                        "0xfa4f2a42c3db80ea739a203e82076243c3130998ce30e00491bc457077912cae",
-                        "0x80af8fea82e2ab03877b6125a8a796e13bbaa3fbfc6de51137f5495e2331e6bb",
-                        "0xc66dbdbe36b0b4e3fc621c0a1ad0ec7d9b85dfab3da1c625da5bb236389986ac",
-                        "0xff58c3322e75a0f8dac4b11ba922ba1e15d92285ebce9eea089dbf3e493248d7",
-                        "0x84e4a450588cffe5ae43383982066994b28cf9cb42a1885cd6e8268017edf340",
-                        "0xc024566a00000000000000000000000000000000000000000000000000000000",
-                        "0xffffffffff3f0000000000000000000000000000000000000000000000000000",
-                        "0x3118314bd39d35d0dc403c137675d0782f8acf9e2642fa43cef4819b9a21092f",
-                        "0xb8b91bff7a1de7bbba037bcc601cd3bc41757535c2d766aa572b6d15c197b8c8",
-                        "0x77f0fbb078bc82830ce8a5d65867105c0518b1aafcac0a21d1085c768e96edf4"
-                    ]
-                }
             };
             const proofData = encodeFinalBalanceProofV2(
                 proofBundle.withdrawalProof,
                 proofBundle.validatorProof,
                 proofBundle.slotProof,
                 proofBundle.previousNextWithdrawalIndexProof,
-                proofBundle.validatorBalanceProof,
             );
 
             const verified = await verifier.verifyFinalBalance(slotTimestamp, 2, proofData);
@@ -2332,177 +1961,213 @@ export default function() {
         });
 
 
-        it(printTitle('BeaconStateVerifier', 'Requires a fresh expected withdrawal and zero balance in final balance proof version 2'), async () => {
-            const beaconRoots = await BeaconStateVerifier.deployed();
-            const rocketStorage = await artifacts.require('RocketStorage').deployed();
-            const beaconStateVerifier = await artifacts.require('BeaconStateVerifier').clone(
-                rocketStorage.target,
-                8192n,
-                [0n, 0n, 0n, 0n, 0n, 0n, 14000000n],
-                beaconRoots.target,
-            );
-
-            const slot = 14000010n;
-            const withdrawalSlot = 14000005n;
-            const previousSlot = withdrawalSlot - 1n;
-            const slotTimestamp = (slot * 12n + 1606824023n) + 12n;
-            const withdrawalNum = 3;
+        describe('Final balance proof version 2', () => {
             const validatorIndex = 123456n;
             const nextWithdrawalIndex = 91000000n;
-            const withdrawal = {
-                index: nextWithdrawalIndex + BigInt(withdrawalNum),
-                validatorIndex,
-                withdrawalCredentials: '0xf97e180c050e5ab072211ad2c213eb5aee4df134',
-                amountInGwei: 1026000000000n,
-            };
-            const validator = {
-                pubkey: '0xb6544b67c27a9d9f460bd839b1a42d4edf4fedd2567a631ffe473f047acd539257dd326e5c969a08a5ae07db6fd8616c',
-                withdrawalCredentials: '0x010000000000000000000000b9d7934878b5fb9610b3fe8a5e441e8fad7e293f',
-                effectiveBalance: 32000000000n,
-                slashed: false,
-                activationEligibilityEpoch: 0n,
-                activationEpoch: 0n,
-                exitEpoch: withdrawalSlot / 32n,
-                withdrawableEpoch: withdrawalSlot / 32n,
-            };
+            const withdrawalNum = 3;
+            let beaconRoots, verifier;
 
-            const slotPath = '011' + progressivePath(2);
-            const withdrawalPath = '011'
-                + progressivePath(6)
-                + (withdrawalSlot % 8192n).toString(2).padStart(13, '0')
-                + progressivePath(44)
-                + progressivePath(withdrawalNum);
-            const nextWithdrawalIndexPath = '011'
-                + progressivePath(6)
-                + (previousSlot % 8192n).toString(2).padStart(13, '0')
-                + progressivePath(25);
+            before(async () => {
+                beaconRoots = await BeaconStateVerifier.deployed();
+                const rocketStorage = await artifacts.require('RocketStorage').deployed();
+                verifier = await artifacts.require('BeaconStateVerifierHarness').clone(
+                    rocketStorage.target,
+                    8192n,
+                    [0n, 0n, 0n, 0n, 0n, 0n, 14000000n],
+                    beaconRoots.target,
+                );
+            });
 
-            const withdrawalProofType = 'tuple(uint64,uint16,tuple(uint64,uint64,bytes20,uint64),bytes32[])';
-            const validatorProofType = 'tuple(uint40,tuple(bytes,bytes32,uint64,bool,uint64,uint64,uint64,uint64),bytes32[])';
-            const slotProofType = 'tuple(uint64,bytes32[])';
-            const nextWithdrawalIndexProofType = 'tuple(uint64,bytes32[])';
-            const validatorBalanceProofType = 'tuple(bytes32,bytes32[])';
-            const finalBalanceProofV2Type = `tuple(${withdrawalProofType},${validatorProofType},${slotProofType},${nextWithdrawalIndexProofType},${validatorBalanceProofType})`;
-
-            function buildProof(
-                provenNextWithdrawalIndex,
-                provenValidatorIndex = validatorIndex,
-                provenBalance = 0n,
-                suppliedBalanceChunk = undefined,
-            ) {
-                const provenWithdrawal = { ...withdrawal, validatorIndex: provenValidatorIndex };
-                const validatorPath = '011' + progressivePath(11) + progressivePath(provenValidatorIndex);
-                const balancePath = '011'
+            function buildProof({
+                withdrawalSlot = 14000037n,
+                withdrawableEpoch = withdrawalSlot / 32n,
+                previousNextWithdrawalIndex = nextWithdrawalIndex,
+                withdrawalValidatorIndex = validatorIndex,
+                balance = 0n,
+                amountInGwei = 32000000000n,
+                originalWithdrawalSlot = undefined,
+            } = {}) {
+                const slot = withdrawalSlot + 5n;
+                const slotTimestamp = (slot * 12n + 1606824023n) + 12n;
+                const withdrawal = {
+                    index: nextWithdrawalIndex + BigInt(withdrawalNum),
+                    validatorIndex: withdrawalValidatorIndex,
+                    withdrawalCredentials: '0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f',
+                    amountInGwei,
+                };
+                const validator = {
+                    pubkey: '0xb6544b67c27a9d9f460bd839b1a42d4edf4fedd2567a631ffe473f047acd539257dd326e5c969a08a5ae07db6fd8616c',
+                    withdrawalCredentials: '0x010000000000000000000000b9d7934878b5fb9610b3fe8a5e441e8fad7e293f',
+                    effectiveBalance: 32000000000n,
+                    slashed: false,
+                    activationEligibilityEpoch: 0n,
+                    activationEpoch: 0n,
+                    exitEpoch: withdrawableEpoch - 256n,
+                    withdrawableEpoch,
+                };
+                const pastStatePath = pastSlot => '011'
                     + progressivePath(6)
-                    + (withdrawalSlot % 8192n).toString(2).padStart(13, '0')
-                    + progressivePath(12)
-                    + progressivePath(provenValidatorIndex / 4n);
+                    + (pastSlot % 8192n).toString(2).padStart(13, '0');
+                const expectedWithdrawalPath = pastSlot => pastStatePath(pastSlot)
+                    + progressivePath(44) + progressivePath(withdrawalNum);
+                const slotPath = '011' + progressivePath(2);
+                const validatorPath = '011' + progressivePath(11) + progressivePath(validatorIndex);
+                const withdrawalPath = expectedWithdrawalPath(withdrawalSlot);
+                const nextWithdrawalIndexPath = pastStatePath(withdrawalSlot - 1n) + progressivePath(25);
+                const balancePath = pastStatePath(withdrawalSlot)
+                    + progressivePath(12) + progressivePath(validatorIndex / 4n);
                 const balances = [11n, 22n, 33n, 44n];
-                balances[Number(provenValidatorIndex % 4n)] = provenBalance;
-                const balanceChunk = packUint64s(balances);
-                const proofs = makeMultiProofs([
+                balances[Number(validatorIndex % 4n)] = balance;
+                const leaves = [
                     { path: slotPath, leaf: toLittleEndian(slot) },
                     { path: validatorPath, leaf: merkleiseValidator(validator) },
-                    { path: withdrawalPath, leaf: merkleiseWithdrawal(provenWithdrawal) },
-                    { path: nextWithdrawalIndexPath, leaf: toLittleEndian(provenNextWithdrawalIndex) },
-                    { path: balancePath, leaf: balanceChunk },
-                ]);
-                const withdrawalProof = [
-                    withdrawalSlot,
-                    withdrawalNum,
-                    [provenWithdrawal.index, provenWithdrawal.validatorIndex, provenWithdrawal.withdrawalCredentials, provenWithdrawal.amountInGwei],
-                    proofs.witnesses.get(withdrawalPath),
+                    { path: withdrawalPath, leaf: merkleiseWithdrawal(withdrawal) },
+                    { path: nextWithdrawalIndexPath, leaf: toLittleEndian(previousNextWithdrawalIndex) },
+                    // Commit the post-withdrawal balance without including its proof in the submission.
+                    { path: balancePath, leaf: packUint64s(balances) },
                 ];
-                const validatorProof = [
-                    provenValidatorIndex,
-                    [
-                        validator.pubkey,
-                        validator.withdrawalCredentials,
-                        validator.effectiveBalance,
-                        validator.slashed,
-                        validator.activationEligibilityEpoch,
-                        validator.activationEpoch,
-                        validator.exitEpoch,
-                        validator.withdrawableEpoch,
-                    ],
-                    proofs.witnesses.get(validatorPath),
-                ];
-                const slotProof = [slot, proofs.witnesses.get(slotPath)];
-                const nextWithdrawalIndexProof = [
-                    provenNextWithdrawalIndex,
-                    proofs.witnesses.get(nextWithdrawalIndexPath),
-                ];
-                const validatorBalanceProof = [
-                    suppliedBalanceChunk === undefined ? balanceChunk : suppliedBalanceChunk,
-                    proofs.witnesses.get(balancePath),
-                ];
-                return {
-                    root: proofs.root,
-                    proofData: ethers.AbiCoder.defaultAbiCoder().encode(
-                        [finalBalanceProofV2Type],
-                        [[withdrawalProof, validatorProof, slotProof, nextWithdrawalIndexProof, validatorBalanceProof]],
-                    ),
-                    legacyProofData: ethers.AbiCoder.defaultAbiCoder().encode(
-                        [`tuple(${withdrawalProofType},${validatorProofType},${slotProofType})`],
-                        [[withdrawalProof, validatorProof, slotProof]],
-                    ),
+                if (originalWithdrawalSlot !== undefined) {
+                    // The same expected withdrawal survives in the states of intervening missed slots.
+                    for (let pastSlot = originalWithdrawalSlot; pastSlot < withdrawalSlot; ++pastSlot) {
+                        leaves.push({ path: expectedWithdrawalPath(pastSlot), leaf: merkleiseWithdrawal(withdrawal) });
+                        leaves.push({
+                            path: pastStatePath(pastSlot) + progressivePath(25),
+                            leaf: toLittleEndian(previousNextWithdrawalIndex),
+                        });
+                    }
+                }
+                const proofs = makeMultiProofs(leaves);
+                const bundle = {
+                    withdrawalProof: { withdrawalSlot, withdrawalNum, withdrawal, witnesses: proofs.witnesses.get(withdrawalPath) },
+                    validatorProof: { validatorIndex, validator, witnesses: proofs.witnesses.get(validatorPath) },
+                    slotProof: { slot, witnesses: proofs.witnesses.get(slotPath) },
+                    previousNextWithdrawalIndexProof: {
+                        nextWithdrawalIndex: previousNextWithdrawalIndex,
+                        witnesses: proofs.witnesses.get(nextWithdrawalIndexPath),
+                    },
                 };
+                return { root: proofs.root, slotTimestamp, bundle };
             }
 
-            const freshProof = buildProof(nextWithdrawalIndex);
-            const decodedLegacyProof = ethers.AbiCoder.defaultAbiCoder().decode(
-                [`tuple(${withdrawalProofType},${validatorProofType},${slotProofType})`],
-                freshProof.legacyProofData,
-            )[0];
-            assert.equal(decodedLegacyProof[0][0], withdrawalSlot);
-            await beaconRoots.setBlockRoot(slotTimestamp, freshProof.root);
-            const verified = await beaconStateVerifier.verifyFinalBalance(slotTimestamp, 2, freshProof.proofData);
-            assert.equal(verified.validatorPubkeyHash, ethers.keccak256(validator.pubkey));
-            assert.equal(verified.withdrawalCredentials, validator.withdrawalCredentials);
-            assert.equal(verified.amountInGwei, withdrawal.amountInGwei);
-            assert.equal(verified.withdrawalEpoch, withdrawalSlot / 32n);
-            assert.equal(verified.recentEpoch, slot / 32n);
-
-            for (let lane = 1n; lane < 4n; ++lane) {
-                const laneProof = buildProof(nextWithdrawalIndex, validatorIndex + lane);
-                await beaconRoots.setBlockRoot(slotTimestamp, laneProof.root);
-                await beaconStateVerifier.verifyFinalBalance(slotTimestamp, 2, laneProof.proofData);
+            function encode(bundle) {
+                return encodeFinalBalanceProofV2(
+                    bundle.withdrawalProof,
+                    bundle.validatorProof,
+                    bundle.slotProof,
+                    bundle.previousNextWithdrawalIndexProof,
+                );
             }
 
-            const nonzeroBalanceProof = buildProof(nextWithdrawalIndex, validatorIndex + 2n, 1n);
-            await beaconRoots.setBlockRoot(slotTimestamp, nonzeroBalanceProof.root);
-            await shouldRevert(
-                beaconStateVerifier.verifyFinalBalance(slotTimestamp, 2, nonzeroBalanceProof.proofData),
-                'Accepted a nonzero post-withdrawal validator balance',
-                'Validator balance not zero',
-            );
+            for (const balance of [0n, 1n]) {
+                it(`Accepts a fresh full withdrawal with post-withdrawal balance ${balance}`, async () => {
+                    const { root, slotTimestamp, bundle } = buildProof({ balance });
+                    await beaconRoots.setBlockRoot(slotTimestamp, root);
+                    const verified = await verifier.verifyFinalBalance(slotTimestamp, 2, encode(bundle));
+                    assert.equal(verified.validatorPubkeyHash, ethers.keccak256(bundle.validatorProof.validator.pubkey));
+                    assert.equal(verified.withdrawalCredentials, bundle.validatorProof.validator.withdrawalCredentials);
+                    assert.equal(verified.amountInGwei, bundle.withdrawalProof.withdrawal.amountInGwei);
+                    assert.equal(verified.withdrawalEpoch, bundle.withdrawalProof.withdrawalSlot / 32n);
+                    assert.equal(verified.recentEpoch, bundle.slotProof.slot / 32n);
+                });
+            }
 
-            const tamperedBalanceProof = buildProof(
-                nextWithdrawalIndex,
-                validatorIndex,
-                0n,
-                packUint64s([1n, 22n, 33n, 44n]),
-            );
-            await beaconRoots.setBlockRoot(slotTimestamp, tamperedBalanceProof.root);
-            await shouldRevert(
-                beaconStateVerifier.verifyFinalBalance(slotTimestamp, 2, tamperedBalanceProof.proofData),
-                'Accepted a balance chunk not committed by the beacon state',
-                'Invalid validator balance proof',
-            );
+            it('Rejects a stale expected withdrawal', async () => {
+                const { root, slotTimestamp, bundle } = buildProof({ previousNextWithdrawalIndex: nextWithdrawalIndex + 4n });
+                await beaconRoots.setBlockRoot(slotTimestamp, root);
+                await shouldRevert(
+                    verifier.verifyFinalBalance(slotTimestamp, 2, encode(bundle)),
+                    'Accepted a stale expected withdrawal',
+                    'Stale withdrawal proof',
+                );
+            });
 
-            await shouldRevert(
-                beaconStateVerifier.verifyFinalBalance(slotTimestamp, 1, freshProof.legacyProofData),
-                'Accepted final balance proof version 1 after Gloas',
-                'Unsupported proof version',
-            );
+            it('Rejects a partial withdrawal retained across missed slots into the withdrawable epoch', async () => {
+                const epochBoundary = 14000032n;
+                const originalWithdrawalSlot = epochBoundary - 1n;
+                const partialWithdrawal = {
+                    withdrawableEpoch: epochBoundary / 32n,
+                    amountInGwei: 1000000000n,
+                    balance: 32000000000n,
+                };
+                // In its original slot the partial withdrawal is fresh, but not yet withdrawable.
+                const original = buildProof({ ...partialWithdrawal, withdrawalSlot: originalWithdrawalSlot });
+                await beaconRoots.setBlockRoot(original.slotTimestamp, original.root);
+                await shouldRevert(
+                    verifier.verifyFinalBalance(original.slotTimestamp, 2, encode(original.bundle)),
+                    'Accepted a partial withdrawal before the withdrawable epoch',
+                    'Not full withdrawal',
+                );
 
-            const staleProof = buildProof(nextWithdrawalIndex + 1n);
-            await beaconRoots.setBlockRoot(slotTimestamp, staleProof.root);
-            await shouldRevert(
-                beaconStateVerifier.verifyFinalBalance(slotTimestamp, 2, staleProof.proofData),
-                'Accepted stale expected withdrawal as a final withdrawal',
-                'Stale withdrawal proof',
-            );
+                // A four-entry batch advanced the counter before two missed slots crossed the boundary.
+                const retained = buildProof({
+                    ...partialWithdrawal,
+                    originalWithdrawalSlot,
+                    withdrawalSlot: epochBoundary + 1n,
+                    previousNextWithdrawalIndex: nextWithdrawalIndex + 4n,
+                });
+                const { root, slotTimestamp, bundle } = retained;
+                await beaconRoots.setBlockRoot(slotTimestamp, root);
+                assert.equal(bundle.withdrawalProof.withdrawalSlot / 32n, bundle.validatorProof.validator.withdrawableEpoch);
+                assert.equal(await verifier.verifyWithdrawalProof(slotTimestamp, bundle.slotProof.slot, bundle.withdrawalProof), true);
+                assert.equal(await verifier.verifyNextWithdrawalIndex(
+                    slotTimestamp, bundle.slotProof.slot, bundle.withdrawalProof.withdrawalSlot, bundle.previousNextWithdrawalIndexProof,
+                ), true);
+                await shouldRevert(
+                    verifier.verifyFinalBalance(slotTimestamp, 2, encode(bundle)),
+                    'Accepted a retained partial withdrawal after the epoch boundary',
+                    'Stale withdrawal proof',
+                );
+            });
+
+            for (const [field, error] of [
+                ['withdrawalProof', 'Invalid withdrawal proof'],
+                ['validatorProof', 'Invalid validator proof'],
+                ['slotProof', 'Invalid slot proof'],
+                ['previousNextWithdrawalIndexProof', 'Invalid next withdrawal index proof'],
+            ]) {
+                it(`Rejects an invalid ${field} witness`, async () => {
+                    const { root, slotTimestamp, bundle } = buildProof();
+                    await beaconRoots.setBlockRoot(slotTimestamp, root);
+                    bundle[field].witnesses[0] = ethers.ZeroHash;
+                    await shouldRevert(
+                        verifier.verifyFinalBalance(slotTimestamp, 2, encode(bundle)),
+                        `Accepted a tampered ${field}`,
+                        error,
+                    );
+                });
+            }
+
+            it('Rejects mismatched validator indices', async () => {
+                const { root, slotTimestamp, bundle } = buildProof({ withdrawalValidatorIndex: validatorIndex + 1n });
+                await beaconRoots.setBlockRoot(slotTimestamp, root);
+                await shouldRevert(
+                    verifier.verifyFinalBalance(slotTimestamp, 2, encode(bundle)),
+                    'Accepted mismatching validators',
+                    'Withdrawal validator not matching',
+                );
+            });
+
+            it('Rejects final balance proofs on the wrong side of the Gloas fork', async () => {
+                const { slotTimestamp, bundle } = buildProof();
+                const withdrawalProofType = 'tuple(uint64 withdrawalSlot,uint16 withdrawalNum,tuple(uint64 index,uint64 validatorIndex,bytes20 withdrawalCredentials,uint64 amountInGwei) withdrawal,bytes32[] witnesses)';
+                const validatorProofType = 'tuple(uint40 validatorIndex,tuple(bytes pubkey,bytes32 withdrawalCredentials,uint64 effectiveBalance,bool slashed,uint64 activationEligibilityEpoch,uint64 activationEpoch,uint64 exitEpoch,uint64 withdrawableEpoch) validator,bytes32[] witnesses)';
+                const slotProofType = 'tuple(uint64 slot,bytes32[] witnesses)';
+                const legacyProofData = ethers.AbiCoder.defaultAbiCoder().encode(
+                    [`tuple(${withdrawalProofType} withdrawalProof,${validatorProofType} validatorProof,${slotProofType} slotProof)`],
+                    [bundle],
+                );
+                await shouldRevert(
+                    verifier.verifyFinalBalance(slotTimestamp, 1, legacyProofData),
+                    'Accepted final balance proof version 1 after Gloas',
+                    'Unsupported proof version',
+                );
+                bundle.withdrawalProof.withdrawalSlot = 13999999n;
+                await shouldRevert(
+                    verifier.verifyFinalBalance(slotTimestamp, 2, encode(bundle)),
+                    'Accepted final balance proof version 2 before Gloas',
+                    'Unsupported proof version',
+                );
+            });
         });
 
         it(printTitle('BeaconStateVerifier', 'Can verify historical post-Gloas expected withdrawal proof'), async () => {

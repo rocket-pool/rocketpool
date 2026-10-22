@@ -48,7 +48,6 @@ contract BeaconStateVerifierMock is BeaconStateVerifierInterface {
         WithdrawalProof memory withdrawalProof;
         ValidatorProof memory validatorProof;
         SlotProof memory slotProof;
-        bytes32 validatorBalanceChunk;
         if (_proofVersion == 1) {
             FinalBalanceProofBundleV1 memory proof = abi.decode(_proofData, (FinalBalanceProofBundleV1));
             withdrawalProof = proof.withdrawalProof;
@@ -64,15 +63,10 @@ contract BeaconStateVerifierMock is BeaconStateVerifierInterface {
             withdrawalProof = proof.withdrawalProof;
             validatorProof = proof.validatorProof;
             slotProof = proof.slotProof;
-            validatorBalanceChunk = proof.validatorBalanceProof.balanceChunk;
         } else {
             revert("Unsupported proof version");
         }
         require(withdrawalProof.withdrawal.validatorIndex == validatorProof.validatorIndex, "Withdrawal validator not matching");
-        if (_proofVersion == 2) {
-            uint256 shift = (3 - uint256(validatorProof.validatorIndex % 4)) * 64;
-            require(uint64(uint256(validatorBalanceChunk) >> shift) == 0, "Validator balance not zero");
-        }
         uint64 withdrawalEpoch = withdrawalProof.withdrawalSlot / 32;
         require(withdrawalEpoch >= validatorProof.validator.withdrawableEpoch, "Not full withdrawal");
         result.validatorPubkeyHash = keccak256(validatorProof.validator.pubkey);

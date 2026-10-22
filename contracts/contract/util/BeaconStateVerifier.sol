@@ -15,7 +15,6 @@ import {
     FinalBalanceProofBundleV1,
     FinalBalanceProofBundleV2,
     NextWithdrawalIndexProof,
-    ValidatorBalanceProof,
     VerifiedValidator,
     VerifiedFinalBalance
 } from "../../interface/util/BeaconStateVerifierInterface.sol";
@@ -108,7 +107,6 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         WithdrawalProof memory withdrawalProof;
         ValidatorProof memory validatorProof;
         SlotProof memory slotProof;
-        ValidatorBalanceProof memory validatorBalanceProof;
         // Decode versioned proof payload
         if (_proofVersion == finalBalanceProofVersion1) {
             FinalBalanceProofBundleV1 memory proof = abi.decode(_proofData, (FinalBalanceProofBundleV1));
@@ -136,29 +134,12 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
             withdrawalProof = proof.withdrawalProof;
             validatorProof = proof.validatorProof;
             slotProof = proof.slotProof;
-            validatorBalanceProof = proof.validatorBalanceProof;
         } else {
             revert("Unsupported proof version");
         }
         // Verify matching validator index
         require(withdrawalProof.withdrawal.validatorIndex == validatorProof.validatorIndex, "Withdrawal validator not matching");
         // Verify proof state
-        if (_proofVersion == finalBalanceProofVersion2) {
-            require(
-                _verifyValidatorBalance(
-                    _slotTimestamp,
-                    slotProof.slot,
-                    withdrawalProof.withdrawalSlot,
-                    validatorProof.validatorIndex,
-                    validatorBalanceProof
-                ),
-                "Invalid validator balance proof"
-            );
-            require(
-                _isZeroValidatorBalance(validatorBalanceProof.balanceChunk, validatorProof.validatorIndex),
-                "Validator balance not zero"
-            );
-        }
         require(_verifyValidator(_slotTimestamp, slotProof.slot, validatorProof), "Invalid validator proof");
         require(_verifyWithdrawal(_slotTimestamp, slotProof.slot, withdrawalProof), "Invalid withdrawal proof");
         require(_verifySlot(_slotTimestamp, slotProof), "Invalid slot proof");
@@ -233,32 +214,6 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
             _proof.witnesses
         );
         return computedRoot == _getParentBlockRoot(_slotTimestamp);
-    }
-
-    /// @dev Verifies the packed balances chunk in the post-state of `_withdrawalSlot`
-    function _verifyValidatorBalance(
-        uint64 _slotTimestamp,
-        uint64 _slot,
-        uint64 _withdrawalSlot,
-        uint40 _validatorIndex,
-        ValidatorBalanceProof memory _proof
-    ) internal view returns (bool) {
-        SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
-        path = SSZ.concat(path, _pathBeaconStateToPastRoot(_slot, _withdrawalSlot, true));
-        path = SSZ.concat(path, _pathBeaconStateToBalanceChunk(_validatorIndex));
-        require(SSZ.length(path) == _proof.witnesses.length, "Invalid witness length");
-        bytes32 computedRoot = SSZ.restoreMerkleRoot(
-            _proof.balanceChunk,
-            SSZ.toIndex(path),
-            _proof.witnesses
-        );
-        return computedRoot == _getParentBlockRoot(_slotTimestamp);
-    }
-
-    /// @dev Returns whether the validator's uint64 lane in a packed SSZ chunk is zero
-    function _isZeroValidatorBalance(bytes32 _balanceChunk, uint40 _validatorIndex) internal pure returns (bool) {
-        uint256 shift = (3 - uint256(_validatorIndex % 4)) * 64;
-        return uint64(uint256(_balanceChunk) >> shift) == 0;
     }
 
     /// @dev Gets the parent block root for a given slot
@@ -345,13 +300,6 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         } else {
             return SSZ.from(25, 6); // BeaconState -> next_withdrawal_index
         }
-    }
-
-    /// @dev Returns a partial gindex from a Gloas BeaconState -> balances[validatorIndex / 4]
-    function _pathBeaconStateToBalanceChunk(uint40 _validatorIndex) internal view returns (SSZ.Path memory) {
-        SSZ.Path memory path = SSZ.intoProgressive(12); // BeaconState -> balances
-        path = SSZ.concat(path, SSZ.intoProgressive(uint248(_validatorIndex) / 4)); // balances -> packed balance chunk
-        return path;
     }
 
     /// @dev Returns a partial gindex from BeaconState -> block_roots[n] or state_roots[n] (via historical_summaries if required)

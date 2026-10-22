@@ -6,8 +6,7 @@ import {
     ValidatorProof,
     WithdrawalProof,
     SlotProof,
-    NextWithdrawalIndexProof,
-    ValidatorBalanceProof
+    NextWithdrawalIndexProof
 } from "../../interface/util/BeaconStateVerifierInterface.sol";
 import {BeaconStateVerifier} from "../util/BeaconStateVerifier.sol";
 
@@ -41,16 +40,6 @@ contract BeaconStateVerifierHarness is BeaconStateVerifier {
         SlotProof calldata _proof
     ) external view returns (bool) {
         return _verifySlot(_slotTimestamp, _proof);
-    }
-
-    function verifyValidatorBalance(
-        uint64 _slotTimestamp,
-        uint64 _slot,
-        uint64 _balanceSlot,
-        uint40 _validatorIndex,
-        ValidatorBalanceProof calldata _proof
-    ) external view returns (bool) {
-        return _verifyValidatorBalance(_slotTimestamp, _slot, _balanceSlot, _validatorIndex, _proof);
     }
 
     function verifyNextWithdrawalIndex(
