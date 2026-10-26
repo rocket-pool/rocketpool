@@ -147,16 +147,6 @@ export type VerifiedValidatorStructOutput = [
   slot: bigint
 ] & { validatorIndex: bigint; validator: ValidatorStructOutput; slot: bigint };
 
-export type ValidatorBalanceProofStruct = {
-  balanceChunk: BytesLike;
-  witnesses: BytesLike[];
-};
-
-export type ValidatorBalanceProofStructOutput = [
-  balanceChunk: string,
-  witnesses: string[]
-] & { balanceChunk: string; witnesses: string[] };
-
 export type ValidatorProofStruct = {
   validatorIndex: BigNumberish;
   validator: ValidatorStruct;
@@ -221,7 +211,6 @@ export interface BeaconStateVerifierHarnessInterface extends Interface {
       | "verifySlot"
       | "verifySlotProof"
       | "verifyValidator"
-      | "verifyValidatorBalance"
       | "verifyValidatorProof"
       | "verifyWithdrawalProof"
       | "version"
@@ -261,16 +250,6 @@ export interface BeaconStateVerifierHarnessInterface extends Interface {
     values: [BigNumberish, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "verifyValidatorBalance",
-    values: [
-      BigNumberish,
-      BigNumberish,
-      BigNumberish,
-      BigNumberish,
-      ValidatorBalanceProofStruct
-    ]
-  ): string;
-  encodeFunctionData(
     functionFragment: "verifyValidatorProof",
     values: [BigNumberish, BigNumberish, ValidatorProofStruct]
   ): string;
@@ -303,10 +282,6 @@ export interface BeaconStateVerifierHarnessInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "verifyValidator",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "verifyValidatorBalance",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -430,18 +405,6 @@ export interface BeaconStateVerifierHarness extends BaseContract {
     "view"
   >;
 
-  verifyValidatorBalance: TypedContractMethod<
-    [
-      _slotTimestamp: BigNumberish,
-      _slot: BigNumberish,
-      _balanceSlot: BigNumberish,
-      _validatorIndex: BigNumberish,
-      _proof: ValidatorBalanceProofStruct
-    ],
-    [boolean],
-    "view"
-  >;
-
   verifyValidatorProof: TypedContractMethod<
     [
       _slotTimestamp: BigNumberish,
@@ -540,19 +503,6 @@ export interface BeaconStateVerifierHarness extends BaseContract {
       _proofData: BytesLike
     ],
     [VerifiedValidatorStructOutput],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "verifyValidatorBalance"
-  ): TypedContractMethod<
-    [
-      _slotTimestamp: BigNumberish,
-      _slot: BigNumberish,
-      _balanceSlot: BigNumberish,
-      _validatorIndex: BigNumberish,
-      _proof: ValidatorBalanceProofStruct
-    ],
-    [boolean],
     "view"
   >;
   getFunction(

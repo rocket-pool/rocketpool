@@ -1,4 +1,3 @@
-import { ZeroHash } from "ethers";
 import type { ProtocolCurrent } from "../../harness";
 import { currentSlot, validatorProof } from "./proofs";
 import { encodeFinalBalanceProofV2 } from "./proof-encoding";
@@ -16,14 +15,12 @@ export async function finalBalanceBeaconProof(protocol: ProtocolCurrent, validat
         validator: '011' + progressivePath(11) + progressivePath(validatorId),
         withdrawal: state(withdrawalSlot) + progressivePath(44) + progressivePath(0),
         index: state(withdrawalSlot - 1n) + progressivePath(25),
-        balance: state(withdrawalSlot) + progressivePath(12) + progressivePath(validatorId / 4n),
     };
     const tree = makeMultiProofs([
         { path: paths.slot, leaf: toLittleEndian(slot) },
         { path: paths.validator, leaf: merkleiseValidator(validator.validator) },
         { path: paths.withdrawal, leaf: merkleiseWithdrawal(withdrawal) },
         { path: paths.index, leaf: toLittleEndian(100n) },
-        { path: paths.balance, leaf: ZeroHash },
     ]);
     const timestamp = await protocol.time.latest();
     await (await protocol.contracts.beaconStateVerifier.connect(await protocol.context.guardian()).setBlockRoot(timestamp, tree.root)).wait();
@@ -32,7 +29,6 @@ export async function finalBalanceBeaconProof(protocol: ProtocolCurrent, validat
         { ...validator, witnesses: tree.witnesses.get(paths.validator)! },
         { slot, witnesses: tree.witnesses.get(paths.slot)! },
         { nextWithdrawalIndex: 100n, witnesses: tree.witnesses.get(paths.index)! },
-        { balanceChunk: ZeroHash, witnesses: tree.witnesses.get(paths.balance)! },
     );
     return { timestamp, proofData };
 }

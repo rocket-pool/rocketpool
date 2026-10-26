@@ -1,4 +1,3 @@
-import { ZeroHash } from "ethers";
 import type { ValidatorProofStruct, SlotProofStruct, WithdrawalProofStruct, ParticipationProofStruct } from "../../harness/bindings/fixtures/BeaconStateVerifierHarness";
 import { GLOAS_TEST_SLOT } from "../../harness/deployment";
 import { encodeValidatorProofV1, encodeSlotProofV1, encodeParticipationProofV1, encodeFinalBalanceProofV1, encodeFinalBalanceProofV2 } from "../../../test-unit/util/proof-encoding";
@@ -21,6 +20,6 @@ export function finalBalanceProofArgs<P extends unknown[]>(...args: [...P, Withd
     const gloas = BigInt(withdrawal.withdrawalSlot) >= GLOAS_TEST_SLOT;
     const data = gloas ? encodeFinalBalanceProofV2(withdrawal, validator, slot, {
         nextWithdrawalIndex: BigInt(withdrawal.withdrawal.index) - BigInt(withdrawal.withdrawalNum), witnesses: [],
-    }, { balanceChunk: ZeroHash, witnesses: [] }) : encodeFinalBalanceProofV1(withdrawal, validator, slot);
+    }) : encodeFinalBalanceProofV1(withdrawal, validator, slot);
     return [...args.slice(0, -3), gloas ? 2n : 1n, data] as [...P, bigint, string];
 }
