@@ -1990,6 +1990,61 @@ export default function() {
                     await shouldRevert(notifyExitValidator(megapool, 0, currentEpoch + 5), 'Notified exit twice', 'Already notified');
                 });
 
+                it(printTitle('node', 'can only notify final balance with a proof anchor from an earlier block'), async () => {
+                    const rocketMegapoolManager = await RocketMegapoolManager.deployed();
+                    const withdrawalEpoch = await getCurrentEpoch() + 114;
+                    await notifyExitValidator(megapool, 0, withdrawalEpoch);
+                    await helpers.time.increase(114 * slotsPerEpoch * secondsPerSlot);
+                    await mockRewards(megapool, '32'.ether);
+
+                    const validator = await getValidatorInfo(megapool, 0);
+                    const proofData = encodeFinalBalanceProofV2(
+                        {
+                            withdrawalSlot: withdrawalEpoch * slotsPerEpoch,
+                            withdrawalNum: 0n,
+                            withdrawal: {
+                                index: 0n,
+                                validatorIndex: 0n,
+                                withdrawalCredentials: megapool.target,
+                                amountInGwei: '32'.ether / '1'.gwei,
+                            },
+                            witnesses: [],
+                        },
+                        {
+                            validatorIndex: 0n,
+                            validator: {
+                                pubkey: validator.pubkey,
+                                withdrawalCredentials: await megapool.getWithdrawalCredentials(),
+                                effectiveBalance: 0n,
+                                slashed: false,
+                                activationEligibilityEpoch: 0n,
+                                activationEpoch: 0n,
+                                exitEpoch: 0n,
+                                withdrawableEpoch: withdrawalEpoch,
+                            },
+                            witnesses: [],
+                        },
+                        { slot: await getSlotForBlock(), witnesses: [] },
+                        { nextWithdrawalIndex: 0n, witnesses: [] },
+                    );
+                    const anchorTimestamp = await getCurrentTime();
+                    const manager = rocketMegapoolManager.connect(node);
+
+                    // Evaluate in the anchor's block so automining cannot make the anchor older.
+                    await shouldRevert(
+                        manager.notifyFinalBalance.staticCall(megapool.target, 0, anchorTimestamp, 2, proofData),
+                        'Notified final balance using the current block proof anchor',
+                        'Proof anchor too recent',
+                    );
+                    assert.equal((await getValidatorInfo(megapool, 0)).exited, false);
+
+                    // The identical proof becomes usable once its anchor is from an earlier block.
+                    await helpers.time.increase(secondsPerSlot);
+                    await manager.notifyFinalBalance(megapool.target, 0, anchorTimestamp, 2, proofData);
+                    assert.equal((await getValidatorInfo(megapool, 0)).exited, true);
+                    assertBN.equal(await megapool.getExitingValidatorCount(), 0n);
+                });
+
                 it(printTitle('node', 'can not notify final balance twice'), async () => {
                     const validatorId = 0n;
                     const withdrawalEpoch = await getCurrentEpoch();

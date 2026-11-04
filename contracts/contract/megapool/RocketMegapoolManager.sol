@@ -226,6 +226,8 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         bytes calldata _proofData
     ) override external onlyRegisteredMegapool(address(_megapool)) {
         _requireRecentProof(_slotTimestamp);
+        // Anchor slot must be at least 1 slot old to guarantee funds have arrived before exit notification
+        require(_slotTimestamp < block.timestamp, "Proof anchor too recent");
         VerifiedFinalBalance memory verified = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier")).verifyFinalBalance(_slotTimestamp, _proofVersion, _proofData);
         require(verified.withdrawalCredentials == _megapool.getWithdrawalCredentials(), "Invalid withdrawal credentials");
         bytes memory pubkey = _megapool.getValidatorPubkey(_validatorId);
