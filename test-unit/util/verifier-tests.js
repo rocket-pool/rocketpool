@@ -1,9 +1,9 @@
 import { afterEach, before, beforeEach, describe, it } from 'mocha';
-import { printTitle } from '../../test-old/_utils/formatting';
+import { printTitle } from '../_utils/formatting';
 import * as assert from 'assert';
-import { shouldRevert } from '../../test-old/_utils/testing';
+import { shouldRevert } from '../_utils/assertions';
 import { encodeFinalBalanceProofV2, encodeValidatorProofV1, encodeSlotProofV1, encodeParticipationProofV1 } from './proof-encoding';
-const { ethers, helpers } = require('../../test-old/_utils/hardhat-runtime');
+const { ethers, helpers } = require('../_utils/hardhat-runtime');
 const forkSlots = [74240n * 32n, 144896n * 32n, 194048n * 32n, 269568n * 32n, 364032n * 32n, 411392n * 32n, 14000000n];
 async function deploy(name, ...args) {
     const instance = await (await ethers.getContractFactory(name)).deploy(...args);

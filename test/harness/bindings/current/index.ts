@@ -28,6 +28,8 @@ export type { util };
 export type { RocketStorage } from "./RocketStorage";
 export type { RocketVault } from "./RocketVault";
 export * as factories from "./factories";
+export type { BLSDepositVerifier } from "./util/BLSDepositVerifier";
+export { BLSDepositVerifier__factory } from "./factories/util/BLSDepositVerifier__factory";
 export type { Bytes32SetStorage } from "./util/Bytes32SetStorage";
 export { Bytes32SetStorage__factory } from "./factories/util/Bytes32SetStorage__factory";
 export { RocketStorage__factory } from "./factories/RocketStorage__factory";

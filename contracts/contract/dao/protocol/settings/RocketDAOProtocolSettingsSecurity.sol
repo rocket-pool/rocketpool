@@ -21,6 +21,7 @@ contract RocketDAOProtocolSettingsSecurity is RocketDAOProtocolSettings, RocketD
             _setSettingUint("upgradeveto.quorum", 0.33 ether);   // RPIP-60: Member quorum threshold to veto a protocol upgrade (33%)
             _setSettingUint("upgrade.delay", 7 days);            // RPIP-60: Amount of time after an upgrade proposal passes that the security has to veto it
             // Default permissions for security council
+            setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "megapool", "megapool.stake.without.proof.enabled")), true);
             setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "deposit", "deposit.enabled")), true);
             setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "deposit", "deposit.assign.enabled")), true);
             setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "minipool", "minipool.submit.withdrawable.enabled")), true);

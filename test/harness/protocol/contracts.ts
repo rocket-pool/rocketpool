@@ -159,6 +159,7 @@ export interface CurrentContracts {
     rocketMegapoolManager: Current.RocketMegapoolManager;
     rocketMegapoolPenalties: Current.RocketMegapoolPenalties;
     linkedListStorage: V14.LinkedListStorage;
+    blsDepositVerifier: Current.BLSDepositVerifier;
     rocketUpgradeOneDotFive: Current.RocketUpgradeOneDotFive;
     rocketDAOProtocolProposal: V14.RocketDAOProtocolProposal;
     rocketDAOProtocolProposals: V14.RocketDAOProtocolProposals;

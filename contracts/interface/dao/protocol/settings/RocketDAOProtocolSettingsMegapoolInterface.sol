@@ -3,6 +3,8 @@ pragma solidity >0.5.0 <0.9.0;
 
 interface RocketDAOProtocolSettingsMegapoolInterface {
     function initialise() external;
+    function getStakeWithoutProofEnabled() external view returns (bool);
+    function getPrestakeChallengePeriod() external view returns (uint256);
     function getTimeBeforeDissolve() external view returns (uint256);
     function getDissolvePenalty() external view returns (uint256);
     function getMaximumEthPenalty() external view returns (uint256);

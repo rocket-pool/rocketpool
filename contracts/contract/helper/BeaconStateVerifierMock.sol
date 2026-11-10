@@ -39,6 +39,16 @@ contract BeaconStateVerifierMock is BeaconStateVerifierInterface {
         disabled = _disabled;
     }
 
+    function verifyPendingDeposit(uint64 _slotTimestamp, uint256 _proofVersion, bytes calldata _proofData) override external view returns (VerifiedPendingDeposit memory result) {
+        if (!disabled) return verifier.verifyPendingDeposit(_slotTimestamp, _proofVersion, _proofData);
+        require(_proofVersion == 1, "Unsupported proof version");
+        PendingDepositProofBundleV1 memory proof = abi.decode(_proofData, (PendingDepositProofBundleV1));
+        result.deposit = proof.pendingDepositProof.deposit;
+        result.depositIndex = proof.pendingDepositProof.depositIndex;
+        result.stateSlot = proof.pendingDepositProof.stateSlot;
+        result.slot = proof.slotProof.slot;
+    }
+
     function verifyValidator(uint64 _slotTimestamp, uint256 _proofVersion, bytes calldata _proofData) override external view returns (VerifiedValidator memory result) {
         if (!disabled) {
             return verifier.verifyValidator(_slotTimestamp, _proofVersion, _proofData);

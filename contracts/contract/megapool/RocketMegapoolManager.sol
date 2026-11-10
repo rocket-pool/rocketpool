@@ -7,10 +7,13 @@ import {RocketBase} from "../RocketBase.sol";
 import {RocketMegapoolInterface} from "../../interface/megapool/RocketMegapoolInterface.sol";
 import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
 import {RocketMegapoolManagerInterface} from "../../interface/megapool/RocketMegapoolManagerInterface.sol";
+import {RocketMegapoolFactoryInterface} from "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
+import {BLSDepositVerifierInterface} from "../../interface/util/BLSDepositVerifierInterface.sol";
 import {
     BeaconStateVerifierInterface,
     VerifiedValidator,
-    VerifiedFinalBalance
+    VerifiedFinalBalance,
+    VerifiedPendingDeposit
 } from "../../interface/util/BeaconStateVerifierInterface.sol";
 
 /// @notice Handles protocol-level megapool functionality
@@ -22,8 +25,11 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
     // Constants
     uint256 constant internal farFutureEpoch = 2 ** 64 - 1;
     uint256 constant internal activationBalanceInGwei = 32 ether / 1 gwei;
+    uint64 constant internal prestakeValueInGwei = uint64(1 ether / 1 gwei);
     uint64 constant internal slotsPerEpoch = 32;
     uint256 constant internal slotRecencyThreshold = 1 hours;
+
+    event InvalidSignatureChallenged(address indexed megapool, uint32 indexed validatorId, address indexed challenger);
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 3;
@@ -72,6 +78,66 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         (validatorInfo, pubkey) = rocketMegapool.getValidatorInfoAndPubkey(validatorId);
     }
 
+    /// @notice Returns prestake watcher data for the given global megapool validator index
+    /// @dev Legacy delegates expose no retained signature or challenge deadline, these return empty and zero
+    /// @param _index The index of the validator to query
+    function getValidatorPrestakeInfo(uint256 _index) override external view returns (bytes memory pubkey, RocketMegapoolStorageLayout.ValidatorInfo memory validatorInfo, address megapool, uint32 validatorId, bytes memory signature, uint256 challengeDeadline) {
+        require(_index < getUint(setCountKey), "Validator does not exist");
+        // Retrieve and decode entry
+        uint256 encoded = getUint(keccak256(abi.encodePacked("megapool.validator.set", _index)));
+        megapool = address(uint160(encoded >> 96));
+        validatorId = uint32(encoded);
+        RocketMegapoolInterface rocketMegapool = RocketMegapoolInterface(megapool);
+        if (rocketMegapool.version() >= 2) {
+            (validatorInfo, pubkey, signature, challengeDeadline) = rocketMegapool.getValidatorPrestakeInfo(validatorId);
+        } else {
+            (validatorInfo, pubkey) = rocketMegapool.getValidatorInfoAndPubkey(validatorId);
+            signature = new bytes(0);
+        }
+    }
+
+    /// @notice Returns global indices of prestaked validators within a bounded slice of the validator set
+    /// @param _offset First global index to inspect
+    /// @param _limit Maximum number of entries to inspect
+    /// @return indices Global indices currently in prestake
+    /// @return nextIndex First index after the inspected slice, capped at the total validator count
+    /// @return failedIndices Global indices whose state could not be read and should be retried separately
+    function getPrestakedValidatorIndices(uint256 _offset, uint256 _limit) override external view returns (uint256[] memory indices, uint256 nextIndex, uint256[] memory failedIndices) {
+        require(_limit > 0, "Limit must be positive");
+        uint256 total = getUint(setCountKey);
+        if (_offset >= total) {
+            return (new uint256[](0), total, new uint256[](0));
+        }
+        // Clamp before adding to avoid overflow for large limits
+        uint256 size = total - _offset;
+        if (size > _limit) size = _limit;
+        nextIndex = _offset + size;
+        indices = new uint256[](size);
+        failedIndices = new uint256[](size);
+        uint256 matches;
+        uint256 failures;
+        for (uint256 i = _offset; i < nextIndex; ++i) {
+            uint256 encoded = getUint(keccak256(abi.encodePacked("megapool.validator.set", i)));
+            RocketMegapoolInterface megapool = RocketMegapoolInterface(address(uint160(encoded >> 96)));
+            // An expired pinned delegate attempts a storage-writing upgrade during fallback
+            // Avoid that exceptional halt in STATICCALL, which would consume the forwarded gas
+            if (!megapool.getUseLatestDelegate() && megapool.getDelegateExpired()) {
+                failedIndices[failures++] = i;
+                continue;
+            }
+            try megapool.getValidatorInfo(uint32(encoded)) returns (RocketMegapoolStorageLayout.ValidatorInfo memory info) {
+                if (info.inPrestake) indices[matches++] = i;
+            } catch {
+                failedIndices[failures++] = i;
+            }
+        }
+        // Trim the preallocated arrays to the number of results
+        assembly {
+            mstore(indices, matches)
+            mstore(failedIndices, failures)
+        }
+    }
+
     /// @notice Verifies a versioned validator proof then stakes the validator
     /// @param _megapool Address of the megapool which the validator belongs to
     /// @param _validatorId Internal ID of the validator within the megapool
@@ -103,6 +169,29 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         _megapool.stake(_validatorId);
     }
 
+    /// @notice Dissolves a prestaked validator whose retained deposit signature is invalid
+    /// @param _megapool Address of the megapool which the validator belongs to
+    /// @param _validatorId Internal ID of the validator within the megapool
+    function challengeInvalidSignature(RocketMegapoolInterface _megapool, uint32 _validatorId)
+        override external onlyLatestContract("rocketMegapoolManager", address(this))
+        onlyRegisteredMegapool(address(_megapool))
+    {
+        _requireEligibleChallenger();
+        require(_megapool.getValidatorInfo(_validatorId).inPrestake, "Validator not prestaked");
+        // Retrieve signature from megapool
+        bytes memory signature = _megapool.getValidatorPrestakeSignature(_validatorId);
+        require(signature.length != 0, "Prestake signature not retained");
+        // Verify stored signature
+        BLSDepositVerifierInterface blsDepositVerifier = BLSDepositVerifierInterface(getContractAddress("blsDepositVerifier"));
+        bool valid = blsDepositVerifier.verifyDepositSignature(
+            _megapool.getValidatorPubkey(_validatorId), _megapool.getWithdrawalCredentials(), prestakeValueInGwei, signature
+        );
+        require(!valid, "Prestake signature is valid");
+        _megapool.dissolveInvalidValidator(_validatorId, msg.sender);
+        // Emit event
+        emit InvalidSignatureChallenged(address(_megapool), _validatorId, msg.sender);
+    }
+
     /// @notice Verifies a versioned validator proof then dissolves a non-compliant validator
     /// @param _megapool Address of the megapool which the validator belongs to
     /// @param _validatorId Internal ID of the validator within the megapool
@@ -115,7 +204,7 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         uint64 _slotTimestamp,
         uint256 _proofVersion,
         bytes calldata _proofData
-    ) override external onlyRegisteredMegapool(address(_megapool)) {
+    ) override external onlyLatestContract("rocketMegapoolManager", address(this)) onlyRegisteredMegapool(address(_megapool)) {
         // Require a recent proof
         _requireRecentProof(_slotTimestamp);
         VerifiedValidator memory verified = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier")).verifyValidator(_slotTimestamp, _proofVersion, _proofData);
@@ -136,7 +225,28 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
         bytes memory pubkey = _megapool.getValidatorPubkey(_validatorId);
         require(keccak256(verified.validator.pubkey) == keccak256(pubkey), "Pubkey does not match");
         // Dissolve the validator
-        _megapool.dissolveValidator(_validatorId);
+        _dissolveInvalidValidator(_megapool, _validatorId);
+    }
+
+    /// @notice Dissolves a prestaked validator with a validly signed pending deposit to incorrect withdrawal credentials
+    /// @param _proofData For version 1, `abi.encode(PendingDepositProofBundleV1)`
+    function dissolvePendingDeposit(
+        RocketMegapoolInterface _megapool,
+        uint32 _validatorId,
+        uint64 _slotTimestamp,
+        uint256 _proofVersion,
+        bytes calldata _proofData
+    ) override external onlyLatestContract("rocketMegapoolManager", address(this)) onlyRegisteredMegapool(address(_megapool)) {
+        _requireRecentProof(_slotTimestamp);
+        require(_megapool.getValidatorInfo(_validatorId).inPrestake, "Validator not prestaked");
+        VerifiedPendingDeposit memory verified = BeaconStateVerifierInterface(getContractAddress("beaconStateVerifier")).verifyPendingDeposit(_slotTimestamp, _proofVersion, _proofData);
+        require(keccak256(verified.deposit.pubkey) == keccak256(_megapool.getValidatorPubkey(_validatorId)), "Pubkey does not match");
+        require(verified.deposit.withdrawalCredentials != _megapool.getWithdrawalCredentials(), "Correct withdrawal credentials");
+        // Queue membership alone is insufficient: anyone can submit a deposit with an invalid signature.
+        require(BLSDepositVerifierInterface(getContractAddress("blsDepositVerifier")).verifyDepositSignature(
+            verified.deposit.pubkey, verified.deposit.withdrawalCredentials, verified.deposit.amountInGwei, verified.deposit.signature
+        ), "Invalid pending deposit signature");
+        _dissolveInvalidValidator(_megapool, _validatorId);
     }
 
     /// @notice Verifies a versioned validator proof then notifies the validator exit
@@ -239,5 +349,24 @@ contract RocketMegapoolManager is RocketBase, RocketMegapoolManagerInterface {
     /// @dev Rejects stale proof anchors for all proof entrypoints
     function _requireRecentProof(uint64 _slotTimestamp) internal view {
         require(_slotTimestamp + slotRecencyThreshold >= block.timestamp, "Slot proof too old");
+    }
+
+    /// @dev Challenger credit uses the existing node credit pathway
+    function _requireEligibleChallenger() internal view onlyRegisteredNode(msg.sender) {
+        RocketMegapoolFactoryInterface factory = RocketMegapoolFactoryInterface(getContractAddress("rocketMegapoolFactory"));
+        require(factory.getMegapoolDeployed(msg.sender), "Challenger megapool must be deployed");
+    }
+
+    /// @dev Apply the same challenger eligibility and legacy compatibility to each beacon proof route
+    function _dissolveInvalidValidator(RocketMegapoolInterface _megapool, uint32 _validatorId) internal {
+        if (_megapool.version() >= 2) {
+            // Only reserved prestakes pay a reward, legacy proof submissions remain permissionless
+            if (_megapool.getValidatorChallengeDeadline(_validatorId) != 0) {
+                _requireEligibleChallenger();
+            }
+            _megapool.dissolveInvalidValidator(_validatorId, msg.sender);
+        } else {
+            _megapool.dissolveValidator(_validatorId);
+        }
     }
 }

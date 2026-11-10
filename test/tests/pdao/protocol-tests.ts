@@ -556,6 +556,24 @@ describe("RocketDAOProtocol", () => {
                 await finalisePDAOAndAssert(current, proposal.id, { caller: "proposer" });
             });
 
+            it("disables and re-enables proofless staking through full governance proposals", async () => {
+                const current = await load().ensure("current");
+                for (const value of [false, true]) {
+                    const payload = current.contracts.rocketDAOProtocolProposals.interface.encodeFunctionData(
+                        "proposalSettingBool", ["rocketDAOProtocolSettingsMegapool", "megapool.stake.without.proof.enabled", value],
+                    );
+                    const proposal = await createProposal(current, { payload });
+                    await advance(current, await current.pdao.settings.proposals.voteDelay());
+                    await voteAll(current, proposal, PDAO_VOTE.for);
+                    await advance(current,
+                        await current.pdao.settings.proposals.phase1Time()
+                        + await current.pdao.settings.proposals.phase2Time());
+                    await executePDAOAndAssert(current, proposal.id, { caller: "proposer" });
+                    assert.equal(await current.contracts.rocketDAOProtocolSettingsMegapool.getStakeWithoutProofEnabled(), value);
+                    await claimProposerBondAndMeasure(current, proposal.id, [1], { caller: "proposer" });
+                }
+            });
+
             it("invites a security council member through governance", async () => {
                 const current = await load().ensure("current");
                 const payload = current.contracts.rocketDAOProtocolProposals.interface.encodeFunctionData(

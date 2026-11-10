@@ -21,8 +21,8 @@ contract RocketUpgradeOneDotFive is RocketBase {
 
     // Upgrade ABIs
     bool public locked = false;
-    address[11] public addresses;
-    string[12] public abis;
+    address[13] public addresses;
+    string[14] public abis;
 
     // Construct
     constructor(
@@ -35,8 +35,8 @@ contract RocketUpgradeOneDotFive is RocketBase {
 
     // @notice Sets the addresses and ABIs of the upgrade
     function set(
-        address[11] memory _addresses,
-        string[12] memory _abis
+        address[13] memory _addresses,
+        string[14] memory _abis
     ) external {
         require(msg.sender == deployer, "Only deployer can set");
         require(!locked, "Already set");
@@ -68,7 +68,9 @@ contract RocketUpgradeOneDotFive is RocketBase {
         _addContract("bytes32SetStorage", addresses[10], abis[10]);
         _addContract("rocketNetworkExit", addresses[8],  abis[8]);
         _upgradeContract("rocketNetworkPenalties", addresses[9], abis[9]);
-        _upgradeABI("rocketMinipool", abis[11]);
+        _upgradeContract("rocketDAOProtocolSettingsNode", addresses[11], abis[11]);
+        _addContract("blsDepositVerifier", addresses[12], abis[12]);
+        _upgradeABI("rocketMinipool", abis[13]);
 
         // Execute delegate upgrade via factory
         address rocketMegapoolDelegateAddress = addresses[0];
@@ -78,6 +80,9 @@ contract RocketUpgradeOneDotFive is RocketBase {
         // Megapool settings
         {
             bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "megapool"));
+            // Proofless staking defaults per RPIP-79
+            setBool(keccak256(abi.encodePacked(settingNameSpace, "megapool.stake.without.proof.enabled")), true);
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "megapool.prestake.challenge.period")), 12 hours);
             // Set exit defict per RPIP-44
             setUint(keccak256(abi.encodePacked(settingNameSpace, "megapool.exit.deficit")), 0.2 ether);
         }
@@ -108,6 +113,7 @@ contract RocketUpgradeOneDotFive is RocketBase {
 
         // Security Council allowlist settings
         {
+            setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "megapool", "megapool.stake.without.proof.enabled")), true);
             setBool(keccak256(abi.encodePacked("dao.security.allowed.setting", "network", "network.performance.exits.enabled")), true);
         }
 

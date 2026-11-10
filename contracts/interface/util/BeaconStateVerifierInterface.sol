@@ -37,6 +37,35 @@ pragma solidity >0.5.0 <0.9.0;
         bytes32[] witnesses;
     }
 
+    struct PendingDeposit {
+        bytes pubkey;
+        bytes32 withdrawalCredentials;
+        uint64 amountInGwei;
+        bytes signature;
+        uint64 slot;
+    }
+
+    struct PendingDepositProof {
+        uint64 stateSlot;
+        uint64 depositIndex;
+        PendingDeposit deposit;
+        bytes32[] witnesses;
+    }
+
+    /// Proof of a pending deposit in the anchor state or an authenticated historical state
+    struct PendingDepositProofBundleV1 {
+        PendingDepositProof pendingDepositProof;
+        SlotProof slotProof;
+    }
+
+    // Fork-inndepend result returned by a successfully verified pending deposit proof bundle
+    struct VerifiedPendingDeposit {
+        PendingDeposit deposit;
+        uint64 depositIndex;
+        uint64 stateSlot;
+        uint64 slot;
+    }
+
     /// Canonical payload for validator proof version 1
     struct ValidatorProofBundleV1 {
         ValidatorProof validatorProof;
@@ -110,6 +139,7 @@ pragma solidity >0.5.0 <0.9.0;
     }
 
 interface BeaconStateVerifierInterface {
+    function verifyPendingDeposit(uint64 _slotTimestamp, uint256 _proofVersion, bytes calldata _proofData) external view returns (VerifiedPendingDeposit memory);
     function verifySlot(uint64 _slotTimestamp, uint256 _proofVersion, bytes calldata _proofData) external view returns (VerifiedSlot memory);
     function verifyParticipation(uint64 _slotTimestamp, uint256 _proofVersion, bytes calldata _proofData) external view returns (VerifiedParticipation memory);
     function verifyValidator(uint64 _slotTimestamp, uint256 _proofVersion, bytes calldata _proofData) external view returns (VerifiedValidator memory);

@@ -21,7 +21,11 @@ import {
     SlotProofBundleV1,
     ParticipationProofBundleV1,
     VerifiedSlot,
-    VerifiedParticipation
+    VerifiedParticipation,
+    PendingDeposit,
+    PendingDepositProof,
+    PendingDepositProofBundleV1,
+    VerifiedPendingDeposit
 } from "../../interface/util/BeaconStateVerifierInterface.sol";
 
 contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
@@ -89,6 +93,72 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         result.slot = proof.slotProof.slot;
     }
 
+    /// @dev Verifies a slot proof against the beacon block root selected by `_slotTimestamp`
+    function _verifySlot(uint64 _slotTimestamp, SlotProof memory _proof) internal view returns(bool) {
+        // Only support post-electra state proofs
+        require(_proof.slot >= slotElectra, "Invalid proof");
+        // Retrieve the parent block hash
+        bytes32 root = _getParentBlockRoot(_slotTimestamp);
+        // Construct gindex
+        SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
+        path = SSZ.concat(path, _pathBeaconStateToSlot(_proof.slot));
+        // Merkleise the slot number
+        bytes32 leaf = SSZ.toLittleEndian(uint256(_proof.slot));
+        // Restore the block root for the supplied slot
+        require(SSZ.length(path) == _proof.witnesses.length, "Invalid witness length");
+        bytes32 computedRoot = SSZ.restoreMerkleRoot(leaf, SSZ.toIndex(path), _proof.witnesses);
+        // Retrieve and compare the root with what we determined it should be from the given proof
+        return computedRoot == root;
+    }
+
+    /// @dev Verifies a validator proof against the beacon block root selected by `_slotTimestamp`
+    function _verifyValidator(uint64 _slotTimestamp, uint64 _slot, ValidatorProof memory _proof) internal view returns(bool) {
+        // Only support post-electra state proofs
+        require(_slot >= slotElectra, "Invalid proof");
+        // Construct gindex
+        SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
+        path = SSZ.concat(path, _pathBeaconStateToValidator(_slot, _proof.validatorIndex));
+        // Restore the block root for the supplied slot
+        require(SSZ.length(path) == _proof.witnesses.length, "Invalid witness length");
+        bytes32 computedRoot = SSZ.restoreMerkleRoot(_merkleiseValidator(_proof.validator), SSZ.toIndex(path), _proof.witnesses);
+        // Retrieve and compare the root with what we determined it should be from the given proof
+        bytes32 root = _getParentBlockRoot(_slotTimestamp);
+        return computedRoot == root;
+    }
+
+    /// @notice Verifies a pending deposit against a recent anchor, optionally through historical state roots
+    /// @param _proofData For version 1, `abi.encode(PendingDepositProofBundleV1)`
+    function verifyPendingDeposit(uint64 _slotTimestamp, uint256 _proofVersion, bytes calldata _proofData) override external view returns (VerifiedPendingDeposit memory result) {
+        require(_proofVersion == 1, "Unsupported proof version");
+        PendingDepositProofBundleV1 memory proof = abi.decode(_proofData, (PendingDepositProofBundleV1));
+        require(_verifySlot(_slotTimestamp, proof.slotProof), "Invalid slot proof");
+        require(_verifyPendingDeposit(_slotTimestamp, proof.slotProof.slot, proof.pendingDepositProof), "Invalid pending deposit proof");
+        result.deposit = proof.pendingDepositProof.deposit;
+        result.depositIndex = proof.pendingDepositProof.depositIndex;
+        result.stateSlot = proof.pendingDepositProof.stateSlot;
+        result.slot = proof.slotProof.slot;
+    }
+
+    /// @dev Authenticate all deposit fields and list membership
+    function _verifyPendingDeposit(uint64 _slotTimestamp, uint64 _slot, PendingDepositProof memory _proof) internal view returns (bool) {
+        require(_proof.stateSlot >= slotElectra, "Invalid proof");
+        SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
+        if (_proof.stateSlot != _slot) {
+            path = SSZ.concat(path, _pathBeaconStateToPastRoot(_slot, _proof.stateSlot, true));
+        }
+        // The anchor and the state containing the deposit can use different fork layouts
+        bool isGloas = _slotToFork(_proof.stateSlot) == Fork.GLOAS;
+        path = SSZ.concat(path, isGloas ? SSZ.intoProgressive(34) : SSZ.from(34, 6)); // BeaconState -> pending_deposits
+        SSZ.Path memory listPath = isGloas ? SSZ.intoProgressive(_proof.depositIndex) : SSZ.intoList(_proof.depositIndex, 27);
+        path = SSZ.concat(path, listPath);
+        require(SSZ.length(path) == _proof.witnesses.length, "Invalid witness length");
+        // Both list formats mix in their length immediately above the element tree
+        uint256 depositCount = uint256(SSZ.toLittleEndian(uint256(_proof.witnesses[SSZ.length(listPath) - 1])));
+        require(_proof.depositIndex < depositCount, "Invalid deposit index");
+        bytes32 root = SSZ.restoreMerkleRoot(_merkleisePendingDeposit(_proof.deposit), SSZ.toIndex(path), _proof.witnesses);
+        return root == _getParentBlockRoot(_slotTimestamp);
+    }
+
     /// @notice Verifies abi.encode(SlotProofBundleV1) and returns the authenticated slot
     function verifySlot(uint64 _slotTimestamp, uint256 _proofVersion, bytes calldata _proofData) override external view returns (VerifiedSlot memory result) {
         require(_proofVersion == 1, "Unsupported proof version");
@@ -126,21 +196,6 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         }
         require(SSZ.length(path) == _proof.witnesses.length, "Invalid witness length");
         return SSZ.restoreMerkleRoot(_proof.participationFlagsChunk, SSZ.toIndex(path), _proof.witnesses) == _getParentBlockRoot(_slotTimestamp);
-    }
-
-    /// @dev Verifies a validator proof against the beacon block root selected by `_slotTimestamp`
-    function _verifyValidator(uint64 _slotTimestamp, uint64 _slot, ValidatorProof memory _proof) internal view returns(bool) {
-        // Only support post-electra state proofs
-        require(_slot >= slotElectra, "Invalid proof");
-        // Construct gindex
-        SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
-        path = SSZ.concat(path, _pathBeaconStateToValidator(_slot, _proof.validatorIndex));
-        // Restore the block root for the supplied slot
-        require(SSZ.length(path) == _proof.witnesses.length, "Invalid witness length");
-        bytes32 computedRoot = SSZ.restoreMerkleRoot(_merkleiseValidator(_proof.validator), SSZ.toIndex(path), _proof.witnesses);
-        // Retrieve and compare the root with what we determined it should be from the given proof
-        bytes32 root = _getParentBlockRoot(_slotTimestamp);
-        return computedRoot == root;
     }
 
     /// @notice Verifies a versioned final balance proof bundle and returns its fork-independent facts
@@ -221,24 +276,6 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
         return computedRoot == root;
     }
 
-    /// @dev Verifies a slot proof against the beacon block root selected by `_slotTimestamp`
-    function _verifySlot(uint64 _slotTimestamp, SlotProof memory _proof) internal view returns(bool) {
-        // Only support post-electra state proofs
-        require(_proof.slot >= slotElectra, "Invalid proof");
-        // Retrieve the parent block hash
-        bytes32 root = _getParentBlockRoot(_slotTimestamp);
-        // Construct gindex
-        SSZ.Path memory path = _pathBeaconBlockHeaderToStateRoot();
-        path = SSZ.concat(path, _pathBeaconStateToSlot(_proof.slot));
-        // Merkleise the slot number
-        bytes32 leaf = SSZ.toLittleEndian(uint256(_proof.slot));
-        // Restore the block root for the supplied slot
-        require(SSZ.length(path) == _proof.witnesses.length, "Invalid witness length");
-        bytes32 computedRoot = SSZ.restoreMerkleRoot(leaf, SSZ.toIndex(path), _proof.witnesses);
-        // Retrieve and compare the root with what we determined it should be from the given proof
-        return computedRoot == root;
-    }
-
     /// @dev Verifies next_withdrawal_index in the state immediately preceding `_withdrawalSlot`
     function _verifyNextWithdrawalIndex(
         uint64 _slotTimestamp,
@@ -281,6 +318,30 @@ contract BeaconStateVerifier is RocketBase, BeaconStateVerifierInterface {
     function _merkleiseWithdrawal(Withdrawal memory _withdrawal) internal view returns (bytes32) {
         bytes32 left = SSZ.efficientSha256(SSZ.toLittleEndian(_withdrawal.index), SSZ.toLittleEndian(_withdrawal.validatorIndex));
         bytes32 right = SSZ.efficientSha256(_withdrawal.withdrawalCredentials, SSZ.toLittleEndian(_withdrawal.amountInGwei));
+        return SSZ.efficientSha256(left, right);
+    }
+
+    /// @dev PendingDeposit is a five-field SSZ container, including a fixed 96-byte signature.
+    function _merkleisePendingDeposit(PendingDeposit memory _deposit) internal view returns (bytes32) {
+        bytes memory signature = _deposit.signature;
+        require(signature.length == 96, "Invalid signature length");
+        bytes32 a;
+        bytes32 b;
+        bytes32 c;
+        assembly {
+            a := mload(add(signature, 32))
+            b := mload(add(signature, 64))
+            c := mload(add(signature, 96))
+        }
+        bytes32 signatureRoot = SSZ.efficientSha256(SSZ.efficientSha256(a, b), SSZ.efficientSha256(c, bytes32(0)));
+        bytes32 left = SSZ.efficientSha256(
+            SSZ.efficientSha256(SSZ.merkleisePubkey(_deposit.pubkey), _deposit.withdrawalCredentials),
+            SSZ.efficientSha256(SSZ.toLittleEndian(_deposit.amountInGwei), signatureRoot)
+        );
+        bytes32 right = SSZ.efficientSha256(
+            SSZ.efficientSha256(SSZ.toLittleEndian(_deposit.slot), bytes32(0)),
+            SSZ.efficientSha256(bytes32(0), bytes32(0))
+        );
         return SSZ.efficientSha256(left, right);
     }
 

@@ -30,10 +30,12 @@ export interface RocketDAOProtocolSettingsMegapoolInterface extends Interface {
       | "getMaximumEthPenalty"
       | "getNotifyThreshold"
       | "getPenaltyThreshold"
+      | "getPrestakeChallengePeriod"
       | "getSettingAddress"
       | "getSettingAddressList"
       | "getSettingBool"
       | "getSettingUint"
+      | "getStakeWithoutProofEnabled"
       | "getTimeBeforeDissolve"
       | "getUserDistributeDelay"
       | "getUserDistributeDelayWithShortfall"
@@ -70,6 +72,10 @@ export interface RocketDAOProtocolSettingsMegapoolInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "getPrestakeChallengePeriod",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "getSettingAddress",
     values: [string]
   ): string;
@@ -84,6 +90,10 @@ export interface RocketDAOProtocolSettingsMegapoolInterface extends Interface {
   encodeFunctionData(
     functionFragment: "getSettingUint",
     values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getStakeWithoutProofEnabled",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "getTimeBeforeDissolve",
@@ -144,6 +154,10 @@ export interface RocketDAOProtocolSettingsMegapoolInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "getPrestakeChallengePeriod",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getSettingAddress",
     data: BytesLike
   ): Result;
@@ -157,6 +171,10 @@ export interface RocketDAOProtocolSettingsMegapoolInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getSettingUint",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getStakeWithoutProofEnabled",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -246,6 +264,8 @@ export interface RocketDAOProtocolSettingsMegapool extends BaseContract {
 
   getPenaltyThreshold: TypedContractMethod<[], [bigint], "view">;
 
+  getPrestakeChallengePeriod: TypedContractMethod<[], [bigint], "view">;
+
   getSettingAddress: TypedContractMethod<
     [_settingPath: string],
     [string],
@@ -265,6 +285,8 @@ export interface RocketDAOProtocolSettingsMegapool extends BaseContract {
   >;
 
   getSettingUint: TypedContractMethod<[_settingPath: string], [bigint], "view">;
+
+  getStakeWithoutProofEnabled: TypedContractMethod<[], [boolean], "view">;
 
   getTimeBeforeDissolve: TypedContractMethod<[], [bigint], "view">;
 
@@ -327,6 +349,9 @@ export interface RocketDAOProtocolSettingsMegapool extends BaseContract {
     nameOrSignature: "getPenaltyThreshold"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
+    nameOrSignature: "getPrestakeChallengePeriod"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
     nameOrSignature: "getSettingAddress"
   ): TypedContractMethod<[_settingPath: string], [string], "view">;
   getFunction(
@@ -338,6 +363,9 @@ export interface RocketDAOProtocolSettingsMegapool extends BaseContract {
   getFunction(
     nameOrSignature: "getSettingUint"
   ): TypedContractMethod<[_settingPath: string], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "getStakeWithoutProofEnabled"
+  ): TypedContractMethod<[], [boolean], "view">;
   getFunction(
     nameOrSignature: "getTimeBeforeDissolve"
   ): TypedContractMethod<[], [bigint], "view">;

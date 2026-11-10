@@ -8,6 +8,7 @@ import { baseContractNames, LogicalContractName, v14UpgradeContractNames } from 
 const ZERO_ADDRESS = ethersLibrary.ZeroAddress;
 const ETHER = 10n ** 18n;
 const MAINNET_BEACON_ROOTS = "0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02";
+const MAINNET_GENESIS_FORK_VERSION = "0x00000000";
 const MAINNET_GENESIS_TIME = 1606824023n;
 const MAINNET_GENESIS_ROOT = "0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95";
 const WITHDRAWAL_REQUEST_PREDEPLOY = "0x00000961Ef480Eb55e80D19ad83579A64c007002";
@@ -376,6 +377,8 @@ const currentUpgradeContracts = {
     rocketNetworkExit: "RocketNetworkExit",
     rocketNetworkPenalties: "RocketNetworkPenalties",
     bytes32SetStorage: "Bytes32SetStorage",
+    rocketDAOProtocolSettingsNode: "RocketDAOProtocolSettingsNode",
+    blsDepositVerifier: "BLSDepositVerifier",
 } as const;
 
 export async function upgradeToCurrent(state: DeploymentState): Promise<void> {
@@ -388,7 +391,9 @@ export async function upgradeToCurrent(state: DeploymentState): Promise<void> {
     for (const [logicalName, artifactName] of Object.entries(currentUpgradeContracts)) {
         const artifact = await currentArtifact(artifactName);
         let args: readonly unknown[] = [state.rocketStorageAddress];
-        if (logicalName === "beaconStateVerifier") {
+        if (logicalName === "blsDepositVerifier") {
+            args = [MAINNET_GENESIS_FORK_VERSION];
+        } else if (logicalName === "beaconStateVerifier") {
             args = [state.rocketStorageAddress, CURRENT_FORK_SLOTS];
         } else if (logicalName === "rocketMinipoolDelegate") {
             args = [];

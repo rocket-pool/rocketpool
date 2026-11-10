@@ -15,7 +15,11 @@ interface RocketMegapoolDelegateInterface is RocketMegapoolDelegateBaseInterface
     function reduceBond(uint256 _amount) external;
     function assignFunds(uint32 _validatorId) external payable;
     function stake(uint32 _validatorId) external;
+    function stakeWithoutProof(uint32 _validatorId) external;
+    function getValidatorPrestakeSignature(uint32 _validatorId) external view returns (bytes memory);
+    function getValidatorChallengeDeadline(uint32 _validatorId) external view returns (uint256);
     function dissolveValidator(uint32 _validatorId) external;
+    function dissolveInvalidValidator(uint32 _validatorId, address _challenger) external;
     function getNodeAddress() external returns (address);
     function distribute() external;
     function claim() external;
@@ -36,10 +40,12 @@ interface RocketMegapoolDelegateInterface is RocketMegapoolDelegateBaseInterface
     function getValidatorInfo(uint32 _validatorId) external view returns (RocketMegapoolStorageLayout.ValidatorInfo memory);
     function getValidatorPubkey(uint32 _validatorId) external view returns (bytes memory);
     function getValidatorInfoAndPubkey(uint32 _validatorId) external view returns (RocketMegapoolStorageLayout.ValidatorInfo memory info, bytes memory pubkey);
+    function getValidatorPrestakeInfo(uint32 _validatorId) external view returns (RocketMegapoolStorageLayout.ValidatorInfo memory info, bytes memory pubkey, bytes memory signature, uint256 challengeDeadline);
     function getAssignedValue() external view returns (uint256);
     function getDebt() external view returns (uint256);
     function getRefundValue() external view returns (uint256);
     function getNodeBond() external view returns (uint256);
+    function getReservedPrestakeBond() external view returns (uint256);
     function getUserCapital() external view returns (uint256);
     function getNodeQueuedBond() external view returns (uint256);
     function getUserQueuedCapital() external view returns (uint256);

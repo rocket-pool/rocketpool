@@ -85,6 +85,7 @@ export interface RocketMegapoolDelegateInterface extends Interface {
       | "claim"
       | "deprecate"
       | "dequeue"
+      | "dissolveInvalidValidator"
       | "dissolveValidator"
       | "distribute"
       | "forceExit"
@@ -101,11 +102,15 @@ export interface RocketMegapoolDelegateInterface extends Interface {
       | "getNodeQueuedBond"
       | "getPendingRewards"
       | "getRefundValue"
+      | "getReservedPrestakeBond"
       | "getUserCapital"
       | "getUserQueuedCapital"
+      | "getValidatorChallengeDeadline"
       | "getValidatorCount"
       | "getValidatorInfo"
       | "getValidatorInfoAndPubkey"
+      | "getValidatorPrestakeInfo"
+      | "getValidatorPrestakeSignature"
       | "getValidatorPubkey"
       | "getWithdrawalCredentials"
       | "newValidator"
@@ -116,6 +121,7 @@ export interface RocketMegapoolDelegateInterface extends Interface {
       | "repayDebt"
       | "retryExit"
       | "stake"
+      | "stakeWithoutProof"
       | "version"
   ): FunctionFragment;
 
@@ -165,6 +171,10 @@ export interface RocketMegapoolDelegateInterface extends Interface {
   encodeFunctionData(
     functionFragment: "dequeue",
     values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "dissolveInvalidValidator",
+    values: [BigNumberish, AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "dissolveValidator",
@@ -228,12 +238,20 @@ export interface RocketMegapoolDelegateInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "getReservedPrestakeBond",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "getUserCapital",
     values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "getUserQueuedCapital",
     values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getValidatorChallengeDeadline",
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "getValidatorCount",
@@ -245,6 +263,14 @@ export interface RocketMegapoolDelegateInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "getValidatorInfoAndPubkey",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getValidatorPrestakeInfo",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getValidatorPrestakeSignature",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
@@ -287,6 +313,10 @@ export interface RocketMegapoolDelegateInterface extends Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "stake", values: [BigNumberish]): string;
+  encodeFunctionData(
+    functionFragment: "stakeWithoutProof",
+    values: [BigNumberish]
+  ): string;
   encodeFunctionData(functionFragment: "version", values?: undefined): string;
 
   decodeFunctionResult(
@@ -312,6 +342,10 @@ export interface RocketMegapoolDelegateInterface extends Interface {
   decodeFunctionResult(functionFragment: "claim", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "deprecate", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "dequeue", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "dissolveInvalidValidator",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "dissolveValidator",
     data: BytesLike
@@ -368,11 +402,19 @@ export interface RocketMegapoolDelegateInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "getReservedPrestakeBond",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getUserCapital",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
     functionFragment: "getUserQueuedCapital",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getValidatorChallengeDeadline",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -385,6 +427,14 @@ export interface RocketMegapoolDelegateInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getValidatorInfoAndPubkey",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getValidatorPrestakeInfo",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getValidatorPrestakeSignature",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -412,6 +462,10 @@ export interface RocketMegapoolDelegateInterface extends Interface {
   decodeFunctionResult(functionFragment: "repayDebt", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "retryExit", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "stake", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "stakeWithoutProof",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "version", data: BytesLike): Result;
 }
 
@@ -748,6 +802,12 @@ export interface RocketMegapoolDelegate extends BaseContract {
     "nonpayable"
   >;
 
+  dissolveInvalidValidator: TypedContractMethod<
+    [_validatorId: BigNumberish, _challenger: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
   dissolveValidator: TypedContractMethod<
     [_validatorId: BigNumberish],
     [void],
@@ -788,9 +848,17 @@ export interface RocketMegapoolDelegate extends BaseContract {
 
   getRefundValue: TypedContractMethod<[], [bigint], "view">;
 
+  getReservedPrestakeBond: TypedContractMethod<[], [bigint], "view">;
+
   getUserCapital: TypedContractMethod<[], [bigint], "view">;
 
   getUserQueuedCapital: TypedContractMethod<[], [bigint], "view">;
+
+  getValidatorChallengeDeadline: TypedContractMethod<
+    [_validatorId: BigNumberish],
+    [bigint],
+    "view"
+  >;
 
   getValidatorCount: TypedContractMethod<[], [bigint], "view">;
 
@@ -808,6 +876,30 @@ export interface RocketMegapoolDelegate extends BaseContract {
         pubkey: string;
       }
     ],
+    "view"
+  >;
+
+  getValidatorPrestakeInfo: TypedContractMethod<
+    [_validatorId: BigNumberish],
+    [
+      [
+        RocketMegapoolStorageLayout.ValidatorInfoStructOutput,
+        string,
+        string,
+        bigint
+      ] & {
+        info: RocketMegapoolStorageLayout.ValidatorInfoStructOutput;
+        pubkey: string;
+        signature: string;
+        challengeDeadline: bigint;
+      }
+    ],
+    "view"
+  >;
+
+  getValidatorPrestakeSignature: TypedContractMethod<
+    [_validatorId: BigNumberish],
+    [string],
     "view"
   >;
 
@@ -879,6 +971,12 @@ export interface RocketMegapoolDelegate extends BaseContract {
     "nonpayable"
   >;
 
+  stakeWithoutProof: TypedContractMethod<
+    [_validatorId: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+
   version: TypedContractMethod<[], [bigint], "view">;
 
   getFunction<T extends ContractMethod = ContractMethod>(
@@ -932,6 +1030,13 @@ export interface RocketMegapoolDelegate extends BaseContract {
     nameOrSignature: "dequeue"
   ): TypedContractMethod<[_validatorId: BigNumberish], [void], "nonpayable">;
   getFunction(
+    nameOrSignature: "dissolveInvalidValidator"
+  ): TypedContractMethod<
+    [_validatorId: BigNumberish, _challenger: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
     nameOrSignature: "dissolveValidator"
   ): TypedContractMethod<[_validatorId: BigNumberish], [void], "nonpayable">;
   getFunction(
@@ -980,11 +1085,17 @@ export interface RocketMegapoolDelegate extends BaseContract {
     nameOrSignature: "getRefundValue"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
+    nameOrSignature: "getReservedPrestakeBond"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
     nameOrSignature: "getUserCapital"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "getUserQueuedCapital"
   ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "getValidatorChallengeDeadline"
+  ): TypedContractMethod<[_validatorId: BigNumberish], [bigint], "view">;
   getFunction(
     nameOrSignature: "getValidatorCount"
   ): TypedContractMethod<[], [bigint], "view">;
@@ -1007,6 +1118,28 @@ export interface RocketMegapoolDelegate extends BaseContract {
     ],
     "view"
   >;
+  getFunction(
+    nameOrSignature: "getValidatorPrestakeInfo"
+  ): TypedContractMethod<
+    [_validatorId: BigNumberish],
+    [
+      [
+        RocketMegapoolStorageLayout.ValidatorInfoStructOutput,
+        string,
+        string,
+        bigint
+      ] & {
+        info: RocketMegapoolStorageLayout.ValidatorInfoStructOutput;
+        pubkey: string;
+        signature: string;
+        challengeDeadline: bigint;
+      }
+    ],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "getValidatorPrestakeSignature"
+  ): TypedContractMethod<[_validatorId: BigNumberish], [string], "view">;
   getFunction(
     nameOrSignature: "getValidatorPubkey"
   ): TypedContractMethod<[_validatorId: BigNumberish], [string], "view">;
@@ -1068,6 +1201,9 @@ export interface RocketMegapoolDelegate extends BaseContract {
   ): TypedContractMethod<[_validatorId: BigNumberish], [void], "payable">;
   getFunction(
     nameOrSignature: "stake"
+  ): TypedContractMethod<[_validatorId: BigNumberish], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "stakeWithoutProof"
   ): TypedContractMethod<[_validatorId: BigNumberish], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "version"

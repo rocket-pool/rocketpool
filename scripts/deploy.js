@@ -20,6 +20,7 @@ const etherscanApiKey = process.env.ETHERSCAN_API_KEY || null;
 const chainOpts = {
     'mainnet': {
         deployer: {
+            genesisForkVersion: '0x00000000',
             depositAddress: '0x00000000219ab540356cBB839Cbe05303d7705Fa',
             rocketTokenRPLFixedSupply: '0xb4efd85c19999d84251304bda99e90b92300bd93',
             secondsPerSlot: 12n,
@@ -42,6 +43,8 @@ const chainOpts = {
     },
     'hoodi': {
         deployer: {
+            // https://github.com/eth-clients/hoodi/blob/main/metadata/config.yaml
+            genesisForkVersion: '0x10000910',
             depositAddress: '0x00000000219ab540356cBB839Cbe05303d7705Fa',
             rocketTokenRPLFixedSupply: null,
             secondsPerSlot: 12n,
@@ -64,6 +67,7 @@ const chainOpts = {
     },
     'private': {
         deployer: {
+        genesisForkVersion: process.env.GENESIS_FORK_VERSION,
         depositAddress: '0x00000000219ab540356cBB839Cbe05303d7705Fa',
         rocketTokenRPLFixedSupply: null,
         secondsPerSlot: 12n,

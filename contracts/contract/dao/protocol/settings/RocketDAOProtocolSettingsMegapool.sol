@@ -20,6 +20,8 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
     /// @notice Called during deployment or upgrade to set initial values for settings
     function initialise() override public {
         // Set defaults
+        setBool(keccak256(abi.encodePacked(settingNameSpace, "megapool.stake.without.proof.enabled")), true);
+        _setSettingUint("megapool.prestake.challenge.period", 12 hours);
         _setSettingUint("megapool.time.before.dissolve", 28 days);               // Time that must be waited before dissolving a megapool validator (RPIP-59)
         _setSettingUint("megapool.dissolve.penalty", 0.05 ether);                // The penalty which is applied to node operators when one of their validators gets dissolved
         _setSettingUint("maximum.megapool.eth.penalty", 612 ether);              // Maximum ETH penalty that can be applied over a rolling 7-day window (RPIP-42)
@@ -43,6 +45,10 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
             bytes32 settingKey = keccak256(abi.encodePacked(_settingPath));
             if (settingKey == keccak256(bytes("megapool.time.before.dissolve"))) {
                 require(_value >= 10 days && _value <= 60 days, "Value must be >= 10 days & <= 60 days");
+                require(_value > getSettingUint("megapool.prestake.challenge.period"), "Dissolution timeout must exceed challenge period");
+            } else if (settingKey == keccak256(bytes("megapool.prestake.challenge.period"))) {
+                require(_value >= 12 hours, "Challenge period must be >= 12 hours");
+                require(_value < getSettingUint("megapool.time.before.dissolve"), "Challenge period must be below dissolution timeout");
             } else if (settingKey == keccak256(bytes("maximum.megapool.eth.penalty"))) {
                 require(_value >= 300 ether && _value <= 5000 ether, "Value must be >= 300 ETH & <= 5000 ETH");
             } else if (settingKey == keccak256(bytes("notify.threshold"))) {
@@ -68,6 +74,16 @@ contract RocketDAOProtocolSettingsMegapool is RocketDAOProtocolSettings, RocketD
     /// @dev Directly updates a setting, no guardrails applied
     function _setSettingUint(string memory _settingPath, uint256 _value) internal {
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
+    }
+
+    /// @notice Returns whether permissionless staking without a state proof is enabled
+    function getStakeWithoutProofEnabled() override external view returns (bool) {
+        return getSettingBool("megapool.stake.without.proof.enabled");
+    }
+
+    /// @notice Returns the challenge period applied to new prestakes (seconds)
+    function getPrestakeChallengePeriod() override external view returns (uint256) {
+        return getSettingUint("megapool.prestake.challenge.period");
     }
 
     /// @notice Returns how long after an assignment a watcher must wait to dissolve a megapool validator (seconds)

@@ -1,11 +1,12 @@
 import { validatorProofArgs } from '../../scenarios/megapool/proof-encoding';
 import assert from "assert";
 
-import { before, describe, expectRevert, it, load } from "../../harness";
+import { asNetworkContract, before, describe, expectRevert, it, load } from "../../harness";
 import { dissolveMegapoolValidatorAndAssert } from "../../scenarios/megapool/dissolve-validator";
 import { notifyMegapoolExitAndAssert } from "../../scenarios/megapool/notify-exit";
 import { currentEpoch, FAR_FUTURE_EPOCH, currentSlot, slotProof, validatorProof } from "../../scenarios/megapool/proofs";
 import { stakeMegapoolValidatorAndAssert } from "../../scenarios/megapool/stake-validator";
+import { RocketMegapoolDelegate__factory } from "../../harness/bindings/current";
 import { ETHER, prepareMegapoolProtocol } from "./fixtures";
 
 const DISSOLVE_PERIOD = 10n * 24n * 60n * 60n;
@@ -19,13 +20,14 @@ async function prepareAssigned(count = 1): Promise<void> {
 describe("RocketMegapool validator lifecycle", () => {
     before(async () => {
         const current = await prepareMegapoolProtocol();
+        await current.megapools.deploy("node2");
         await current.pdao.settings.megapools.setUint("megapool.time.before.dissolve", DISSOLVE_PERIOD);
     });
 
     it("exposes only the canonical versioned manager proof selectors", async () => {
         const current = await load().ensure("current");
         const fragments = current.contracts.rocketMegapoolManager.interface.fragments;
-        for (const name of ["stake", "dissolve", "notifyExit", "notifyNotExit", "notifyFinalBalance"]) {
+        for (const name of ["stake", "dissolve", "dissolvePendingDeposit", "notifyExit", "notifyNotExit", "notifyFinalBalance"]) {
             const functions = fragments.filter(fragment => fragment.type === "function" && "name" in fragment && fragment.name === name);
             assert.equal(functions.length, 1);
             assert.deepEqual(functions[0].inputs.map(input => input.type), ["address", "uint32", "uint64", "uint256", "bytes"]);
@@ -100,8 +102,26 @@ describe("RocketMegapool validator lifecycle", () => {
         const current = await load().ensure("current");
         await prepareAssigned();
         await dissolveMegapoolValidatorAndAssert(current, "node", 0n, {
-            caller: "random",
+            caller: "node2",
             proofOverrides: { slashed: true },
+        });
+    });
+
+    it("restricts rewarded proof submissions without falling back to an unrewarded dissolve", async () => {
+        const current = await load().ensure("current");
+        await prepareAssigned();
+        const megapool = RocketMegapoolDelegate__factory.connect(await current.megapools.address("node"), await current.context.actor("node"));
+        const before = Array.from(await megapool.getValidatorInfo(0n));
+        for (const [caller, reason] of [["random", "Invalid node"], ["trusted1", "Challenger megapool must be deployed"]]) {
+            await expectRevert(() => dissolveMegapoolValidatorAndAssert(current, "node", 0n, {
+                caller, proofOverrides: { slashed: true },
+            }), reason);
+            assert.deepEqual(Array.from(await megapool.getValidatorInfo(0n)), before);
+            assert.equal(await megapool.getReservedPrestakeBond(), 4n * ETHER);
+        }
+        // Even the manager must respect the timeout on the unrewarded entry point.
+        await asNetworkContract(current, "rocketMegapoolManager", async signer => {
+            await expectRevert(() => megapool.connect(signer).dissolveValidator(0n), "Not enough time has passed");
         });
     });
 
@@ -137,15 +157,34 @@ describe("RocketMegapool validator lifecycle", () => {
         ["exit epoch", { exitEpoch: 0n }],
         ["activation eligibility epoch", { activationEligibilityEpoch: 0n }],
         ["activation epoch", { activationEpoch: 0n }],
-        ["effective balance", { effectiveBalance: 33_000_000_000n }],
+        ["effective balance", { effectiveBalance: 32_000_000_000n }],
     ] as const;
     for (const [label, overrides] of invalidDissolveCases) {
         it(`immediately dissolves a validator with invalid ${label}`, async () => {
             const current = await load().ensure("current");
             await prepareAssigned();
+            const megapool = RocketMegapoolDelegate__factory.connect(await current.megapools.address("node"), await current.context.actor("node"));
+            const dp = current.contracts.rocketDepositPool;
+            const challenger = await current.nodes.address("node2");
+            const creditBefore = await dp.getNodeCreditBalance(challenger);
+            const balanceBefore = await dp.getBalance();
             await dissolveMegapoolValidatorAndAssert(current, "node", 0n, {
-                caller: "random", proofOverrides: overrides,
+                caller: "node2", proofOverrides: overrides,
             });
+            assert.equal(await dp.getNodeCreditBalance(challenger) - creditBefore, 3n * ETHER);
+            assert.equal(await dp.getBalance() - balanceBefore, 31n * ETHER);
+            assert.equal(await megapool.getReservedPrestakeBond(), 0n);
+            assert.equal(await megapool.getValidatorChallengeDeadline(0n), 0n);
+            assert.equal(await megapool.getValidatorPrestakeSignature(0n), "0x");
+            assert.equal(await megapool.getNodeBond(), 0n);
+            assert.equal(await megapool.getUserCapital(), 0n);
+            assert.equal(await megapool.getAssignedValue(), 0n);
+            assert.equal(await megapool.getRefundValue(), 0n);
+            assert.equal(await megapool.getDebt(), await current.contracts.rocketDAOProtocolSettingsMegapool.getDissolvePenalty());
+            await expectRevert(() => dissolveMegapoolValidatorAndAssert(current, "node", 0n, {
+                caller: "node2", proofOverrides: overrides,
+            }), "Validator not prestaked");
+            assert.equal(await dp.getNodeCreditBalance(challenger) - creditBefore, 3n * ETHER);
         });
     }
 

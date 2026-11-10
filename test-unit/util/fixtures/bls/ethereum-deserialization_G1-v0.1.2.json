@@ -1,0 +1,80 @@
+{
+  "deserialization_fails_infinity_with_false_b_flag": {
+    "input": {
+      "pubkey": "800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "output": false
+  },
+  "deserialization_fails_infinity_with_true_b_flag": {
+    "input": {
+      "pubkey": "c01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "output": false
+  },
+  "deserialization_fails_not_in_G1": {
+    "input": {
+      "pubkey": "8123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    },
+    "output": false
+  },
+  "deserialization_fails_not_in_curve": {
+    "input": {
+      "pubkey": "8123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde0"
+    },
+    "output": false
+  },
+  "deserialization_fails_too_few_bytes": {
+    "input": {
+      "pubkey": "9a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaa"
+    },
+    "output": false
+  },
+  "deserialization_fails_too_many_bytes": {
+    "input": {
+      "pubkey": "9a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaa900"
+    },
+    "output": false
+  },
+  "deserialization_fails_with_b_flag_and_a_flag_true": {
+    "input": {
+      "pubkey": "e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "output": false
+  },
+  "deserialization_fails_with_b_flag_and_x_nonzero": {
+    "input": {
+      "pubkey": "c123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    },
+    "output": false
+  },
+  "deserialization_fails_with_wrong_c_flag": {
+    "input": {
+      "pubkey": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    },
+    "output": false
+  },
+  "deserialization_fails_x_equal_to_modulus": {
+    "input": {
+      "pubkey": "9a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab"
+    },
+    "output": false
+  },
+  "deserialization_fails_x_greater_than_modulus": {
+    "input": {
+      "pubkey": "9a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaac"
+    },
+    "output": false
+  },
+  "deserialization_succeeds_correct_point": {
+    "input": {
+      "pubkey": "a491d1b0ecd9bb917989f0e74f0dea0422eac4a873e5e2644f368dffb9a6e20fd6e10c1b77654d067c0618f6e5a7f79a"
+    },
+    "output": true
+  },
+  "deserialization_succeeds_infinity_with_true_b_flag": {
+    "input": {
+      "pubkey": "c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "output": true
+  }
+}

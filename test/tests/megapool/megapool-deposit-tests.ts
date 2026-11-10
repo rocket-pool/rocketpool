@@ -128,9 +128,9 @@ describe("RocketMegapool deposits", () => {
             () => current.megapools.deposit("node", { bond: 2n * ETHER, credit: 2n * ETHER }),
             "Bond requirement not met",
         );
-        await current.megapools.deposit("node", { bond: ETHER, credit: ETHER });
-        await current.megapools.deposit("node", { bond: ETHER, credit: ETHER });
-        await current.megapools.deposit("node", { bond: 2n * ETHER, credit: 2n * ETHER });
+        await current.megapools.deposit("node", { bond: ETHER * 11n / 10n, credit: ETHER * 11n / 10n });
+        await current.megapools.deposit("node", { bond: ETHER * 11n / 10n, credit: ETHER * 11n / 10n });
+        await current.megapools.deposit("node", { bond: ETHER * 18n / 10n, credit: ETHER * 18n / 10n });
         await expectRevert(
             () => current.megapools.deposit("node", { bond: 2n * ETHER, credit: 2n * ETHER }),
             "Insufficient credit",

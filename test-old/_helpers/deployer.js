@@ -33,6 +33,7 @@ const defaultOpts = {
     depositAddress: null,
     fixedSupplyTokenAddress: null,
     deployThirdParty: false,
+    genesisForkVersion: '0x00000000',
     secondsPerSlot: 12n,
     slotsPerHistoricalRoot: 8192n,
     beaconRootsHistoryBufferLength: 8191n,
@@ -119,6 +120,7 @@ const contractNameMap = {
     addressSetStorage: 'AddressSetStorage',
     bytes32SetStorage: 'Bytes32SetStorage',
     beaconStateVerifier: 'BeaconStateVerifier',
+    blsDepositVerifier: 'BLSDepositVerifier',
     linkedListStorage: 'LinkedListStorage',
 };
 
@@ -148,6 +150,10 @@ export class RocketPoolDeployer {
 
         opts = { ...defaultOpts, ...opts };
 
+        if (!ethers.isHexString(opts.genesisForkVersion, 4)) {
+            throw new Error('genesisForkVersion must be a 4-byte hex value; set GENESIS_FORK_VERSION for private-chain deployment');
+        }
+
         if (!opts.logging) {
             this.log = () => {};
         }
@@ -171,6 +177,7 @@ export class RocketPoolDeployer {
         this.contractPlan['rocketNodeDistributorDelegate'].constructorArgs = [];
         this.contractPlan['rocketMinipoolBase'].constructorArgs = [];
         this.contractPlan['beaconStateVerifier'].constructorArgs = () => [this.rocketStorageInstance.target, opts.slotsPerHistoricalRoot, opts.forkSlots, opts.beaconRoots];
+        this.contractPlan['blsDepositVerifier'].constructorArgs = () => [opts.genesisForkVersion];
         this.contractPlan['rocketMegapoolDelegate'].constructorArgs = () => [this.rocketStorageInstance.target, opts.withdrawalRequestPredeployAddress];
         this.contractPlan['rocketNetworkExit'].constructorArgs = () => [this.rocketStorageInstance.target, opts.withdrawalRequestPredeployAddress];
 

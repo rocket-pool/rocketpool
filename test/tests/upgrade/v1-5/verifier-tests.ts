@@ -37,6 +37,30 @@ describe("v1.4.1 verifier upgrade to v1.5", () => {
         await notify(rp141, 0n, await currentEpoch(rp141) + 114n);
     });
 
+    it("rewards validator-state dissolution only after verifying a fresh, authentic proof", async () => {
+        const old = await load().ensure("1.4.1");
+        const current = await old.upgradeTo("current");
+        await (await (await current.megapools.proxy("node", "node")).delegateUpgrade()).wait();
+        await current.depositPool.fund("depositor", parseEther("28"));
+        await current.megapools.deposit("node");
+        const address = await current.megapools.address("node");
+        const challenger = await current.nodes.address("node");
+        const manager = current.contracts.rocketMegapoolManager.connect(await current.context.actor("node"));
+        const dp = current.contracts.rocketDepositPool;
+        const creditBefore = await dp.getNodeCreditBalance(challenger);
+        const proof = await provenValidator(current, 3n, 0n);
+        const tampered = { ...proof.validatorProof, validator: { ...proof.validatorProof.validator, effectiveBalance: 32_000_000_000n } };
+        await expectRevert(() => manager.dissolve(...validatorProofArgs(address, 3n, proof.timestamp, tampered, proof.slotProof)));
+        await current.time.advance(3601n);
+        await expectRevert(() => manager.dissolve(...validatorProofArgs(address, 3n, proof.timestamp, proof.validatorProof, proof.slotProof)), "Slot proof too old");
+        assert.equal(await dp.getNodeCreditBalance(challenger), creditBefore);
+        assert.equal((await (await current.megapools.delegate("node")).getValidatorInfo(3n)).inPrestake, true);
+        const fresh = await provenValidator(current, 3n, 0n);
+        await (await manager.dissolve(...validatorProofArgs(address, 3n, fresh.timestamp, fresh.validatorProof, fresh.slotProof))).wait();
+        assert.equal((await (await current.megapools.delegate("node")).getValidatorInfo(3n)).dissolved, true);
+        assert.equal(await dp.getNodeCreditBalance(challenger) - creditBefore, parseEther("3"));
+    });
+
     it("preserves state, journals the actual intermediate upgrade, and replaces registry ABIs", async () => {
         const old = await load().ensure("1.4.1");
         assert.equal(await old.contracts.beaconStateVerifier.version(), 2n);
@@ -68,7 +92,7 @@ describe("v1.4.1 verifier upgrade to v1.5", () => {
         const helperAbi = await current.contracts.rocketStorage.getString(id("contract.abibytes32SetStorage"));
         assert.equal(await upgrade.abis(10), helperAbi);
         assert.equal(new Interface(JSON.parse(pako.inflate(Buffer.from(helperAbi, "base64"), { to: "string" }))).formatJson(), current.contracts.bytes32SetStorage.interface.formatJson());
-        assert.equal(await upgrade.abis(11), await current.contracts.rocketStorage.getString(id("contract.abirocketMinipool")));
+        assert.equal(await upgrade.abis(13), await current.contracts.rocketStorage.getString(id("contract.abirocketMinipool")));
         assert.equal(await current.contracts.rocketNetworkExit.getRequestedExitCount(), 0n);
         assert.equal(await current.contracts.rocketNetworkExit.getRequestedEth(), 0n);
         assert.equal(await current.contracts.rocketNetworkExit.getVoluntaryEth(), 0n);

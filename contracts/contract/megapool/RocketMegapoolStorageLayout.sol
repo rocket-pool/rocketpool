@@ -87,7 +87,8 @@ abstract contract RocketMegapoolStorageLayout {
      * Version 2 state
      */
 
-
+    mapping(uint32 => uint256) internal validatorChallengeDeadlines;    // Deadlines for validator challenges
+    uint256 internal reservedPrestakeBond;                              // Sum of bonds committed to prestaked validators
 
     uint256 internal __version2Boundary;        // Unused full slot width boundary
 }

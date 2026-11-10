@@ -145,6 +145,7 @@ import {
     RocketVault__factory as CurrentVaultFactory,
     RocketAuctionManager__factory as CurrentAuctionManagerFactory,
     RocketDAOProtocolSettingsAuction__factory as CurrentAuctionSettingsFactory,
+    BLSDepositVerifier__factory,
     RocketUpgradeOneDotFive__factory,
     Bytes32SetStorage__factory,
 } from "../bindings/current";
@@ -319,6 +320,7 @@ export function connectCurrent(context: ProtocolContext): ProtocolCurrent {
         rocketMegapoolManager: CurrentMegapoolManagerFactory.connect(getActiveAddress(state, "rocketMegapoolManager"), signer),
         rocketMegapoolPenalties: CurrentMegapoolPenaltiesFactory.connect(getActiveAddress(state, "rocketMegapoolPenalties"), signer),
         linkedListStorage: V14LinkedListStorageFactory.connect(getActiveAddress(state, "linkedListStorage"), signer),
+        blsDepositVerifier: BLSDepositVerifier__factory.connect(getActiveAddress(state, "blsDepositVerifier"), signer),
         rocketUpgradeOneDotFive: RocketUpgradeOneDotFive__factory.connect(
             getActiveAddress(state, "rocketUpgradeOneDotFive"),
             signer,

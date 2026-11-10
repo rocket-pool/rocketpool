@@ -16,7 +16,7 @@ export function littleEndian(value: bigint): string {
 }
 
 /** Sparse fixed-depth SSZ vector, including canonical zero subtrees. */
-function vector(depth: number, leaves: Map<bigint, string>) {
+export function vector(depth: number, leaves: Map<bigint, string>) {
     const levels = [leaves];
     const zeroes = [ZeroHash];
     for (let level = 0; level < depth; level++) {
@@ -43,7 +43,7 @@ function vector(depth: number, leaves: Map<bigint, string>) {
 }
 
 /** Independent progressive SSZ tree: groups of 1, 4, 16, ... leaves and a mix-in. */
-function progressive(leaves: Map<bigint, string>, mixin: string) {
+export function progressive(leaves: Map<bigint, string>, mixin: string) {
     function group(offset: bigint, depth: number): { root: string; witness(index: bigint): string[] } {
         const size = 1n << BigInt(depth);
         const selected = new Map([...leaves].filter(([i]) => i >= offset && i < offset + size).map(([i, value]) => [i - offset, value]));

@@ -5,4 +5,5 @@ import {RocketMegapoolDelegateInterface} from "./RocketMegapoolDelegateInterface
 import {RocketMegapoolProxyInterface} from "./RocketMegapoolProxyInterface.sol";
 
 interface RocketMegapoolInterface is RocketMegapoolDelegateInterface, RocketMegapoolProxyInterface {
+    function version() external view returns (uint256);
 }

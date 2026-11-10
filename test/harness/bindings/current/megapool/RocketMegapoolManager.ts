@@ -8,6 +8,7 @@ import type {
   FunctionFragment,
   Result,
   Interface,
+  EventFragment,
   AddressLike,
   ContractRunner,
   ContractMethod,
@@ -17,6 +18,7 @@ import type {
   TypedContractEvent,
   TypedDeferredTopicFilter,
   TypedEventLog,
+  TypedLogDescription,
   TypedListener,
   TypedContractMethod,
 } from "../common";
@@ -89,16 +91,22 @@ export interface RocketMegapoolManagerInterface extends Interface {
     nameOrSignature:
       | "addValidator"
       | "challengeExit"
+      | "challengeInvalidSignature"
       | "dissolve"
+      | "dissolvePendingDeposit"
       | "getLastChallenger"
+      | "getPrestakedValidatorIndices"
       | "getValidatorCount"
       | "getValidatorInfo"
+      | "getValidatorPrestakeInfo"
       | "notifyExit"
       | "notifyFinalBalance"
       | "notifyNotExit"
       | "stake"
       | "version"
   ): FunctionFragment;
+
+  getEvent(nameOrSignatureOrTopic: "InvalidSignatureChallenged"): EventFragment;
 
   encodeFunctionData(
     functionFragment: "addValidator",
@@ -109,7 +117,15 @@ export interface RocketMegapoolManagerInterface extends Interface {
     values: [RocketMegapoolManagerInterface.ExitChallengeStruct[]]
   ): string;
   encodeFunctionData(
+    functionFragment: "challengeInvalidSignature",
+    values: [AddressLike, BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "dissolve",
+    values: [AddressLike, BigNumberish, BigNumberish, BigNumberish, BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "dissolvePendingDeposit",
     values: [AddressLike, BigNumberish, BigNumberish, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
@@ -117,11 +133,19 @@ export interface RocketMegapoolManagerInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "getPrestakedValidatorIndices",
+    values: [BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getValidatorCount",
     values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "getValidatorInfo",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getValidatorPrestakeInfo",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
@@ -150,9 +174,21 @@ export interface RocketMegapoolManagerInterface extends Interface {
     functionFragment: "challengeExit",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "challengeInvalidSignature",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "dissolve", data: BytesLike): Result;
   decodeFunctionResult(
+    functionFragment: "dissolvePendingDeposit",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getLastChallenger",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getPrestakedValidatorIndices",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -161,6 +197,10 @@ export interface RocketMegapoolManagerInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getValidatorInfo",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getValidatorPrestakeInfo",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "notifyExit", data: BytesLike): Result;
@@ -174,6 +214,28 @@ export interface RocketMegapoolManagerInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "stake", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "version", data: BytesLike): Result;
+}
+
+export namespace InvalidSignatureChallengedEvent {
+  export type InputTuple = [
+    megapool: AddressLike,
+    validatorId: BigNumberish,
+    challenger: AddressLike
+  ];
+  export type OutputTuple = [
+    megapool: string,
+    validatorId: bigint,
+    challenger: string
+  ];
+  export interface OutputObject {
+    megapool: string;
+    validatorId: bigint;
+    challenger: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
 
 export interface RocketMegapoolManager extends BaseContract {
@@ -235,6 +297,12 @@ export interface RocketMegapoolManager extends BaseContract {
     "nonpayable"
   >;
 
+  challengeInvalidSignature: TypedContractMethod<
+    [_megapool: AddressLike, _validatorId: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+
   dissolve: TypedContractMethod<
     [
       _megapool: AddressLike,
@@ -247,7 +315,31 @@ export interface RocketMegapoolManager extends BaseContract {
     "nonpayable"
   >;
 
+  dissolvePendingDeposit: TypedContractMethod<
+    [
+      _megapool: AddressLike,
+      _validatorId: BigNumberish,
+      _slotTimestamp: BigNumberish,
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
+    ],
+    [void],
+    "nonpayable"
+  >;
+
   getLastChallenger: TypedContractMethod<[], [string], "view">;
+
+  getPrestakedValidatorIndices: TypedContractMethod<
+    [_offset: BigNumberish, _limit: BigNumberish],
+    [
+      [bigint[], bigint, bigint[]] & {
+        indices: bigint[];
+        nextIndex: bigint;
+        failedIndices: bigint[];
+      }
+    ],
+    "view"
+  >;
 
   getValidatorCount: TypedContractMethod<[], [bigint], "view">;
 
@@ -264,6 +356,28 @@ export interface RocketMegapoolManager extends BaseContract {
         validatorInfo: RocketMegapoolStorageLayout.ValidatorInfoStructOutput;
         megapool: string;
         validatorId: bigint;
+      }
+    ],
+    "view"
+  >;
+
+  getValidatorPrestakeInfo: TypedContractMethod<
+    [_index: BigNumberish],
+    [
+      [
+        string,
+        RocketMegapoolStorageLayout.ValidatorInfoStructOutput,
+        string,
+        bigint,
+        string,
+        bigint
+      ] & {
+        pubkey: string;
+        validatorInfo: RocketMegapoolStorageLayout.ValidatorInfoStructOutput;
+        megapool: string;
+        validatorId: bigint;
+        signature: string;
+        challengeDeadline: bigint;
       }
     ],
     "view"
@@ -342,7 +456,27 @@ export interface RocketMegapoolManager extends BaseContract {
     "nonpayable"
   >;
   getFunction(
+    nameOrSignature: "challengeInvalidSignature"
+  ): TypedContractMethod<
+    [_megapool: AddressLike, _validatorId: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
     nameOrSignature: "dissolve"
+  ): TypedContractMethod<
+    [
+      _megapool: AddressLike,
+      _validatorId: BigNumberish,
+      _slotTimestamp: BigNumberish,
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
+    ],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "dissolvePendingDeposit"
   ): TypedContractMethod<
     [
       _megapool: AddressLike,
@@ -357,6 +491,19 @@ export interface RocketMegapoolManager extends BaseContract {
   getFunction(
     nameOrSignature: "getLastChallenger"
   ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "getPrestakedValidatorIndices"
+  ): TypedContractMethod<
+    [_offset: BigNumberish, _limit: BigNumberish],
+    [
+      [bigint[], bigint, bigint[]] & {
+        indices: bigint[];
+        nextIndex: bigint;
+        failedIndices: bigint[];
+      }
+    ],
+    "view"
+  >;
   getFunction(
     nameOrSignature: "getValidatorCount"
   ): TypedContractMethod<[], [bigint], "view">;
@@ -375,6 +522,29 @@ export interface RocketMegapoolManager extends BaseContract {
         validatorInfo: RocketMegapoolStorageLayout.ValidatorInfoStructOutput;
         megapool: string;
         validatorId: bigint;
+      }
+    ],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "getValidatorPrestakeInfo"
+  ): TypedContractMethod<
+    [_index: BigNumberish],
+    [
+      [
+        string,
+        RocketMegapoolStorageLayout.ValidatorInfoStructOutput,
+        string,
+        bigint,
+        string,
+        bigint
+      ] & {
+        pubkey: string;
+        validatorInfo: RocketMegapoolStorageLayout.ValidatorInfoStructOutput;
+        megapool: string;
+        validatorId: bigint;
+        signature: string;
+        challengeDeadline: bigint;
       }
     ],
     "view"
@@ -435,5 +605,24 @@ export interface RocketMegapoolManager extends BaseContract {
     nameOrSignature: "version"
   ): TypedContractMethod<[], [bigint], "view">;
 
-  filters: {};
+  getEvent(
+    key: "InvalidSignatureChallenged"
+  ): TypedContractEvent<
+    InvalidSignatureChallengedEvent.InputTuple,
+    InvalidSignatureChallengedEvent.OutputTuple,
+    InvalidSignatureChallengedEvent.OutputObject
+  >;
+
+  filters: {
+    "InvalidSignatureChallenged(address,uint32,address)": TypedContractEvent<
+      InvalidSignatureChallengedEvent.InputTuple,
+      InvalidSignatureChallengedEvent.OutputTuple,
+      InvalidSignatureChallengedEvent.OutputObject
+    >;
+    InvalidSignatureChallenged: TypedContractEvent<
+      InvalidSignatureChallengedEvent.InputTuple,
+      InvalidSignatureChallengedEvent.OutputTuple,
+      InvalidSignatureChallengedEvent.OutputObject
+    >;
+  };
 }

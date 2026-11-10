@@ -43,6 +43,16 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     event RewardsDistributed(uint256 nodeAmount, uint256 voterAmount, uint256 rethAmount, uint256 protocolDaoAmount, uint256 time);
     event RewardsClaimed(uint256 amount, uint256 time);
 
+    // In-memory allocation for the shared dissolution settlement
+    struct DissolutionSettlement {
+        uint256 nodeShare;
+        uint256 userShare;
+        uint256 reward;
+        uint256 nodeCredit;
+        uint256 nodeRefund;
+        uint256 shortfall;
+    }
+
     // Immutables
     bytes32 immutable internal rocketDepositPoolKey;
     bytes32 immutable internal rocketMegapoolManagerKey;
@@ -106,6 +116,21 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         return validators[_validatorId];
     }
 
+    /// @notice Returns the signature retained for a validator's initial deposit
+    function getValidatorPrestakeSignature(uint32 _validatorId) override external view returns (bytes memory) {
+        return prestakeSignatures[_validatorId];
+    }
+
+    /// @notice Returns the fixed challenge deadline, or zero when no challenge window is stored
+    function getValidatorChallengeDeadline(uint32 _validatorId) override external view returns (uint256) {
+        return validatorChallengeDeadlines[_validatorId];
+    }
+
+    /// @notice Returns node capital reserved for unresolved, challenge-eligible prestakes
+    function getReservedPrestakeBond() override external view returns (uint256) {
+        return reservedPrestakeBond;
+    }
+
     /// @notice Returns pubkey for a given validator
     function getValidatorPubkey(uint32 _validatorId) override external view returns (bytes memory) {
         require(_validatorId < numValidators, "Validator does not exist");
@@ -118,6 +143,17 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         require(_validatorId < numValidators, "Validator does not exist");
         info = validators[_validatorId];
         pubkey = pubkeys[_validatorId];
+    }
+
+    /// @notice Returns validator state and the data needed to watch its prestake
+    /// @dev Available in every validator state, signature and deadline may be empty or zero
+    /// @param _validatorId Internal ID of the validator to query
+    function getValidatorPrestakeInfo(uint32 _validatorId) override external view returns (ValidatorInfo memory info, bytes memory pubkey, bytes memory signature, uint256 challengeDeadline) {
+        require(_validatorId < numValidators, "Validator does not exist");
+        info = validators[_validatorId];
+        pubkey = pubkeys[_validatorId];
+        signature = prestakeSignatures[_validatorId];
+        challengeDeadline = validatorChallengeDeadlines[_validatorId];
     }
 
     /// @notice Returns the amount of ETH temporarily held in this contract from the protocol ready to be staked
@@ -178,10 +214,12 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         RocketNodeDepositInterface rocketNodeDeposit = _getRocketNodeDeposit();
         uint256 newBondRequirement = rocketNodeDeposit.getBondRequirement(getActiveValidatorCount() + 1);
         uint256 effectiveBond = nodeBond + nodeQueuedBond;
+        uint256 minimumBond = prestakeValue + 0.1 ether;
         if (newBondRequirement > effectiveBond) {
-            // Clamp new bond requirement between 1 - 32 ETH
-            if (newBondRequirement - effectiveBond < prestakeValue) {
-                return prestakeValue;
+            // Reserve at least 0.1 ETH beyond prestake for a successful challenger
+            // Clamp the actual new deposit between 1.1 and 32 ETH
+            if (newBondRequirement - effectiveBond < minimumBond) {
+                return minimumBond;
             } else {
                 uint256 bondRequirement = newBondRequirement - effectiveBond;
                 if (bondRequirement > fullDepositValue) {
@@ -190,7 +228,7 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
                 return bondRequirement;
             }
         } else {
-            return prestakeValue;
+            return minimumBond;
         }
     }
 
@@ -326,12 +364,14 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         nodeBond += assignedNodeBond;
         userQueuedCapital -= assignedUserCapital;
         nodeQueuedBond -= assignedNodeBond;
+        // Reserve the original bond value
+        reservedPrestakeBond += assignedNodeBond;
+        RocketDAOProtocolSettingsMegapoolInterface megapoolSettings = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
+        validatorChallengeDeadlines[_validatorId] = block.timestamp + megapoolSettings.getPrestakeChallengePeriod();
         // Store capital ratio on first assignment
         if (lastDistributionTime == 0) {
             _calculateAndSaveCapitalRatio();
         }
-        // Delete prestake signature for a small gas refund (no longer needed)
-        delete prestakeSignatures[_validatorId];
         // Emit event
         emit MegapoolValidatorAssigned(_validatorId, block.timestamp);
     }
@@ -339,6 +379,24 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
     /// @notice Performs the remaining ETH deposit on the Beacon Chain
     /// @param _validatorId The internal ID of the validator in this megapool
     function stake(uint32 _validatorId) external onlyRocketMegapoolManager {
+        _stake(_validatorId);
+    }
+
+    /// @notice Performs the remaining deposit after the validator's challenge period
+    /// @param _validatorId The internal ID of the validator in this megapool
+    function stakeWithoutProof(uint32 _validatorId) override external {
+        RocketDAOProtocolSettingsMegapoolInterface megapoolSettings = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
+        require(megapoolSettings.getStakeWithoutProofEnabled(), "Proofless staking is disabled");
+        require(validators[_validatorId].inPrestake, "Validator must be pre-staked");
+        require(prestakeSignatures[_validatorId].length != 0, "Prestake signature not retained");
+        uint256 deadline = validatorChallengeDeadlines[_validatorId];
+        require(deadline != 0, "Challenge deadline not set");
+        require(block.timestamp >= deadline, "Challenge period has not elapsed");
+        _stake(_validatorId);
+    }
+
+    /// @dev Shared accounting and deposit operation for proof-based and proofless staking
+    function _stake(uint32 _validatorId) internal {
         // Retrieve validator from storage
         ValidatorInfo memory validator = validators[_validatorId];
         // Validate validator status
@@ -350,6 +408,8 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         // Account for assigned value
         uint256 assignedUsed = lastRequestedValue * milliToWei - prestakeValue;
         assignedValue -= assignedUsed;
+        // Release before clearing the original bond used to create the reservation
+        _releasePrestakeBond(_validatorId);
         // Update validator status
         validator.staked = true;
         validator.inPrestake = false;
@@ -358,8 +418,10 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         validator.lastRequestedValue = 0;
         validator.depositValue += SafeCast.toUint32(lastRequestedValue - prestakeValue / milliToWei);
         validators[_validatorId] = validator;
+        // Signature is no longer required
+        delete prestakeSignatures[_validatorId];
         // Perform remaining 31 ETH stake onto beaconchain
-        // Note: Signature is not verified on subsequent deposits and we know the validator is valid due to state proof
+        // Note: The consensus layer does not verify signatures on subsequent deposits
         bytes memory signature = hex"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
         bytes memory pubkey = pubkeys[_validatorId];
         bytes32 depositDataRoot = _computeDepositDataRoot(pubkey, signature, SafeCast.toUint64(assignedUsed / 1 gwei));
@@ -370,7 +432,6 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
 
     /// @notice Dissolves a validator that has not staked within the required period
     /// @param _validatorId the validator ID to dissolve
-    /// @dev "Time before dissolve" parameter must be respected if not called from RocketMegapoolManager
     function dissolveValidator(uint32 _validatorId) override external {
         // Retrieve validator from storage
         ValidatorInfo memory validator = validators[_validatorId];
@@ -378,46 +439,90 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         require(validator.inPrestake, "Validator not prestaked");
         // Ensure time-before-dissolve period has passed before allowing proof-less dissolution
         RocketDAOProtocolSettingsMegapoolInterface rocketDAOProtocolSettingsMegapool = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
-        if (msg.sender != rocketStorage.getAddress(rocketMegapoolManagerKey)) {
-            uint256 timeBeforeDissolve = rocketDAOProtocolSettingsMegapool.getTimeBeforeDissolve();
-            require(block.timestamp > validator.lastAssignmentTime + timeBeforeDissolve, "Not enough time has passed");
+        uint256 timeBeforeDissolve = rocketDAOProtocolSettingsMegapool.getTimeBeforeDissolve();
+        require(block.timestamp > validator.lastAssignmentTime + timeBeforeDissolve, "Not enough time has passed");
+        // Execute dissolution
+        _dissolveValidator(_validatorId, address(0));
+    }
+
+    /// @notice Settles a proved prestake violation, rewarding the challenger if the bond was reserved
+    /// @dev Legacy prestakes use the existing unrewarded settlement
+    function dissolveInvalidValidator(uint32 _validatorId, address _challenger) override external onlyRocketMegapoolManager {
+        require(_challenger != address(0), "Invalid challenger");
+        // Execute dissolution
+        _dissolveValidator(_validatorId, _challenger);
+    }
+
+    /// @dev Shared dissolution flow
+    function _dissolveValidator(uint32 _validatorId, address _challenger) internal {
+        ValidatorInfo storage validator = validators[_validatorId];
+        require(validator.inPrestake, "Validator not prestaked");
+        // Check if this dissolution pathway is rewarded
+        bool rewarded = _challenger != address(0) && validatorChallengeDeadlines[_validatorId] != 0;
+        uint256 capitalValue = uint256(validator.lastRequestedValue) * milliToWei;
+        uint256 recycleValue = capitalValue - prestakeValue;
+        _releasePrestakeBond(_validatorId);
+        // Calculate dissolution settlement outcome (avoid stack overflow with struct)
+        DissolutionSettlement memory settlement;
+        if (rewarded) {
+            // Retire the reserved original contribution and any unrelated surplus capital
+            uint256 originalBond = uint256(validator.lastRequestedBond) * milliToWei;
+            settlement.reward = originalBond - prestakeValue;
+            settlement.nodeShare = originalBond;
+            settlement.userShare = capitalValue - originalBond;
+            if (settlement.userShare > userCapital) {
+                settlement.userShare = userCapital;
+                settlement.nodeShare = capitalValue - settlement.userShare;
+            }
+            require(settlement.nodeShare <= nodeBond - reservedPrestakeBond, "Insufficient unreserved bond");
+            settlement.nodeCredit = settlement.nodeShare - originalBond;
+        } else {
+            // Timeout and legacy settlement use current aggregate bond requirements
+            (settlement.nodeShare, settlement.userShare) = _calculateCapitalDispersal(capitalValue, getActiveValidatorCount() - 1);
+            if (settlement.userShare > recycleValue) {
+                settlement.shortfall = settlement.userShare - recycleValue;
+            } else {
+                settlement.nodeRefund = recycleValue - settlement.userShare;
+            }
         }
-        // Apply a penalty by increasing debt
-        uint256 dissolvePenalty = rocketDAOProtocolSettingsMegapool.getDissolvePenalty();
-        _increaseDebt(dissolvePenalty);
-        // Update validator info
+        // Record the dissolution and retire its capital
         validator.inPrestake = false;
         validator.dissolved = true;
         validator.lastAssignmentTime = 0;
-        validators[_validatorId] = validator;
-        // Decrease total bond used for bond requirement calculations
-        uint256 capitalValue = uint256(validator.lastRequestedValue) * milliToWei;
-        uint256 recycleValue = capitalValue - prestakeValue;
-        (uint256 nodeShare, uint256 userShare) = _calculateCapitalDispersal(capitalValue, getActiveValidatorCount() - 1);
-        nodeBond -= nodeShare;
-        userCapital -= userShare;
-        unchecked { // Infeasible overflow
-            numInactiveValidators += 1;
+        delete prestakeSignatures[_validatorId];
+        nodeBond -= settlement.nodeShare;
+        userCapital -= settlement.userShare;
+        numInactiveValidators += 1;
+        // Retrieve and apply dissolve penalty
+        RocketDAOProtocolSettingsMegapoolInterface settings = RocketDAOProtocolSettingsMegapoolInterface(getContractAddress("rocketDAOProtocolSettingsMegapool"));
+        _increaseDebt(settings.getDissolvePenalty());
+        // Surplus node credit first pays debt, including the dissolution penalty
+        if (settlement.nodeCredit > 0 && debt > 0) {
+            uint256 repayment = settlement.nodeCredit < debt ? settlement.nodeCredit : debt;
+            settlement.nodeCredit -= repayment;
+            _reduceDebt(repayment);
         }
-        // Snapshot capital ratio
+        // Preserve snapshot ordering: pending rewards can repay existing debt and the penalty,
+        // but timeout/legacy capital shortfalls are recorded only after that distribution
         _snapshotCapitalRatio();
-        // Recycle ETH
         assignedValue -= recycleValue;
-        // Calculate the values to send to node and user
-        uint256 toUser = userShare;
-        if (recycleValue < toUser) {
-            uint256 shortFall = toUser - recycleValue;
-            toUser -= shortFall;
-            _increaseDebt(shortFall);
+        if (settlement.shortfall > 0) {
+            _increaseDebt(settlement.shortfall);
         }
-        uint256 toNode = recycleValue - toUser;
-        // Send funds
+        refundValue += settlement.nodeRefund;
+        // Disperse funds
         RocketDepositPoolInterface rocketDepositPool = _getRocketDepositPool();
-        if (toUser > 0) {
-            rocketDepositPool.recycleDissolvedDeposit{value: toUser}();
+        rocketDepositPool.fundsReturned(nodeAddress, settlement.nodeShare, settlement.userShare);
+        if (settlement.reward > 0) {
+            rocketDepositPool.applyCredit(_challenger, settlement.reward);
         }
-        rocketDepositPool.fundsReturned(nodeAddress, nodeShare, userShare);
-        refundValue += toNode;
+        if (settlement.nodeCredit > 0) {
+            rocketDepositPool.applyCredit(nodeAddress, settlement.nodeCredit);
+        }
+        uint256 toRecycle = recycleValue - settlement.nodeRefund;
+        if (toRecycle > 0) {
+            rocketDepositPool.recycleDissolvedDeposit{value: toRecycle}();
+        }
         // Emit event
         emit MegapoolValidatorDissolved(_validatorId, block.timestamp);
     }
@@ -785,6 +890,15 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         require(success);
     }
 
+    /// @dev Releases a reservation once, before its original bond is cleared or dispersed
+    function _releasePrestakeBond(uint32 _validatorId) internal {
+        /// Legacy prestakes have no deadline and never contributed to the aggregate reservation
+        if (validatorChallengeDeadlines[_validatorId] != 0) {
+            reservedPrestakeBond -= uint256(validators[_validatorId].lastRequestedBond) * milliToWei;
+            delete validatorChallengeDeadlines[_validatorId];
+        }
+    }
+
     /// @dev Calculates share of returned capital based on current bond level and requirement
     /// @param _value The amount of ETH capital that is needing to be dispersed
     /// @param _newValidatorCount The number of validators the node will have after this dispersal
@@ -799,8 +913,9 @@ contract RocketMegapoolDelegate is RocketMegapoolDelegateBase, RocketMegapoolDel
         if (_nodeShare > _value) {
             _nodeShare = _value;
         }
-        if (_nodeShare > nodeBond) {
-            _nodeShare = nodeBond;
+        uint256 availableNodeBond = nodeBond - reservedPrestakeBond;
+        if (_nodeShare > availableNodeBond) {
+            _nodeShare = availableNodeBond;
         }
         _userShare = _value - _nodeShare;
     }

@@ -93,6 +93,47 @@ export type ParticipationProofStructOutput = [
   witnesses: string[];
 };
 
+export type PendingDepositStruct = {
+  pubkey: BytesLike;
+  withdrawalCredentials: BytesLike;
+  amountInGwei: BigNumberish;
+  signature: BytesLike;
+  slot: BigNumberish;
+};
+
+export type PendingDepositStructOutput = [
+  pubkey: string,
+  withdrawalCredentials: string,
+  amountInGwei: bigint,
+  signature: string,
+  slot: bigint
+] & {
+  pubkey: string;
+  withdrawalCredentials: string;
+  amountInGwei: bigint;
+  signature: string;
+  slot: bigint;
+};
+
+export type VerifiedPendingDepositStruct = {
+  deposit: PendingDepositStruct;
+  depositIndex: BigNumberish;
+  stateSlot: BigNumberish;
+  slot: BigNumberish;
+};
+
+export type VerifiedPendingDepositStructOutput = [
+  deposit: PendingDepositStructOutput,
+  depositIndex: bigint,
+  stateSlot: bigint,
+  slot: bigint
+] & {
+  deposit: PendingDepositStructOutput;
+  depositIndex: bigint;
+  stateSlot: bigint;
+  slot: bigint;
+};
+
 export type VerifiedSlotStruct = { slot: BigNumberish };
 
 export type VerifiedSlotStructOutput = [slot: bigint] & { slot: bigint };
@@ -208,6 +249,7 @@ export interface BeaconStateVerifierHarnessInterface extends Interface {
       | "verifyNextWithdrawalIndex"
       | "verifyParticipation"
       | "verifyParticipationProof"
+      | "verifyPendingDeposit"
       | "verifySlot"
       | "verifySlotProof"
       | "verifyValidator"
@@ -236,6 +278,10 @@ export interface BeaconStateVerifierHarnessInterface extends Interface {
   encodeFunctionData(
     functionFragment: "verifyParticipationProof",
     values: [BigNumberish, BigNumberish, ParticipationProofStruct]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "verifyPendingDeposit",
+    values: [BigNumberish, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "verifySlot",
@@ -273,6 +319,10 @@ export interface BeaconStateVerifierHarnessInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "verifyParticipationProof",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "verifyPendingDeposit",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "verifySlot", data: BytesLike): Result;
@@ -379,6 +429,16 @@ export interface BeaconStateVerifierHarness extends BaseContract {
     "view"
   >;
 
+  verifyPendingDeposit: TypedContractMethod<
+    [
+      _slotTimestamp: BigNumberish,
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
+    ],
+    [VerifiedPendingDepositStructOutput],
+    "view"
+  >;
+
   verifySlot: TypedContractMethod<
     [
       _slotTimestamp: BigNumberish,
@@ -474,6 +534,17 @@ export interface BeaconStateVerifierHarness extends BaseContract {
       _proof: ParticipationProofStruct
     ],
     [boolean],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "verifyPendingDeposit"
+  ): TypedContractMethod<
+    [
+      _slotTimestamp: BigNumberish,
+      _proofVersion: BigNumberish,
+      _proofData: BytesLike
+    ],
+    [VerifiedPendingDepositStructOutput],
     "view"
   >;
   getFunction(

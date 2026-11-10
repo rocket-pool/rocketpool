@@ -104,4 +104,5 @@ export type LogicalContractName =
     | "rocketNetworkParticipation"
     | "rocketNetworkExit"
     | "rocketUpgradeOneDotFour"
+    | "blsDepositVerifier"
     | "rocketUpgradeOneDotFive";

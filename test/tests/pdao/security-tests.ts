@@ -99,6 +99,20 @@ describe("RocketDAOSecurity", () => {
             assert.equal(await current.pdao.settings.deposits.enabled(), false);
         });
 
+        it("disables and re-enables proofless staking through council proposals", async () => {
+            const current = await load().ensure("current");
+            for (const value of [false, true]) {
+                const proposalId = await proposeSecuritySettingAndAssert(current, {
+                    message: "Toggle proofless staking", caller: "securityMember1",
+                    namespace: "megapool", path: "megapool.stake.without.proof.enabled", value,
+                });
+                await voteSecurityProposalAndAssert(current, proposalId, true, { caller: "securityMember1" });
+                await voteSecurityProposalAndAssert(current, proposalId, true, { caller: "securityMember2" });
+                await executeSecurityProposalAndAssert(current, proposalId, { caller: "securityMember2" });
+                assert.equal(await current.contracts.rocketDAOProtocolSettingsMegapool.getStakeWithoutProofEnabled(), value);
+            }
+        });
+
         it("rejects execution for a setting outside the security allowlist", async () => {
             const current = await load().ensure("current");
             const proposalId = await proposeSecuritySettingAndAssert(current, {

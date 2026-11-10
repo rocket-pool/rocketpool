@@ -44,6 +44,52 @@ describe("RocketMegapool bond requirements", () => {
         await current.pdao.settings.megapools.setUint("megapool.time.before.dissolve", DISSOLVE_PERIOD);
     });
 
+    // With three 4 ETH bonds, the fourth validator requires 8 ETH + 2 * reduced_bond.
+    const minimumCases = [
+        { name: "existing collateral exceeds the requirement", reducedMilli: 1900n, shortfallMilli: -200n, depositMilli: 1100n },
+        { name: "existing collateral exactly covers the requirement", reducedMilli: 2000n, shortfallMilli: 0n, depositMilli: 1100n },
+        { name: "the positive shortfall is below the minimum", reducedMilli: 2549n, shortfallMilli: 1098n, depositMilli: 1100n },
+        { name: "the shortfall equals the minimum", reducedMilli: 2550n, shortfallMilli: 1100n, depositMilli: 1100n },
+        { name: "the shortfall exceeds the minimum", reducedMilli: 2551n, shortfallMilli: 1102n, depositMilli: 1102n },
+    ];
+    for (const scenario of minimumCases) {
+        it(`requires the actual deposit floor when ${scenario.name}`, async () => {
+            const current = await load().ensure("current");
+            // Exercise the sum of active and queued collateral, not just one balance.
+            await current.depositPool.fund("minimum-bond-depositor", 28n * ETHER);
+            for (let i = 0; i < 3; i++) await current.megapools.deposit("node");
+            const megapool = await current.megapools.delegate("node");
+            assert.equal(await megapool.getNodeBond(), 4n * ETHER);
+            assert.equal(await megapool.getNodeQueuedBond(), 8n * ETHER);
+            await current.pdao.settings.nodes.setReducedBond(scenario.reducedMilli * 10n ** 15n);
+            assert.equal(
+                await current.contracts.rocketNodeDeposit.getBondRequirement(4n) - 12n * ETHER,
+                scenario.shortfallMilli * 10n ** 15n,
+            );
+            const required = scenario.depositMilli * 10n ** 15n;
+            assert.equal(await megapool.getNewValidatorBondRequirement(), required);
+            await expectRevert(() => current.megapools.deposit("node", { bond: ETHER }), "Bond requirement not met");
+            await expectRevert(() => current.megapools.deposit("node", { bond: required - 10n ** 15n }), "Bond requirement not met");
+            await current.megapools.deposit("node", { bond: required });
+            assert.equal((await megapool.getValidatorInfo(3n)).lastRequestedBond, scenario.depositMilli);
+            assert.equal(await megapool.getNodeQueuedBond(), 8n * ETHER + required);
+        });
+    }
+
+    it("accepts an exact 32 ETH catch-up requirement without raising the cap", async () => {
+        const current = await load().ensure("current");
+        await current.pdao.settings.nodes.setReducedBond(2n * ETHER);
+        for (let i = 0; i < 16; i++) {
+            await current.megapools.deposit("node", { bond: (i < 2 ? 4n : 2n) * ETHER });
+        }
+        await current.pdao.settings.nodes.setReducedBond(4n * ETHER);
+        const megapool = await current.megapools.delegate("node");
+        assert.equal(await current.contracts.rocketNodeDeposit.getBondRequirement(17n) - await megapool.getNodeBond() - await megapool.getNodeQueuedBond(), 32n * ETHER);
+        assert.equal(await megapool.getNewValidatorBondRequirement(), 32n * ETHER);
+        await current.megapools.deposit("node", { bond: 32n * ETHER });
+        assert.equal(await megapool.getNewValidatorBondRequirement(), 4n * ETHER);
+    });
+
     it("rejects reducing bond while validators remain queued", async () => {
         const current = await load().ensure("current");
         for (let validatorId = 0; validatorId < 3; validatorId++) {
@@ -67,16 +113,17 @@ describe("RocketMegapool bond requirements", () => {
         await current.depositPool.fund("dissolve-rebalance-depositor", 32n * ETHER);
         await current.time.advance(DISSOLVE_PERIOD + 1n);
         await dissolveMegapoolValidatorAndAssert(current, "node", 4n, { caller: "random" });
-        assert.equal(await megapool.getNodeBond(), 0n);
+        // The first four prestakes retain their original bonds despite excess queued collateral.
+        assert.equal(await megapool.getNodeBond(), 16n * ETHER);
 
         for (let validatorId = 5n; validatorId < 24n; validatorId++) {
             await current.depositPool.fund("dissolve-rebalance-depositor", 32n * ETHER);
             await current.time.advance(DISSOLVE_PERIOD + 1n);
             await dissolveMegapoolValidatorAndAssert(current, "node", validatorId, { caller: "random" });
         }
-        assert.equal(await megapool.getNodeBond(), 12n * ETHER);
+        assert.equal(await megapool.getNodeBond(), 16n * ETHER);
         assert.equal(await megapool.getNodeQueuedBond(), 0n);
-        assert.equal(await megapool.getUserCapital(), 32n * ETHER * 4n - 12n * ETHER);
+        assert.equal(await megapool.getUserCapital(), 32n * ETHER * 4n - 16n * ETHER);
         assert.equal(await megapool.getUserQueuedCapital(), 0n);
 
         for (let validatorId = 0n; validatorId < 4n; validatorId++) {
@@ -185,7 +232,7 @@ describe("RocketMegapool bond requirements", () => {
         assert.equal(await megapool.getUserCapital(), 0n);
     });
 
-    it("rejects queue exit when dissolves would leave the megapool underbonded", async () => {
+    it("preserves prestake collateral while queued validators leave after dissolution", async () => {
         const current = await load().ensure("current");
         await current.depositPool.fund("queue-underbond-depositor", 40n * ETHER);
         for (let index = 0; index < 24; index++) await current.megapools.deposit("node");
@@ -196,31 +243,19 @@ describe("RocketMegapool bond requirements", () => {
         await current.depositPool.fund("queue-underbond-depositor", 32n * ETHER);
         await current.time.advance(DISSOLVE_PERIOD + 1n);
         await dissolveMegapoolValidatorAndAssert(current, "node", 4n, { caller: "random" });
-        assert.equal(await megapool.getNodeBond(), 0n);
-        for (let validatorId = 5n; validatorId < 18n; validatorId++) {
+        assert.equal(await megapool.getNodeBond(), 16n * ETHER);
+        for (let validatorId = 5n; validatorId < 24n; validatorId++) {
             await exitMegapoolQueueAndAssert(current, "node", validatorId);
         }
         assert.equal(
             await current.contracts.rocketNodeDeposit.getBondRequirement(await megapool.getActiveValidatorCount()),
-            24n * ETHER,
+            12n * ETHER,
         );
-        assert.equal(await megapool.getNodeQueuedBond(), 24n * ETHER);
-        await expectRevert(() => current.megapools.dequeue("node", 18n), "Bond requirement not met");
-
-        await stakeMegapoolValidatorAndAssert(current, "node", 0n);
-        await exitValidator(0n);
-        assert.equal(
-            await current.contracts.rocketNodeDeposit.getBondRequirement(await megapool.getActiveValidatorCount()),
-            22n * ETHER,
-        );
-        await exitMegapoolQueueAndAssert(current, "node", 18n);
-        await current.pdao.settings.deposits.setAssignmentsEnabled(false);
-        for (let validatorId = 1n; validatorId < 4n; validatorId++) {
+        assert.equal(await megapool.getNodeQueuedBond(), 0n);
+        assert.equal(await megapool.getNodeBond(), 16n * ETHER);
+        for (let validatorId = 0n; validatorId < 4n; validatorId++) {
             await stakeMegapoolValidatorAndAssert(current, "node", validatorId);
             await exitValidator(validatorId);
-        }
-        for (let validatorId = 19n; validatorId < 24n; validatorId++) {
-            await exitMegapoolQueueAndAssert(current, "node", validatorId);
         }
         assert.equal(await current.contracts.rocketNodeDeposit.getBondRequirement(0n), 0n);
         assert.equal(await megapool.getNodeBond(), 0n);

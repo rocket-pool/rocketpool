@@ -373,11 +373,11 @@ export default function() {
                 'Was able to increase bond while over bonded',
                 'Bond requirement not met',
             );
-            // NO is overbonded by 2 ETH, so should only be able to make validators with 1 ETH bond (prestake value)
-            await nodeDeposit(node, '1'.ether, false, '1'.ether);
-            await nodeDeposit(node, '1'.ether, false, '1'.ether);
-            // NO is now at bond requirement, perform a new deposit with credit at the reduced bond to use up the credit
-            await nodeDeposit(node, '2'.ether, false, '2'.ether);
+            // Existing collateral reduces both new deposits to the 1.1 ETH minimum.
+            await nodeDeposit(node, '1.1'.ether, false, '1.1'.ether);
+            await nodeDeposit(node, '1.1'.ether, false, '1.1'.ether);
+            // The next validator requires the remaining 1.8 ETH credit.
+            await nodeDeposit(node, '1.8'.ether, false, '1.8'.ether);
             // Used up all credit, should fail to use credit now
             await shouldRevert(nodeDeposit(node, '2'.ether, false, '2'.ether), 'Exceeded credit', 'Insufficient credit');
         });
