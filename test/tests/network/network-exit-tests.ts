@@ -799,8 +799,8 @@ describe("RocketNetworkExit bounded bond release", () => {
             ],
         },
         {
-            name: "still underbonded after the first exit", staked: 4, reducedBond: 1n, reduceBy: 6n,
-            bond: 10n, requirement: 16n, requirementAfterOne: 12n, credit: 6n,
+            name: "still underbonded after the first exit", staked: 5, reducedBond: 2n, reduceBy: 6n,
+            bond: 14n, requirement: 20n, requirementAfterOne: 16n, credit: 6n,
             cases: [
                 { name: "allows two exits with zero projected bond release", debt: "6.2", requested: 2, allowed: true },
                 { name: "rejects an unnecessary third exit", debt: "6.2", requested: 3, allowed: false },
@@ -816,16 +816,16 @@ describe("RocketNetworkExit bounded bond release", () => {
             ],
         },
         {
-            name: "release capped by exiting principal", staked: 13, reducedBond: 1n,
-            bond: 52n, requirement: 19n, requirementAfterOne: 18n, credit: 0n,
+            name: "release capped by exiting principal", staked: 18, reducedBond: 2n,
+            bond: 72n, requirement: 40n, requirementAfterOne: 38n, credit: 0n,
             cases: [
                 { name: "caps the first exit's 34 ETH surplus at 32 ETH", debt: "32.2", requested: 2, allowed: true },
                 { name: "rejects two exits one wei below the principal cap boundary", debt: "32.199999999999999999", requested: 2, allowed: false },
             ],
         },
         {
-            name: "release capped by node bond with queued validators", staked: 2, queued: 3, reducedBond: 1n,
-            bond: 8n, requirement: 11n, requirementAfterOne: 10n, credit: 0n,
+            name: "release capped by node bond with queued validators", staked: 2, queued: 4, reducedBond: 2n,
+            bond: 8n, requirement: 16n, requirementAfterOne: 14n, credit: 0n,
             cases: [
                 { name: "caps the 10 ETH surplus at the 8 ETH node bond", debt: "8.2", requested: 2, allowed: true },
                 { name: "rejects both exits one wei below the node bond cap boundary", debt: "8.199999999999999999", requested: 2, allowed: false },

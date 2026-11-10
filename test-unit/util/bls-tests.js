@@ -219,8 +219,8 @@ export default function() {
             }
             const size = ((await ethers.provider.getCode(verifier.target)).length - 2) / 2;
             expect(size).to.be.lessThanOrEqual(24_576);
-            console.log(`Complete BLS verifier gas: ${getNetworkConnection().networkConfig.hardfork}; deployed size: ${size} bytes`);
-            console.table(gas);
+            // console.log(`Complete BLS verifier gas: ${getNetworkConnection().networkConfig.hardfork}; deployed size: ${size} bytes`);
+            // console.table(gas);
         });
     });
 }
