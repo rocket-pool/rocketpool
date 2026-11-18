@@ -2,6 +2,8 @@
 pragma solidity 0.8.30;
 
 import {RocketStorageInterface} from "../../interface/RocketStorageInterface.sol";
+import {SafeCast} from "@openzeppelin4/contracts/utils/math/SafeCast.sol";
+import {RocketNetworkSnapshotsInterface} from "../../interface/network/RocketNetworkSnapshotsInterface.sol";
 import {RocketNetworkRevenuesInterface} from "../../interface/network/RocketNetworkRevenuesInterface.sol";
 import {RocketMegapoolFactoryInterface} from "../../interface/megapool/RocketMegapoolFactoryInterface.sol";
 import {RocketBase} from "../RocketBase.sol";
@@ -48,6 +50,18 @@ contract RocketUpgradeOneDotFive is RocketBase {
     /// @notice Returns the address of the RocketStorage contract
     function getRocketStorageAddress() external view returns (address) {
         return address(rocketStorage);
+    }
+
+    /// @notice Restore pre-Houston RPL stake for nodes with missing snapshot value
+    /// @param _nodeAddress Address of a node who is missing an RPL staked snapshot value
+    function restoreNodeRPLStakeSnapshot(address _nodeAddress) external onlyGuardian onlyRegisteredNode(_nodeAddress) {
+        bytes32 key = keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress));
+        RocketNetworkSnapshotsInterface snapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
+        require(snapshots.length(key) == 0, "Stake snapshot already exists");
+        uint256 stake = getUint(key);
+        require(stake > 0, "No legacy RPL stake");
+        // This stake was already counted in the network total when it was deposited
+        snapshots.push(key, SafeCast.toUint224(stake));
     }
 
     /// @notice Once this contract has been voted in by oDAO, guardian can perform the upgrade

@@ -29,6 +29,7 @@ export interface RocketUpgradeOneDotFiveInterface extends Interface {
       | "execute"
       | "getRocketStorageAddress"
       | "locked"
+      | "restoreNodeRPLStakeSnapshot"
       | "set"
       | "version"
   ): FunctionFragment;
@@ -45,6 +46,10 @@ export interface RocketUpgradeOneDotFiveInterface extends Interface {
   ): string;
   encodeFunctionData(functionFragment: "locked", values?: undefined): string;
   encodeFunctionData(
+    functionFragment: "restoreNodeRPLStakeSnapshot",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "set",
     values: [AddressLike[], string[]]
   ): string;
@@ -58,6 +63,10 @@ export interface RocketUpgradeOneDotFiveInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "locked", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "restoreNodeRPLStakeSnapshot",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "set", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "version", data: BytesLike): Result;
 }
@@ -115,6 +124,12 @@ export interface RocketUpgradeOneDotFive extends BaseContract {
 
   locked: TypedContractMethod<[], [boolean], "view">;
 
+  restoreNodeRPLStakeSnapshot: TypedContractMethod<
+    [_nodeAddress: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
   set: TypedContractMethod<
     [_addresses: AddressLike[], _abis: string[]],
     [void],
@@ -142,6 +157,9 @@ export interface RocketUpgradeOneDotFive extends BaseContract {
   getFunction(
     nameOrSignature: "locked"
   ): TypedContractMethod<[], [boolean], "view">;
+  getFunction(
+    nameOrSignature: "restoreNodeRPLStakeSnapshot"
+  ): TypedContractMethod<[_nodeAddress: AddressLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "set"
   ): TypedContractMethod<
